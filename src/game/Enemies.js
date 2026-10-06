@@ -109,8 +109,10 @@ export class Enemies {
       if (!p.alive || p.stealth) continue;
       const d = Math.hypot(p.position.x - e.position.x, p.position.z - e.position.z);
       if (d > 60) { e.threat.delete(p.id); continue; }
-      const t = (e.threat.get(p.id) || 0) + (d < 14 + (e.elite ? 4 : 0) ? 30 - d : 0) * (p.threatMul || 1);
-      if (t > bestT && (e.threat.get(p.id) || d < 14 + (e.elite ? 4 : 0) + e.level * 0.3)) { bestT = t; best = p; }
+      // les monstres d'une vague foncent sur les héros de loin
+      const aggro = e.wave ? 45 : 14 + (e.elite ? 4 : 0);
+      const t = (e.threat.get(p.id) || 0) + (d < aggro ? 60 - d : 0) * (p.threatMul || 1);
+      if (t > bestT && (e.threat.get(p.id) || d < aggro + e.level * 0.3)) { bestT = t; best = p; }
     }
     return best;
   }
@@ -235,11 +237,15 @@ export class Enemies {
         if (!p.alive) continue;
         const dx = p.position.x - e.position.x, dz = p.position.z - e.position.z;
         const d = Math.hypot(dx, dz);
-        if (d > def.range + 1.2 + (p.radius || 0.5)) continue;
-        if (Math.abs(angleDiff(e.rot, Math.atan2(dx, dz))) > 1.2) continue;
+        // golems : onde de choc tout autour ; les autres frappent devant eux
+        if (def.aoe) { if (d > def.aoe + (p.radius || 0.5)) continue; }
+        else {
+          if (d > def.range + 1.2 + (p.radius || 0.5)) continue;
+          if (Math.abs(angleDiff(e.rot, Math.atan2(dx, dz))) > 1.2) continue;
+        }
         g.hurtPlayer(p.id, e.atk * (def.boss ? 1 : 1), e, { kind: e.def.chill ? 'chill' : 'melee' });
       }
-      this.fx('swing', e.position, { rot: e.rot, boss: !!def.boss });
+      this.fx(def.aoe ? 'quake' : 'swing', e.position, { rot: e.rot, boss: !!def.boss, r: def.aoe });
     } else if (pnd.kind === 'shoot') {
       const tgt = players.find((p) => p.id === pnd.tgt) || e.target;
       if (!tgt) return;
@@ -250,11 +256,11 @@ export class Enemies {
       const caster = !!def.caster;
       const atk = e.atk;
       g.projectiles.spawn({
-        x: from.x, y: from.y, z: from.z, dir, speed: caster ? 17 : 30, range: def.range + 8, color: caster ? '#b05cff' : '#c9f0ff', size: caster ? 0.42 : 0.2,
+        x: from.x, y: from.y, z: from.z, dir, speed: caster ? 17 : 30, range: def.range + 8, color: def.projColor || (caster ? '#b05cff' : '#c9f0ff'), size: caster ? 0.42 : 0.2,
         kind: caster ? 'orb' : 'bolt', team: 'enemy', homing: caster ? 1.4 : 0, target: tgt,
         onHit: (t) => g.hurtPlayer(t.id, atk, e, { kind: e.def.chill ? 'chill' : caster ? 'shadow' : 'bolt' }),
       });
-      this.fx('shot', from, { dir: [dir.x, dir.y, dir.z], caster });
+      this.fx('shot', from, { dir: [dir.x, dir.y, dir.z], caster, c: def.projColor });
     } else if (pnd.kind === 'shadowzone') {
       this.fx('shadowboom', { x: pnd.x, y: pnd.y, z: pnd.z });
       for (const p of players) {
@@ -286,11 +292,12 @@ export class Enemies {
       case 'telegraph': fx.telegraph(p, ev.r || 3.5, ev.d || 1.2, ev.c || '#b05cff'); break;
       case 'shadowboom': fx.explosion(p, '#8a3cff', 3.5); this.game.audio?.play('boom', p); this.game.shakeAt(p, 0.5); break;
       case 'summon': fx.runeCircle(p, '#b05cff', { radius: 4, life: 1.8 }); this.game.audio?.play('summon', p); break;
+      case 'quake': fx.shockwave(p, '#c9b28a', ev.r || 4); fx.dust(p, { count: 24, color: '#8a7a62', size: 2, speed: 4 }); this.game.audio?.play('slam', p); this.game.shakeAt(p, 0.6); break;
       case 'swing': if (ev.boss) { fx.shockwave(p, '#b05cff', 7); this.game.shakeAt(p, 0.8); } this.game.audio?.play('swoosh', p); break;
       case 'shot':
         this.game.audio?.play(ev.caster ? 'cast' : 'bow', p);
         // chez les autres joueurs : copie visuelle du carreau / de l'orbe
-        if (!this.isHost && Array.isArray(ev.dir)) this.game.projectiles.spawn({ x: p.x, y: p.y, z: p.z, dir: new THREE.Vector3(ev.dir[0], ev.dir[1], ev.dir[2]), speed: ev.caster ? 17 : 30, range: 30, color: ev.caster ? '#b05cff' : '#c9f0ff', size: ev.caster ? 0.42 : 0.2, kind: ev.caster ? 'orb' : 'bolt', team: 'enemy', visualOnly: true });
+        if (!this.isHost && Array.isArray(ev.dir)) this.game.projectiles.spawn({ x: p.x, y: p.y, z: p.z, dir: new THREE.Vector3(ev.dir[0], ev.dir[1], ev.dir[2]), speed: ev.caster ? 17 : 30, range: 30, color: ev.c || (ev.caster ? '#b05cff' : '#c9f0ff'), size: ev.caster ? 0.42 : 0.2, kind: ev.caster ? 'orb' : 'bolt', team: 'enemy', visualOnly: true });
         break;
       default: this.game.boss?.playFx?.(ev, p); this.game.expedition?.playFx?.(ev, p);
     }
@@ -344,6 +351,18 @@ export class Enemies {
     if (this.killEvents.length > 10) this.killEvents.shift();
     this.game.onEnemyKilled(e, killers);
     this.game.expedition?.onKill({ exp: !!e.exp });
+    this.game.waves?.onKill(e);
+    // une grande gelée se divise en deux petites
+    if (e.def.splits && this.isHost) {
+      for (const s of [-1, 1]) {
+        const x = e.position.x + Math.cos(e.rot + s * 1.3) * 1.4, z = e.position.z + Math.sin(e.rot + s * 1.3) * 1.4;
+        if (this.game.world.terrain.heightAt(x, z) === null) continue;
+        const m = this.spawn(e.def.splits, Math.max(1, e.level - 1), x, z, { home: e.home, silent: true });
+        m.char.stopAction(0); m.setState('chase'); m.target = e.target;
+        if (e.wave) m.wave = e.wave;
+        if (e.zone) { m.zone = e.zone; this.zones.find((zz) => zz.id === e.zone)?.ids.add(m.id); }
+      }
+    }
   }
 
   // ----------------------------------------------------------------------------- MISE À JOUR

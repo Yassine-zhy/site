@@ -16,6 +16,7 @@ import { Waystones } from './Waystones.js';
 import { Expedition } from './Expedition.js';
 import { Gathering } from './Gathering.js';
 import { Chests } from './Chests.js';
+import { Waves } from './Waves.js';
 
 // Démarre les systèmes de jeu une fois le héros créé.
 export async function boot(game) {
@@ -35,11 +36,12 @@ export async function boot(game) {
   game.expedition = new Expedition(game);
   game.gathering = new Gathering(game);
   game.chests = new Chests(game);
+  game.waves = new Waves(game);
   game.interactions = new Interactions(game);
   game.boss = new Boss(game);
   game.net = new Net(game);
   if (game.input.isTouch) game.touch = new TouchControls(game);
-  extra.push(game.waystones, game.expedition, game.gathering, game.chests, game.runes, game.worldState, game.quests, game.npcs, game.dialogue, game.echoes, game.chat, game.interactions, game.boss, game.net);
+  extra.push(game.waystones, game.expedition, game.gathering, game.chests, game.waves, game.runes, game.worldState, game.quests, game.npcs, game.dialogue, game.echoes, game.chat, game.interactions, game.boss, game.net);
   if (game.touch) extra.push(game.touch);
   game.systems = extra;
   game.worldState.start();

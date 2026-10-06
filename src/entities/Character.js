@@ -19,7 +19,7 @@ function splitClip(clip) {
 
 // Ombre de contact : halo sombre et doux sous les pieds, partagé par tous les personnages.
 let BLOB = null;
-function blobAssets() {
+export function blobAssets() {
   if (BLOB) return BLOB;
   const c = document.createElement('canvas'); c.width = c.height = 64;
   const g = c.getContext('2d');

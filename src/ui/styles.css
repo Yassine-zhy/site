@@ -537,3 +537,8 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
 .chest-name small { color: var(--muted); }
 .chest-row .btn { padding: 4px 9px; font-size: 12px; }
 @media (max-width: 520px) { .case-card { flex-basis: 88px; width: 88px; height: 104px; } .case-card img { width: 58px; height: 58px; } .case-view { height: 132px; } }
+
+/* vagues de la Brume */
+.wave-banner { position: absolute; left: 50%; top: calc(138px + var(--safe-t)); transform: translateX(-50%); padding: 7px 18px; border-radius: 20px; background: rgba(40, 14, 70, 0.82); border: 1px solid rgba(199, 139, 255, 0.7); color: #ecdcff; font-family: var(--font-sc); font-size: 14px; letter-spacing: 0.06em; box-shadow: 0 0 18px rgba(160, 90, 255, 0.45); pointer-events: none; z-index: 5; white-space: nowrap; animation: wavePulse 1.6s ease-in-out infinite; }
+@keyframes wavePulse { 50% { box-shadow: 0 0 28px rgba(190, 120, 255, 0.7); } }
+@media (pointer: coarse) and (max-height: 500px) { .wave-banner { top: calc(8px + var(--safe-t)); font-size: 12px; } }

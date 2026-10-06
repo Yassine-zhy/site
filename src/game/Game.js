@@ -16,6 +16,7 @@ import { Icons } from '../ui/Icons.js';
 import { platformAt } from '../world/Citadel.js';
 import { Updrafts } from '../world/Updrafts.js';
 import { cloneModelMaterial } from '../engine/ModelLook.js';
+import { Creature } from '../entities/Creature.js';
 
 // Orchestrateur principal : boucle de jeu, combat, liens entre systèmes.
 export class Game {
@@ -80,6 +81,12 @@ export class Game {
         }
       }
     }
+    // créatures de la Brume (opaques et en fondu) et butin au sol
+    for (const kind of ['slime', 'spider', 'wolf', 'golem', 'wisp']) {
+      keep.push(new Creature(kind).object);
+      const c = new Creature(kind); c.setOpacity(0.5); keep.push(c.object);
+    }
+    for (const n of ['coin_stack_small', 'coin_stack_large', 'coin', 'chest', 'chest_gold', 'bottle_A_green']) keep.push(this.assets.prop(n));
     this.fx.prewarm(this.renderer, keep);
   }
 
@@ -122,6 +129,7 @@ export class Game {
     if (this.player) { this.scene.remove(this.player.object); this.player.char?.dispose?.(); this.player = null; }
     this.loot.clear();
     this.chests?.clearRoll?.();
+    this.waves?.reset();
     this.target = null; this.bossEngaged = null;
     if (this.targetRing) this.targetRing.visible = false;
     for (const id of [...this.ui.plates.keys()]) this.ui.removePlate(id);

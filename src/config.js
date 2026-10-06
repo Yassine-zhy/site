@@ -123,20 +123,20 @@ export const PATHS = [
 
 // Zones d'apparition des squelettes.
 export const SPAWN_ZONES = [
-  { id: 'collines', x: -95, z: 120, radius: 52, level: [1, 3], types: ['minion'], max: 7 },
-  { id: 'aube', x: 78, z: -70, radius: 34, level: [1, 3], types: ['minion', 'minion', 'rogue'], max: 6 },
-  { id: 'foret', x: 125, z: 24, radius: 58, level: [3, 6], types: ['minion', 'rogue', 'warrior'], max: 9 },
-  { id: 'cendres', x: 38, z: 136, radius: 44, level: [5, 9], types: ['warrior', 'mage', 'minion', 'rogue'], max: 10 },
-  { id: 'montagne', x: -10, z: -112, radius: 40, level: [8, 12], types: ['warrior', 'rogue', 'mage'], max: 8 },
-  { id: 'nuees', x: -282, z: -46, radius: 26, level: [7, 10], types: ['mage', 'rogue'], max: 5 },
-  { id: 'lac', x: -150, z: 70, radius: 30, level: [2, 4], types: ['minion', 'rogue'], max: 5 },
-  { id: 'ambre_plaines', x: 625, z: 70, radius: 50, level: [9, 12], types: ['amberminion', 'amberminion', 'amberrogue'], max: 8 },
-  { id: 'ambre_gorge', x: 700, z: 125, radius: 42, level: [11, 14], types: ['amberwarrior', 'amberrogue', 'ambermage'], max: 8 },
-  { id: 'ambre_mesas', x: 680, z: -40, radius: 45, level: [12, 15], types: ['amberwarrior', 'ambermage', 'amberrogue'], max: 7 },
-  { id: 'givre_bas', x: -20, z: -620, radius: 50, level: [13, 16], types: ['frostling', 'frostling', 'frostarcher'], max: 8 },
-  { id: 'givre_lac', x: -150, z: -660, radius: 36, level: [14, 17], types: ['frostling', 'frostmage', 'frostarcher'], max: 7 },
-  { id: 'givre_sanct', x: 95, z: -640, radius: 36, level: [15, 18], types: ['frostguard', 'frostmage', 'frostling'], max: 8 },
-  { id: 'givre_mont', x: 15, z: -715, radius: 40, level: [16, 19], types: ['frostguard', 'frostarcher', 'frostmage'], max: 7 },
+  { id: 'collines', x: -95, z: 120, radius: 52, level: [1, 3], types: ['minion', 'slime', 'slime'], max: 7 },
+  { id: 'aube', x: 78, z: -70, radius: 34, level: [1, 3], types: ['minion', 'minion', 'rogue', 'slime'], max: 6 },
+  { id: 'foret', x: 125, z: 24, radius: 58, level: [3, 6], types: ['minion', 'rogue', 'warrior', 'spider', 'wolf'], max: 9 },
+  { id: 'cendres', x: 38, z: 136, radius: 44, level: [5, 9], types: ['warrior', 'mage', 'minion', 'rogue', 'spider', 'golem'], max: 10 },
+  { id: 'montagne', x: -10, z: -112, radius: 40, level: [8, 12], types: ['warrior', 'rogue', 'mage', 'wolf', 'golem'], max: 8 },
+  { id: 'nuees', x: -282, z: -46, radius: 26, level: [7, 10], types: ['mage', 'rogue', 'wisp'], max: 5 },
+  { id: 'lac', x: -150, z: 70, radius: 30, level: [2, 4], types: ['minion', 'rogue', 'slime', 'wisp'], max: 5 },
+  { id: 'ambre_plaines', x: 625, z: 70, radius: 50, level: [9, 12], types: ['amberminion', 'amberminion', 'amberrogue', 'spider_ambre'], max: 8 },
+  { id: 'ambre_gorge', x: 700, z: 125, radius: 42, level: [11, 14], types: ['amberwarrior', 'amberrogue', 'ambermage', 'spider_ambre', 'golem_ambre'], max: 8 },
+  { id: 'ambre_mesas', x: 680, z: -40, radius: 45, level: [12, 15], types: ['amberwarrior', 'ambermage', 'amberrogue', 'golem_ambre'], max: 7 },
+  { id: 'givre_bas', x: -20, z: -620, radius: 50, level: [13, 16], types: ['frostling', 'frostling', 'frostarcher', 'wolf_givre'], max: 8 },
+  { id: 'givre_lac', x: -150, z: -660, radius: 36, level: [14, 17], types: ['frostling', 'frostmage', 'frostarcher', 'wolf_givre', 'wisp'], max: 7 },
+  { id: 'givre_sanct', x: 95, z: -640, radius: 36, level: [15, 18], types: ['frostguard', 'frostmage', 'frostling', 'golem_cristal'], max: 8 },
+  { id: 'givre_mont', x: 15, z: -715, radius: 40, level: [16, 19], types: ['frostguard', 'frostarcher', 'frostmage', 'golem_cristal', 'wolf_givre'], max: 7 },
 ];
 
 // Pierres de passage : voyage instantané entre celles que l'on a éveillées.
@@ -226,6 +226,17 @@ export const ENEMIES = {
   boss_sentinelle: { name: 'La Sentinelle d’Os', model: 'skel_warrior', tint: '#ffe2a0', hp: 2600, atk: 26, def: 12, speed: 3.5, range: 7, cd: 2.0, xp: 1000, scale: 2.7, weapon: ['Skeleton_Axe', 'handslot.r'], shield: ['Skeleton_Shield_Large_A', 'handslot.l'], attack: ['2H_Melee_Attack_Chop', '1H_Melee_Attack_Jump_Chop', '2H_Melee_Attack_Spin'], walk: 'Walking_D_Skeletons', run: 'Running_A', boss: true, bossId: 'sentinelle' },
   boss_liche: { name: 'Morvhain, la Liche', model: 'skel_mage', tint: '#b8ffc8', hp: 3000, atk: 30, def: 9, speed: 3.2, range: 18, ranged: true, caster: true, cd: 1.9, xp: 1300, scale: 2.5, weapon: ['Skeleton_Staff', 'handslot.r'], attack: ['Spellcast_Shoot', 'Spellcast_Long', 'Spellcast_Summon'], walk: 'Walking_A', run: 'Running_A', boss: true, bossId: 'liche' },
   boss_avatar: { name: 'L’Avatar de la Brume', model: 'skel_warrior', tint: '#d9a8ff', hp: 4600, atk: 34, def: 14, speed: 3.7, range: 7.5, cd: 1.8, xp: 2200, scale: 3.4, weapon: ['Skeleton_Axe', 'handslot.r'], shield: ['Skeleton_Shield_Large_A', 'handslot.l'], attack: ['2H_Melee_Attack_Chop', '1H_Melee_Attack_Jump_Chop', '2H_Melee_Attack_Spin'], walk: 'Walking_D_Skeletons', run: 'Running_A', boss: true, bossId: 'avatar' },
+  // créatures de la Brume (modèles et animations générés par le jeu)
+  slime: { name: 'Gelée de Brume', plural: 'Gelées de Brume', model: 'proc:slime', hp: 40, atk: 6, def: 1, speed: 3.3, range: 2.2, cd: 1.5, xp: 13, attack: ['attack'], walk: 'walk', run: 'run', radius: 0.8, height: 1.6, creature: true, splits: 'slime_small' },
+  slime_small: { name: 'Gelée', model: 'proc:slime', hp: 16, atk: 4, def: 0, speed: 3.8, range: 1.8, cd: 1.3, xp: 5, attack: ['attack'], walk: 'walk', run: 'run', scale: 0.55, radius: 0.8, height: 1.6, creature: true },
+  spider: { name: 'Araignée des ruines', plural: 'Araignées des ruines', model: 'proc:spider', hp: 48, atk: 9, def: 2, speed: 4.6, range: 2.4, cd: 1.25, xp: 18, attack: ['attack'], walk: 'walk', run: 'run', radius: 1.0, height: 1.4, creature: true },
+  wolf: { name: 'Loup de Brume', plural: 'Loups de Brume', model: 'proc:wolf', hp: 70, atk: 12, def: 3, speed: 5.4, range: 2.5, cd: 1.35, xp: 24, attack: ['attack'], walk: 'walk', run: 'run', radius: 0.9, height: 1.7, creature: true },
+  golem: { name: 'Golem de pierre', plural: 'Golems de pierre', model: 'proc:golem', hp: 230, atk: 21, def: 12, speed: 2.5, range: 3.4, cd: 2.6, xp: 64, attack: ['attack'], walk: 'walk', run: 'run', radius: 1.3, height: 3.0, creature: true, aoe: 4.2 },
+  wisp: { name: 'Feu follet', plural: 'Feux follets', model: 'proc:wisp', hp: 40, atk: 12, def: 1, speed: 3.6, range: 18, ranged: true, caster: true, cd: 2.4, xp: 22, attack: ['attack'], walk: 'walk', run: 'run', radius: 0.6, height: 2.2, creature: true, projColor: '#7fd4ff' },
+  wolf_givre: { name: 'Loup des neiges', plural: 'Loups des neiges', model: 'proc:wolf', tint: '#e8f4ff', hp: 120, atk: 18, def: 6, speed: 5.6, range: 2.5, cd: 1.3, xp: 48, chill: true, attack: ['attack'], walk: 'walk', run: 'run', radius: 0.9, height: 1.7, creature: true },
+  golem_cristal: { name: 'Golem de cristal', plural: 'Golems de cristal', model: 'proc:golem', tint: '#bfe8ff', hp: 340, atk: 28, def: 16, speed: 2.6, range: 3.4, cd: 2.5, xp: 95, chill: true, attack: ['attack'], walk: 'walk', run: 'run', radius: 1.3, height: 3.0, creature: true, aoe: 4.4 },
+  golem_ambre: { name: 'Golem d’ambre', plural: 'Golems d’ambre', model: 'proc:golem', tint: '#ffb066', hp: 300, atk: 25, def: 14, speed: 2.6, range: 3.4, cd: 2.5, xp: 82, attack: ['attack'], walk: 'walk', run: 'run', radius: 1.3, height: 3.0, creature: true, aoe: 4.3 },
+  spider_ambre: { name: 'Scorpionne des sables', plural: 'Scorpionnes des sables', model: 'proc:spider', tint: '#d9894a', hp: 82, atk: 14, def: 4, speed: 4.8, range: 2.4, cd: 1.2, xp: 32, attack: ['attack'], walk: 'walk', run: 'run', radius: 1.0, height: 1.4, creature: true },
   boss: { name: 'Le Roi Sans Lumière', model: 'skel_warrior', hp: 2200, atk: 26, def: 10, speed: 3.4, range: 6.5, cd: 2.2, xp: 900, scale: 2.6, weapon: ['Skeleton_Axe', 'handslot.r'], shield: ['Skeleton_Shield_Large_A', 'handslot.l'], attack: ['2H_Melee_Attack_Chop', '1H_Melee_Attack_Jump_Chop', '2H_Melee_Attack_Spin'], walk: 'Walking_D_Skeletons', run: 'Running_A', boss: true, bossId: 'roi' },
 };
 

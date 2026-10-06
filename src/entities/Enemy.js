@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Character } from './Character.js';
+import { Creature } from './Creature.js';
 import { ENEMIES } from '../config.js';
 import { damp, dampAngle } from '../engine/math.js';
 
@@ -28,7 +29,10 @@ export class Enemy {
     const attach = [];
     if (this.def.weapon) attach.push([this.def.weapon[0], this.def.weapon[1].replace('.', ''), 1]);
     if (this.def.shield) attach.push([this.def.shield[0], this.def.shield[1].replace('.', ''), 1]);
-    this.char = new Character(game.assets, this.def.model, { scale, attach, tint: elite ? (this.def.tint ? '#fff0c0' : '#ffe2a8') : (this.def.tint || null) });
+    const tint = elite ? (this.def.tint ? '#fff0c0' : '#ffe2a8') : (this.def.tint || null);
+    this.char = this.def.model.startsWith('proc:')
+      ? new Creature(this.def.model.slice(5), { scale, tint: elite ? '#ffd36b' : this.def.tint || null })
+      : new Character(game.assets, this.def.model, { scale, attach, tint });
     this.object = this.char.object;
     this.position = this.object.position;
     const y = game.world.terrain.heightAt(x, z) ?? 0;
@@ -36,8 +40,8 @@ export class Enemy {
     this.home = home || { x, z };
     this.rot = Math.random() * Math.PI * 2;
     this.object.rotation.y = this.rot;
-    this.radius = 0.6 * scale;
-    this.height = 2.5 * scale;
+    this.radius = (this.def.radius || 0.6) * scale;
+    this.height = (this.def.height || 2.5) * scale;
     this.state = 'spawn';
     this.stateT = 0;
     this.speed = 0;

@@ -5,7 +5,7 @@ import { ABILITIES, basicVisual } from '../game/Abilities.js';
 import { ENEMIES } from '../config.js';
 import { ENEMY_TYPES } from '../entities/Enemy.js';
 
-export const PROTO = 4;
+export const PROTO = 5;
 const MAX_BYTES = 3900;
 
 // Synchronisation multijoueur par "présence" : chaque joueur publie son état complet
@@ -156,6 +156,7 @@ export class Net {
     if (this.hostId && this.hostId !== this.selfId) {
       const host = this.peers.get(this.hostId);
       if (host && Array.isArray(host.presence.E)) g.enemies.applySnapshot(host.presence.E, now);
+      if (host) g.waves?.applyHostState(host.presence.wv);
     }
   }
 
@@ -309,9 +310,10 @@ export class Net {
     if (this.mode === 'party' && g.enemies.isHost && g.expedition) pr.pt = g.expedition.publicState();
     if (g.enemies.isHost && g.inGame) {
       pr.H = 1;
+      pr.wv = g.waves?.publicState() ?? null;
       pr.K = this.out.K; pr.D = this.out.D; pr.X = this.out.X;
       pr.E = this.trimEnemies(g.enemies.snapshot());
-    } else { pr.H = 0; pr.E = null; pr.K = null; pr.D = null; pr.X = null; }
+    } else { pr.H = 0; pr.E = null; pr.K = null; pr.D = null; pr.X = null; pr.wv = null; }
     return pr;
   }
 
