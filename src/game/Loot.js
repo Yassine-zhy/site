@@ -42,6 +42,11 @@ export class Loot {
     g.fx.burst(new THREE.Vector3(x, y + 0.8, z), color, { count: 16, speed: 4, size: 0.3, life: 0.6 });
   }
 
+  clear() {
+    for (const L of this.list) this.game.scene.remove(L.group);
+    this.list.length = 0;
+  }
+
   update(dt) {
     const g = this.game, p = g.player;
     if (!p) return;

@@ -128,6 +128,7 @@ export class Quests {
   }
 
   serialize() { return { active: this.active, done: [...this.done], mainIdx: this.mainIdx }; }
+  reset() { this.active = []; this.done = new Set(); this.mainIdx = 0; this.changed(); }
   load(d) {
     if (!d) return;
     this.active = (d.active || []).filter((q) => q && q.objectives);

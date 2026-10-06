@@ -193,7 +193,8 @@ export class Windows {
       h('div', { class: 'row', style: { display: 'flex', gap: '10px', marginTop: '14px', flexWrap: 'wrap' } },
         h('button', { class: 'btn', onclick: () => this.close() }, 'Reprendre'),
         h('button', { class: 'btn ghost', onclick: () => this.open('help') }, 'Guide du voyageur'),
-        h('button', { class: 'btn ghost', onclick: () => { g.save.write(true); g.ui.toast('Partie sauvegardée.'); } }, 'Sauvegarder')),
+        h('button', { class: 'btn ghost', onclick: () => { g.save.write(true); g.ui.toast(`Partie sauvegardée (emplacement ${(g.save.slot || 0) + 1}).`); } }, 'Sauvegarder'),
+        h('button', { class: 'btn ghost', id: 'btn-home', title: 'Sauvegarde puis revient au menu (changer de héros, de sauvegarde…)', onclick: () => g.exitToTitle() }, '⌂ Retour à l’accueil')),
     );
   }
 }

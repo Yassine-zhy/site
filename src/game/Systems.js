@@ -25,7 +25,6 @@ export async function boot(game) {
   game.world.beacons = new Beacons(game.scene, game.assets, game.world.terrain, game.world.colliders, game.fx);
   game.worldState = new WorldState(game);
   game.quests = new Quests(game);
-  if (game.save?.loaded?.quests && game.save.loaded.name === game.hero.name) game.quests.load(game.save.loaded.quests);
   game.npcs = new NPCs(game);
   game.mind = new Mind(game);
   game.dialogue = new Dialogue(game);
@@ -40,6 +39,7 @@ export async function boot(game) {
   if (game.input.isTouch) game.touch = new TouchControls(game);
   extra.push(game.waystones, game.expedition, game.gathering, game.runes, game.worldState, game.quests, game.npcs, game.dialogue, game.echoes, game.chat, game.interactions, game.boss, game.net);
   if (game.touch) extra.push(game.touch);
+  game.systems = extra;
   game.worldState.start();
   game.echoes.start();
   game.net.start();
@@ -53,12 +53,7 @@ export async function boot(game) {
     game.player.char.playAction(e === 'sit' ? 'Sit_Floor_Down' : 'Cheer', { full: true });
     game.net.sendEmote(e);
   };
-  // reprise de la position sauvegardée
-  const pos = game.save?.loaded?.pos;
-  if (pos && game.save.loaded.name === game.hero.name) {
-    const gy = game.world.terrain.heightAt(pos[0], pos[2]);
-    if (gy !== null && Math.abs(gy - pos[1]) < 3) game.player.spawn(pos[0], gy, pos[2], 0);
-  }
+  applyHeroSave(game);
   game.input.on('key', (code) => {
     if (!game.inGame) return;
     const typing = document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
@@ -76,7 +71,7 @@ export async function boot(game) {
     else if (code === 'KeyG' && !game.windowOpen) game.emote('wave');
   });
   // première visite : guide rapide
-  if (!game.save?.hadSave) game.schedule(1.2, () => {
+  if (!game.save?.hadSave && !game.save?.data?.some(Boolean)) game.schedule(1.2, () => {
     const touch = game.input.isTouch;
     game.ui.announce('Aetheria', touch ? 'Suivez le losange doré jusqu’à Maëlis, près de l’église.' : 'Suivez le losange doré jusqu’à Maëlis, près de l’église (E). Touche H pour le guide.', 5);
     game.chat.system(touch
@@ -86,4 +81,31 @@ export async function boot(game) {
   addEventListener('beforeunload', () => { game.save?.write(true); game.net?.transport?.close(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) game.save?.write(true); });
   return extra;
+}
+
+// Quêtes et position du héros chargé (au démarrage comme après un changement de sauvegarde).
+function applyHeroSave(game) {
+  const L = game.save?.loaded;
+  game.quests.reset();
+  if (L?.quests && L.name === game.hero.name) game.quests.load(L.quests);
+  const pos = L?.pos;
+  if (pos && L.name === game.hero.name) {
+    const gy = game.world.terrain.heightAt(pos[0], pos[2]);
+    if (gy !== null && Math.abs(gy - pos[1]) < 3) game.player.spawn(pos[0], gy, pos[2], 0);
+  }
+}
+
+// Retour en jeu avec un autre héros (les systèmes existent déjà).
+export function reenter(game) {
+  game.windows.close();
+  // commandes tactiles et barre d'action dépendent de la classe
+  if (game.touch) {
+    const i = game.systems.indexOf(game.touch);
+    game.touch.root.remove();
+    game.touch = new TouchControls(game);
+    if (i >= 0) game.systems[i] = game.touch; else game.systems.push(game.touch);
+  }
+  game.mind?.reset?.();
+  applyHeroSave(game);
+  game.net.start();
 }

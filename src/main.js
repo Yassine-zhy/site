@@ -6,7 +6,7 @@ import { Game } from './game/Game.js';
 import { Hero } from './game/Hero.js';
 import { UI } from './ui/UI.js';
 import { Screens } from './ui/Screens.js';
-import { boot as bootSystems } from './game/Systems.js';
+import { boot as bootSystems, reenter } from './game/Systems.js';
 import { Platform } from './net/Platform.js';
 import { Save } from './game/Save.js';
 import { Audio } from './engine/Audio.js';
@@ -57,8 +57,8 @@ async function main(hotData = {}) {
   const begin = async (hero) => {
     audio.unlock();
     game.startHero(hero);
-    await bootSystems(game);
-    game.prewarm();
+    if (!game.systems) { await bootSystems(game); game.prewarm(); }
+    else reenter(game);
     if (!game.save.hadSave) game.quests?.startIntro();
     game.save.soon(1);
   };
@@ -68,6 +68,7 @@ async function main(hotData = {}) {
   try { hot?.snapshot?.(() => (game.inGame ? { resume: game.save.snapshot() } : {})); } catch { /* */ }
   if (hotData?.resume?.hero) {
     const r = clone(hotData.resume);
+    game.save.select(r.slot ?? game.save.slot);
     game.save.loaded = { ...r.hero, pos: r.pos, quests: r.quests, savedAt: r.savedAt };
     game.save.hadSave = true;
     await begin(Hero.deserialize(r.hero));
@@ -82,25 +83,28 @@ async function main(hotData = {}) {
     return;
   }
 
-  const existing = game.save.loaded;
-  game.screens.showTitle({
-    hasSave: !!existing,
-    saveInfo: existing ? `${existing.name} · ${CLASSES[existing.classId]?.name || ''} de niveau ${existing.level}` : '',
-    online: 0,
-    onPlay: () => {
-      audio.unlock();
-      if (existing) begin(Hero.deserialize(existing));
-      else game.screens.showCreate((cls, name) => begin(new Hero(cls, name)));
-    },
-    onNew: () => { audio.unlock(); game.screens.showCreate((cls, name) => begin(new Hero(cls, name))); },
+  // menu principal : quatre emplacements de sauvegarde
+  const openParty = () => game.windows?.open('party');
+  const createIn = (i, then) => {
+    game.save.select(i);
+    game.screens.showCreate((cls, name) => { game.save.select(i); begin(new Hero(cls, name)).then(() => then?.()); }, () => showMainMenu());
+  };
+  const playSlot = (i, then) => {
+    audio.unlock();
+    const d = game.save.select(i);
+    if (d) begin(Hero.deserialize(d)).then(() => then?.());
+    else createIn(i, then);
+  };
+  const showMainMenu = () => game.screens.showTitle({
+    save: game.save,
+    online: game.platform?.onlineCount?.() || 0,
+    onPlay: (i) => playSlot(i),
+    onCreate: (i, multi) => { audio.unlock(); createIn(i, multi ? openParty : null); },
     // multijoueur : on entre dans le monde puis on ouvre la fenêtre des expéditions
-    onMulti: () => {
-      audio.unlock();
-      const then = async (hero) => { await begin(hero); game.windows?.open('party'); };
-      if (existing) then(Hero.deserialize(existing));
-      else game.screens.showCreate((cls, name) => then(new Hero(cls, name)));
-    },
+    onMulti: (i) => playSlot(i, openParty),
   });
+  game.showMainMenu = showMainMenu;
+  showMainMenu();
   platform.onOnline?.((n) => game.screens.setOnline(n));
 }
 

@@ -35,10 +35,16 @@ const PERMANENT = new Set(['not_granted', 'sampling_disabled', 'not_declared', '
 export class Mind {
   constructor(game) {
     this.game = game;
-    this.history = {};
-    try { this.history = JSON.parse(localStorage.getItem('aetheria.npcmem.v1') || '{}'); } catch { /* */ }
+    this.reset();
     this.disabled = false;
     this.busy = false;
+  }
+
+  // mémoire des conversations, propre à chaque emplacement de sauvegarde
+  memKey() { const s = this.game.save?.slot || 0; return 'aetheria.npcmem.v1' + (s ? '.s' + s : ''); }
+  reset() {
+    this.history = {};
+    try { this.history = JSON.parse(localStorage.getItem(this.memKey()) || '{}'); } catch { /* */ }
   }
 
   available() { return !!this.game.platform.sample && !this.disabled; }
@@ -47,7 +53,7 @@ export class Mind {
     const h = (this.history[npc] ||= []);
     h.push({ role, text: String(text).slice(0, 400) });
     while (h.length > 10) h.shift();
-    try { localStorage.setItem('aetheria.npcmem.v1', JSON.stringify(this.history)); } catch { /* */ }
+    try { localStorage.setItem(this.memKey(), JSON.stringify(this.history)); } catch { /* */ }
   }
 
   context() {

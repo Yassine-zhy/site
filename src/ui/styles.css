@@ -467,3 +467,22 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
   .joy .knob { width: 50px; height: 50px; margin: -25px 0 0 -25px; }
   .tinteract { bottom: calc(130px + var(--safe-b)) !important; }
 }
+/* emplacements de sauvegarde */
+.slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.slot-card { background: rgba(15, 12, 28, 0.78); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; min-height: 112px; }
+.slot-card.cur { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(242, 196, 109, 0.35), 0 0 18px rgba(242, 196, 109, 0.15); }
+.slot-card.empty { border-style: dashed; background: rgba(15, 12, 28, 0.5); }
+.slot-n { font-family: var(--font-sc); font-size: 11px; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+.slot-name { font-family: var(--font-display); font-size: 21px; line-height: 1.1; }
+.slot-name.dim, .slot-info.dim { color: var(--muted); }
+.slot-info { font-size: 13px; color: var(--parch); }
+.slot-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 6px; flex-wrap: wrap; }
+.slot-actions .btn { padding: 5px 10px; font-size: 12px; }
+.slot-del.confirm { color: #ff8a72; border-color: #ff8a72; }
+@media (max-width: 520px), (max-height: 520px) {
+  .slots { gap: 6px; }
+  .slot-card { min-height: 0; padding: 7px 9px; }
+  .slot-name { font-size: 17px; }
+  .slot-info.dim { display: none; }
+  #title .tagline { display: none; }
+}

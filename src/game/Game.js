@@ -85,6 +85,10 @@ export class Game {
 
   // ------------------------------------------------------------------ démarrage d'une partie
   startHero(hero) {
+    // changement de héros : on retire l'ancien et sa barre d'action
+    if (this.player) { this.scene.remove(this.player.object); this.player.char?.dispose?.(); }
+    if (this.hud) { this.hud.root.remove(); this.hud = null; }
+    this.cooldowns = {}; this.target = null; this.combo = 0; this.lastCombat = -100; this.bossEngaged = null;
     this.hero = hero;
     this.player = new Player(this, hero.classId, hero.name);
     this.scene.add(this.player.object);
@@ -98,6 +102,30 @@ export class Game {
     this.hud.portrait.src = this.icons.portrait(this.classDef.model);
     this.world.sky.override = null;
     this.inGame = true;
+  }
+
+  // Retour à l'écran d'accueil (sans recharger la page) : sauvegarde, quitte le groupe, nettoie.
+  async exitToTitle() {
+    if (!this.inGame) return;
+    this.windows?.close();
+    if (this.dialogueOpen) this.dialogue?.close(true);
+    if (this.interactions) { this.interactions.task = null; this.interactions.channel = null; }
+    if (this.expedition?.inParty) { this.expedition.left(); this.net.party = null; }
+    await this.save?.write(true);
+    this.net?.switchTransport(null);
+    this.inGame = false;
+    this.input.exitLock();
+    if (this.hud) { this.hud.root.remove(); this.hud = null; }
+    if (this.touch) this.touch.root.style.display = 'none';
+    if (this.player) { this.scene.remove(this.player.object); this.player.char?.dispose?.(); this.player = null; }
+    this.loot.clear();
+    this.chests?.clearRoll?.();
+    this.target = null; this.bossEngaged = null;
+    if (this.targetRing) this.targetRing.visible = false;
+    for (const id of [...this.ui.plates.keys()]) this.ui.removePlate(id);
+    this.world.sky.mood = 0;
+    this.timers.length = 0;
+    this.showMainMenu?.();
   }
 
   respawnPoint(first = false) {

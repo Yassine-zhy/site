@@ -13,30 +13,96 @@ export class Screens {
   }
 
   // ------------------------------------------------------------ titre
-  showTitle({ hasSave, saveInfo, online = 0, onPlay, onNew, onMulti }) {
+  // save : gestionnaire des emplacements ; onPlay(i) reprend un héros, onCreate(i) en crée un,
+  // onMulti(i) entre puis ouvre le menu des expéditions.
+  showTitle({ save, online = 0, onPlay, onCreate, onMulti }) {
     const g = this.game;
     g.world.sky.override = 0.71;
     g.menuMode = 'title';
     this.titleT = 0;
-    const play = h('button', { class: 'btn', id: 'btn-play', onclick: () => { this.hideTitle(); onPlay(); } }, hasSave ? 'Reprendre l’aventure' : 'Commencer l’aventure');
-    const neu = hasSave ? h('button', { class: 'btn ghost', id: 'btn-new', onclick: () => { this.hideTitle(); onNew(); } }, 'Nouveau héros') : null;
-    const multi = onMulti ? h('button', { class: 'btn ghost', id: 'btn-multi', title: 'Héberger ou rejoindre une expédition entre amis (jusqu’à 4)', onclick: () => { this.hideTitle(); onMulti(); } }, '⚔ Multijoueur') : null;
+    this.titleOpts = { save, onPlay, onCreate, onMulti };
+    this.menuBox = h('div', { class: 'title-menu' });
     this.title = h('div', { id: 'title' },
       h('div', { class: 'left' },
         h('div', { class: 'logo' }, 'Aetheria'),
         h('div', { class: 'logo-sub' }, "l'archipel des échos"),
         h('div', { class: 'tagline' }, 'Au-dessus d’une mer de nuages, la Brume ramène les morts. Rallumez les Phares avec tous les héros du monde, tracez des runes pour lancer vos sorts, et parlez à des habitants qui pensent vraiment.'),
-        hasSave && saveInfo ? h('div', { class: 'online', style: { marginTop: '-10px', marginBottom: '16px' } }, saveInfo) : null,
-        h('div', { class: 'row' }, play, neu, multi),
+        this.menuBox,
         this.onlineEl = h('div', { class: 'online' }, online > 0 ? [h('b', {}, String(online)), ' héros en ligne en ce moment'] : 'Monde partagé · progression sauvegardée'),
       ),
       h('div', { class: 'credits' }, 'Modèles 3D : KayKit par Kay Lousberg (CC0) · Moteur : three.js'),
     );
     this.title.classList.add('interactive');
     this.ui.root.appendChild(this.title);
-    setTimeout(() => play.focus(), 50);
-    this.onKey = (e) => { if (e.code === 'Enter' && this.title?.isConnected && document.activeElement?.tagName !== 'INPUT') play.click(); };
+    this.showMainButtons();
+    this.onKey = (e) => { if (e.code === 'Enter' && this.title?.isConnected && document.activeElement?.tagName !== 'INPUT') this.menuBox.querySelector('.btn:not(.ghost)')?.click(); };
     window.addEventListener('keydown', this.onKey);
+  }
+
+  slotLabel(sum) {
+    const c = CLASSES[sum.classId];
+    return `${sum.name} · ${c?.name || ''} niv. ${sum.level}`;
+  }
+
+  showMainButtons() {
+    const { save, onPlay, onCreate, onMulti } = this.titleOpts;
+    const box = this.menuBox;
+    box.innerHTML = '';
+    const cur = save.summary(save.slot);
+    const firstEmpty = () => { for (let i = 0; i < save.data.length; i++) if (!save.data[i]) return i; return -1; };
+    const go = (fn) => () => { this.hideTitle(); fn(); };
+    let main;
+    if (cur) {
+      main = h('button', { class: 'btn', id: 'btn-play', onclick: go(() => onPlay(save.slot)) }, 'Reprendre l’aventure');
+      box.append(h('div', { class: 'online', style: { marginTop: '-10px', marginBottom: '14px' } }, this.slotLabel(cur)));
+    } else {
+      const i = firstEmpty() < 0 ? save.slot : firstEmpty();
+      main = h('button', { class: 'btn', id: 'btn-play', onclick: go(() => onCreate(i)) }, 'Commencer l’aventure');
+    }
+    const saves = h('button', { class: 'btn ghost', id: 'btn-saves', onclick: () => this.showSlots() }, '💾 Sauvegardes');
+    const multi = h('button', { class: 'btn ghost', id: 'btn-multi', title: 'Héberger ou rejoindre une expédition entre amis (jusqu’à 4)', onclick: () => {
+      if (cur) { this.hideTitle(); onMulti(save.slot); } else this.showSlots('multi');
+    } }, '⚔ Multijoueur');
+    box.append(h('div', { class: 'row' }, main, saves, multi));
+    setTimeout(() => main.focus(), 50);
+  }
+
+  // Les quatre emplacements de sauvegarde
+  showSlots(mode = 'play') {
+    const { save, onPlay, onCreate, onMulti } = this.titleOpts;
+    const box = this.menuBox;
+    box.innerHTML = '';
+    const list = h('div', { class: 'slots' });
+    const fmtTime = (s) => { const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60); return hh ? `${hh} h ${String(mm).padStart(2, '0')}` : `${mm} min`; };
+    const fmtDate = (t) => { if (!t) return ''; const d = new Date(t); return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' · ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); };
+    for (let i = 0; i < save.data.length; i++) {
+      const sum = save.summary(i);
+      const enter = () => { this.hideTitle(); if (mode === 'multi') onMulti(i); else onPlay(i); };
+      const card = h('div', { class: 'slot-card' + (sum ? '' : ' empty') + (i === save.slot && sum ? ' cur' : '') });
+      if (sum) {
+        const c = CLASSES[sum.classId];
+        const del = h('button', { class: 'btn ghost small slot-del', title: 'Supprimer ce héros' }, 'Supprimer');
+        del.addEventListener('click', () => {
+          if (!del.classList.contains('confirm')) { del.classList.add('confirm'); del.textContent = 'Confirmer ?'; setTimeout(() => { if (del.isConnected) { del.classList.remove('confirm'); del.textContent = 'Supprimer'; } }, 3000); return; }
+          save.wipe(i);
+          this.game.audio?.play('error');
+          this.showSlots(mode);
+        });
+        card.append(
+          h('div', { class: 'slot-n' }, `Emplacement ${i + 1}`),
+          h('div', { class: 'slot-name', style: { color: c?.color } }, sum.name),
+          h('div', { class: 'slot-info' }, `${c?.name || ''} · niveau ${sum.level}${sum.title ? ' · ' + sum.title : ''}`),
+          h('div', { class: 'slot-info dim' }, `${fmtTime(sum.playTime)} de jeu · ${sum.gold} or · ${fmtDate(sum.savedAt)}`),
+          h('div', { class: 'slot-actions' }, h('button', { class: 'btn small', onclick: enter }, mode === 'multi' ? 'Jouer en groupe' : 'Jouer'), del));
+      } else {
+        card.append(
+          h('div', { class: 'slot-n' }, `Emplacement ${i + 1}`),
+          h('div', { class: 'slot-name dim' }, '— vide —'),
+          h('div', { class: 'slot-actions' }, h('button', { class: 'btn ghost small', onclick: () => { this.hideTitle(); onCreate(i, mode === 'multi'); } }, '+ Nouveau héros')));
+      }
+      list.appendChild(card);
+    }
+    box.append(list, h('div', { class: 'row', style: { marginTop: '10px' } }, h('button', { class: 'btn ghost small', id: 'btn-back', onclick: () => this.showMainButtons() }, '← Retour')));
   }
 
   setOnline(n) {
@@ -71,7 +137,7 @@ export class Screens {
   }
 
   // ------------------------------------------------------------ création
-  showCreate(onDone) {
+  showCreate(onDone, onBack = null) {
     const g = this.game;
     g.menuMode = 'create';
     g.world.sky.override = 0.68;
@@ -90,7 +156,9 @@ export class Screens {
       h('div', { class: 'n', style: { color: c.color } }, c.name), h('div', { class: 'r' }, c.role)));
     const input = h('input', { id: 'hero-name', maxlength: '16', value: name, autocomplete: 'off', spellcheck: 'false' });
     const go = h('button', { class: 'btn', id: 'btn-create', onclick: () => finish() }, 'Entrer dans Aetheria');
+    const back = onBack ? h('button', { class: 'btn ghost small', id: 'btn-create-back', style: { float: 'right' }, onclick: () => cancel() }, '← Retour') : null;
     const side = h('div', { class: 'side panel ornate' },
+      back,
       h('h2', {}, 'Votre héros'),
       h('div', { class: 'hint' }, 'Choisissez une vocation. Chacune maîtrise les runes à sa manière.'),
       h('div', { class: 'classes' }, buttons),
@@ -114,14 +182,18 @@ export class Screens {
       this.setPreview(id);
       g.audio?.play('select');
     };
-    const finish = () => {
-      const n = (input.value || '').replace(/[^\p{L}\p{N} '\-]/gu, '').trim().slice(0, 16) || name;
+    const close = () => {
       this.create.remove();
       if (this.preview) { this.preview.dispose(); this.preview = null; }
       if (this.previewRing) { g.scene.remove(this.previewRing); this.previewRing = null; }
       g.menuMode = null;
+    };
+    const finish = () => {
+      const n = (input.value || '').replace(/[^\p{L}\p{N} '\-]/gu, '').trim().slice(0, 16) || name;
+      close();
       onDone(cls, n);
     };
+    const cancel = () => { close(); onBack?.(); };
     input.addEventListener('keydown', (e) => { if (e.code === 'Enter') finish(); e.stopPropagation(); });
     select(cls);
   }
