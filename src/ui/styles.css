@@ -33,8 +33,12 @@
   color-scheme: dark;
 }
 
-html, body { height: 100%; margin: 0; background: #0b0916; color: var(--parch); overflow: hidden; }
+html, body { height: 100%; margin: 0; background: #0b0916; color: var(--parch); overflow: hidden; overscroll-behavior: none; }
 body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; user-select: none; -webkit-user-select: none; touch-action: none; }
+/* pas de surbrillance au toucher (bleue sur Android), ni de menu d'appui long, ni de sélection */
+html, body, #app, #app * { -webkit-tap-highlight-color: transparent; }
+html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none; }
+#game { user-select: none; -webkit-user-select: none; }
 #app { position: fixed; inset: 0; }
 #game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
 #ui { position: absolute; inset: 0; pointer-events: none; z-index: 2; }

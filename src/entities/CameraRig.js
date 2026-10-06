@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { clamp, damp } from '../engine/math.js';
 
+const CLEAR_PROBES = [[0, 0], [0.45, 0], [-0.45, 0], [0, 0.45], [0, -0.45]];
+
 // Caméra à la troisième personne : orbite, zoom, évitement du relief, tremblements.
 export class CameraRig {
   constructor(camera, terrain, colliders) {
@@ -76,6 +78,14 @@ export class CameraRig {
       pos.x += Math.sin(this.shakeT * 1.3) * s; pos.y += Math.sin(this.shakeT * 1.7 + 1) * s; pos.z += Math.cos(this.shakeT * 1.1) * s;
       this.shakeAmt = Math.max(0, this.shakeAmt - dt * 2.5);
     }
+    // l'épaule et les secousses ne doivent jamais faire passer la caméra sous le relief
+    // (on verrait le ciel à travers le sol) : on vérifie la position finale et ses abords
+    let gMax = -Infinity;
+    for (const [ox, oz] of CLEAR_PROBES) {
+      const gh = this.terrain.heightAt(pos.x + ox, pos.z + oz);
+      if (gh !== null && gh > gMax) gMax = gh;
+    }
+    if (gMax > -Infinity && this.smoothFocus.y > gMax - 2 && pos.y < gMax + 0.55) pos.y = gMax + 0.55;
     this.camera.lookAt(look);
     const aspect = this.camera.aspect;
     const portrait = aspect < 1 ? Math.min(18, (1 - aspect) * 30) : 0; // téléphone en portrait : champ plus large

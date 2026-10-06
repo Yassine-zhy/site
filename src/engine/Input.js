@@ -33,6 +33,10 @@ export class Input {
     window.addEventListener('blur', () => { this.down.clear(); this.mouse.left = this.mouse.right = false; });
 
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    // toucher le canevas : ni souris émulée, ni zoom, ni loupe ou surbrillance du navigateur
+    // (le regard et l'attaque au doigt passent par les pointer events, cf. TouchControls)
+    canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+    document.addEventListener('selectstart', (e) => { if (!typing(e)) e.preventDefault(); });
     canvas.addEventListener('mousedown', (e) => {
       if (!this.enabled) return;
       if (e.button === 0) {
@@ -67,7 +71,7 @@ export class Input {
   requestLock() {
     try {
       const p = this.canvas.requestPointerLock?.({ unadjustedMovement: true });
-      if (p && p.catch) p.catch(() => { try { this.canvas.requestPointerLock(); } catch { this.wantLock = false; } });
+      if (p && p.catch) p.catch(() => { try { this.canvas.requestPointerLock()?.catch?.(() => {}); } catch { this.wantLock = false; } });
     } catch { this.wantLock = false; }
   }
   exitLock() { if (this.locked) document.exitPointerLock?.(); }

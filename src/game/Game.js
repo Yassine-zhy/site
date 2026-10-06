@@ -8,7 +8,7 @@ import { Projectiles, pickSoftTarget } from './Combat.js';
 import { Loot } from './Loot.js';
 import { generateItem, rollRarity } from './Items.js';
 import { ABILITIES, BASIC, basicAttack, basicVisual } from './Abilities.js';
-import { CLASSES, VILLAGE, BEACONS, FOREST, RUINS, LAKE, MOUNTAIN, HILLS, ISLETS } from '../config.js';
+import { CLASSES, ENEMIES, VILLAGE, BEACONS, FOREST, RUINS, LAKE, MOUNTAIN, HILLS, ISLETS } from '../config.js';
 import { CLOUD_SEA_Y } from '../world/Clouds.js';
 import { renderWorldMap } from '../ui/MapRender.js';
 import { Hud } from '../ui/Hud.js';
@@ -54,6 +54,31 @@ export class Game {
     onStep?.('Cartographie de l’archipel…');
     await new Promise((r) => setTimeout(r, 0));
     this.mapImage = renderWorldMap(this.world.terrain, 512);
+  }
+
+  // Compile d'avance tout ce qui apparaît en combat : effets, héros et squelettes, opaques
+  // et en fondu (mort d'un ennemi, caméra proche). Des copies cachées restent dans la scène
+  // pour que ces shaders ne soient jamais détruits puis recompilés en pleine action.
+  prewarm() {
+    const fade = (o) => o.traverse((m) => { if (!m.isMesh) return; for (const mat of [].concat(m.material)) { mat.transparent = true; mat.opacity = 0.5; mat.depthWrite = false; } });
+    const keep = [];
+    for (const name of ['knight', 'barbarian', 'mage', 'rogue', 'rogue_hooded', 'skel_minion', 'skel_warrior', 'skel_rogue', 'skel_mage']) {
+      if (!this.assets.gltf[name]) continue;
+      keep.push(this.assets.character(name));
+      const faded = this.assets.character(name); fade(faded); keep.push(faded);
+    }
+    for (const def of Object.values(ENEMIES)) {
+      for (const w of [def.weapon, def.shield]) {
+        if (!w) continue;
+        for (const f of [false, true]) {
+          const p = this.assets.prop(w[0]);
+          p.traverse((m) => { if (m.isMesh) m.material = Array.isArray(m.material) ? m.material.map((x) => x.clone()) : m.material.clone(); });
+          if (f) fade(p);
+          keep.push(p);
+        }
+      }
+    }
+    this.fx.prewarm(this.renderer, keep);
   }
 
   // ------------------------------------------------------------------ démarrage d'une partie

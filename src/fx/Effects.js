@@ -282,6 +282,36 @@ export class Effects {
     this.burst({ x: p.x, y: p.y + 0.8, z: p.z }, '#fff2c0', { count: 20, speed: radius * 2, size: 0.4, life: 0.5, gravity: 4, up: 3 });
   }
 
+  // Compile à l'avance les shaders de chaque effet : sans cela, le premier coup, sort ou
+  // impact de la partie gèle l'image le temps que le pilote graphique compile le programme.
+  // Un exemplaire caché de chaque effet reste dans la scène pour garder ses programmes vivants.
+  prewarm(renderer, extra = []) {
+    if (this.warm) this.scene.remove(this.warm);
+    const before = this.live.length;
+    const o = { x: 0, y: -9000, z: 0 };
+    const dummy = { position: new THREE.Vector3(0, -9000, 0) };
+    this.flashSphere(o, '#ffffff', 1, 1);
+    this.ring(o, '#ffffff');
+    this.beam(o, '#ffffff');
+    this.runeCircle(o, '#ffffff');
+    this.slash(o, 0, '#ffffff');
+    this.lightning(o, { x: 1, y: -9000, z: 0 }, '#ffffff');
+    this.bubble(dummy, '#ffffff');
+    this.telegraph(o, 2, 1);
+    this.meteor(o, '#ffffff', 1);
+    const made = this.live.splice(before);
+    this.warm = new THREE.Group();
+    this.warm.visible = false;
+    for (const e of made) { this.scene.remove(e.mesh); this.warm.add(e.mesh); }
+    for (const o of extra) { o.position.y = -9000; this.warm.add(o); }
+    this.scene.add(this.warm);
+    const r = renderer.renderer, prev = r.getRenderTarget();
+    // même cible que le rendu du jeu (le composeur) pour obtenir exactement les mêmes programmes
+    r.setRenderTarget(renderer.composer?.readBuffer ?? null);
+    try { r.compile(this.scene, renderer.camera); } catch (err) { console.warn('préchauffage', err); }
+    r.setRenderTarget(prev);
+  }
+
   update(dt, camera, viewportH) {
     for (let i = this.live.length - 1; i >= 0; i--) {
       const e = this.live[i];

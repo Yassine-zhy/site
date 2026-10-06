@@ -33,14 +33,23 @@ export class TouchControls {
     this.joy.addEventListener('pointercancel', end);
     // caméra : glisser sur le canevas
     const canvas = game.renderer.canvas;
-    let lookId = null, lx = 0, ly = 0;
-    canvas.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch' || lookId !== null) return; lookId = e.pointerId; lx = e.clientX; ly = e.clientY; });
-    canvas.addEventListener('pointermove', (e) => { if (e.pointerId !== lookId) return; input.touch.look.dx += (e.clientX - lx) * 1.6; input.touch.look.dy += (e.clientY - ly) * 1.6; lx = e.clientX; ly = e.clientY; });
-    const lend = (e) => { if (e.pointerId === lookId) lookId = null; };
+    let lookId = null, lx = 0, ly = 0, lt = 0, travel = 0;
+    canvas.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch' || lookId !== null) return; lookId = e.pointerId; lx = e.clientX; ly = e.clientY; lt = performance.now(); travel = 0; });
+    canvas.addEventListener('pointermove', (e) => { if (e.pointerId !== lookId) return; input.touch.look.dx += (e.clientX - lx) * 1.6; input.touch.look.dy += (e.clientY - ly) * 1.6; travel += Math.hypot(e.clientX - lx, e.clientY - ly); lx = e.clientX; ly = e.clientY; });
+    const lend = (e) => {
+      if (e.pointerId !== lookId) return;
+      lookId = null;
+      // une tape brève sur la scène attaque (comme un clic)
+      if (e.type === 'pointerup' && travel < 10 && performance.now() - lt < 350) input.mouse.clicked = true;
+    };
     canvas.addEventListener('pointerup', lend); canvas.addEventListener('pointercancel', lend);
     // boutons
     this.btns = h('div', { class: 'tbtns' });
     this.root.appendChild(this.btns);
+    // appui long sur les boutons et le joystick : pas de loupe, de menu ni de surbrillance
+    const noGesture = (e) => e.preventDefault();
+    this.btns.addEventListener('touchstart', noGesture, { passive: false });
+    this.joy.addEventListener('touchstart', noGesture, { passive: false });
     const cls = game.classDef;
     this.cdEls = {};
     const btn = (id, icon, x, y, big = false, onPress, onRelease, label) => {

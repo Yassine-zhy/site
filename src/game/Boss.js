@@ -8,7 +8,11 @@ export class Boss {
     this.game = game;
     this.respawnAt = 0;
     this.summoned = new Set();
-    this.aura = null;
+    // lumière permanente (éteinte hors combat) : ajouter/retirer une lampe forcerait
+    // la recompilation de tous les shaders de la scène, d'où un gel visible
+    this.aura = new THREE.PointLight('#9a4cff', 0, 30, 1.5);
+    game.scene.add(this.aura);
+    this.auraBoss = null;
   }
 
   find() { for (const e of this.game.enemies.map.values()) if (e.def.boss) return e; return null; }
@@ -152,11 +156,11 @@ export class Boss {
 
   updateAura(boss, dt) {
     const g = this.game;
-    if (!boss || !boss.alive) { if (this.aura) { this.aura.removeFromParent(); this.aura = null; } return; }
-    if (!this.aura) {
-      this.aura = new THREE.PointLight('#9a4cff', 30, 30, 1.5);
-      boss.object.add(this.aura);
-      this.aura.position.y = 5;
+    if (!boss || !boss.alive) { this.aura.intensity = 0; this.auraBoss = null; return; }
+    this.aura.intensity = 30;
+    this.aura.position.set(boss.position.x, boss.position.y + 5, boss.position.z);
+    if (this.auraBoss !== boss) {
+      this.auraBoss = boss;
       for (const m of boss.char.materials) if (m.name === 'Glow') { m.emissive.set('#c06bff'); m.emissiveIntensity = 5; m.userData.baseEmissive = m.emissive.clone(); m.userData.baseEmissiveIntensity = 5; }
     }
     if (Math.random() < dt * 25) {

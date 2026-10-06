@@ -175,7 +175,7 @@ export class Windows {
     const g = this.game, s = g.settings;
     const qsel = h('select', { id: 'opt-quality', style: { width: '100%', padding: '8px', background: 'rgba(0,0,0,0.35)', color: 'var(--parch)', border: '1px solid var(--line)', borderRadius: '4px', fontSize: '15px' } },
       ...Object.entries(QUALITY).map(([k, q]) => h('option', { value: k, selected: g.renderer.qualityName === k }, q.label)));
-    qsel.addEventListener('change', () => { g.renderer.setQuality(qsel.value); g.world.setQuality(g.renderer.quality); s.quality = qsel.value; Save.saveSettings(s); });
+    qsel.addEventListener('change', () => { g.renderer.setQuality(qsel.value); g.world.setQuality(g.renderer.quality); g.prewarm(); s.quality = qsel.value; Save.saveSettings(s); });
     const slider = (id, label, val, min, max, step, on) => {
       const out = h('span', { class: 'num' }, String(val));
       const inp = h('input', { id, type: 'range', min, max, step, value: val, style: { width: '100%' } });

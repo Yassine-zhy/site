@@ -58,6 +58,7 @@ async function main(hotData = {}) {
     audio.unlock();
     game.startHero(hero);
     await bootSystems(game);
+    game.prewarm();
     if (!game.save.hadSave) game.quests?.startIntro();
     game.save.soon(1);
   };
