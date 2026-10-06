@@ -541,6 +541,9 @@ export class Game {
 
   onDamageDealt(e, r, opts) {
     const pos = e.position.clone().setY(e.position.y + e.height + 0.3);
+    // vol de vie (objets mythiques)
+    const leech = this.hero?.stats.leech || 0;
+    if (leech > 0 && !this.player.dead) this.healSelf(Math.max(1, Math.round(r.amount * leech / 100)), false);
     this.ui.floatText(pos, String(r.amount), r.crit ? 'crit' : 'dmg', { scale: r.crit ? 1.1 : 1 });
     const ls = this.hero.hasBuff('rage')?.lifesteal;
     if (ls) this.healSelf(r.amount * ls, false);
@@ -569,11 +572,15 @@ export class Game {
     const gold = Math.round((2 + k.level * 1.5) * (k.elite ? 3 : 1) * (0.6 + Math.random() * 0.8)) * (k.boss ? 20 : 1);
     this.loot.drop(lp, { gold });
     if (Math.random() < (k.boss ? 1 : k.elite ? 0.8 : 0.16)) {
-      const it = generateItem(hero.classId, k.level, { rarity: k.boss ? 3 : k.elite ? Math.max(1, rollRarity(Math.random, 1)) : rollRarity() });
+      const it = generateItem(hero.classId, k.level, { rarity: k.boss ? (Math.random() < 0.12 ? 4 : 3) : k.elite ? Math.max(1, rollRarity(Math.random, 1)) : rollRarity() });
       this.loot.drop(lp, { item: it });
       if (k.boss) this.loot.drop(lp, { item: generateItem(hero.classId, k.level, { rarity: 2 }) });
     }
     if (Math.random() < 0.09) this.loot.drop(lp, { potion: Math.random() < 0.65 ? 'hp' : 'mp' });
+    // coffres : toujours sur un boss, parfois sur une élite ou un monstre
+    if (k.boss) this.loot.drop(lp, { chest: Math.random() < 0.15 ? 'mythique' : 'or' });
+    else if (k.elite && Math.random() < 0.18) this.loot.drop(lp, { chest: Math.random() < 0.25 ? 'fer' : 'bois' });
+    else if (!k.exp && Math.random() < 0.012) this.loot.drop(lp, { chest: 'bois' });
     this.quests?.onEvent('kill', k);
     this.worldState?.onKill(k);
     this.save?.soon();

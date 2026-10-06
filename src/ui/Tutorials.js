@@ -382,6 +382,48 @@ function expeditionTutorial(g, o, touch) {
   };
 }
 
+function treasureTutorial(g, o, touch) {
+  return {
+    lead: 'Des coffres sont cachés dans tout le monde : forêts, ruines, îlots flottants, sommets… Les plus précieux sont les plus difficiles à atteindre.',
+    body: [
+      h('ol', { class: 'tut-steps' },
+        step('Suivez la balise : elle mène au coffre le plus proche encore fermé (sa couleur indique sa valeur).'),
+        step('Approchez-vous et ', touch ? 'touchez « Interagir »' : ['appuyez sur ', kbd('E')], ' pour l’ouvrir.'),
+        step('La roulette tourne et s’arrête sur votre objet ; les chances de chaque rareté sont affichées.'),
+        step('Un coffre pillé se remplit à nouveau au bout d’un moment (15 à 90 minutes selon sa valeur).')),
+      h('p', { class: 'tut-note' }, 'Bois → fer → doré → mythique : plus le coffre est précieux, plus les objets rares sont probables.'),
+    ],
+    actions: [['Voir sur la carte', () => g.windows.open('map')]],
+  };
+}
+
+function openchestTutorial(g, o, touch) {
+  return {
+    lead: 'Tous les coffres comptent : ceux trouvés dans le monde, ceux lâchés par les boss et les élites, et ceux de la boutique.',
+    body: [
+      h('ol', { class: 'tut-steps' },
+        step('Ouvrez le sac (', touch ? 'bouton sac' : kbd('I'), ') : la partie « coffres » montre ceux que vous avez.'),
+        step('« Ouvrir » lance la roulette. « Acheter » en achète un avec votre or.'),
+        step('Lysa, sur la place du marché, vend aussi des coffres.')),
+    ],
+    actions: [['Ouvrir le sac', () => g.windows.open('inventory')]],
+  };
+}
+
+function waveTutorial(g, o, touch) {
+  return {
+    lead: 'De temps en temps, la Brume s’ouvre près des héros et lâche plusieurs vagues de monstres. Une annonce violette prévient quelques secondes avant.',
+    body: [
+      h('ol', { class: 'tut-steps' },
+        step('Restez près du portail violet (la balise le montre) : les monstres en sortent par vagues.'),
+        step('Éliminez chaque vague ; la jauge en haut de l’écran montre ce qu’il reste.'),
+        step('À la fin, un coffre apparaît pour chaque héros présent.')),
+      h('p', { class: 'tut-note' }, 'Les vagues sont plus faciles à plusieurs : les autres joueurs proches combattent avec vous. Elles n’apparaissent jamais dans le village.'),
+    ],
+    actions: [],
+  };
+}
+
 function levelTutorial(g, o) {
   return {
     lead: `Gagnez de l’expérience pour atteindre le niveau ${o.count}.`,
@@ -399,7 +441,7 @@ function returnTutorial(g, o, touch) {
   return t;
 }
 
-const BUILDERS = { rune: runeTutorial, ventus: runeTutorial, light: lightTutorial, beaconLit: lightTutorial, kill: killTutorial, talk: talkTutorial, visit: visitTutorial, glide: glideTutorial, echo: echoTutorial, loot: lootTutorial, boss: bossTutorial, level: levelTutorial, return: returnTutorial, collect: collectTutorial, waystone: waystoneTutorial, updraft: updraftTutorial, rings: ringsTutorial, elite: eliteTutorial, expedition: expeditionTutorial };
+const BUILDERS = { rune: runeTutorial, ventus: runeTutorial, light: lightTutorial, beaconLit: lightTutorial, kill: killTutorial, talk: talkTutorial, visit: visitTutorial, glide: glideTutorial, echo: echoTutorial, loot: lootTutorial, boss: bossTutorial, level: levelTutorial, return: returnTutorial, collect: collectTutorial, waystone: waystoneTutorial, updraft: updraftTutorial, rings: ringsTutorial, elite: eliteTutorial, expedition: expeditionTutorial, treasure: treasureTutorial, openchest: openchestTutorial, wave: waveTutorial };
 
 export function hasTutorial(o) { return !!(o && BUILDERS[o.type]); }
 

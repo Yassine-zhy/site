@@ -3,6 +3,8 @@ import { BEACONS, ISLETS, MOUNTAIN, RUINS, LAKE, FOREST, SPAWN_ZONES, ENEMIES, G
 import { BOSS_KITS } from './Boss.js';
 import { ITEMS_GATHER, RING_SETS } from './Gathering.js';
 import { EXP_PORTAL } from './Expedition.js';
+import { TREASURE_SPOTS, CHEST_TIERS } from './Chests.js';
+import { RARITY } from './Items.js';
 import { generateItem } from './Items.js';
 import { RUNE_SPELLS } from './Runes.js';
 import { hasTutorial } from '../ui/Tutorials.js';
@@ -44,7 +46,10 @@ export function objectiveText(o) {
     case 'visit': return `Atteindre ${PLACES[o.place].name}`;
     case 'glide': return 'Planer avec la paravoile (Espace deux fois)';
     case 'echo': return 'Graver un écho (touche T)';
-    case 'loot': return `Récupérer ${o.count} objet${o.count > 1 ? 's' : ''} sur les squelettes`;
+    case 'loot': return o.minRarity ? `Obtenir ${o.count > 1 ? o.count + ' objets' : 'un objet'} ${RARITY[o.minRarity].name.toLowerCase()} ou mieux` : `Récupérer ${o.count} objet${o.count > 1 ? 's' : ''} sur les squelettes`;
+    case 'treasure': { const sp = o.spot && TREASURE_SPOTS.find((t) => t.id === o.spot); return sp ? `Ouvrir le coffre caché : ${sp.name}` : `Trouver et ouvrir ${o.count} coffre${o.count > 1 ? 's' : ''} caché${o.count > 1 ? 's' : ''}`; }
+    case 'openchest': return `Ouvrir ${o.count} coffre${o.count > 1 ? 's' : ''}${o.tier ? ' (' + CHEST_TIERS[o.tier].name.toLowerCase() + ' ou mieux)' : ''}`;
+    case 'wave': return `Repousser ${o.count > 1 ? o.count + ' vagues' : 'une vague'} de la Brume`;
     case 'boss': return `Terrasser ${BOSS_KITS[o.boss || 'roi']?.name || 'le Roi Sans Lumière'}`;
     case 'collect': return `Récolter ${o.count} ${ITEMS_GATHER[o.item]?.plural || 'ressources'}`;
     case 'waystone': return `Éveiller ${o.count} pierre${o.count > 1 ? 's' : ''} de passage`;
@@ -102,11 +107,19 @@ const SIDE_LIST = [
   { id: 's_bapteme', giver: 'rhea', title: 'Baptême de l’air', desc: 'Saute, ouvre ta paravoile, puis entre dans une colonne de vent : elle te portera vers les nuages.', objectives: [{ type: 'glide' }, { type: 'updraft' }], rewards: { xp: 200, gold: 40 } },
   { id: 's_anneaux', giver: 'rhea', lvl: 3, title: 'Les anneaux du vent', desc: 'Au-dessus du village flottent des anneaux de vent. Monte dans la colonne près du Pic, puis plane à travers eux.', objectives: [{ type: 'rings', set: 'village', count: 5 }], rewards: { xp: 600, gold: 90, item: 1 } },
   { id: 's_course', giver: 'rhea', req: ['m9'], title: 'La course des nuages', desc: 'Entre l’Îlot du Relais et l’Îlot du Vent Sec, j’ai suspendu cinq anneaux au-dessus du vide. Traverse-les tous !', objectives: [{ type: 'rings', set: 'ambre', count: 5 }], rewards: { xp: 1600, gold: 200, item: 2 } },
+  // Trésors
+  { id: 's_carte', giver: 'pip', lvl: 2, title: 'La carte au trésor', desc: 'J’ai dessiné une carte avec des croix partout : des coffres cachés dans tout l’archipel ! Trouve-en trois. La balise dorée te guidera vers le plus proche.', objectives: [{ type: 'treasure', count: 3 }], rewards: { xp: 450, gold: 80, chest: 'fer' } },
+  { id: 's_celestes', giver: 'merchant', req: ['m4'], title: 'Les coffres célestes', desc: 'On raconte que des coffres dorment sur les îlots flottants. Celui de l’Îlot du Trésor serait plein d’or ! Ouvrez-le, et celui de l’Îlot du Pèlerin.', objectives: [{ type: 'treasure', spot: 'tresor' }, { type: 'treasure', spot: 'pelerin' }], rewards: { xp: 900, gold: 150, chest: 'or' } },
+  { id: 's_chasseur', giver: 'merchant', lvl: 3, title: 'Chasseur de trésors', desc: 'Ouvrez cinq coffres, n’importe lesquels : ceux du monde, ceux des boss ou ceux de ma boutique. Je vous en offrirai un autre !', objectives: [{ type: 'openchest', count: 5 }], rewards: { xp: 500, gold: 60, chest: 'fer' }, repeat: true },
+  { id: 's_collection', giver: 'smith', lvl: 6, title: 'Pièce de collection', desc: 'Montre-moi une arme digne de ce nom : un objet épique ou mieux. Les coffres dorés et les boss en donnent souvent.', objectives: [{ type: 'loot', minRarity: 2, count: 1 }], rewards: { xp: 800, gold: 120, chest: 'fer' } },
+  { id: 's_legende', giver: 'smith', req: ['m8'], title: 'L’objet de légende', desc: 'Un objet légendaire… Je n’en ai vu que deux dans ma vie. Trouve-m’en un, et je te ferai un cadeau.', objectives: [{ type: 'loot', minRarity: 3, count: 1 }], rewards: { xp: 2000, gold: 300, chest: 'or' } },
+  { id: 's_vagues', giver: 'guard', req: ['m3'], title: 'Repousser la Brume', desc: 'Parfois, la Brume se rassemble et lâche des vagues de monstres d’un coup. Quand une vague surgit près de vous, tenez bon jusqu’à la dernière !', objectives: [{ type: 'wave', count: 1 }], rewards: { xp: 700, gold: 100, chest: 'fer' }, repeat: true },
   // Terres d'Ambre
   { id: 's_pari', giver: 'kessa', req: ['m9'], title: 'Le pari de Kessa', desc: 'Je te parie que tu n’arriveras pas au sommet de la Grande Mesa. Il y a une rampe au sud-ouest… si tu la trouves.', objectives: [{ type: 'visit', place: 'mesa' }], rewards: { xp: 900, gold: 150 } },
   { id: 's_mine', giver: 'kessa', req: ['m10'], title: 'La mine hantée', desc: 'Ma mine est infestée ! Débarrasse la Gorge Rouge des squelettes et ramène ce qu’ils ont volé.', objectives: [{ type: 'kill', zone: 'ambre_gorge', count: 8 }, { type: 'loot', count: 2 }], rewards: { xp: 1700, gold: 240, item: 2 } },
   { id: 's_tarek', giver: 'tarek', req: ['m9'], title: 'La légende du feu', desc: 'Les anciens traçaient Ignis, le triangle de feu, pour éloigner la Brume. Montrez-moi votre main : un tracé net, au moins 60 %.', objectives: [{ type: 'rune', rune: 'ignis', minScore: 0.6, count: 1 }], rewards: { xp: 800, gold: 100 } },
   { id: 's_ambrephare', giver: 'tarek', req: ['m10'], title: 'Le miel des mesas', desc: 'Le Phare d’Ambre brillait comme du miel. Rendez-lui sa lumière.', objectives: [{ type: 'light', beacon: 'ambre', count: 20 }], rewards: { xp: 1600, gold: 200 }, repeat: true },
+  { id: 's_mesa_tresor', giver: 'kessa', req: ['m10'], title: 'Le trésor de la mesa', desc: 'Mon grand-père a caché un coffre doré tout en haut de la Grande Mesa. Il est à toi si tu y arrives !', objectives: [{ type: 'treasure', spot: 'mesa' }], rewards: { xp: 1500, gold: 220 } },
   { id: 's_mages', giver: 'tarek', req: ['m10'], title: 'Les mages des sables', desc: 'Des mages squelettes invoquent des pillards dans les mesas. Taisez leurs chants.', objectives: [{ type: 'kill', enemy: 'ambermage', count: 5 }], rewards: { xp: 1500, gold: 180, item: 2 } },
   // Cimes de Givre
   { id: 's_chasse', giver: 'bjorn', req: ['m12'], title: 'La chasse', desc: 'Squelettes de givre. Trop nombreux. Chasse-en huit.', objectives: [{ type: 'kill', enemy: 'frostling', count: 8 }], rewards: { xp: 1600, gold: 160, item: 1 } },
@@ -114,6 +127,7 @@ const SIDE_LIST = [
   { id: 's_lanternes', giver: 'bjorn', req: ['m12'], title: 'Les lanternes du passage', desc: 'Les lanternes de l’Îlot des Lanternes guident les voyageurs. Va voir si elles brillent encore.', objectives: [{ type: 'visit', place: 'lanternes' }, { type: 'visit', place: 'cristal' }], rewards: { xp: 1300, gold: 120 } },
   { id: 's_prieres', giver: 'neige', req: ['m12'], title: 'Prières gelées', desc: 'Au Sanctuaire, on priait en traçant Vita, le cercle de vie. Tracez-le deux fois pour réchauffer les cœurs.', objectives: [{ type: 'rune', rune: 'vita', count: 2 }], rewards: { xp: 1200, gold: 120 } },
   { id: 's_flamme', giver: 'neige', req: ['m13'], title: 'La flamme bleue', desc: 'La flamme bleue du Phare du Givre doit grandir encore.', objectives: [{ type: 'light', beacon: 'givre', count: 20 }], rewards: { xp: 2000, gold: 220 }, repeat: true },
+  { id: 's_cime', giver: 'neige', req: ['m13'], title: 'Le coffre de la Reine', desc: 'Au sommet du Mont Givrecroc repose le coffre mythique de la Reine de Givre. Peu en sont revenus… mais vous n’êtes pas « peu ».', objectives: [{ type: 'treasure', spot: 'cime' }], rewards: { xp: 3000, gold: 400 } },
   { id: 's_sorciers', giver: 'neige', req: ['m13'], title: 'Les sorciers de givre', desc: 'Les sorciers de givre gardent les pentes du Mont Givrecroc. Brisez leur cercle.', objectives: [{ type: 'kill', enemy: 'frostmage', count: 5 }, { type: 'elite', count: 1 }], rewards: { xp: 2600, gold: 260, item: 3 } },
 ];
 const SIDE = Object.fromEntries(SIDE_LIST.map((q) => [q.id, q]));
@@ -206,7 +220,10 @@ export class Quests {
       case 'visit': return type === 'visit' && d.place === o.place;
       case 'glide': return type === 'glide';
       case 'echo': return type === 'echo';
-      case 'loot': return type === 'loot';
+      case 'loot': return type === 'loot' && (!o.minRarity || (d.item?.rarity ?? 0) >= o.minRarity);
+      case 'treasure': return type === 'treasure' && (!o.spot || o.spot === d.id);
+      case 'openchest': return type === 'openchest' && (!o.tier || Object.keys(CHEST_TIERS).indexOf(d.tier) >= Object.keys(CHEST_TIERS).indexOf(o.tier));
+      case 'wave': return type === 'wave';
       case 'boss': return type === 'kill' && d.boss && (!o.boss || ENEMIES[d.type]?.bossId === o.boss);
       case 'elite': return type === 'kill' && !!d.elite;
       case 'collect': return type === 'collect' && d.item === o.item;
@@ -255,6 +272,7 @@ export class Quests {
       if (g.hero.addItem(it)) g.ui.toast(`Récompense : <span class="r${it.rarity}">${escapeHtml(it.name)}</span>`, { time: 4 });
     }
     if (r.potions) g.hero.potions.hp = (g.hero.potions.hp || 0) + r.potions;
+    if (r.chest) { g.hero.chests[r.chest] = (g.hero.chests[r.chest] || 0) + 1; g.ui.toast(`Récompense : <b style="color:${CHEST_TIERS[r.chest].color}">${CHEST_TIERS[r.chest].name}</b> (à ouvrir dans le sac)`, { time: 4 }); }
     if (r.xp) g.gainXp(r.xp);
     if (q.id.startsWith('m')) {
       const idx = MAIN.findIndex((m) => m.id === q.id);
@@ -335,6 +353,11 @@ export class Quests {
         return { x: r.x, z: r.z, y: r.y, color: '#ffe08a', label: 'Anneau de vent', ring: true };
       }
       case 'expedition': return { x: EXP_PORTAL.x, z: EXP_PORTAL.z, color: '#c9a2ff', label: 'Portail des Expéditions' };
+      case 'treasure': {
+        const sp = o.spot ? g.chests?.spots.find((t) => t.id === o.spot) : g.chests?.nearestSpot(pos);
+        return sp && { x: sp.x, z: sp.z, y: sp.minY, color: CHEST_TIERS[sp.tier].color, label: CHEST_TIERS[sp.tier].name };
+      }
+      case 'wave': { const w = g.waves?.current; return w && { x: w.x, z: w.z, color: '#c78bff', label: 'Vague de la Brume' }; }
       default: return null;
     }
   }
@@ -373,7 +396,7 @@ export class Quests {
         h('div', { style: { fontFamily: 'var(--font-body)', fontSize: '15px', lineHeight: '1.45', margin: '4px 0 6px', color: 'var(--parch)' } }, q.desc || ''),
         ...q.objectives.map((o) => this.objectiveRow(win, o, '◆ ' + o.text + (o.count > 1 && o.type !== 'light' ? ` (${Math.floor(o.have)}/${o.count})` : o.type === 'light' ? ` (${o.have.toFixed(1)}/${o.count} %)` : ''))),
         q.state === 'ready' ? this.objectiveRow(win, this.returnObjective(q), '◆ Retourner voir ' + this.npcName(q.giver)) : null,
-        h('div', { class: 'istats', style: { marginTop: '6px' } }, `Récompense : ${q.rewards?.xp || 0} xp · ${q.rewards?.gold || 0} or${q.rewards?.item !== undefined ? ' · un objet' : ''}`),
+        h('div', { class: 'istats', style: { marginTop: '6px' } }, `Récompense : ${q.rewards?.xp || 0} xp · ${q.rewards?.gold || 0} or${q.rewards?.item !== undefined ? ' · un objet' : ''}${q.rewards?.chest ? ' · ' + CHEST_TIERS[q.rewards.chest].name.toLowerCase() : ''}`),
         q.state === 'ready' ? h('div', { class: 'istats', style: { color: 'var(--good)' } }, `Prêt à rendre à ${this.npcName(q.giver)}.`) : null,
       ));
     }

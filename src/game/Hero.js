@@ -1,5 +1,5 @@
 import { CLASSES, xpForLevel, MAX_LEVEL } from '../config.js';
-import { generateItem, potion, itemPower } from './Items.js';
+import { generateItem, potion, itemPower, levelFactor } from './Items.js';
 
 // Données persistantes du héros : niveau, statistiques, inventaire, équipement.
 export class Hero {
@@ -12,6 +12,7 @@ export class Hero {
     this.inventory = [];
     this.equip = { weapon: null, armor: null, relic: null };
     this.potions = { hp: 3, mp: 2 };
+    this.chests = {}; // coffres non ouverts, par type
     this.buffs = [];
     this.kills = 0;
     this.deaths = 0;
@@ -41,13 +42,17 @@ export class Hero {
     };
     for (const it of Object.values(this.equip)) {
       if (!it) continue;
-      for (const [k, v] of Object.entries(it.stats)) s[k] = (s[k] || 0) + v;
+      // un objet de niveau supérieur ne donne que la puissance de votre niveau (le vol de vie reste)
+      const f = levelFactor(it.level, this.level);
+      for (const [k, v] of Object.entries(it.stats)) s[k] = (s[k] || 0) + (k === 'leech' ? v : v * f);
     }
     // buffs temporaires
     for (const b of this.buffs) if (b.stats) for (const [k, v] of Object.entries(b.stats)) {
       if (k.endsWith('%')) s[k.slice(0, -1)] *= 1 + v / 100; else s[k] = (s[k] || 0) + v;
     }
     s.atk = Math.round(s.atk); s.def = Math.round(s.def);
+    for (const k of ['hp', 'mp', 'crit', 'haste', 'regen', 'rune']) s[k] = Math.round(s[k] * 10) / 10;
+    s.hp = Math.round(s.hp); s.mp = Math.round(s.mp);
     this.stats = s;
     if (this.hp !== undefined) { this.hp = Math.min(this.hp, s.hp); this.mp = Math.min(this.mp, s.mp); }
     return s;
@@ -88,7 +93,8 @@ export class Hero {
 
   addItem(it) {
     if (it.kind === 'potion') { this.potions[it.type] = (this.potions[it.type] || 0) + (it.count || 1); return true; }
-    if (this.inventory.length >= 24) return false;
+    if (it.kind === 'chest') { this.chests[it.tier] = (this.chests[it.tier] || 0) + (it.count || 1); return true; }
+    if (this.inventory.length >= 30) return false;
     this.inventory.push(it);
     return true;
   }
@@ -110,7 +116,8 @@ export class Hero {
 
   isUpgrade(it) {
     if (!it || it.kind !== 'gear') return false;
-    return itemPower(it) > itemPower(this.equip[it.slot]);
+    const cur = this.equip[it.slot];
+    return itemPower(it) * levelFactor(it.level, this.level) > itemPower(cur) * levelFactor(cur?.level, this.level);
   }
 
   sellItem(id) {
@@ -129,7 +136,7 @@ export class Hero {
       v: 1, classId: this.classId, name: this.name, level: this.level, xp: this.xp, gold: this.gold,
       inventory: this.inventory, equip: this.equip, potions: this.potions, kills: this.kills, deaths: this.deaths,
       light: this.light, runesCast: this.runesCast, bestRune: this.bestRune, title: this.title, discovered: this.discovered,
-      hp: this.hp, mp: this.mp, created: this.created, playTime: this.playTime,
+      hp: this.hp, mp: this.mp, created: this.created, playTime: this.playTime, chests: this.chests, pity: this.pity || 0,
     };
   }
 
@@ -139,6 +146,7 @@ export class Hero {
       level: d.level || 1, xp: d.xp || 0, gold: d.gold ?? 25, inventory: d.inventory || [], equip: d.equip || h.equip,
       potions: d.potions || h.potions, kills: d.kills || 0, deaths: d.deaths || 0, light: d.light || 0, runesCast: d.runesCast || 0,
       bestRune: d.bestRune || 0, title: d.title || '', discovered: d.discovered || {}, created: d.created || Date.now(), playTime: d.playTime || 0,
+      chests: d.chests || {}, pity: d.pity || 0,
     });
     h.buffs = [];
     h.recompute();

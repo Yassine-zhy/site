@@ -1,5 +1,6 @@
 import { h, svgIcon } from './dom.js';
-import { RARITY, STAT_LABELS, itemPower } from '../game/Items.js';
+import { RARITY, STAT_LABELS, itemPower, levelFactor } from '../game/Items.js';
+import { CHEST_TIERS, TIER_ORDER, chestPrice } from '../game/Chests.js';
 import { CLASSES, BEACONS, xpForLevel } from '../config.js';
 import { QUALITY } from '../engine/Renderer.js';
 import { MapView } from './MapView.js';
@@ -71,7 +72,8 @@ export class Windows {
     const cls = CLASSES[hero.classId];
     let sel = null;
     const detail = h('div', { class: 'detail' }, h('div', { class: 'istats' }, 'Choisissez un objet pour le comparer.'));
-    const statLine = (it) => Object.entries(it.stats).map(([k, v]) => `${STAT_LABELS[k] || k} +${v}`).join(' · ');
+    // valeurs effectives : un objet de niveau supérieur est ramené au niveau du héros
+    const statLine = (it) => { const f = levelFactor(it.level, hero.level); return Object.entries(it.stats).map(([k, v]) => `${STAT_LABELS[k] || k} +${k === 'leech' ? v : Math.round(v * f)}`).join(' · '); };
     const icon = (it) => {
       const ic = h('div', { class: 'ic r' + (it?.rarity ?? 0) });
       if (it?.model) { const url = g.icons.item(it.model); if (url) ic.appendChild(h('img', { src: url, alt: '' })); }
@@ -81,23 +83,35 @@ export class Windows {
       detail.innerHTML = '';
       if (!it) return;
       const cur = hero.equip[it.slot];
-      const diff = equipped ? null : itemPower(it) - itemPower(cur);
+      const diff = equipped ? null : itemPower(it) * levelFactor(it.level, hero.level) - itemPower(cur) * levelFactor(cur?.level, hero.level);
       detail.append(
         h('div', { class: 'iname r' + it.rarity }, it.name),
         h('div', { class: 'istats' }, `${RARITY[it.rarity].name} · ${SLOT_NAMES[it.slot]} · niveau ${it.level}`),
         h('div', { class: 'istats', style: { marginTop: '4px' } }, statLine(it)),
+        it.level > hero.level ? h('div', { class: 'istats', style: { color: 'var(--muted)' } }, `Ramené à votre niveau (${hero.level}) : il gagnera en puissance avec vous.`) : null,
         diff !== null ? h('div', { class: 'istats', style: { color: diff >= 0 ? 'var(--good)' : 'var(--bad)', marginTop: '4px' } }, diff >= 0 ? `▲ +${Math.round(diff)} puissance par rapport à l'équipement actuel` : `▼ ${Math.round(diff)} puissance`) : null,
         equipped ? null : h('div', { class: 'row' },
           h('button', { class: 'btn small', onclick: () => { hero.equipItem(it.id); g.audio?.play('pickup'); g.save?.soon(); this.refresh(); } }, 'Équiper'),
-          g.npcs?.nearMerchant?.() ? h('button', { class: 'btn small ghost', onclick: () => { const v = hero.sellItem(it.id); g.ui.toast(`Vendu pour <b>${v} or</b>`); g.audio?.play('coin'); g.save?.soon(); this.refresh(); } }, `Vendre (${Math.round(it.value * 0.5)} or)`) : h('span', { class: 'istats', style: { alignSelf: 'center' } }, 'Vente possible auprès de Brom le forgeron.')),
+          h('button', { class: 'btn small ghost', onclick: () => { const v = hero.sellItem(it.id); g.ui.toast(`Vendu pour <b>${v} or</b>`); g.audio?.play('coin'); g.save?.soon(); this.refresh(); } }, `Vendre (${Math.round(it.value * 0.5)} or)`)),
       );
     };
+    // coffres : ouvrir ceux qu'on possède, en acheter d'autres
+    const chests = h('div', { class: 'chest-shop' },
+      h('div', { class: 'lab sc', style: { color: 'var(--muted)', fontSize: '12px', margin: '4px 0 4px' } }, `coffres · vous avez ${hero.gold} or`),
+      ...TIER_ORDER.map((tier) => {
+        const T = CHEST_TIERS[tier], n = hero.chests?.[tier] || 0, price = chestPrice(tier, hero.level);
+        return h('div', { class: 'chest-row', style: { '--cc': T.color } },
+          h('span', { class: 'chest-dot' }), h('span', { class: 'chest-name' }, T.name, h('small', {}, ` · ${n} en stock`)),
+          h('button', { class: 'btn small', disabled: !n, onclick: () => g.chests.roll(tier, { fromStock: true }) }, 'Ouvrir'),
+          h('button', { class: 'btn small ghost', onclick: () => { if (g.chests.buy(tier)) this.refresh(); } }, `Acheter · ${price} or`));
+      }));
     const equip = h('div', { class: 'equip' },
       ...['weapon', 'armor', 'relic'].map((s) => {
         const it = hero.equip[s];
         const el = h('div', { class: 'eslot interactive', onclick: () => it && showDetail(it, true) }, icon(it), h('div', {}, h('div', { class: 'lab' }, SLOT_NAMES[s]), it ? h('div', { class: 'iname r' + it.rarity }, it.name) : h('div', { class: 'istats' }, '— vide —'), it ? h('div', { class: 'istats' }, statLine(it)) : null));
         return el;
       }),
+      chests,
       h('div', { class: 'charstats' },
         h('span', {}, 'Niveau'), h('span', {}, `${hero.level} (${hero.xp}/${xpForLevel(hero.level)} xp)`),
         h('span', {}, 'Vie'), h('span', {}, String(hero.stats.hp)), h('span', {}, 'Éther'), h('span', {}, String(hero.stats.mp)),
@@ -110,7 +124,7 @@ export class Windows {
         h('span', {}, 'Lumière offerte'), h('span', {}, String(Math.round(hero.light))),
       ));
     const grid = h('div', { class: 'grid' });
-    for (let i = 0; i < 24; i++) {
+    for (let i = 0; i < 30; i++) {
       const it = hero.inventory[i];
       if (!it) { grid.appendChild(h('div', { class: 'item' }, h('div', { class: 'ic' }))); continue; }
       const el = h('div', { class: 'item interactive' + (hero.isUpgrade(it) ? ' up' : ''), title: it.name, onclick: () => { grid.querySelectorAll('.sel').forEach((x) => x.classList.remove('sel')); el.classList.add('sel'); sel = it; showDetail(it, false); } }, icon(it));
@@ -119,7 +133,7 @@ export class Windows {
     const potions = h('div', { class: 'row', style: { display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' } },
       h('button', { class: 'btn small ghost', onclick: () => { if ((hero.potions.mp || 0) > 0 && hero.mp < hero.stats.mp) { hero.potions.mp--; hero.mp = Math.min(hero.stats.mp, hero.mp + hero.stats.mp * 0.5); g.audio?.play('potion'); this.refresh(); } } }, `Boire un élixir d’éther (${hero.potions.mp || 0})`));
     void sel;
-    return this.frame(`${hero.name} — ${cls.name}`, h('div', { class: 'inv' }, equip, h('div', {}, h('div', { class: 'lab sc', style: { color: 'var(--muted)', fontSize: '12px', marginBottom: '6px' } }, `sac · ${hero.inventory.length}/24`), grid, detail, potions)));
+    return this.frame(`${hero.name} — ${cls.name}`, h('div', { class: 'inv' }, equip, h('div', {}, h('div', { class: 'lab sc', style: { color: 'var(--muted)', fontSize: '12px', marginBottom: '6px' } }, `sac · ${hero.inventory.length}/30`), grid, detail, potions)));
   }
 
   // ------------------------------------------------------------ carte

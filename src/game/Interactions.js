@@ -1,13 +1,5 @@
 import * as THREE from 'three';
-import { ISLETS } from '../config.js';
-import { generateItem } from './Items.js';
-
-const CHESTS = [
-  { id: 'tresor', islet: 1, gold: 180, rarity: 3, dx: 2, dz: -3 },
-  { id: 'suspendu', islet: 2, gold: 60, rarity: 1, dx: -3, dz: 2 },
-  { id: 'pelerin', islet: 3, gold: 140, rarity: 2, dx: 1, dz: 3 },
-  { id: 'eclat', islet: 4, gold: 90, rarity: 2, dx: 0, dz: 0 },
-];
+import { CHEST_TIERS } from './Chests.js';
 
 // Interactions contextuelles (touche E) : habitants, échos, phares, coffres.
 export class Interactions {
@@ -15,17 +7,6 @@ export class Interactions {
     this.game = game;
     this.channel = null;
     this.beaconCd = {};
-    this.chests = CHESTS.map((c) => {
-      const isl = ISLETS[c.islet];
-      const x = isl.x + c.dx, z = isl.z + c.dz;
-      const y = game.world.terrain.heightAt(x, z) ?? isl.baseY;
-      const obj = game.assets.prop('chest_gold');
-      obj.position.set(x, y, z);
-      obj.rotation.y = Math.random() * Math.PI * 2;
-      game.scene.add(obj);
-      game.world.colliders.addCircle(x, z, 1.1, y - 1, y + 2, 'prop');
-      return { ...c, x, y, z, obj };
-    });
   }
 
   target() {
@@ -43,10 +24,8 @@ export class Interactions {
       : { kind: 'ghost', key: ec.key, text: `Revoir la chute de ${ec.it.g.n}` };
     const ws = g.waystones?.nearest(pos, 3.6);
     if (ws) return { kind: 'waystone', ws, text: g.waystones.known(ws.id) ? `Voyager · ${ws.name}` : `Éveiller la pierre de passage · ${ws.name}` };
-    for (const c of this.chests) {
-      if (g.hero.discovered['chest:' + c.id]) continue;
-      if (Math.hypot(pos.x - c.x, pos.z - c.z) < 3) return { kind: 'chest', chest: c, text: 'Ouvrir le coffre' };
-    }
+    const sp = g.chests?.spotNear(pos);
+    if (sp) return { kind: 'chest', spot: sp, text: `Ouvrir · ${CHEST_TIERS[sp.tier].name}` };
     const bc = g.world.beacons?.nearest(pos, 9);
     if (bc) {
       const i = g.world.beacons.list.indexOf(bc);
@@ -66,27 +45,12 @@ export class Interactions {
     if (t.kind === 'npc') g.dialogue.open(t.npc);
     else if (t.kind === 'echo') g.echoes.resonate(t.key);
     else if (t.kind === 'ghost') g.echoes.playGhost(t.key);
-    else if (t.kind === 'chest') this.openChest(t.chest);
+    else if (t.kind === 'chest') this.startTask({ dur: 0.9, label: 'Ouverture', anim: 'Interact', onDone: () => g.chests.openSpot(t.spot) });
     else if (t.kind === 'beacon') this.startChannel(t);
     else if (t.kind === 'waystone') g.waystones.open(t.ws);
     else if (t.kind === 'expexit') g.expedition.leave();
     else if (t.kind === 'expportal') g.windows.open('party');
     else if (t.kind === 'expobj') this.startTask({ dur: 2.2, label: t.text, onDone: () => g.expedition.completeObject(t.i) });
-  }
-
-  openChest(c) {
-    const g = this.game;
-    g.hero.discovered['chest:' + c.id] = true;
-    const p = new THREE.Vector3(c.x, c.y, c.z);
-    g.fx.beam(p, '#ffd36b', { height: 20, radius: 1.5, life: 1.2 });
-    g.fx.burst(p.clone().setY(c.y + 1), '#ffe08a', { count: 50, speed: 7, size: 0.35, life: 1, gravity: 6, up: 6 });
-    g.audio?.play('epic', p);
-    g.loot.drop(p, { gold: c.gold });
-    g.loot.drop(p, { item: generateItem(g.hero.classId, Math.max(g.hero.level, 4), { rarity: c.rarity }) });
-    g.loot.drop(p, { potion: 'hp' });
-    c.obj.scale.setScalar(0.001);
-    g.ui.announce('Coffre céleste', 'Le vent garde bien ses trésors…', 2.5);
-    g.save?.soon();
   }
 
   startChannel(t) {
@@ -103,7 +67,7 @@ export class Interactions {
   startTask(task) {
     const g = this.game, p = g.player;
     this.task = { t: 0, start: p.position.clone(), ...task };
-    p.char.playLoop('Spellcasting', { full: true });
+    p.char.playLoop(task.anim || 'Spellcasting', { full: true });
     p.rooted = task.dur + 0.1;
     g.audio?.play('cast', p.position);
   }
@@ -120,7 +84,6 @@ export class Interactions {
     const g = this.game;
     if (this.task) this.updateTask(dt);
     for (const k of Object.keys(this.beaconCd)) this.beaconCd[k] = Math.max(0, this.beaconCd[k] - dt);
-    for (const c of this.chests) if (!g.hero.discovered['chest:' + c.id] && Math.random() < dt * 3) g.fx.sparkle(new THREE.Vector3(c.x, c.y + 0.5, c.z), '#ffe08a', 1, 1, 0.2);
     const ch = this.channel;
     if (!ch) return;
     const p = g.player;

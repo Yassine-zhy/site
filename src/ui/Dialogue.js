@@ -1,3 +1,4 @@
+import { CHEST_TIERS, TIER_ORDER, chestPrice } from '../game/Chests.js';
 import { h } from './dom.js';
 import { FALLBACK_LINES } from '../ai/Mind.js';
 import { cleanText } from '../net/Net.js';
@@ -181,6 +182,15 @@ export class Dialogue {
     });
     buy('hp', 15, 'un élixir de vie');
     buy('mp', 15, 'un élixir d’éther');
+    // coffres à ouvrir tout de suite (roulette)
+    for (const tier of TIER_ORDER) {
+      const T = CHEST_TIERS[tier], price = chestPrice(tier, hero.level);
+      this.option(`Acheter un <b style="color:${T.color}">${T.name}</b> — <span class="gold">${price} or</span>`, () => {
+        if (!g.chests.buy(tier)) { this.say('Il vous manque quelques pièces… Les squelettes en laissent tomber, vous savez.'); return; }
+        this.close(true);
+        g.chests.roll(tier, { fromStock: true, source: 'boutique de Lysa' });
+      });
+    }
   }
 
   async oracleQuest() {

@@ -21,7 +21,7 @@
   --mist: #8e7cc3;
   --good: #7ee0a8;
   --bad: #ff6b5e;
-  --r-common: #d9d2c3; --r-rare: #5fa8ff; --r-epic: #b67bff; --r-legend: #ffa53d;
+  --r-common: #d9d2c3; --r-rare: #5fa8ff; --r-epic: #b67bff; --r-legend: #ffa53d; --r-myth: #ff4f7b;
   --font-display: 'Uncial Antiqua', 'Alegreya', Georgia, serif;
   --font-body: 'Alegreya', Georgia, 'Times New Roman', serif;
   --font-ui: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
@@ -314,6 +314,9 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
 .item.up::after { content: '▲'; position: absolute; right: 3px; top: 1px; color: var(--good); font-size: 11px; text-shadow: 0 1px 2px #000; }
 .item.sel .ic { outline: 2px solid var(--gold); }
 .r0 { color: var(--r-common); } .r1 { color: var(--r-rare); } .r2 { color: var(--r-epic); } .r3 { color: var(--r-legend); }
+.r4 { color: var(--r-myth); text-shadow: 0 0 8px rgba(255, 79, 123, 0.55); }
+.ic.r4 { border-color: rgba(255, 79, 123, 0.9); box-shadow: inset 0 0 16px rgba(255, 79, 123, 0.45), 0 0 10px rgba(255, 79, 123, 0.3); animation: mythGlow 2.4s ease-in-out infinite; }
+@keyframes mythGlow { 50% { box-shadow: inset 0 0 22px rgba(255, 79, 123, 0.6), 0 0 16px rgba(255, 140, 90, 0.45); } }
 .ic.r1 { border-color: rgba(95, 168, 255, 0.6); box-shadow: inset 0 0 12px rgba(95, 168, 255, 0.25); }
 .ic.r2 { border-color: rgba(182, 123, 255, 0.7); box-shadow: inset 0 0 12px rgba(182, 123, 255, 0.3); }
 .ic.r3 { border-color: rgba(255, 165, 61, 0.8); box-shadow: inset 0 0 14px rgba(255, 165, 61, 0.35); }
@@ -498,3 +501,39 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
 .opt-sec { font-family: var(--font-sc); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 16px 0 4px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
 .opt-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .fps-counter { position: absolute; left: calc(14px + var(--safe-l)); bottom: calc(8px + var(--safe-b)); font: 600 12px/1 var(--font-ui, sans-serif); color: #9fe8b0; text-shadow: 0 1px 2px #000; pointer-events: none; }
+/* ouverture de coffre (roulette) */
+.case-window { width: min(820px, calc(100% - 24px)); }
+.case-head { font-family: var(--font-display); font-size: 22px; margin-bottom: 8px; }
+.case-src { font-family: var(--font-body); font-size: 14px; color: var(--muted); }
+.case-view { position: relative; overflow: hidden; height: 150px; border-radius: 8px; background: linear-gradient(180deg, rgba(8, 6, 18, 0.9), rgba(22, 16, 40, 0.9)); border: 1px solid var(--line); }
+.case-view::before, .case-view::after { content: ''; position: absolute; top: 0; bottom: 0; width: 70px; z-index: 2; pointer-events: none; }
+.case-view::before { left: 0; background: linear-gradient(90deg, rgba(8, 6, 18, 0.95), transparent); }
+.case-view::after { right: 0; background: linear-gradient(-90deg, rgba(8, 6, 18, 0.95), transparent); }
+.case-strip { position: absolute; left: 0; top: 14px; display: flex; will-change: transform; }
+.case-card { position: relative; flex: 0 0 104px; width: 104px; height: 120px; margin-right: 8px; border-radius: 6px; background: linear-gradient(180deg, rgba(40, 32, 66, 0.95), rgba(14, 11, 26, 0.98)); border: 1px solid rgba(255, 255, 255, 0.12); border-bottom: 4px solid var(--rc); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-sizing: border-box; overflow: hidden; }
+.case-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, var(--rc), transparent 65%); opacity: 0.28; pointer-events: none; }
+.case-card > * { position: relative; }
+.case-card img { width: 72px; height: 72px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6)); }
+.case-noimg { width: 56px; height: 56px; border-radius: 50%; background: var(--rc); opacity: 0.6; }
+.case-cname { font-family: var(--font-sc); font-size: 10px; letter-spacing: 0.08em; color: var(--rc); text-transform: uppercase; }
+.case-card.win { box-shadow: 0 0 0 2px var(--rc), 0 0 28px var(--rc); animation: caseWin 0.9s ease-in-out infinite alternate; }
+@keyframes caseWin { to { box-shadow: 0 0 0 2px var(--rc), 0 0 42px var(--rc); } }
+.case-marker { position: absolute; left: 50%; top: 4px; bottom: 4px; width: 3px; margin-left: -1.5px; background: #ffe08a; box-shadow: 0 0 10px #ffe08a; z-index: 3; border-radius: 2px; }
+.case-marker::before, .case-marker::after { content: ''; position: absolute; left: 50%; margin-left: -8px; border: 8px solid transparent; }
+.case-marker::before { top: -4px; border-top-color: #ffe08a; }
+.case-marker::after { bottom: -4px; border-bottom-color: #ffe08a; }
+.case-odds { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 10px 0 4px; }
+.case-odd { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--parch); }
+.case-odd .dot { width: 10px; height: 10px; border-radius: 2px; background: var(--rc); box-shadow: 0 0 6px var(--rc); }
+.case-odd b { color: var(--rc); font-weight: 600; }
+.case-pity { margin-bottom: 6px; }
+.case-result { min-height: 64px; }
+.case-win-name { font-family: var(--font-display); font-size: 24px; margin-top: 4px; }
+.case-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+/* coffres dans le sac */
+.chest-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 4px 0; }
+.chest-dot { width: 12px; height: 12px; border-radius: 3px; background: var(--cc); box-shadow: 0 0 8px var(--cc); }
+.chest-name { color: var(--cc); font-size: 14px; }
+.chest-name small { color: var(--muted); }
+.chest-row .btn { padding: 4px 9px; font-size: 12px; }
+@media (max-width: 520px) { .case-card { flex-basis: 88px; width: 88px; height: 104px; } .case-card img { width: 58px; height: 58px; } .case-view { height: 132px; } }
