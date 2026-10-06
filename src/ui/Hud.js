@@ -1,7 +1,9 @@
+import * as THREE from 'three';
 import { h, svgIcon, fmtTime } from './dom.js';
 import { ABILITIES, ABILITY_ICONS } from '../game/Abilities.js';
 import { BEACONS, CLASSES } from '../config.js';
 import { MAP_RANGE, worldToMap } from './MapRender.js';
+import { CITADEL } from '../world/Citadel.js';
 
 const BEACON_SVG = (pct, lit) => `
 <svg viewBox="0 0 20 26"><defs><linearGradient id="bg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#f2c46d"/><stop offset="1" stop-color="#fff3c4"/></linearGradient></defs>
@@ -50,7 +52,8 @@ export class Hud {
     this.clockEl = h('div', { class: 'clock' });
     root.appendChild(h('div', { class: 'minimap-wrap interactive' },
       h('div', { class: 'minimap', title: 'Carte (M)', onclick: () => game.toggleWindow?.('map') }, this.mmCanvas),
-      this.zoneEl, this.clockEl));
+      this.zoneEl, this.clockEl,
+      h('button', { class: 'btn small exp-btn', title: 'Expéditions entre amis (P)', onclick: () => game.toggleWindow?.('party') }, '⚔ Expéditions')));
     // quêtes
     this.trackBody = h('div');
     this.tracker = h('div', { class: 'tracker panel interactive', onclick: () => game.toggleWindow?.('quests') }, h('h4', {}, 'quêtes'), this.trackBody);
@@ -85,6 +88,14 @@ export class Hud {
     root.appendChild(bar);
     this.xpFill = h('div');
     root.appendChild(h('div', { class: 'xpbar', title: 'Expérience' }, this.xpFill));
+    // balise d'objectif : suit la quête en cours à l'écran, flèche au bord si hors champ
+    this.wpArrow = h('div', { class: 'wp-arrow' });
+    this.wpLabel = h('div', { class: 'wp-label' });
+    this.wpDist = h('div', { class: 'wp-dist' });
+    this.wp = h('div', { class: 'waypoint' }, this.wpArrow, h('div', { class: 'wp-gem' }), this.wpDist, this.wpLabel);
+    this.wp.hidden = true;
+    root.appendChild(this.wp);
+    this.wpT = 0; this.wpTarget = null; this._wv = new THREE.Vector3();
     ui.root.insertBefore(root, ui.floatLayer.nextSibling);
     this.cache = {};
     this.mmT = 0;
@@ -180,9 +191,57 @@ export class Hud {
     // quêtes
     const qk = g.quests ? g.quests.trackerKey() : '';
     this.set('quests', qk, () => this.renderTracker());
+    this.updateWaypoint(dt);
     // minicarte (10 fps)
     this.mmT -= dt;
     if (this.mmT <= 0) { this.mmT = 0.1; this.drawMinimap(); }
+  }
+
+  updateWaypoint(dt) {
+    const g = this.game, p = g.player.position;
+    this.wpT -= dt;
+    if (this.wpT <= 0) {
+      this.wpT = 0.3;
+      const off = g.settings.waypoint === false || p.x > 3500 || g.player.dead;
+      const t = off ? null : g.quests?.primaryTarget();
+      if (t) {
+        const gy = t.y ?? g.world.terrain.heightAt(t.x, t.z) ?? p.y;
+        t.wy = t.ring ? t.y : Math.max(gy, t.y ?? -Infinity) + 2.6;
+      }
+      this.wpTarget = t;
+      const key = t ? t.label + '|' + t.color : '';
+      this.set('wp', key, () => { this.wpLabel.textContent = t?.label || ''; this.wp.style.setProperty('--wc', t?.color || '#ffe3a3'); });
+    }
+    const t = this.wpTarget;
+    const dist = t ? Math.hypot(t.x - p.x, t.z - p.z) : 0;
+    const show = !!t && (dist > 9 || (t.ring && Math.abs(t.wy - p.y) > 4));
+    this.set('wpvis', show, (v) => { this.wp.hidden = !v; });
+    if (!show) return;
+    const cam = g.camera, W = innerWidth, H = innerHeight;
+    const v = this._wv.set(t.x, t.wy, t.z).applyMatrix4(cam.matrixWorldInverse);
+    const behind = v.z > -0.5;
+    let sx, sy, on = false;
+    if (!behind) {
+      v.applyMatrix4(cam.projectionMatrix);
+      sx = (v.x * 0.5 + 0.5) * W; sy = (-v.y * 0.5 + 0.5) * H;
+      on = sx > 48 && sx < W - 48 && sy > 70 && sy < H - 90;
+    }
+    let ang = 0;
+    if (!on) {
+      // direction dans le plan de l'écran, poussée vers le bas quand l'objectif est derrière
+      let dx, dy;
+      if (behind) { dx = v.x; dy = Math.max(Math.abs(v.z), 1) * 0.6 + Math.max(0, -v.y); }
+      else { dx = sx - W / 2; dy = sy - H / 2; }
+      const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
+      const mx = W / 2 - 54, my = H / 2 - 90;
+      const k = Math.min(mx / Math.max(1e-3, Math.abs(dx)), my / Math.max(1e-3, Math.abs(dy)));
+      sx = W / 2 + dx * k; sy = H / 2 + dy * k;
+      ang = Math.atan2(dy, dx);
+    }
+    this.set('wpon', on, (v2) => this.wp.classList.toggle('edge', !v2));
+    this.wp.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0)`;
+    if (!on) this.wpArrow.style.transform = `rotate(${ang.toFixed(3)}rad)`;
+    this.set('wpd', Math.round(dist / (dist > 200 ? 10 : 1)), () => { this.wpDist.textContent = dist >= 1000 ? (dist / 1000).toFixed(1).replace('.', ',') + ' km' : Math.round(dist / (dist > 200 ? 10 : 1)) * (dist > 200 ? 10 : 1) + ' m'; });
   }
 
   renderTracker() {
@@ -219,6 +278,12 @@ export class Hud {
     const [mx, my] = worldToMap(p.x, p.z, bs);
     ctx.drawImage(base, -mx * scale, -my * scale, bs * scale, bs * scale);
     const toMM = (x, z) => [(x - p.x) * zoom, (z - p.z) * zoom];
+    // la Citadelle des Ombres est hors de la carte : on dessine ses plateformes et ses ponts
+    if (p.x > 3500) {
+      ctx.strokeStyle = '#6a5a8a'; ctx.lineWidth = 6;
+      for (const [a, b] of CITADEL.bridges) { const A = CITADEL.platforms[a], B = CITADEL.platforms[b]; const [ax, ay] = toMM(A.x, A.z), [bx, by] = toMM(B.x, B.z); ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); }
+      for (const P of CITADEL.platforms) { const [x, y] = toMM(P.x, P.z); ctx.fillStyle = '#3b3150'; ctx.strokeStyle = '#8e7cc3'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, P.r * zoom, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+    }
     // phares
     BEACONS.forEach((b, i) => {
       const [x, y] = toMM(b.x, b.z);

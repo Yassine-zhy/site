@@ -36,7 +36,7 @@ export class Windows {
     this.current = name;
     this.game.windowOpen = true;
     this.game.input.exitLock();
-    const builders = { inventory: () => this.inventory(), map: () => this.map(), help: () => this.help(), settings: () => this.settings(), quests: () => this.game.quests?.window(this) || this.help(), leaderboard: () => this.game.worldState?.leaderboardWindow(this) || this.help(), tutorial: () => this.tutorial() };
+    const builders = { inventory: () => this.inventory(), map: () => this.map(), help: () => this.help(), settings: () => this.settings(), quests: () => this.game.quests?.window(this) || this.help(), leaderboard: () => this.game.worldState?.leaderboardWindow(this) || this.help(), tutorial: () => this.tutorial(), custom: () => this.frame(this.customContent?.title || '', this.customContent?.content || ''), party: () => this.game.expedition?.window(this) || this.help() };
     const body = (builders[name] || builders.help)();
     this.el = body;
     this.ui.root.appendChild(body);
@@ -50,6 +50,9 @@ export class Windows {
   }
 
   refresh() { if (this.current) this.open(this.current); }
+
+  // fenêtre quelconque (contenu fourni par un autre système)
+  custom(title, content) { this.customContent = { title, content }; this.open('custom'); }
 
   // ------------------------------------------------------------ tutoriel d'un objectif de quête
   openTutorial(objective) {
@@ -207,6 +210,7 @@ export class Windows {
       slider('opt-sens', 'sensibilité de la souris', s.sensitivity, 0.3, 2.5, 0.1, (v) => { s.sensitivity = v; g.rig.sensitivity = 0.0023 * v; }),
       check('opt-invert', 'Inverser l’axe vertical', !!s.invertY, (v) => { s.invertY = v; g.rig.invertY = v; }),
       check('opt-autoequip', 'Équiper automatiquement les meilleurs objets', !!s.autoEquip, (v) => { s.autoEquip = v; }),
+      check('opt-waypoint', 'Afficher la balise de l’objectif de quête', s.waypoint !== false, (v) => { s.waypoint = v; }),
       h('div', { class: 'row', style: { display: 'flex', gap: '10px', marginTop: '14px', flexWrap: 'wrap' } },
         h('button', { class: 'btn', onclick: () => this.close() }, 'Reprendre'),
         h('button', { class: 'btn ghost', onclick: () => this.open('help') }, 'Guide du voyageur'),

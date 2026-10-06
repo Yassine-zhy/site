@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { mainColor, isletColorFn } from '../world/Terrain.js';
-import { ISLETS, LAKE } from '../config.js';
+import { LAKE, BIG_ISLANDS } from '../config.js';
 
-export const MAP_RANGE = 330; // la carte couvre [-330, 330]²
+// La carte couvre tout l'archipel : carré de demi-côté MAP_RANGE centré sur (MAP_CX, MAP_CZ).
+export const MAP_CX = 285, MAP_CZ = -285, MAP_RANGE = 640;
 
 // Rendu cartographique de l'archipel (style parchemin coloré + ombrage du relief).
 export function renderWorldMap(terrain, size = 512) {
@@ -11,11 +11,10 @@ export function renderWorldMap(terrain, size = 512) {
   const g = c.getContext('2d');
   const img = g.createImageData(size, size);
   const col = new THREE.Color();
-  const isletFns = new Map(ISLETS.map((d) => [d.id, isletColorFn(d)]));
   const heights = new Float32Array(size * size);
   for (let j = 0; j < size; j++) {
     for (let i = 0; i < size; i++) {
-      const x = -MAP_RANGE + (i + 0.5) / size * MAP_RANGE * 2, z = -MAP_RANGE + (j + 0.5) / size * MAP_RANGE * 2;
+      const x = MAP_CX - MAP_RANGE + (i + 0.5) / size * MAP_RANGE * 2, z = MAP_CZ - MAP_RANGE + (j + 0.5) / size * MAP_RANGE * 2;
       const isl = terrain.islandAt(x, z);
       const k = (j * size + i);
       if (!isl) { heights[k] = -999; continue; }
@@ -29,7 +28,7 @@ export function renderWorldMap(terrain, size = 512) {
       const k = j * size + i;
       const p = k * 4;
       const y = heights[k];
-      const x = -MAP_RANGE + (i + 0.5) / size * MAP_RANGE * 2, z = -MAP_RANGE + (j + 0.5) / size * MAP_RANGE * 2;
+      const x = MAP_CX - MAP_RANGE + (i + 0.5) / size * MAP_RANGE * 2, z = MAP_CZ - MAP_RANGE + (j + 0.5) / size * MAP_RANGE * 2;
       if (y === -999) {
         // mer de nuages : léger motif
         const n = (Math.sin(x * 0.05) + Math.sin(z * 0.043 + x * 0.01)) * 4;
@@ -39,9 +38,9 @@ export function renderWorldMap(terrain, size = 512) {
       const isl = terrain.islandAt(x, z);
       const hl = heights[k - 1] > -999 ? heights[k - 1] : y, hu = heights[k - size] > -999 ? heights[k - size] : y;
       const slope = Math.min(1, Math.hypot(y - hl, y - hu) / 3);
-      if (isl === terrain.main) mainColor(col, x, y, z, slope, false);
-      else isletFns.get(isl.def.id)(col, x, y, z, slope, false);
+      isl.colorFn(col, x, y, z, slope, false);
       if (isl === terrain.main && y < LAKE.level - 0.2 && Math.hypot(x - LAKE.x, z - LAKE.z) < LAKE.radius * 1.6) col.set('#3d8fb0');
+      for (const b of BIG_ISLANDS) if (isl.def === b && b.lake && y < b.lake.level + 0.3 && Math.hypot(x - b.lake.x, z - b.lake.z) < b.lake.radius * 1.5) col.set('#9fd8ee');
       col.convertLinearToSRGB();
       // ombrage (lumière venant du nord-ouest)
       const shade = 1 + ((hl - y) + (hu - y)) * 0.08;
@@ -58,4 +57,4 @@ export function renderWorldMap(terrain, size = 512) {
   return c;
 }
 
-export function worldToMap(x, z, size) { return [(x + MAP_RANGE) / (MAP_RANGE * 2) * size, (z + MAP_RANGE) / (MAP_RANGE * 2) * size]; }
+export function worldToMap(x, z, size) { return [(x - MAP_CX + MAP_RANGE) / (MAP_RANGE * 2) * size, (z - MAP_CZ + MAP_RANGE) / (MAP_RANGE * 2) * size]; }

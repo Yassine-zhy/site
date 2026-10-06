@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { Character } from '../entities/Character.js';
 import { NPC_SPOTS } from '../world/Village.js';
+import { OUTPOST_NPCS } from '../world/Outposts.js';
+
+const SPOTS = { ...NPC_SPOTS, ...OUTPOST_NPCS };
 import { dampAngle } from '../engine/math.js';
 
 const DEFS = [
@@ -9,6 +12,13 @@ const DEFS = [
   { id: 'guard', name: 'Sir Aldric', title: 'la sentinelle', model: 'knight', show: ['1H_Sword', 'Round_Shield'], idle: 'Idle', gestures: ['Blocking', 'Cheer'] },
   { id: 'merchant', name: 'Lysa', title: 'la marchande', model: 'rogue', show: ['Knife'], idle: 'Idle', gestures: ['Interact', 'Cheer', 'PickUp'] },
   { id: 'oracle', name: 'L’Oracle des Échos', title: 'voix des voyageurs', model: 'rogue_hooded', show: [], idle: 'Idle', gestures: ['Spellcasting', 'Spellcast_Long'] },
+  { id: 'ondine', name: 'Mère Ondine', title: 'l’herboriste', model: 'mage', tint: '#c8f0c0', show: [], idle: 'Idle', gestures: ['Interact', 'PickUp'] },
+  { id: 'pip', name: 'Pip', title: 'l’apprenti cartographe', model: 'rogue', tint: '#ffe0b0', show: [], idle: 'Idle', gestures: ['Cheer', 'Interact'] },
+  { id: 'rhea', name: 'Capitaine Rhéa', title: 'maîtresse des vents', model: 'knight', tint: '#c8dcff', show: ['1H_Sword'], idle: 'Idle', gestures: ['Cheer', 'Interact'] },
+  { id: 'bjorn', name: 'Bjorn', title: 'le trappeur des Cimes', model: 'barbarian', tint: '#dde8ff', show: ['2H_Axe'], idle: '2H_Melee_Idle', gestures: ['Cheer', 'Interact'] },
+  { id: 'neige', name: 'Sœur Neige', title: 'gardienne du Givre', model: 'mage', tint: '#e2f0ff', show: ['2H_Staff'], idle: 'Idle', gestures: ['Spellcast_Raise', 'Interact'] },
+  { id: 'kessa', name: 'Kessa', title: 'la prospectrice', model: 'rogue', tint: '#ffd6a8', show: ['Knife'], idle: 'Idle', gestures: ['Interact', 'PickUp', 'Cheer'] },
+  { id: 'tarek', name: 'Vieux Tarek', title: 'le conteur des sables', model: 'rogue_hooded', tint: '#ffd09a', show: [], idle: 'Idle', gestures: ['Spellcasting', 'Interact'] },
 ];
 
 // Habitants de Havrelumière.
@@ -17,8 +27,9 @@ export class NPCs {
     this.game = game;
     this.list = [];
     for (const d of DEFS) {
-      const spot = NPC_SPOTS[d.id];
-      const ch = new Character(game.assets, d.model, { show: d.show });
+      const spot = SPOTS[d.id];
+      if (!spot) continue;
+      const ch = new Character(game.assets, d.model, { show: d.show, tint: d.tint || null });
       const y = game.world.terrain.heightAt(spot.x, spot.z) ?? 14;
       ch.object.position.set(spot.x, y, spot.z);
       const face = Math.atan2(spot.face[0] - spot.x, spot.face[1] - spot.z);

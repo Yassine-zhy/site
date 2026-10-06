@@ -1,20 +1,27 @@
 import * as THREE from 'three';
 import { Island } from './Island.js';
 import { Simplex, smoothstep, lerp, clamp, distToSegment } from '../engine/math.js';
-import { WORLD_SEED, MAIN_ISLAND, VILLAGE, LAKE, MOUNTAIN, FOREST, RUINS, HILLS, PATHS, ISLETS, BRIDGES } from '../config.js';
+import { WORLD_SEED, MAIN_ISLAND, VILLAGE, LAKE, MOUNTAIN, FOREST, RUINS, HILLS, PATHS, ISLETS, BRIDGES, BIG_ISLANDS } from '../config.js';
 
 const N = new Simplex(WORLD_SEED);
 const N2 = new Simplex(WORLD_SEED + 99);
 
 function radial(x, z, c) { return Math.hypot(x - c.x, z - c.z); }
 
+// segments des chemins avec boîtes englobantes (rejet rapide : il y a des chemins sur trois îles)
+const SEGS = [];
+for (const p of PATHS) for (let i = 0; i < p.length - 1; i++) {
+  const [ax, az] = p[i], [bx, bz] = p[i + 1];
+  SEGS.push({ ax, az, bx, bz, x0: Math.min(ax, bx), x1: Math.max(ax, bx), z0: Math.min(az, bz), z1: Math.max(az, bz) });
+}
+
 export function pathDistance(x, z) {
   let best = 1e9;
-  for (const p of PATHS) {
-    for (let i = 0; i < p.length - 1; i++) {
-      const d = distToSegment(x, z, p[i][0], p[i][1], p[i + 1][0], p[i + 1][1]);
-      if (d < best) best = d;
-    }
+  for (const s of SEGS) {
+    const ox = x < s.x0 ? s.x0 - x : x > s.x1 ? x - s.x1 : 0, oz = z < s.z0 ? s.z0 - z : z > s.z1 ? z - s.z1 : 0;
+    if (ox > best || oz > best) continue;
+    const d = distToSegment(x, z, s.ax, s.az, s.bx, s.bz);
+    if (d < best) best = d;
   }
   // léger méandre
   return best + N.noise2(x * 0.05, z * 0.05) * 1.4;
@@ -121,8 +128,116 @@ export function isletColorFn(def) {
     out.copy(C.grass2).lerp(C.grass3, n * 0.6);
     if (def.id === 'nuees') out.lerp(tmpA.set('#9fd0b4'), 0.35);
     if (def.id === 'pelerin') out.lerp(C.amber, 0.4);
+    if (def.biome === 'snowy') out.lerp(tmpA.set('#e9f0f6'), 0.55 + n * 0.3);
+    if (def.biome === 'dry') out.lerp(tmpA.set('#cfa252'), 0.55 + n * 0.2);
     if (slope > 0.45) out.lerp(C.rock, smoothstep(0.45, 0.65, slope));
     if (edge) out.lerp(C.moss, 0.6);
+    return out;
+  };
+}
+
+// ------------------------------------------------------------------ grandes îles (biomes)
+function polyDist(x, z, pts) {
+  let best = 1e9;
+  for (let i = 0; i < pts.length - 1; i++) best = Math.min(best, distToSegment(x, z, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]));
+  return best;
+}
+
+export function bigHeightFn(def) {
+  const nz = new Simplex(def.seed), nz2 = new Simplex(def.seed + 7);
+  const snow = def.biome === 'snow';
+  return (x, z) => {
+    let h = def.baseY + nz.fbm2(x / 130, z / 130, 4) * (snow ? 9 : 5) + nz.fbm2(x / 36, z / 36, 3) * (snow ? 2.2 : 1.4);
+    if (!snow) h += Math.max(0, nz2.noise2(x / 22, z / 60)) * 1.6; // dunes allongées
+    let peakT = 0;
+    for (const f of def.features) {
+      if (f.type === 'canyon') {
+        const d = polyDist(x, z, f.pts) + nz.noise2(x / 15, z / 15) * 2.5;
+        h -= f.depth * (1 - smoothstep(f.width * 0.35, f.width, d));
+        continue;
+      }
+      const d = Math.hypot(x - f.x, z - f.z);
+      if (f.type === 'peak') {
+        const mt = 1 - smoothstep(0, f.radius, d);
+        if (mt <= 0) continue;
+        peakT = Math.max(peakT, mt);
+        h += f.height * Math.pow(mt, 1.25) + nz2.ridge2(x / 34, z / 34, 4) * 13 * mt;
+        if (f.summitHeight) h = lerp(h, f.summitHeight, 1 - smoothstep(f.summitRadius * 0.6, f.summitRadius * 1.35, d));
+      } else if (f.type === 'plateau') {
+        h = lerp(h, f.height + nz.noise2(x / 20, z / 20) * 0.3, 1 - smoothstep(f.radius * 0.75, f.radius + 20, d));
+      } else if (f.type === 'basin') {
+        if (f.wall) {
+          // arène : fond plat entouré d'un rempart rocheux (ouvert vers l'ouest)
+          const a = Math.atan2(z - f.z, x - f.x);
+          const gate = 1 - smoothstep(0.25, 0.55, Math.abs(Math.atan2(Math.sin(a - Math.PI), Math.cos(a - Math.PI))));
+          const rim = (1 - smoothstep(f.radius * 0.9, f.radius * 1.5, d)) * smoothstep(f.radius * 0.75, f.radius * 1.05, d) * f.wall * (1 - gate);
+          h = lerp(h, f.level, 1 - smoothstep(f.radius * 0.8, f.radius * 1.3, d)) + rim;
+        } else {
+          const dl = d + nz.noise2(x / 18, z / 18) * 5;
+          if (snow && dl < f.radius * 1.6) { h = lerp(h, f.level, 1 - smoothstep(f.radius, f.radius * 1.6, dl)); continue; }
+          if (dl < f.radius * 1.6) {
+            const shore = f.level + 0.8;
+            h = lerp(h, Math.max(shore, Math.min(h, shore + (dl - f.radius) * 0.35)), 1 - smoothstep(f.radius, f.radius * 1.6, dl));
+            if (dl < f.radius) h = lerp(f.level - 3.5 + (dl / f.radius) * 2.5, shore, smoothstep(f.radius * 0.75, f.radius, dl));
+          }
+        }
+      } else if (f.type === 'mesa') {
+        // plateau à falaises franches, une rampe douce dans la direction rampAngle
+        const a = Math.atan2(z - f.z, x - f.x);
+        const da = Math.abs(Math.atan2(Math.sin(a - f.rampAngle), Math.cos(a - f.rampAngle)));
+        const ramp = 1 - smoothstep(0.18, 0.4, da);
+        const edge = f.radius * (1 + ramp * 1.4);
+        const t = 1 - smoothstep(f.radius * 0.9, edge + 3 + ramp * 10, d);
+        const top = f.height + nz.noise2(x / 14, z / 14) * 0.6;
+        h = Math.max(h, lerp(h, top, ramp > 0.01 ? t : Math.pow(t, 0.35)));
+      }
+    }
+    // chemins adoucis
+    const pd = pathDistance(x, z);
+    if (pd < 6 && peakT < 0.35) h = lerp(h, h - 0.3, (1 - smoothstep(2, 6, pd)) * 0.5);
+    return h;
+  };
+}
+
+const B = {
+  snow: new THREE.Color('#eef4fa'), snow2: new THREE.Color('#d7e3ef'), frost: new THREE.Color('#a9bfae'), ice: new THREE.Color('#9fd6ea'),
+  srock: new THREE.Color('#7d8693'), srock2: new THREE.Color('#5f6774'), spath: new THREE.Color('#c3cdd8'), camp: new THREE.Color('#b9aea0'),
+  gold: new THREE.Color('#d4a63a'), ochre: new THREE.Color('#e3b84a'), earth: new THREE.Color('#cf7a2c'), sandy: new THREE.Color('#ecc985'),
+  red1: new THREE.Color('#b4451f'), red2: new THREE.Color('#e08a3c'), apath: new THREE.Color('#e2b670'), sage: new THREE.Color('#9aa04a'),
+};
+
+export function bigColorFn(def) {
+  const nz = new Simplex(def.seed + 3);
+  const snow = def.biome === 'snow';
+  const lake = def.lake, camp = def.camp;
+  return (out, x, y, z, slope, edge) => {
+    const n = nz.noise2(x / 14, z / 14) * 0.5 + 0.5, n2 = nz.noise2(x / 5, z / 5) * 0.5 + 0.5;
+    const pd = pathDistance(x, z);
+    if (snow) {
+      out.copy(B.snow).lerp(B.snow2, n * 0.7);
+      // herbe gelée qui perce aux basses altitudes
+      const low = 1 - smoothstep(def.baseY + 1, def.baseY + 9, y);
+      if (low > 0 && n2 > 0.55) out.lerp(B.frost, low * (n2 - 0.55) * 1.6);
+      const pt = 1 - smoothstep(1.6, 3.8, pd);
+      if (pt > 0) out.lerp(B.spath, pt * 0.85);
+      if (camp && Math.hypot(x - camp.x, z - camp.z) < camp.radius * 0.8) out.lerp(B.camp, 0.55 * (1 - smoothstep(camp.radius * 0.5, camp.radius * 0.8, Math.hypot(x - camp.x, z - camp.z))));
+      if (lake && y < lake.level + 0.4 && Math.hypot(x - lake.x, z - lake.z) < lake.radius * 1.5) out.lerp(B.ice, 0.85);
+      const rk = smoothstep(0.42, 0.62, slope);
+      if (rk > 0) out.lerp(tmpB.copy(B.srock).lerp(B.srock2, n2), rk);
+    } else {
+      out.copy(B.gold).lerp(B.ochre, n);
+      if (n2 > 0.7) out.lerp(B.sage, (n2 - 0.7) * 1.8);
+      const bare = smoothstep(0.35, 0.7, nz.noise2(x / 40, z / 40) * 0.5 + 0.5);
+      out.lerp(B.earth, bare * 0.45);
+      // strates rouges sur les pentes (mesas, gorge)
+      const rk = smoothstep(0.38, 0.6, slope);
+      if (rk > 0) out.lerp(tmpB.copy(B.red1).lerp(B.red2, 0.5 + 0.5 * Math.sin(y * 0.9 + n * 2)), rk);
+      if (y < def.baseY - 4) out.lerp(B.sandy, 0.6 * (1 - rk)); // fond de gorge sableux
+      const pt = 1 - smoothstep(1.6, 3.8, pd);
+      if (pt > 0) out.lerp(B.apath, pt * 0.85);
+      if (camp && Math.hypot(x - camp.x, z - camp.z) < camp.radius * 0.8) out.lerp(B.sandy, 0.5);
+    }
+    if (edge) out.lerp(snow ? B.srock2 : B.red1, 0.5);
     return out;
   };
 }
@@ -144,6 +259,16 @@ export class Terrain {
       }).build();
       isl.def = def;
       this.islands.push(isl);
+    }
+    this.big = [];
+    for (const def of BIG_ISLANDS) {
+      const isl = new Island({
+        x: def.x, z: def.z, radius: def.radius, coastNoise: def.coastNoise, seed: def.seed,
+        cells: Math.round(def.radius * 1.15), heightFn: bigHeightFn(def), colorFn: bigColorFn(def), depth: def.depth, name: def.name,
+      }).build();
+      isl.def = def; isl.big = true;
+      this.islands.push(isl);
+      this.big.push(isl);
     }
     this.bridges = BRIDGES.map((b) => this.makeBridgeDef(b));
   }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { MAP_EXTENT } from './Maps.js';
+import { CORR_UV_GLSL } from './Maps.js';
 import { mulberry32 } from '../engine/math.js';
 
 // Herbe GPU : une seule instance de brins qui "s'enroule" autour du joueur.
@@ -37,7 +37,7 @@ export class Grass {
     blade.instanceCount = count;
     this.uniforms = {
       uHeight: { value: this.maps.heightTex }, uColor: { value: this.maps.colorTex }, uCorruption: { value: this.maps.corruptionTex },
-      uCenter: { value: new THREE.Vector2() }, uRadius: { value: radius }, uTime: { value: 0 }, uExtent: { value: MAP_EXTENT },
+      uCenter: { value: new THREE.Vector2() }, uRadius: { value: radius }, uTime: { value: 0 }, uExtent: { value: this.maps.main.half }, uMapCenter: { value: new THREE.Vector2(0, 0) },
       uPushers: { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, -1, 0)) },
       uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunColor: { value: new THREE.Color() }, uAmbient: { value: new THREE.Color() },
       uNight: { value: 0 }, uWind: { value: 1 },
@@ -48,20 +48,20 @@ export class Grass {
       vertexShader: /* glsl */`
         attribute vec4 aOffset;
         uniform sampler2D uHeight; uniform sampler2D uColor; uniform sampler2D uCorruption;
-        uniform vec2 uCenter; uniform float uRadius; uniform float uTime; uniform float uExtent; uniform vec4 uPushers[8]; uniform float uWind;
+        uniform vec2 uCenter; uniform float uRadius; uniform float uTime; uniform float uExtent; uniform vec2 uMapCenter; uniform vec4 uPushers[8]; uniform float uWind;
         varying vec3 vColor; varying float vY; varying float vFlower; varying float vCor;
         #include <fog_pars_vertex>
         float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
         void main(){
           vec2 o = aOffset.xy;
           vec2 p = mod(o - uCenter + uRadius, 2.0 * uRadius) - uRadius + uCenter;
-          vec2 uv = (p + uExtent) / (2.0 * uExtent);
+          vec2 uv = (p - uMapCenter + uExtent) / (2.0 * uExtent);
           vec4 hm = texture2D(uHeight, uv);
           float dist = length(p - uCenter);
           float fade = 1.0 - smoothstep(uRadius * 0.7, uRadius, dist);
           float rnd = aOffset.w;
           float keep = step(rnd, hm.g) * hm.a * fade;
-          float cor = texture2D(uCorruption, uv).r;
+          float cor = texture2D(uCorruption, ${CORR_UV_GLSL.replace(/WP/g, 'p')}).r;
           float hgt = (0.55 + rnd * 0.7) * (0.6 + hm.g * 0.6) * keep * (1.0 - cor * 0.35);
           float flower = step(0.965, hash(o * 3.1)) * (1.0 - cor);
           vFlower = flower;
@@ -105,7 +105,7 @@ export class Grass {
           vec3 fl = mix(vec3(1.0, 0.85, 0.35), vec3(0.95, 0.55, 0.85), fract(vColor.r * 37.0));
           col = mix(col, fl * 1.2, vFlower * smoothstep(0.75, 0.95, vY));
           float lum = dot(col, vec3(0.299,0.587,0.114));
-          col = mix(col, vec3(lum) * vec3(0.66,0.56,0.86), vCor * 0.6);
+          col = mix(col, mix(col, vec3(lum), 0.6) * vec3(0.78,0.68,0.94), vCor * 0.55);
           vec3 light = uAmbient + uSunColor * max(uSunDir.y, 0.0) * 0.55;
           col *= light;
           gl_FragColor = vec4(col, 1.0);
@@ -122,6 +122,13 @@ export class Grass {
     const u = this.uniforms;
     u.uTime.value = elapsed;
     u.uCenter.value.set(center.x, center.z);
+    // région de l'archipel sous le joueur : ses textures de hauteur et de couleur
+    const reg = this.maps.regionAt(center.x, center.z);
+    if (reg !== this.region) {
+      this.region = reg;
+      u.uHeight.value = reg.heightTex; u.uColor.value = reg.colorTex;
+      u.uExtent.value = reg.half; u.uMapCenter.value.set(reg.cx, reg.cz);
+    }
     for (let i = 0; i < 8; i++) {
       const p = pushers[i];
       if (p) u.uPushers.value[i].set(p.x, p.z, p.r, 0); else u.uPushers.value[i].set(0, 0, -1, 0);

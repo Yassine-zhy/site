@@ -186,10 +186,107 @@ export class Assets {
     return res;
   }
 
+  // Contours au sol d'un modèle, en repère local (sans échelle) : enveloppes convexes des sommets
+  // situés dans une tranche de hauteur [lo, hi] (fractions de la hauteur du modèle), regroupés
+  // par amas (un bosquet de trois arbres donne trois troncs, pas un gros polygone).
+  footprints(name, lo = 0.02, hi = 0.5, gapFrac = 0.07) {
+    const key = `${name}|${lo}|${hi}|${gapFrac}`;
+    this.hullCache ||= new Map();
+    if (this.hullCache.has(key)) return this.hullCache.get(key);
+    const g = this.propGeometry(name);
+    let hulls = [];
+    if (g) {
+      const pos = g.geometry.attributes.position, box = g.box;
+      const H = Math.max(1e-4, box.max.y - box.min.y);
+      const ext = Math.max(box.max.x - box.min.x, box.max.z - box.min.z, 1e-4);
+      const y0 = box.min.y + H * lo, y1 = box.min.y + H * hi;
+      // coupe des triangles dans la tranche : sommets inclus + croisements des arêtes avec ses plans
+      // (un tronc low-poly n'a de sommets qu'à ses extrémités)
+      let pts = [];
+      const vx = [0, 0, 0], vy = [0, 0, 0], vz = [0, 0, 0];
+      for (let t = 0; t + 2 < pos.count; t += 3) {
+        for (let k = 0; k < 3; k++) { vx[k] = pos.getX(t + k); vy[k] = pos.getY(t + k); vz[k] = pos.getZ(t + k); }
+        if (Math.max(vy[0], vy[1], vy[2]) < y0 || Math.min(vy[0], vy[1], vy[2]) > y1) continue;
+        for (let k = 0; k < 3; k++) {
+          const a = k, b = (k + 1) % 3;
+          if (vy[a] >= y0 && vy[a] <= y1) pts.push([vx[a], vz[a]]);
+          for (const yc of [y0, y1]) {
+            if ((vy[a] - yc) * (vy[b] - yc) < 0) {
+              const f = (yc - vy[a]) / (vy[b] - vy[a]);
+              pts.push([vx[a] + (vx[b] - vx[a]) * f, vz[a] + (vz[b] - vz[a]) * f]);
+            }
+          }
+        }
+      }
+      if (pts.length < 3) { pts = []; for (let i = 0; i < pos.count; i++) pts.push([pos.getX(i), pos.getZ(i)]); }
+      // amas : cases occupées connexes
+      const cell = ext * gapFrac;
+      const cells = new Map();
+      for (const p of pts) {
+        const k = Math.floor(p[0] / cell) + ',' + Math.floor(p[1] / cell);
+        if (!cells.has(k)) cells.set(k, []);
+        cells.get(k).push(p);
+      }
+      const seen = new Set();
+      for (const k of cells.keys()) {
+        if (seen.has(k)) continue;
+        const stack = [k], group = [];
+        seen.add(k);
+        while (stack.length) {
+          const c = stack.pop();
+          group.push(...cells.get(c));
+          const [ci, cj] = c.split(',').map(Number);
+          for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) {
+            const nk = (ci + di) + ',' + (cj + dj);
+            if (cells.has(nk) && !seen.has(nk)) { seen.add(nk); stack.push(nk); }
+          }
+        }
+        const hull = simplifyHull(convexHull(group), 12);
+        if (hull.length >= 3 && polyArea(hull) > ext * ext * 0.0015) hulls.push(hull);
+      }
+      if (!hulls.length) hulls = [simplifyHull(convexHull(pts), 12)];
+    }
+    this.hullCache.set(key, hulls);
+    return hulls;
+  }
+
   propBox(name) {
     const g = this.propGeometry(name);
     return g ? g.box : new THREE.Box3(new THREE.Vector3(-1, 0, -1), new THREE.Vector3(1, 1, 1));
   }
+}
+
+// Enveloppe convexe 2D (chaîne monotone d'Andrew), sens trigonométrique.
+function convexHull(points) {
+  const p = points.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (p.length < 3) return p;
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower = [], upper = [];
+  for (const q of p) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop(); lower.push(q); }
+  for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop(); upper.push(q); }
+  upper.pop(); lower.pop();
+  return lower.concat(upper);
+}
+
+function polyArea(h) {
+  let a = 0;
+  for (let i = 0; i < h.length; i++) { const p = h[i], q = h[(i + 1) % h.length]; a += p[0] * q[1] - q[0] * p[1]; }
+  return Math.abs(a) / 2;
+}
+
+// Réduit le nombre de sommets en retirant ceux qui comptent le moins (aire du triangle).
+function simplifyHull(h, max) {
+  h = h.slice();
+  while (h.length > max) {
+    let bi = 0, ba = Infinity;
+    for (let i = 0; i < h.length; i++) {
+      const a = h[(i - 1 + h.length) % h.length], b = h[i], c = h[(i + 1) % h.length];
+      const area = Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1]));
+      if (area < ba) { ba = area; bi = i; }
+    }
+    h.splice(bi, 1);
+  }
+  return h;
 }
 
 // Fusionne les morceaux d'un personnage (bras, corps, tête, jambes...) en un seul maillage

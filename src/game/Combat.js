@@ -65,7 +65,7 @@ export class Projectiles {
       const pos = p.mesh.position;
       const gy = terrain.heightAt(pos.x, pos.z);
       if (gy !== null && pos.y < gy + 0.1) dead = true;
-      if (!dead) {
+      if (!dead && !p.visualOnly) {
         const targets = p.team === 'player' ? g.enemies.hittable() : g.playerTargets();
         for (const t of targets) {
           if (p.hits.has(t.id)) continue;

@@ -3,7 +3,7 @@ import { ABILITIES, ABILITY_ICONS } from '../game/Abilities.js';
 
 const ICON = {
   jump: 'M12 19V5M5 12l7-7 7 7', dodge: 'M4 12h12M12 6l6 6-6 6M4 6v12', interact: 'M8 12h8M12 8v8M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0',
-  map: 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6ZM9 3v15M15 6v15', bag: 'M5 8h14l-1 13H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2', menu: 'M4 6h16M4 12h16M4 18h16', chat: 'M4 5h16v11H9l-5 4V5Z', quest: 'M6 3h12v18l-6-4-6 4V3Z',
+  map: 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6ZM9 3v15M15 6v15', party: 'M7 21v-2a4 4 0 0 1 4-4h2a4 4 0 0 1 4 4v2M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M4 21v-1a3 3 0 0 1 3-3M20 21v-1a3 3 0 0 0-3-3', bag: 'M5 8h14l-1 13H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2', menu: 'M4 6h16M4 12h16M4 18h16', chat: 'M4 5h16v11H9l-5 4V5Z', quest: 'M6 3h12v18l-6-4-6 4V3Z',
 };
 
 // Commandes tactiles : joystick, caméra au doigt, boutons d'action.
@@ -77,7 +77,7 @@ export class TouchControls {
     this.root.appendChild(this.interactBtn);
     // petits boutons de menu
     const top = h('div', { style: { position: 'absolute', left: 'calc(14px + var(--safe-l))', top: 'calc(132px + var(--safe-t))', display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' } });
-    for (const [id, icon, fn] of [['map', ICON.map, () => game.toggleWindow('map')], ['bag', ICON.bag, () => game.toggleWindow('inventory')], ['quest', ICON.quest, () => game.toggleWindow('quests')], ['chat', ICON.chat, () => game.chat?.open()], ['menu', ICON.menu, () => game.toggleWindow('settings')]]) {
+    for (const [id, icon, fn] of [['map', ICON.map, () => game.toggleWindow('map')], ['bag', ICON.bag, () => game.toggleWindow('inventory')], ['quest', ICON.quest, () => game.toggleWindow('quests')], ['party', ICON.party, () => game.toggleWindow('party')], ['chat', ICON.chat, () => game.chat?.open()], ['menu', ICON.menu, () => game.toggleWindow('settings')]]) {
       const b = h('button', { class: 'tb', style: { position: 'relative', width: '40px', height: '40px' }, 'aria-label': id }, svgIcon(icon));
       b.addEventListener('click', fn);
       top.appendChild(b);

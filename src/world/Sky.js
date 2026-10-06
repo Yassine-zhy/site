@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { DAY_LENGTH_MS } from '../config.js';
-import { clamp, smoothstep } from '../engine/math.js';
+import { clamp, smoothstep, damp } from '../engine/math.js';
+
+// ambiance de la Citadelle des Ombres (crépuscule violet permanent)
+const MOOD = { zen: new THREE.Color('#1b0f33'), hor: new THREE.Color('#6a3080'), below: new THREE.Color('#2a1840'), fog: new THREE.Color('#3c2252'), hemiS: new THREE.Color('#9a7ad0'), hemiG: new THREE.Color('#2a1838'), sun: new THREE.Color('#d8a0ff') };
 
 const vert = /* glsl */`
 varying vec3 vDir;
@@ -94,6 +97,7 @@ export class Sky {
     scene.fog = new THREE.Fog(0xcfe0f0, 260, 2000);
     this.state = { t: 0.5, night: 0, sunDir: new THREE.Vector3(), light: new THREE.Color(), sunI: 1 };
     this.override = null; // t forcé (écran titre)
+    this.mood = 0; this.moodV = 0;
     this.tmp = new THREE.Vector3();
   }
 
@@ -161,6 +165,14 @@ export class Sky {
     this.sample(t, 'hemiG', this.hemi.groundColor);
     this.hemi.intensity = this.sample(t, 'hemiI');
     this.sample(t, 'fog', this.fogColor);
+    this.moodV = damp(this.moodV, this.mood, 1.2, dt || 0.016);
+    const mv = this.moodV;
+    if (mv > 0.002) {
+      u.uZenith.value.lerp(MOOD.zen, mv); u.uHorizon.value.lerp(MOOD.hor, mv); u.uBelow.value.lerp(MOOD.below, mv);
+      this.fogColor.lerp(MOOD.fog, mv);
+      this.hemi.color.lerp(MOOD.hemiS, mv); this.hemi.groundColor.lerp(MOOD.hemiG, mv);
+      this.sun.color.lerp(MOOD.sun, mv * 0.7); this.sun.intensity *= 1 - mv * 0.35;
+    }
     this.scene.fog.color.copy(this.fogColor);
 
     if (focus) {

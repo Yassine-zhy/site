@@ -1,12 +1,13 @@
 // Relais multijoueur minimal pour Aetheria (sans dépendance).
 // Chaque client publie sa "présence" (son état complet) ; le relais la diffuse aux autres.
 // Usage : node server/relay.mjs [port]   puis ouvrir le jeu avec ?server=ws://hote:port
+// Salles : ws://hote:port/?room=nom isole un groupe (expéditions) ; sans paramètre, salle commune.
 import http from 'node:http';
 import crypto from 'node:crypto';
 
 const PORT = Number(process.argv[2] || process.env.PORT || 8787);
 const MAX_PRESENCE = 6000; // octets
-const clients = new Map(); // id -> { socket, presence }
+const clients = new Map(); // id -> { socket, presence, room }
 
 function frame(text) {
   const payload = Buffer.from(text);
@@ -19,7 +20,7 @@ function frame(text) {
 }
 
 function send(c, obj) { try { c.socket.write(frame(JSON.stringify(obj))); } catch { /* client parti */ } }
-function broadcast(fromId, obj) { for (const [id, c] of clients) if (id !== fromId) send(c, obj); }
+function broadcast(fromId, obj) { const room = clients.get(fromId)?.room; for (const [id, c] of clients) if (id !== fromId && c.room === room) send(c, obj); }
 
 function onMessage(id, text) {
   let m;
@@ -41,10 +42,12 @@ server.on('upgrade', (req, socket) => {
   const accept = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
   socket.write(['HTTP/1.1 101 Switching Protocols', 'Upgrade: websocket', 'Connection: Upgrade', `Sec-WebSocket-Accept: ${accept}`, '', ''].join('\r\n'));
   const id = crypto.randomBytes(8).toString('hex');
-  const client = { socket, presence: {} };
+  let room = '';
+  try { room = (new URL(req.url, 'http://x').searchParams.get('room') || '').replace(/[^a-z0-9_.-]/gi, '').slice(0, 48); } catch { /* */ }
+  const client = { socket, presence: {}, room };
   clients.set(id, client);
   send(client, { t: 'hello', id });
-  send(client, { t: 'all', peers: Object.fromEntries([...clients].filter(([k]) => k !== id).map(([k, c]) => [k, c.presence])) });
+  send(client, { t: 'all', peers: Object.fromEntries([...clients].filter(([k, c]) => k !== id && c.room === room).map(([k, c]) => [k, c.presence])) });
   let buf = Buffer.alloc(0);
   let fragments = [];
   socket.on('data', (chunk) => {
@@ -70,7 +73,7 @@ server.on('upgrade', (req, socket) => {
       }
     }
   });
-  const bye = () => { if (clients.delete(id)) broadcast(id, { t: 'bye', id }); };
+  const bye = () => { if (clients.has(id)) { broadcast(id, { t: 'bye', id }); clients.delete(id); } };
   socket.on('close', bye);
   socket.on('error', bye);
 });

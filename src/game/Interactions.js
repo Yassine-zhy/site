@@ -32,12 +32,17 @@ export class Interactions {
     const g = this.game, p = g.player;
     if (!p || p.dead) return null;
     const pos = p.position;
+    if (this.task) return { kind: 'busy', text: `${this.task.label}… ${Math.round(this.task.t / this.task.dur * 100)} %` };
+    const ex = g.expedition?.target(pos);
+    if (ex) return ex;
     const npc = g.npcs?.nearest(pos, 3.8);
     if (npc) return { kind: 'npc', npc, text: `Parler à ${npc.name}` };
     const ec = g.echoes?.nearest(pos, 2.6);
     if (ec) return ec.kind === 'echo'
       ? { kind: 'echo', key: ec.key, text: ec.it.uid === g.echoes.uid ? 'Votre écho' : `Faire résonner l’écho de ${ec.it.e.n}` }
       : { kind: 'ghost', key: ec.key, text: `Revoir la chute de ${ec.it.g.n}` };
+    const ws = g.waystones?.nearest(pos, 3.6);
+    if (ws) return { kind: 'waystone', ws, text: g.waystones.known(ws.id) ? `Voyager · ${ws.name}` : `Éveiller la pierre de passage · ${ws.name}` };
     for (const c of this.chests) {
       if (g.hero.discovered['chest:' + c.id]) continue;
       if (Math.hypot(pos.x - c.x, pos.z - c.z) < 3) return { kind: 'chest', chest: c, text: 'Ouvrir le coffre' };
@@ -63,6 +68,10 @@ export class Interactions {
     else if (t.kind === 'ghost') g.echoes.playGhost(t.key);
     else if (t.kind === 'chest') this.openChest(t.chest);
     else if (t.kind === 'beacon') this.startChannel(t);
+    else if (t.kind === 'waystone') g.waystones.open(t.ws);
+    else if (t.kind === 'expexit') g.expedition.leave();
+    else if (t.kind === 'expportal') g.windows.open('party');
+    else if (t.kind === 'expobj') this.startTask({ dur: 2.2, label: t.text, onDone: () => g.expedition.completeObject(t.i) });
   }
 
   openChest(c) {
@@ -90,8 +99,26 @@ export class Interactions {
     g.audio?.play('cast', g.player.position);
   }
 
+  // action à maintenir quelques secondes sans bouger (autels, braseros…)
+  startTask(task) {
+    const g = this.game, p = g.player;
+    this.task = { t: 0, start: p.position.clone(), ...task };
+    p.char.playLoop('Spellcasting', { full: true });
+    p.rooted = task.dur + 0.1;
+    g.audio?.play('cast', p.position);
+  }
+
+  updateTask(dt) {
+    const g = this.game, p = g.player, k = this.task;
+    k.t += dt;
+    if (Math.random() < dt * 30) g.fx.sparkle(p.position, '#ffe08a', 1.2, 1, 0.25);
+    if (p.dead || p.position.distanceTo(k.start) > 1.5) { this.task = null; p.char.stopAction(); p.rooted = 0; g.ui.toast('Action interrompue.'); return; }
+    if (k.t >= k.dur) { this.task = null; p.char.stopAction(); p.rooted = 0; k.onDone?.(); }
+  }
+
   update(dt) {
     const g = this.game;
+    if (this.task) this.updateTask(dt);
     for (const k of Object.keys(this.beaconCd)) this.beaconCd[k] = Math.max(0, this.beaconCd[k] - dt);
     for (const c of this.chests) if (!g.hero.discovered['chest:' + c.id] && Math.random() < dt * 3) g.fx.sparkle(new THREE.Vector3(c.x, c.y + 0.5, c.z), '#ffe08a', 1, 1, 0.2);
     const ch = this.channel;

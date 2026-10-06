@@ -12,6 +12,9 @@ import { Mind } from '../ai/Mind.js';
 import { Interactions } from './Interactions.js';
 import { Boss } from './Boss.js';
 import { TouchControls } from '../ui/TouchControls.js';
+import { Waystones } from './Waystones.js';
+import { Expedition } from './Expedition.js';
+import { Gathering } from './Gathering.js';
 
 // Démarre les systèmes de jeu une fois le héros créé.
 export async function boot(game) {
@@ -28,11 +31,14 @@ export async function boot(game) {
   game.dialogue = new Dialogue(game);
   game.echoes = new Echoes(game);
   game.chat = new Chat(game);
+  game.waystones = new Waystones(game);
+  game.expedition = new Expedition(game);
+  game.gathering = new Gathering(game);
   game.interactions = new Interactions(game);
   game.boss = new Boss(game);
   game.net = new Net(game);
   if (game.input.isTouch) game.touch = new TouchControls(game);
-  extra.push(game.runes, game.worldState, game.quests, game.npcs, game.dialogue, game.echoes, game.chat, game.interactions, game.boss, game.net);
+  extra.push(game.waystones, game.expedition, game.gathering, game.runes, game.worldState, game.quests, game.npcs, game.dialogue, game.echoes, game.chat, game.interactions, game.boss, game.net);
   if (game.touch) extra.push(game.touch);
   game.worldState.start();
   game.echoes.start();
@@ -64,7 +70,7 @@ export async function boot(game) {
       return;
     }
     if (game.dialogueOpen || game.chatOpen) return;
-    const map = { KeyM: 'map', KeyI: 'inventory', KeyB: 'inventory', KeyJ: 'quests', KeyL: 'quests', KeyK: 'leaderboard', KeyH: 'help', F1: 'help' };
+    const map = { KeyM: 'map', KeyI: 'inventory', KeyB: 'inventory', KeyJ: 'quests', KeyL: 'quests', KeyK: 'leaderboard', KeyH: 'help', F1: 'help', KeyP: 'party' };
     if (map[code]) game.windows.toggle(map[code]);
     else if (code === 'KeyT' && !game.windowOpen) game.echoes.composeWindow();
     else if (code === 'KeyG' && !game.windowOpen) game.emote('wave');

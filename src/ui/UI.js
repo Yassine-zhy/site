@@ -65,6 +65,16 @@ export class UI {
     setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 420); }, time * 1000);
   }
 
+  // fondu au noir bref (voyage, téléportation)
+  fade(t = 0.35) {
+    if (!this.fadeEl) { this.fadeEl = h('div', { class: 'fade-veil' }); this.root.appendChild(this.fadeEl); }
+    const el = this.fadeEl;
+    el.style.transition = `opacity ${t}s ease`;
+    el.style.opacity = '1';
+    clearTimeout(this._fadeT);
+    this._fadeT = setTimeout(() => { el.style.transition = 'opacity 0.6s ease'; el.style.opacity = '0'; }, t * 1000 + 120);
+  }
+
   announce(title, sub = '', time = 3) {
     this.announceBox.innerHTML = '';
     const el = h('div', { class: 'announce' }, h('div', { class: 'a1' }, title), sub ? h('div', { class: 'a2' }, sub) : null);

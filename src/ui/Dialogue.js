@@ -8,6 +8,13 @@ const GREET = {
   guard: ['Halte… Ah, c’est vous. Havrelumière est sous bonne garde.', 'Héros. Les routes sont dangereuses, mais vous l’êtes davantage.'],
   merchant: ['Bienvenue, bienvenue ! Élixirs, rumeurs, échos : tout s’échange ici.', 'Vous avez l’air assoiffé. Un élixir ?'],
   oracle: ['…je t’entendais venir. Tes pas ont un écho particulier.', 'Assieds-toi dans le cercle. Écoute.'],
+  ondine: ['Mon petit ! Entrez, entrez, ça sent bon la menthe et la fleur d’aube.', 'Encore une égratignure ? Venez par ici.'],
+  pip: ['Salut ! Tu veux voir mes cartes ? Elles sont presque finies !', 'Oh, un explorateur ! Tu as découvert quoi aujourd’hui ?'],
+  rhea: ['Prêt à voler ? Le vent est bon aujourd’hui.', 'Toi ! Tu as l’air d’avoir des ailes dans le dos.'],
+  bjorn: ['…Froid, hein ?', 'Assieds-toi près du feu. Les squelettes n’aiment pas la chaleur.'],
+  neige: ['Que la flamme bleue vous garde, voyageur.', 'Le Sanctuaire a besoin de mains courageuses.'],
+  kessa: ['Tiens, un nouveau ! Tu veux faire fortune ou juste te faire mordre par un squelette ?', 'L’ambre n’attend pas, partenaire.'],
+  tarek: ['Asseyez-vous, voyageur. Le sable a une histoire à vous conter.', 'Ah… les étoiles m’avaient prévenu de votre venue.'],
 };
 
 // Fenêtre de dialogue avec les habitants (choix + conversation libre propulsée par Claude).
@@ -107,8 +114,7 @@ export class Dialogue {
     });
     const main = q.mainFor(n.id);
     if (main && !q.active.some((x) => x.id === main.id)) this.option(`Quête : <b>« ${esc(main.title)} »</b>`, () => this.offer(main));
-    const side = q.sideFor(n.id);
-    if (side) this.option(`Quête : <b>« ${esc(side.title)} »</b>`, () => this.offer(side));
+    for (const side of q.sidesFor(n.id)) this.option(`Quête : <b>« ${esc(side.title)} »</b>`, () => this.offer(side));
     if (n.id === 'smith') this.smithOptions();
     if (n.id === 'merchant') this.merchantOptions();
     if (n.id === 'oracle') this.option('Écouter l’Oracle — <b>recevoir une quête unique</b>', () => this.oracleQuest(), g.mind?.available() ? 'ai' : '');

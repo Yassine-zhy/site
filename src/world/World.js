@@ -7,8 +7,10 @@ import { Grass } from './Grass.js';
 import { Maps, applyCorruption } from './Maps.js';
 import { Vegetation } from './Vegetation.js';
 import { Village } from './Village.js';
+import { Outposts } from './Outposts.js';
 import { Colliders } from './Colliders.js';
 import { EnvLight, updateRim } from '../engine/ModelLook.js';
+import { LightPool } from './Lights.js';
 
 // Le monde d'Aetheria : îles, ciel, eau, végétation, village.
 export class World {
@@ -48,6 +50,7 @@ export class World {
     this.sky = new Sky(this.scene);
     this.sky.setShadowSize(quality.shadowSize, quality.shadowSize >= 2048 ? 75 : 60);
     // reflets et lumière ambiante des modèles 3D : le ciel courant, préfiltré
+    this.lightPool = new LightPool(this.scene, quality.lights ?? 6);
     this.sky.update(0, null, 0);
     this.env = new EnvLight(renderer.renderer, this.sky);
     this.env.update(0);
@@ -60,14 +63,45 @@ export class World {
     this.vegetation = new Vegetation(this.scene, assets, this.terrain, this.colliders, this.maps, quality.trees);
     await step('Havrelumière se construit…');
     this.village = new Village(this.scene, assets, this.terrain, this.colliders, this.maps);
+    await step('Les campements s’allument…');
+    this.outposts = new Outposts(this.scene, assets, this.terrain, this.colliders);
     this.elapsed = 0;
+    if (new URLSearchParams(location.search).get('colliders')) this.debugColliders();
     return this;
+  }
+
+  // ?colliders=1 : affiche les contours de collision (mise au point)
+  debugColliders() {
+    const pts = [];
+    for (const c of this.colliders.all) {
+      const gy = (this.terrain.heightAt(c.x, c.z) ?? 0) + 0.6;
+      const ring = [];
+      if (c.type === 'circle') for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; ring.push([c.x + Math.cos(a) * c.r, c.z + Math.sin(a) * c.r]); }
+      else for (let i = 0; i < c.n; i++) ring.push([c.xs[i], c.zs[i]]);
+      for (let i = 0; i < ring.length; i++) { const a = ring[i], b = ring[(i + 1) % ring.length]; pts.push(a[0], gy, a[1], b[0], gy, b[1]); }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    const lines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xff2266, depthTest: false, toneMapped: false }));
+    lines.renderOrder = 99;
+    this.scene.add(lines);
+  }
+
+  // île ajoutée après le chargement (Citadelle des expéditions)
+  addIsland(isl) {
+    this.terrain.islands.push(isl);
+    const top = new THREE.Mesh(isl.topGeometry, this.terrainMat);
+    top.receiveShadow = true; top.castShadow = true;
+    const under = new THREE.Mesh(isl.underGeometry, this.underMat);
+    this.scene.add(top, under);
+    this.islandMeshes.push(top, under);
   }
 
   setQuality(q) {
     this.quality = q;
     this.grass.build(q.grass, q.grassRadius);
     this.sky.setShadowSize(q.shadowSize, q.shadowSize >= 2048 ? 75 : 60);
+    this.lightPool.setSize(q.lights ?? 6);
   }
 
   update(dt, focus, camera, pushers) {
@@ -81,6 +115,8 @@ export class World {
     this.grass.update(dt, e, focus, pushers, this.sky);
     this.vegetation.update(dt, e, this.playerFocus);
     this.village.update(dt, e, st.night);
+    this.outposts?.update(dt, e, st.night);
+    if (focus) this.lightPool.update(focus);
     return st;
   }
 }

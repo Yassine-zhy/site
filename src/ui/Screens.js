@@ -13,20 +13,21 @@ export class Screens {
   }
 
   // ------------------------------------------------------------ titre
-  showTitle({ hasSave, saveInfo, online = 0, onPlay, onNew }) {
+  showTitle({ hasSave, saveInfo, online = 0, onPlay, onNew, onMulti }) {
     const g = this.game;
     g.world.sky.override = 0.71;
     g.menuMode = 'title';
     this.titleT = 0;
     const play = h('button', { class: 'btn', id: 'btn-play', onclick: () => { this.hideTitle(); onPlay(); } }, hasSave ? 'Reprendre l’aventure' : 'Commencer l’aventure');
     const neu = hasSave ? h('button', { class: 'btn ghost', id: 'btn-new', onclick: () => { this.hideTitle(); onNew(); } }, 'Nouveau héros') : null;
+    const multi = onMulti ? h('button', { class: 'btn ghost', id: 'btn-multi', title: 'Héberger ou rejoindre une expédition entre amis (jusqu’à 4)', onclick: () => { this.hideTitle(); onMulti(); } }, '⚔ Multijoueur') : null;
     this.title = h('div', { id: 'title' },
       h('div', { class: 'left' },
         h('div', { class: 'logo' }, 'Aetheria'),
         h('div', { class: 'logo-sub' }, "l'archipel des échos"),
         h('div', { class: 'tagline' }, 'Au-dessus d’une mer de nuages, la Brume ramène les morts. Rallumez les Phares avec tous les héros du monde, tracez des runes pour lancer vos sorts, et parlez à des habitants qui pensent vraiment.'),
         hasSave && saveInfo ? h('div', { class: 'online', style: { marginTop: '-10px', marginBottom: '16px' } }, saveInfo) : null,
-        h('div', { class: 'row' }, play, neu),
+        h('div', { class: 'row' }, play, neu, multi),
         this.onlineEl = h('div', { class: 'online' }, online > 0 ? [h('b', {}, String(online)), ' héros en ligne en ce moment'] : 'Monde partagé · progression sauvegardée'),
       ),
       h('div', { class: 'credits' }, 'Modèles 3D : KayKit par Kay Lousberg (CC0) · Moteur : three.js'),

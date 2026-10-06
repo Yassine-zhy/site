@@ -13,6 +13,7 @@ import { CLOUD_SEA_Y } from '../world/Clouds.js';
 import { renderWorldMap } from '../ui/MapRender.js';
 import { Hud } from '../ui/Hud.js';
 import { Icons } from '../ui/Icons.js';
+import { platformAt } from '../world/Citadel.js';
 import { Updrafts } from '../world/Updrafts.js';
 import { cloneModelMaterial } from '../engine/ModelLook.js';
 
@@ -54,7 +55,7 @@ export class Game {
     this.world.updrafts = new Updrafts(this.scene, this.world.terrain, this.fx);
     onStep?.('Cartographie de l’archipel…');
     await new Promise((r) => setTimeout(r, 0));
-    this.mapImage = renderWorldMap(this.world.terrain, 512);
+    this.mapImage = renderWorldMap(this.world.terrain, 768);
   }
 
   // Compile d'avance tout ce qui apparaît en combat : effets, héros et squelettes, opaques
@@ -100,6 +101,8 @@ export class Game {
   }
 
   respawnPoint(first = false) {
+    const ex = !first && this.expedition?.respawnPoint();
+    if (ex) return ex;
     // au Cœur de Lumière, ou au phare allumé le plus proche de la mort
     let x = VILLAGE.x + 3, z = VILLAGE.z + 11, facing = Math.PI;
     if (!first && this.player && this.worldState) {
@@ -358,6 +361,7 @@ export class Game {
       else if (ev.type === 'jump') { this.audio?.play('jump', p.position); this.fx.dust(p.position, { count: 6, size: 0.9 }); }
       else if (ev.type === 'land') { this.fx.dust(p.position, { count: Math.min(24, 6 + ev.impact), size: 1.1 }); this.audio?.play('land', p.position); if (ev.impact > 26) this.takeDamage((ev.impact - 26) * 4, null, { kind: 'fall' }); }
       else if (ev.type === 'dodge') this.audio?.play('dodge', p.position);
+      else if (ev.type === 'updraft') this.quests?.onEvent('updraft', {});
       else if (ev.type === 'glide') { this.audio?.play(ev.open ? 'glide' : 'glideclose', p.position); if (ev.open) this.quests?.onEvent('glide', {}); }
     }
   }
@@ -399,7 +403,12 @@ export class Game {
     this.lastCombat = this.elapsed;
     this.ui.floatText(p.position.clone().setY(p.position.y + 2.4), '−' + dmg, 'hurt', { spread: 1 });
     this.hurtFlash = Math.min(1, this.hurtFlash + dmg / hero.stats.hp * 3);
-    p.char.hitFlash('#ff5040', 0.8);
+    p.char.hitFlash(opts.kind === 'chill' ? '#7fd0ff' : '#ff5040', 0.8);
+    if (opts.kind === 'chill') {
+      if (!hero.hasBuff('chill')) this.ui.toast('Vous êtes <b style="color:#9fd8ff">gelé</b> : vos mouvements ralentissent.', { time: 2, color: '#9fd8ff' });
+      hero.addBuff('chill', 2.6, {}, { icon: 'frost', label: 'Gel' });
+      this.fx.burst(p.position.clone().setY(p.position.y + 1.2), '#bfe8ff', { count: 14, speed: 3, size: 0.3, life: 0.6, gravity: 2 });
+    }
     this.rig.shake(Math.min(0.5, dmg / hero.stats.hp * 3));
     this.audio?.play('hurt', p.position);
     if (!wall && !p.char.oneShot && dmg > hero.stats.hp * 0.08) p.char.playAction('Hit_A', { timeScale: 1.8 });
@@ -516,6 +525,22 @@ export class Game {
     const p = this.player.position;
     const t = this.world.terrain;
     const isl = t.islandAt(p.x, p.z);
+    if (p.x > 3500) { const P = platformAt(p.x, p.z); return { name: P?.name || 'La Citadelle des Ombres', sub: 'Citadelle des Ombres' }; }
+    if (isl?.big) {
+      const d = isl.def, near = (o, r) => o && Math.hypot(p.x - o.x, p.z - o.z) < r;
+      if (d.id === 'givre') {
+        if (near(d.camp, d.camp.radius + 10)) return { name: d.camp.name, sub: 'campement · sûr' };
+        if (near(d.lake, d.lake.radius * 1.6)) return { name: d.lake.name, sub: 'squelettes niv. 14–17' };
+        if (near(d.peak, d.peak.radius * 0.8)) return { name: d.peak.name, sub: 'squelettes niv. 16–20' };
+        if (near(d.sanctuary, d.sanctuary.radius + 12)) return { name: d.sanctuary.name, sub: 'squelettes niv. 15–18' };
+        return { name: d.name, sub: 'squelettes niv. 13–16' };
+      }
+      if (near(d.camp, d.camp.radius + 10)) return { name: d.camp.name, sub: 'campement · sûr' };
+      if (near(d.mine, 26)) return { name: d.mine.name, sub: 'squelettes niv. 11–14' };
+      if (near(d.cirque, d.cirque.radius * 1.4)) return { name: d.cirque.name, sub: 'arène du Colosse' };
+      if (d.features.some((f) => f.type === 'mesa' && near(f, f.radius * 1.3))) return { name: 'Les Mesas', sub: 'squelettes niv. 12–15' };
+      return { name: d.name, sub: 'squelettes niv. 9–14' };
+    }
     if (isl && isl !== t.main) return { name: isl.name, sub: 'îlot flottant' };
     if (!isl) return { name: 'Le Ciel', sub: 'au-dessus de la mer de nuages' };
     const zones = [

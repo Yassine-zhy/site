@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { mulberry32 } from '../engine/math.js';
 import { VILLAGE, RUINS, BRIDGES } from '../config.js';
 import { applyCorruption } from './Maps.js';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { Decor } from './Decor.js';
+import { VirtualLight } from './Lights.js';
 
 const BSCALE = 7;
 
@@ -34,16 +35,14 @@ export const NPC_SPOTS = {
   oracle: { x: -62, z: -26, face: [-40, -10] },
   guard: { x: 6, z: 46, face: [8, 80] },
   merchant: { x: -18, z: 12, face: [0, 0] },
+  ondine: { x: -33, z: 27, face: [-20, 20] },
+  pip: { x: 37, z: 7, face: [20, 10] },
+  rhea: { x: 19, z: -33, face: [8, -20] },
 };
 
-export class Village {
+export class Village extends Decor {
   constructor(scene, assets, terrain, colliders, maps) {
-    this.scene = scene; this.assets = assets; this.terrain = terrain; this.colliders = colliders;
-    this.group = new THREE.Group();
-    this.group.name = 'village';
-    scene.add(this.group);
-    this.lights = [];
-    this.flames = [];
+    super(scene, assets, terrain, colliders, 'village');
     this.windmillBlades = null;
     const rng = mulberry32(555);
 
@@ -63,7 +62,7 @@ export class Village {
     for (const [name, x, z, s, r, yoff] of props) this.placeProp(name, x, z, s, r, yoff || 0, true);
 
     // palissade/clôtures autour des jardins
-    for (let i = 0; i < 6; i++) this.placeProp('fence_wood_straight', -6 + i * 2.2 * 3.6, 46 + Math.sin(i) * 0.3, 3.6, Math.PI / 2, 0, false);
+    for (let i = 0; i < 6; i++) this.placeProp('fence_wood_straight', -6 + i * 2.2 * 3.6, 46 + Math.sin(i) * 0.3, 3.6, Math.PI / 2, 0, true);
 
     // Lanternes (torches KayKit Dungeon sur poteaux)
     const lanterns = [];
@@ -76,116 +75,8 @@ export class Village {
 
     this.buildMonument(maps);
     this.buildRuins(rng);
-    this.buildBridges();
+    this.buildBridges(this.terrain.bridges);
     this.mergeStatic();
-  }
-
-  // Fusionne tous les décors immobiles par matériau : quelques appels de rendu au lieu de centaines.
-  mergeStatic() {
-    const g = this.group;
-    g.updateMatrixWorld(true);
-    const keep = new Set();
-    if (this.windmillBlades) keep.add(this.windmillBlades);
-    for (const f of this.flames) keep.add(f);
-    const byMat = new Map();
-    const remove = [];
-    g.traverse((o) => {
-      if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || keep.has(o)) return;
-      if (Array.isArray(o.material)) return;
-      const geo = o.geometry.clone();
-      for (const key of Object.keys(geo.attributes)) {
-        const a = geo.attributes[key];
-        if (a.isInterleavedBufferAttribute || a.normalized || !(a.array instanceof Float32Array)) {
-          const arr = new Float32Array(a.count * a.itemSize);
-          for (let i = 0; i < a.count; i++) for (let k = 0; k < a.itemSize; k++) arr[i * a.itemSize + k] = a.getComponent(i, k);
-          geo.setAttribute(key, new THREE.BufferAttribute(arr, a.itemSize));
-        }
-      }
-      for (const key of Object.keys(geo.attributes)) if (!['position', 'normal', 'uv'].includes(key)) geo.deleteAttribute(key);
-      if (!geo.attributes.uv) geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count * 2), 2));
-      if (!geo.attributes.normal) geo.computeVertexNormals();
-      geo.applyMatrix4(o.matrixWorld);
-      const ng = geo.index ? geo.toNonIndexed() : geo;
-      if (!byMat.has(o.material)) byMat.set(o.material, []);
-      byMat.get(o.material).push(ng);
-      remove.push(o);
-    });
-    for (const o of remove) o.removeFromParent();
-    for (const [mat, list] of byMat) {
-      const merged = mergeGeometries(list, false);
-      if (!merged) continue;
-      merged.computeBoundingSphere();
-      const m = new THREE.Mesh(merged, mat);
-      m.castShadow = true; m.receiveShadow = true;
-      this.scene.add(m);
-    }
-    // les objets restants (pales, flammes, lumières) restent dans le groupe
-  }
-
-  ground(x, z) { return this.terrain.heightAt(x, z) ?? VILLAGE.height; }
-
-  placeBuilding(b) {
-    const obj = this.assets.prop(b.name);
-    const y = this.ground(b.x, b.z);
-    const face = b.face || [VILLAGE.x, VILLAGE.z];
-    const rot = Math.atan2(face[0] - b.x, face[1] - b.z);
-    obj.position.set(b.x, y - 0.2, b.z);
-    obj.rotation.y = rot;
-    obj.scale.setScalar(b.s || BSCALE);
-    this.group.add(obj);
-    const box = this.assets.propBox(b.name);
-    const s = b.s || BSCALE;
-    const cx = (box.min.x + box.max.x) / 2 * s, cz = (box.min.z + box.max.z) / 2 * s;
-    const wx = b.x + cx * Math.cos(rot) + cz * Math.sin(rot), wz = b.z - cx * Math.sin(rot) + cz * Math.cos(rot);
-    const hw = (box.max.x - box.min.x) / 2 * s * 0.86, hd = (box.max.z - box.min.z) / 2 * s * 0.86;
-    if (b.name === 'building_well') this.colliders.addCircle(b.x, b.z, hw * 0.9, y - 2, y + 6, 'building');
-    else this.colliders.addBox(wx, wz, hw, hd, rot, y - 2, y + (box.max.y * s), 'building');
-    if (b.name === 'building_windmill') {
-      obj.traverse((o) => { if (!this.windmillBlades && o.isMesh && /blade|wing|sail/i.test(o.name)) this.windmillBlades = o; });
-    }
-    return obj;
-  }
-
-  placeProp(name, x, z, s, r, yoff = 0, collide = true) {
-    const obj = this.assets.prop(name);
-    const y = this.ground(x, z);
-    obj.position.set(x, y + yoff - 0.05, z);
-    obj.rotation.y = r;
-    obj.scale.setScalar(s);
-    this.group.add(obj);
-    if (collide) {
-      const box = this.assets.propBox(name);
-      const rad = Math.max(box.max.x - box.min.x, box.max.z - box.min.z) * s * 0.42;
-      if (rad > 0.4) this.colliders.addCircle(x, z, rad, y - 1, y + box.max.y * s + yoff, 'prop');
-    }
-    return obj;
-  }
-
-  placeLantern(x, z, withLight) {
-    const y = this.ground(x, z);
-    this.postMat = this.postMat || new THREE.MeshStandardMaterial({ color: '#5b3d26', roughness: 0.9 });
-    this.postGeo = this.postGeo || new THREE.CylinderGeometry(0.12, 0.16, 3.2, 6);
-    const post = new THREE.Mesh(this.postGeo, this.postMat);
-    post.position.set(x, y + 1.6, z);
-    post.castShadow = true;
-    this.group.add(post);
-    const torch = this.assets.prop('torch_lit');
-    torch.position.set(x, y + 3.35, z);
-    torch.scale.setScalar(0.9);
-    this.group.add(torch);
-    this.glowMat = this.glowMat || new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffb347').multiplyScalar(4), toneMapped: false });
-    this.glowGeo = this.glowGeo || new THREE.SphereGeometry(0.28, 10, 8);
-    const glow = new THREE.Mesh(this.glowGeo, this.glowMat);
-    glow.position.set(x, y + 3.9, z);
-    this.group.add(glow);
-    this.flames.push(glow);
-    this.colliders.addCircle(x, z, 0.35, y - 1, y + 4, 'prop');
-    if (withLight) {
-      const l = new THREE.PointLight('#ffb35c', 0, 22, 1.6);
-      l.position.set(x, y + 4.2, z);
-      this.group.add(l);
-      this.lights.push(l);
-    }
   }
 
   // Le Cœur de Lumière : monument central, point de résurrection, protège le village.
@@ -219,12 +110,16 @@ export class Village {
       g.add(r);
       rings.push(r);
     }
-    const light = new THREE.PointLight('#ffd27a', 18, 40, 1.4);
+    const light = new VirtualLight('#ffd27a', 18, 40, 1.4);
     light.position.y = 7.5;
     g.add(light);
     this.scene.add(g);
     this.monument = { group: g, crystal, rings, light, y };
-    this.colliders.addCircle(0, 0, 5.4, y - 2, y + 3, 'monument');
+    // marches praticables, colonne centrale et piliers solides
+    this.colliders.addCircle(0, 0, 6.8, y - 2, y + 0.6, 'prop', true);
+    this.colliders.addCircle(0, 0, 4.95, y - 2, y + 1.2, 'prop', true);
+    this.colliders.addCircle(0, 0, 2.1, y - 2, y + 9, 'monument');
+    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; this.colliders.addCircle(Math.cos(a) * 4.2, Math.sin(a) * 4.2, 0.55, y - 1, y + 5, 'monument'); }
   }
 
   // Les Cendres : ruines d'un ancien temple (KayKit Dungeon).
@@ -239,10 +134,9 @@ export class Village {
       g.add(o);
       if (collide) {
         const box = this.assets.propBox(name);
-        const hw = (box.max.x - box.min.x) / 2 * scale, hd = (box.max.z - box.min.z) / 2 * scale;
-        const lx = (box.min.x + box.max.x) / 2 * scale, lz = (box.min.z + box.max.z) / 2 * scale;
-        const wx = x + lx * Math.cos(rot) + lz * Math.sin(rot), wz = z - lx * Math.sin(rot) + lz * Math.cos(rot);
-        this.colliders.addBox(wx, wz, hw * 0.9, hd * 0.9, rot, y - 1, y + box.max.y * scale, 'ruin');
+        const top = y + yoff + box.max.y * scale;
+        const low = top - y < 3.2;
+        this.colliders.addFootprint(this.hulls(name, scale, 0.02, 0.6), x, z, rot, y - 1, top, low ? 'prop' : 'ruin', low);
       }
       return o;
     };
@@ -277,48 +171,6 @@ export class Village {
     put('candle_triple', cx - 2, cz - 2, 0, 1.6, false);
   }
 
-  buildBridges() {
-    const plank = new THREE.MeshStandardMaterial({ color: '#8a5a34', roughness: 0.9, flatShading: true });
-    const rope = new THREE.MeshStandardMaterial({ color: '#c9a777', roughness: 1 });
-    for (const b of this.terrain.bridges) {
-      const n = Math.ceil(b.len / 0.9);
-      const dir = Math.atan2(b.bx - b.ax, b.bz - b.az);
-      const geo = new THREE.BoxGeometry(b.width, 0.16, 0.7);
-      const inst = new THREE.InstancedMesh(geo, plank, n);
-      const m = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sc = new THREE.Vector3(1, 1, 1);
-      const pts = [[], []];
-      for (let i = 0; i < n; i++) {
-        const t = (i + 0.5) / n;
-        const x = b.ax + (b.bx - b.ax) * t, z = b.az + (b.bz - b.az) * t;
-        const y = b.ha + (b.hb - b.ha) * t - Math.sin(t * Math.PI) * b.sag - 0.08;
-        q.setFromEuler(new THREE.Euler(0, dir + (Math.random() - 0.5) * 0.05, 0));
-        v.set(x, y, z); m.compose(v, q, sc); inst.setMatrixAt(i, m);
-      }
-      for (let i = 0; i <= 24; i++) {
-        const t = i / 24;
-        const x = b.ax + (b.bx - b.ax) * t, z = b.az + (b.bz - b.az) * t;
-        const y = b.ha + (b.hb - b.ha) * t - Math.sin(t * Math.PI) * b.sag * 0.85 + 1.1;
-        const ox = Math.cos(dir) * b.width * 0.5, oz = -Math.sin(dir) * b.width * 0.5;
-        pts[0].push(new THREE.Vector3(x + ox, y, z + oz));
-        pts[1].push(new THREE.Vector3(x - ox, y, z - oz));
-      }
-      inst.castShadow = true; inst.receiveShadow = true;
-      this.group.add(inst);
-      for (const p of pts) {
-        const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(p), 48, 0.06, 5, false), rope);
-        this.group.add(tube);
-      }
-      // poteaux
-      for (const [x, z, h] of [[b.ax, b.az, b.ha], [b.bx, b.bz, b.hb]]) {
-        for (const sgn of [-1, 1]) {
-          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 2.4, 6), plank);
-          post.position.set(x + Math.cos(dir) * b.width * 0.5 * sgn, h + 0.9, z - Math.sin(dir) * b.width * 0.5 * sgn);
-          this.group.add(post);
-        }
-      }
-    }
-  }
-
   update(dt, elapsed, night) {
     if (this.monument) {
       const m = this.monument;
@@ -327,9 +179,7 @@ export class Village {
       m.rings.forEach((r, i) => { r.rotation.x = elapsed * (0.3 + i * 0.17) + i; r.rotation.y = elapsed * (0.21 + i * 0.11); r.position.y = m.crystal.position.y; });
       m.light.intensity = 6 + night * 16;
     }
-    const flick = 0.85 + Math.sin(elapsed * 13.1) * 0.08 + Math.sin(elapsed * 7.3) * 0.07;
-    for (const l of this.lights) l.intensity = night * 26 * flick;
-    for (const f of this.flames) f.scale.setScalar(0.6 + night * 0.7 * flick);
+    super.update(dt, elapsed, night);
     if (this.windmillBlades) this.windmillBlades.rotation.z += dt * 0.8;
   }
 }

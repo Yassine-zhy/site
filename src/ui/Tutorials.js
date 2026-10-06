@@ -1,8 +1,10 @@
 import { h } from './dom.js';
 import { recognize, glyphPath } from '../game/Recognizer.js';
 import { RUNE_SPELLS } from '../game/Runes.js';
-import { BEACONS } from '../config.js';
+import { BEACONS, WORLD_BOSSES } from '../config.js';
 import { PLACES, ZONE_NAMES } from '../game/Quests.js';
+import { BOSS_KITS } from '../game/Boss.js';
+import { ITEMS_GATHER, RING_SETS } from '../game/Gathering.js';
 
 // Tutoriels de quêtes : un clic sur un objectif (journal ou suivi) explique comment le
 // réussir, avec les commandes de l'appareil utilisé. Les runes ont un tracé animé et une
@@ -264,18 +266,118 @@ function lootTutorial(g, o, touch) {
   };
 }
 
+const BOSS_TIPS = {
+  roi: 'Il appelle ses gardes à 70 %, 40 % et 15 % de vie : éliminez-les vite.',
+  colosse: 'Ses charges traversent l’arène en ligne droite : écartez-vous sur le côté. Ses séismes frappent en anneaux.',
+  reine: 'Le blizzard gèle le sol : quittez les zones bleues. Ses novas de givre vous ralentissent, gardez votre esquive.',
+};
+
 function bossTutorial(g, o, touch) {
+  const id = o.boss || 'roi';
+  const kit = BOSS_KITS[id] || BOSS_KITS.roi;
+  const wb = WORLD_BOSSES.find((b) => b.id === id);
+  const where = wb ? `${wb.region}` : 'son repaire';
   return {
-    lead: 'Le Roi Sans Lumière règne au sommet du Pic du Silence. C’est un combat difficile : venez avec un bon niveau, ou à plusieurs.',
+    lead: `${kit.name} règne sur ${where}. C’est un combat difficile : venez avec un bon niveau (${wb?.level || 10} conseillé), ou à plusieurs.`,
     body: [
       h('ol', { class: 'tut-steps' },
-        step('Montez au sommet (étoile rouge sur la carte).'),
-        step('Ses coups sont annoncés par des cercles rouges au sol : sortez-en, ou esquivez (', touch ? 'bouton « esquive »' : kbd('C'), ').'),
-        step('Quand il appelle ses gardes, éliminez-les vite.'),
+        step('Suivez la balise rouge (losange à l’écran, étoile sur la carte).'),
+        step('Ses coups sont annoncés par des zones rouges au sol : sortez-en, ou esquivez (', touch ? 'bouton « esquive »' : kbd('C'), ').'),
+        step(BOSS_TIPS[id] || 'Observez ses attaques : chacune a un signe annonciateur.'),
         step('Runes utiles : Aegis (V) pour un bouclier, Vita (cercle) pour vous soigner.')),
-      h('p', { class: 'tut-note' }, 'Gardez des élixirs de vie (', touch ? 'bouton « élixir »' : kbd('R'), '). Niveau conseillé : 10 ou plus.'),
+      h('p', { class: 'tut-note' }, 'Gardez des élixirs de vie (', touch ? 'bouton « élixir »' : kbd('R'), '). Les autres joueurs proches combattent avec vous ; invitez des amis avec le menu Multijoueur (', touch ? 'bouton ⚔' : kbd('P'), ').'),
     ],
     actions: [['Voir sur la carte', () => g.windows.open('map')]],
+  };
+}
+
+const GATHER_WHERE = {
+  aube: 'dans les prairies autour de Havrelumière et dans les Collines',
+  mousse: 'sur les rives du Lac Miroir et dans le Bois-Murmure',
+  plume: 'sur les îlots flottants (Nuées, Trésor, Pèlerin, Éclat, Suspendu)',
+  ambre: 'dans les Terres d’Ambre : mesas, mine de Kessa, Gorge Rouge',
+  givre: 'aux Cimes de Givre : autour du Lac de Cristal et du Sanctuaire',
+};
+
+function collectTutorial(g, o) {
+  const it = ITEMS_GATHER[o.item] || { name: 'ressource', plural: 'ressources', color: '#ffe3a3' };
+  return {
+    lead: `Les ${it.plural.toLowerCase()} poussent ${GATHER_WHERE[o.item] || 'dans le monde'}. Elles brillent et tournent sur elles-mêmes.`,
+    body: [
+      h('ol', { class: 'tut-steps' },
+        step('Suivez la balise de couleur ', h('b', { style: { color: it.color } }, it.name), ' : elle indique la plus proche.'),
+        step('Marchez simplement dessus : la récolte est automatique.'),
+        step('Une ressource cueillie repousse au bout de deux minutes.')),
+      h('p', { class: 'tut-note' }, 'Chaque récolte rapporte aussi un peu d’or et d’expérience.'),
+    ],
+    actions: [['Voir sur la carte', () => g.windows.open('map')]],
+  };
+}
+
+function waystoneTutorial(g, o, touch) {
+  return {
+    lead: 'Les pierres de passage sont de hauts obélisques gravés. Une fois éveillées, elles permettent de voyager instantanément entre elles.',
+    body: [
+      h('ol', { class: 'tut-steps' },
+        step('Suivez la balise bleue : elle mène à la pierre la plus proche que vous n’avez pas encore éveillée.'),
+        step('Approchez-vous et ', touch ? 'touchez « Interagir »' : ['appuyez sur ', kbd('E')], ' : la pierre s’éveille.'),
+        step('Ensuite, ', touch ? 'touchez « Interagir »' : [kbd('E')], ' près de n’importe quelle pierre pour choisir une destination.')),
+      h('p', { class: 'tut-note' }, 'Il y en a une à Havrelumière, aux Cendres, au pied du Pic, et dans chaque grande île.'),
+    ],
+    actions: [['Voir sur la carte', () => g.windows.open('map')]],
+  };
+}
+
+function updraftTutorial(g, o, touch) {
+  const jump = touch ? 'le bouton « saut »' : kbd('Espace');
+  return {
+    lead: 'Les colonnes de vent sont des tourbillons lumineux qui montent vers le ciel, près des rivages et des falaises.',
+    body: [
+      h('ol', { class: 'tut-steps' },
+        step('Suivez la balise bleu clair jusqu’à la colonne la plus proche.'),
+        step('Entrez dedans et sautez (', jump, ') : le vent vous soulève.'),
+        step('Ouvrez la paravoile (', jump, ' en l’air) pour monter encore plus haut, puis planez où vous voulez.')),
+    ],
+    actions: [['Voir sur la carte', () => g.windows.open('map')]],
+  };
+}
+
+function ringsTutorial(g, o, touch) {
+  const set = RING_SETS[o.set];
+  const jump = touch ? 'le bouton « saut »' : kbd('Espace');
+  return {
+    lead: `Des anneaux dorés flottent ${set?.name || 'dans le ciel'}. Traversez-les en planant, dans l’ordre.`,
+    body: [
+      h('ol', { class: 'tut-steps' },
+        step('Rejoignez la colonne de vent de départ (la balise vous y conduit).'),
+        step('Montez jusqu’en haut en planant (', jump, ' deux fois).'),
+        step('Planez droit vers le premier anneau : ils sont placés sur votre pente de vol, il suffit de garder le cap.'),
+        step('Trop bas ? Refermez et rouvrez la paravoile ne fait pas remonter : retournez à la colonne.')),
+      h('p', { class: 'tut-note' }, 'Un anneau traversé devient vert. La balise montre toujours le suivant.'),
+    ],
+    actions: [],
+  };
+}
+
+function eliteTutorial(g, o, touch) {
+  const k = killTutorial(g, { type: 'kill' }, touch);
+  k.lead = 'Les élites sont des squelettes plus grands, à l’armure dorée, avec « Élite » devant leur nom. Ils apparaissent parfois parmi les autres, partout dans le monde.';
+  k.body.unshift(h('p', { class: 'tut-note' }, 'Ils sont plus résistants mais lâchent presque toujours un bon objet. Battez-vous dans des zones de votre niveau.'));
+  return k;
+}
+
+function expeditionTutorial(g, o, touch) {
+  return {
+    lead: 'Les expéditions se jouent jusqu’à 4 amis, dans la Citadelle des Ombres : épreuves, boss et grosses récompenses.',
+    body: [
+      h('ol', { class: 'tut-steps' },
+        step('Ouvrez le menu Multijoueur (', touch ? 'bouton ⚔' : [kbd('P'), ' ou le bouton « Expéditions »'], ') ou approchez du portail violet près de la place du village.'),
+        step(h('b', {}, 'Héberger'), ' crée un groupe et affiche un code à 5 lettres. Donnez-le à vos amis.'),
+        step('Vos amis choisissent ', h('b', {}, 'Rejoindre'), ' et tapent le code.'),
+        step('L’hôte lance une expédition : tout le groupe est téléporté.')),
+      h('p', { class: 'tut-note' }, 'Seul, vous pouvez aussi lancer une expédition : elle s’adapte au nombre de joueurs.'),
+    ],
+    actions: [['Ouvrir le menu Multijoueur', () => g.windows.open('party')]],
   };
 }
 
@@ -296,7 +398,7 @@ function returnTutorial(g, o, touch) {
   return t;
 }
 
-const BUILDERS = { rune: runeTutorial, ventus: runeTutorial, light: lightTutorial, beaconLit: lightTutorial, kill: killTutorial, talk: talkTutorial, visit: visitTutorial, glide: glideTutorial, echo: echoTutorial, loot: lootTutorial, boss: bossTutorial, level: levelTutorial, return: returnTutorial };
+const BUILDERS = { rune: runeTutorial, ventus: runeTutorial, light: lightTutorial, beaconLit: lightTutorial, kill: killTutorial, talk: talkTutorial, visit: visitTutorial, glide: glideTutorial, echo: echoTutorial, loot: lootTutorial, boss: bossTutorial, level: levelTutorial, return: returnTutorial, collect: collectTutorial, waystone: waystoneTutorial, updraft: updraftTutorial, rings: ringsTutorial, elite: eliteTutorial, expedition: expeditionTutorial };
 
 export function hasTutorial(o) { return !!(o && BUILDERS[o.type]); }
 

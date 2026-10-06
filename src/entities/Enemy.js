@@ -3,7 +3,8 @@ import { Character } from './Character.js';
 import { ENEMIES } from '../config.js';
 import { damp, dampAngle } from '../engine/math.js';
 
-export const ENEMY_TYPES = ['minion', 'warrior', 'rogue', 'mage', 'boss'];
+// tous les types (même ordre chez tous les joueurs : il vient de la configuration commune)
+export const ENEMY_TYPES = Object.keys(ENEMIES);
 export const STATES = ['spawn', 'idle', 'wander', 'chase', 'attack', 'return', 'dead', 'cast', 'stagger'];
 
 // Un squelette d'Aetheria. La logique (IA) tourne chez l'hôte ; les autres clients
@@ -27,7 +28,7 @@ export class Enemy {
     const attach = [];
     if (this.def.weapon) attach.push([this.def.weapon[0], this.def.weapon[1].replace('.', ''), 1]);
     if (this.def.shield) attach.push([this.def.shield[0], this.def.shield[1].replace('.', ''), 1]);
-    this.char = new Character(game.assets, this.def.model, { scale, attach, tint: elite ? '#ffe2a8' : null });
+    this.char = new Character(game.assets, this.def.model, { scale, attach, tint: elite ? (this.def.tint ? '#fff0c0' : '#ffe2a8') : (this.def.tint || null) });
     this.object = this.char.object;
     this.position = this.object.position;
     const y = game.world.terrain.heightAt(x, z) ?? 0;

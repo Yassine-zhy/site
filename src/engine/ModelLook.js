@@ -82,6 +82,8 @@ export function enhanceModelMaterial(m) {
   ENV.materials.add(m);
 }
 
+export function modelEnvTexture() { return ENV.texture; }
+
 // onBeforeCompile n'est pas recopié par clone() : on le remet sur chaque copie.
 export function cloneModelMaterial(m) {
   const c = m.clone();

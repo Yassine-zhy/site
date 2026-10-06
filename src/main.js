@@ -93,6 +93,13 @@ async function main(hotData = {}) {
       else game.screens.showCreate((cls, name) => begin(new Hero(cls, name)));
     },
     onNew: () => { audio.unlock(); game.screens.showCreate((cls, name) => begin(new Hero(cls, name))); },
+    // multijoueur : on entre dans le monde puis on ouvre la fenêtre des expéditions
+    onMulti: () => {
+      audio.unlock();
+      const then = async (hero) => { await begin(hero); game.windows?.open('party'); };
+      if (existing) then(Hero.deserialize(existing));
+      else game.screens.showCreate((cls, name) => then(new Hero(cls, name)));
+    },
   });
   platform.onOnline?.((n) => game.screens.setOnline(n));
 }

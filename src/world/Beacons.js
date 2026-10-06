@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { VirtualLight } from './Lights.js';
 import { BEACONS } from '../config.js';
 
 const ringVert = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
@@ -60,11 +61,13 @@ export class Beacons {
       beam.visible = false;
       beam.renderOrder = 15;
       g.add(beam);
-      const light = new THREE.PointLight('#ffd27a', 0, 45, 1.5);
+      const light = new VirtualLight('#ffd27a', 0, 45, 1.5);
       light.position.y = 6.5;
       g.add(light);
       scene.add(g);
       colliders.addCircle(b.x, b.z, 1.6, y - 1, y + 9, 'monument');
+      colliders.addCircle(b.x, b.z, 6.0, y - 2, y + 0.6, 'prop', true);
+      colliders.addCircle(b.x, b.z, 4.45, y - 2, y + 1.2, 'prop', true);
       this.list.push({ def: b, group: g, crystal, crystalMat, ringMat, beam, beamMat, light, y, level: 0, shown: 0, lit: false });
     }
   }

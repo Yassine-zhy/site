@@ -2,8 +2,10 @@ import * as THREE from 'three';
 import { RoomTransport, BroadcastTransport, WSTransport } from './Transports.js';
 import { RemotePlayer } from '../entities/RemotePlayer.js';
 import { ABILITIES, basicVisual } from '../game/Abilities.js';
+import { ENEMIES } from '../config.js';
+import { ENEMY_TYPES } from '../entities/Enemy.js';
 
-export const PROTO = 3;
+export const PROTO = 4;
 const MAX_BYTES = 3900;
 
 // Synchronisation multijoueur par "présence" : chaque joueur publie son état complet
@@ -14,8 +16,9 @@ export class Net {
     this.game = game;
     this.transport = null;
     this.peers = new Map(); // id -> { presence, seen: {chan: seq} }
-    this.seq = { a: 0, h: 0, fx: 0, ch: 0, em: 0, ab: 0, K: 0, D: 0, X: 0 };
-    this.out = { a: [], h: [], fx: [], K: [], D: [], X: [] };
+    this.seq = { a: 0, h: 0, fx: 0, ch: 0, em: 0, ab: 0, K: 0, D: 0, X: 0, xe: 0 };
+    this.out = { a: [], h: [], fx: [], K: [], D: [], X: [], xe: [] };
+    this.party = null; // { code } quand on est dans une salle d'expédition
     this.chat = null; this.emote = null; this.allyBuff = null;
     this.since = Date.now();
     this.sendT = 0;
@@ -36,7 +39,65 @@ export class Net {
     else if (ws) this.useTransport(new WSTransport(ws), 'ws');
     else if (params.get('local') !== '0' && typeof BroadcastChannel !== 'undefined') { try { this.useTransport(new BroadcastTransport(), 'local'); } catch (e) { console.warn('multijoueur local indisponible', e); } }
     // la salle peut arriver plus tard
-    if (!room) g.platform.onRoom((r) => { if (this.mode !== 'room') { this.transport?.close(); this.useTransport(new RoomTransport(r), 'room'); } });
+    if (!room && !this.waitingRoom) {
+      this.waitingRoom = true;
+      g.platform.onRoom((r) => { if (this.mode !== 'room' && !this.party) { this.transport?.close(); this.useTransport(new RoomTransport(r), 'room'); } });
+    }
+  }
+
+  // ------------------------------------------------------------------ groupes d'expédition (salles privées)
+  // Chaque groupe a sa propre salle nommée « exp-CODE » : on n'y voit que ses coéquipiers.
+  async joinParty(code, hosting = false) {
+    const g = this.game, params = new URLSearchParams(location.search);
+    code = String(code || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
+    if (code.length < 4) return { ok: false, why: 'Code invalide.' };
+    const name = 'exp-' + code;
+    let t = null;
+    const room = g.platform.room, ws = params.get('server');
+    try {
+      if (room?.join) t = new RoomTransport(await room.join(name), true);
+      else if (ws) t = new WSTransport(ws + (ws.includes('?') ? '&' : '?') + 'room=' + name);
+      else if (typeof BroadcastChannel !== 'undefined') t = new BroadcastTransport('aetheria-' + name);
+    } catch (e) {
+      return { ok: false, why: e?.code === 'limit_reached' ? 'Trop de salles ouvertes, réessayez dans un instant.' : 'Connexion impossible à ce groupe.' };
+    }
+    if (!t) return { ok: false, why: 'Le multijoueur n’est pas disponible ici.' };
+    this.party = { code, hosting, joinedAt: Date.now() };
+    this.switchTransport(t, 'party');
+    return { ok: true };
+  }
+
+  leaveParty() {
+    if (!this.party) return;
+    this.party = null;
+    this.switchTransport(null);
+    this.start();
+  }
+
+  // change de salle : on repart de zéro (joueurs, hôte, squelettes)
+  switchTransport(t, mode) {
+    const g = this.game;
+    try { this.transport?.close(); } catch { /* */ }
+    this.transport = null;
+    for (const id of [...this.peers.keys()]) this.removeRemote(id);
+    this.peers.clear();
+    // dans un groupe, l'hôte est celui qui l'a créé : il est arrivé le premier
+    this.since = Date.now() - (this.party?.hosting ? 60000 : 0);
+    this.hostId = null;
+    for (const e of [...g.enemies.map.values()]) g.enemies.remove(e.id);
+    g.enemies.becomeHost?.();
+    if (t) this.useTransport(t, mode);
+    this.electHost();
+  }
+
+  sendExpEvent(type, data) { this.push('xe', [type, data ?? 0]); this.sendT = 0; }
+
+  // membres du groupe (soi compris) : pour l'écran d'expédition
+  partyMembers() {
+    const g = this.game, out = [];
+    if (g.hero) out.push({ id: this.selfId, me: true, n: g.hero.name, c: g.hero.classId, l: g.hero.level, rd: g.expedition?.ready ? 1 : 0, host: this.hostId === this.selfId });
+    for (const [id, st] of this.peers) { const pr = st.presence; if (pr.g) out.push({ id, n: pr.n, c: pr.c, l: pr.l, rd: pr.rd ? 1 : 0, host: this.hostId === id }); }
+    return out;
   }
 
   useTransport(t, mode) {
@@ -72,9 +133,9 @@ export class Net {
       st.guest = p.guest;
       if (fresh) {
         // on ne rejoue pas l'historique d'un joueur qu'on découvre
-        for (const ch of ['a', 'h', 'fx', 'K', 'D', 'X']) st.seen[ch] = maxSeq(pr[ch]);
+        for (const ch of ['a', 'h', 'fx', 'K', 'D', 'X', 'xe']) st.seen[ch] = maxSeq(pr[ch]);
         st.seen.ch = pr.ch?.[0] || 0; st.seen.em = pr.em?.[0] || 0; st.seen.ab = pr.ab?.[0] || 0;
-        if (pr.g && pr.n) g.ui.toast(`<b>${escapeHtml(pr.n)}</b> a rejoint Aetheria.`, { time: 3 });
+        if (pr.g && pr.n) g.ui.toast(this.mode === 'party' ? `<b>${escapeHtml(pr.n)}</b> a rejoint l’expédition.` : `<b>${escapeHtml(pr.n)}</b> a rejoint Aetheria.`, { time: 3 });
       }
       if (pr.g) this.handlePlayer(id, st, pr, now);
       else this.removeRemote(id);
@@ -85,6 +146,12 @@ export class Net {
       this.peers.delete(id); this.removeRemote(id);
     }
     this.electHost();
+    if (this.mode === 'party') this.enforcePartyCap();
+    // état de l'expédition publié par l'hôte du groupe
+    if (this.mode === 'party' && this.hostId && this.hostId !== this.selfId) {
+      const host = this.peers.get(this.hostId);
+      if (host?.presence.pt) g.expedition?.applyHostState(host.presence.pt);
+    }
     // état des squelettes publié par l'hôte
     if (this.hostId && this.hostId !== this.selfId) {
       const host = this.peers.get(this.hostId);
@@ -103,6 +170,8 @@ export class Net {
     // coups portés aux squelettes (pour l'hôte)
     if (g.enemies.isHost) for (const [s, eid, dmg, opts] of fresh(pr.h, st.seen, 'h')) g.enemies.pendingHits.push({ e: eid, d: Math.min(5000, dmg | 0), from: id, o: sanitizeOpts(opts) });
     else fresh(pr.h, st.seen, 'h');
+    // actions d'expédition (autels, braseros…) : traitées par l'hôte du groupe
+    for (const [s, type, d] of fresh(pr.xe, st.seen, 'xe')) if (g.enemies.isHost) g.expedition?.hostEvent(type, d, id);
     // effets visuels
     for (const [s, type, d] of fresh(pr.fx, st.seen, 'fx')) { try { g.playNetFx(type, d || {}); } catch { /* données invalides */ } }
     // discussion
@@ -148,6 +217,19 @@ export class Net {
     if (rp) { rp.dispose(); this.game.remotePlayers.delete(id); this.game.ui.removePlate('p:' + id); }
   }
 
+  // 4 joueurs au plus : le dernier arrivé repart
+  enforcePartyCap() {
+    const list = [{ id: this.selfId, si: this.since }];
+    for (const [id, st] of this.peers) if (st.presence.g) list.push({ id, si: st.presence.si || Infinity });
+    if (list.length <= 4) return;
+    list.sort((a, b) => a.si - b.si || (a.id < b.id ? -1 : 1));
+    if (list.findIndex((x) => x.id === this.selfId) >= 4) {
+      this.game.ui.toast('Cette expédition est complète (4 héros au maximum).', { color: '#ff8a72', time: 4 });
+      this.game.expedition?.left();
+      this.leaveParty();
+    }
+  }
+
   electHost() {
     const g = this.game;
     let best = { id: this.selfId, since: this.since };
@@ -171,7 +253,7 @@ export class Net {
   push(chan, entry) {
     const list = this.out[chan];
     list.push([++this.seq[chan], ...entry]);
-    const max = { a: 4, h: 12, fx: 4, K: 5, D: 8, X: 6 }[chan];
+    const max = { a: 4, h: 12, fx: 4, K: 5, D: 8, X: 6, xe: 4 }[chan];
     while (list.length > max) list.shift();
     this.dirty = true;
   }
@@ -222,7 +304,9 @@ export class Net {
       pr.hp = Math.round(Math.max(0, hero.hp / hero.stats.hp) * 100);
       pr.a = this.out.a; pr.h = this.out.h; pr.fx = this.out.fx;
       pr.ch = this.chat; pr.em = this.emote; pr.ab = this.allyBuff;
+      if (this.mode === 'party') { pr.rd = g.expedition?.ready ? 1 : 0; pr.xe = this.out.xe; }
     }
+    if (this.mode === 'party' && g.enemies.isHost && g.expedition) pr.pt = g.expedition.publicState();
     if (g.enemies.isHost && g.inGame) {
       pr.H = 1;
       pr.K = this.out.K; pr.D = this.out.D; pr.X = this.out.X;
@@ -238,7 +322,7 @@ export class Net {
     const scored = list.map((e) => {
       const x = e[3] / 10, z = e[4] / 10;
       let d = Infinity; for (const p of pts) d = Math.min(d, Math.hypot(p.x - x, p.z - z));
-      return { e, d: e[1] === 4 ? 0 : d };
+      return { e, d: ENEMIES[ENEMY_TYPES[e[1]]]?.boss ? 0 : d };
     }).filter((s) => s.d < 140).sort((a, b) => a.d - b.d);
     return scored.slice(0, 32).map((s) => s.e);
   }

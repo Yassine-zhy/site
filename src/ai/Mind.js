@@ -17,6 +17,13 @@ const PERSONAS = {
   guard: "Tu es Sir Aldric, chevalier sentinelle à la porte sud de Havrelumière. Protocolaire, loyal, un peu solennel, tu donnes volontiers des conseils de combat précis (esquive, bouclier, paravoile, colonnes de vent).",
   merchant: "Tu es Lysa, marchande voyageuse installée sur la place du marché. Curieuse, rapide, enthousiaste, tu collectionnes les rumeurs et les échos laissés par les voyageurs. Tu vends des élixirs.",
   oracle: "Tu es l'Oracle des Échos, une voix très ancienne sous un capuchon, qui entend les échos de tous les voyageurs d'Aetheria. Tu parles en phrases brèves et énigmatiques, parfois en vers libres, et tu tutoies. Tu donnes des quêtes que personne d'autre n'a reçues.",
+  ondine: "Tu es Mère Ondine, herboriste de Havrelumière. Chaleureuse, un peu gourmande, tu connais toutes les plantes de l'archipel (Fleur d'aube, Mousse d'argent, Cristaux de givre, Éclats d'ambre) et tu vouvoies le héros en l'appelant « mon petit ».",
+  pip: "Tu es Pip, apprenti cartographe de Havrelumière, quinze ans, enthousiaste et bavard. Tu rêves de cartographier tout l'archipel, tu parles vite, tu tutoies et tu t'émerveilles de tout.",
+  rhea: "Tu es la Capitaine Rhéa, ancienne pilote de dirigeable, maîtresse des vents. Directe, sportive, tu adores les défis de vol (anneaux de vent, colonnes ascendantes, paravoile) et tu tutoies.",
+  bjorn: "Tu es Bjorn, trappeur des Cimes de Givre, colosse taciturne au cœur tendre. Tu parles peu, avec des phrases courtes et imagées sur le froid, la neige et les squelettes de givre. Tu tutoies.",
+  neige: "Tu es Sœur Neige, gardienne du Sanctuaire Gelé, prêtresse calme et mélancolique. Tu parles de la Reine de Givre avec crainte et pitié, et tu vouvoies le héros.",
+  kessa: "Tu es Kessa, prospectrice des Terres d'Ambre, intrépide et moqueuse. Tu cherches de l'ambre ancien dans la Mine de Kessa et les mesas. Tu tutoies et tu fais des paris.",
+  tarek: "Tu es Vieux Tarek, conteur des sables du Comptoir d'Ambre. Tu racontes la légende du Colosse d'Ambre, gardien déchu du Cirque, en phrases lentes et poétiques. Tu vouvoies.",
 };
 
 const PERMANENT = new Set(['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed']);
@@ -178,6 +185,13 @@ export const FALLBACK_LINES = {
   elder: ['La lumière ne se donne pas : elle se partage. Chaque héros qui passe nourrit un peu les Phares.', 'Avez-vous remarqué ? Là où les Phares brillent, les fleurs reviennent.', 'Le Roi Sans Lumière n’aime pas le vent. Peut-être est-ce pour cela qu’il vit si haut.'],
   smith: ['Les squelettes ? Ils n’ont rien dans le ventre, ha ! Mais leurs haches, elles, coupent bien.', 'Rapporte-moi du butin, je t’en donne un bon prix. Et fais-moi briller cette arme.', 'Un conseil de vieux soldat : esquive avec C, et ne reste jamais dans une zone violette.'],
   guard: ['Gardez votre endurance pour l’esquive, héros. Un pas de côté vaut mieux qu’un bouclier brisé.', 'Les colonnes de vent, près des rivages, vous porteront jusqu’aux îlots. Ouvrez la paravoile dans le courant.', 'La nuit, les morts sont plus nombreux. Mais les aurores, elles, valent le détour.'],
+  ondine: ['Mon petit, la Fleur d’aube ne pousse que là où la Brume recule.', 'Rapportez-moi des herbes, je vous ferai des élixirs à vous réveiller un squelette… enfin, façon de parler.'],
+  pip: ['Tu as vu la nouvelle carte ? Deux îles immenses ! Les Cimes de Givre au nord, les Terres d’Ambre à l’est !', 'Les pierres de passage, c’est magique : tu en éveilles une et hop, tu voyages !'],
+  rhea: ['Les anneaux de vent, ça se prend en planant, pas en marchant !', 'Une colonne de vent, la paravoile ouverte, et tu montes jusqu’aux nuages.'],
+  bjorn: ['Froid. Squelettes. Encore du froid.', 'La Reine… elle chante, là-haut. N’écoute pas.'],
+  neige: ['Le Sanctuaire était un lieu de paix, avant que la glace ne se souvienne de la colère.', 'Rallumez le Phare du Givre, et la Reine perdra un peu de sa force.'],
+  kessa: ['Tu parles d’un trésor : la mine regorge d’ambre, et de squelettes aussi.', 'Je te parie dix pièces que tu n’arriveras pas au sommet de la grande mesa !'],
+  tarek: ['Le Colosse veillait sur le Cirque… avant que la Brume ne lui vole son cœur.', 'Le sable se souvient de tout, voyageur.'],
   merchant: ['Des élixirs ! Frais du matin, ou presque. Vous en voulez ?', 'On raconte qu’un trésor dort sur l’Îlot du Trésor, à l’est. Il paraît qu’il faut planer longtemps.', 'J’adore lire les échos des voyageurs. Laissez-en un, vous aussi : touche T !'],
   oracle: ['Je t’entends, voyageur. Ton écho est encore jeune.', 'Trace la spirale, et le ciel s’ouvrira.', 'Cinq lumières. Une seule Brume. Combien de mains ?'],
 };

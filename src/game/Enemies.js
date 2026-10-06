@@ -124,8 +124,7 @@ export class Enemies {
     const terrain = this.game.world.terrain;
     const gy = terrain.groundBelow(nx, e.position.y + 1.5, nz);
     if (gy === null || gy < e.position.y - 4) return 0; // ne tombe pas de l'île
-    e.position.x = nx; e.position.z = nz;
-    this.game.world.colliders.resolve(e.position, e.radius, e.position.y);
+    this.game.world.colliders.moveAndCollide(e.position, nx - e.position.x, nz - e.position.z, e.radius, e.position.y);
     const g2 = terrain.groundBelow(e.position.x, e.position.y + 1.5, e.position.z);
     if (g2 !== null) e.position.y = g2;
     e.rot = dampAngle(e.rot, Math.atan2(dx, dz), 10, dt);
@@ -238,7 +237,7 @@ export class Enemies {
         const d = Math.hypot(dx, dz);
         if (d > def.range + 1.2 + (p.radius || 0.5)) continue;
         if (Math.abs(angleDiff(e.rot, Math.atan2(dx, dz))) > 1.2) continue;
-        g.hurtPlayer(p.id, e.atk * (def.boss ? 1 : 1), e, { kind: 'melee' });
+        g.hurtPlayer(p.id, e.atk * (def.boss ? 1 : 1), e, { kind: e.def.chill ? 'chill' : 'melee' });
       }
       this.fx('swing', e.position, { rot: e.rot, boss: !!def.boss });
     } else if (pnd.kind === 'shoot') {
@@ -253,21 +252,21 @@ export class Enemies {
       g.projectiles.spawn({
         x: from.x, y: from.y, z: from.z, dir, speed: caster ? 17 : 30, range: def.range + 8, color: caster ? '#b05cff' : '#c9f0ff', size: caster ? 0.42 : 0.2,
         kind: caster ? 'orb' : 'bolt', team: 'enemy', homing: caster ? 1.4 : 0, target: tgt,
-        onHit: (t) => g.hurtPlayer(t.id, atk, e, { kind: caster ? 'shadow' : 'bolt' }),
+        onHit: (t) => g.hurtPlayer(t.id, atk, e, { kind: e.def.chill ? 'chill' : caster ? 'shadow' : 'bolt' }),
       });
       this.fx('shot', from, { dir: [dir.x, dir.y, dir.z], caster });
     } else if (pnd.kind === 'shadowzone') {
       this.fx('shadowboom', { x: pnd.x, y: pnd.y, z: pnd.z });
       for (const p of players) {
         if (!p.alive) continue;
-        if (Math.hypot(p.position.x - pnd.x, p.position.z - pnd.z) < 3.8) g.hurtPlayer(p.id, e.atk * 1.4, e, { kind: 'shadow' });
+        if (Math.hypot(p.position.x - pnd.x, p.position.z - pnd.z) < 3.8) g.hurtPlayer(p.id, e.atk * 1.4, e, { kind: e.def.chill ? 'chill' : 'shadow' });
       }
     } else if (pnd.kind === 'summon') {
       for (let i = 0; i < 2; i++) {
         const a = e.rot + (i ? 1.2 : -1.2);
         const x = e.position.x + Math.sin(a) * 3, z = e.position.z + Math.cos(a) * 3;
         if (g.world.terrain.heightAt(x, z) === null) continue;
-        const m = this.spawn('minion', Math.max(1, e.level - 2), x, z, { home: e.home });
+        const m = this.spawn(e.def.summons || 'minion', Math.max(1, e.level - 2), x, z, { home: e.home });
         if (e.zone) { m.zone = e.zone; this.zones.find((zz) => zz.id === e.zone)?.ids.add(m.id); }
       }
     } else if (pnd.custom) pnd.custom(e, players);
@@ -284,12 +283,16 @@ export class Enemies {
     const fx = this.game.fx;
     const p = new THREE.Vector3(ev.x, ev.y, ev.z);
     switch (ev.type) {
-      case 'telegraph': fx.telegraph(p, ev.r || 3.5, ev.d || 1.2, '#b05cff'); break;
+      case 'telegraph': fx.telegraph(p, ev.r || 3.5, ev.d || 1.2, ev.c || '#b05cff'); break;
       case 'shadowboom': fx.explosion(p, '#8a3cff', 3.5); this.game.audio?.play('boom', p); this.game.shakeAt(p, 0.5); break;
       case 'summon': fx.runeCircle(p, '#b05cff', { radius: 4, life: 1.8 }); this.game.audio?.play('summon', p); break;
       case 'swing': if (ev.boss) { fx.shockwave(p, '#b05cff', 7); this.game.shakeAt(p, 0.8); } this.game.audio?.play('swoosh', p); break;
-      case 'shot': this.game.audio?.play(ev.caster ? 'cast' : 'bow', p); break;
-      default: this.game.boss?.playFx?.(ev, p);
+      case 'shot':
+        this.game.audio?.play(ev.caster ? 'cast' : 'bow', p);
+        // chez les autres joueurs : copie visuelle du carreau / de l'orbe
+        if (!this.isHost && Array.isArray(ev.dir)) this.game.projectiles.spawn({ x: p.x, y: p.y, z: p.z, dir: new THREE.Vector3(ev.dir[0], ev.dir[1], ev.dir[2]), speed: ev.caster ? 17 : 30, range: 30, color: ev.caster ? '#b05cff' : '#c9f0ff', size: ev.caster ? 0.42 : 0.2, kind: ev.caster ? 'orb' : 'bolt', team: 'enemy', visualOnly: true });
+        break;
+      default: this.game.boss?.playFx?.(ev, p); this.game.expedition?.playFx?.(ev, p);
     }
   }
 
@@ -340,6 +343,7 @@ export class Enemies {
     this.killEvents.push({ id: e.id, type: e.type, level: e.level, elite: e.elite, xp: e.xp, x: e.position.x, y: e.position.y, z: e.position.z, killers, t: Date.now() });
     if (this.killEvents.length > 10) this.killEvents.shift();
     this.game.onEnemyKilled(e, killers);
+    this.game.expedition?.onKill({ exp: !!e.exp });
   }
 
   // ----------------------------------------------------------------------------- MISE À JOUR
@@ -384,6 +388,7 @@ export class Enemies {
           const d = Math.sqrt(d2), push = (m - d) * 0.5;
           a.position.x -= dx / d * push; a.position.z -= dz / d * push;
           b.position.x += dx / d * push; b.position.z += dz / d * push;
+          if (this.isHost) { const cols = g.world.colliders; cols.resolve(a.position, a.radius, a.position.y); cols.resolve(b.position, b.radius, b.position.y); }
         }
       }
     }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { STEP_UP } from '../world/Colliders.js';
 import { Character } from './Character.js';
 import { createGlider } from './Glider.js';
 import { clamp, damp, dampAngle, angleDiff } from '../engine/math.js';
@@ -125,7 +126,7 @@ export class Player {
     this.rooted = Math.max(0, this.rooted - dt);
 
     let speed = this.walkToggle ? WALK : (this.sprinting ? SPRINT : RUN);
-    speed *= this.cls.base.speed * this.speedMult;
+    speed *= this.cls.base.speed * this.speedMult * (this.game.hero?.hasBuff('chill') ? 0.65 : 1);
     if (this.inWater) speed *= 0.55;
     if (this.attackSlow) speed *= this.attackSlow;
 
@@ -176,10 +177,12 @@ export class Player {
     }
 
     // --- gravité, planeur, courants ascendants
+    const wasUpdraft = this.inUpdraft;
     this.inUpdraft = false;
     for (const u of UPDRAFTS) {
       if (Math.hypot(pos.x - u.x, pos.z - u.z) < u.radius && pos.y < u.top) { this.inUpdraft = u; break; }
     }
+    if (this.inUpdraft && !wasUpdraft && !this.onGround) this.emit('updraft', {});
     if (!this.onGround) {
       if (this.gliding) {
         vel.y = damp(vel.y, -2.6, 3, dt);
@@ -195,13 +198,16 @@ export class Player {
 
     // --- intégration
     const prevY = pos.y;
-    pos.x += vel.x * dt; pos.z += vel.z * dt; pos.y += vel.y * dt;
+    pos.y += vel.y * dt;
+    // collisions horizontales, par petits pas (pas de traversée des parois fines)
+    const cols = this.game.world.colliders;
+    cols.moveAndCollide(pos, vel.x * dt, vel.z * dt, this.radius, pos.y);
+    this.separateFromCrowd(pos);
 
-    // collisions horizontales
-    this.game.world.colliders.resolve(pos, this.radius, pos.y);
-
-    // sol
-    const ground = terrain.groundBelow(pos.x, Math.max(pos.y, prevY), pos.z);
+    // sol : relief, ou dessus d'un obstacle bas (caisse, rocher, muret)
+    let ground = terrain.groundBelow(pos.x, Math.max(pos.y, prevY), pos.z);
+    const top = cols.surfaceAt(pos.x, pos.z, Math.max(pos.y, prevY) + STEP_UP + 0.05);
+    if (top !== null && (ground === null || top > ground)) ground = top;
     this.inWater = false;
     let floor = ground;
     if (ground !== null && Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) < LAKE.radius * 1.8 && ground < LAKE.level - 0.9) {
@@ -275,5 +281,20 @@ export class Player {
     }
 
     this.char.update(dt);
+  }
+
+  // les squelettes et les habitants sont solides : on ne les traverse pas
+  separateFromCrowd(pos) {
+    const g = this.game;
+    if (this.dodge || this.dash) return;
+    const push = (x, z, r) => {
+      const dx = pos.x - x, dz = pos.z - z, d = Math.hypot(dx, dz), m = r + this.radius;
+      if (d < m && d > 1e-4) { pos.x = x + dx / d * m; pos.z = z + dz / d * m; }
+    };
+    for (const e of g.enemies?.map.values() || []) {
+      if (!e.alive || e.state === 'spawn' || Math.abs(e.position.y - pos.y) > 2) continue;
+      if (Math.abs(e.position.x - pos.x) > 6 || Math.abs(e.position.z - pos.z) > 6) continue;
+      push(e.position.x, e.position.z, (e.radius || 0.6) * 0.85);
+    }
   }
 }

@@ -5,16 +5,16 @@
 // 1) Salle temps réel de la plateforme Claude (capacité `room`) : la présence de
 //    chaque joueur est partagée avec tout le monde et rejouée aux nouveaux venus.
 export class RoomTransport {
-  constructor(room) { this.room = room; this.kind = 'room'; this.selfId = null; this.cbs = []; this.statusCbs = []; this.pending = null; this.sending = false; }
+  constructor(room, named = false) { this.room = room; this.named = named; this.kind = 'room'; this.selfId = null; this.cbs = []; this.statusCbs = []; this.pending = null; this.sending = false; this.unsubs = []; }
   connect() {
     const room = this.room;
-    room.onPeers((ch) => {
+    this.unsubs.push(room.onPeers((ch) => {
       const list = ch.peers.filter((p) => p.kind === 'viewer').map((p) => ({ id: p.peer, isMe: p.sameTab, presence: p.presence || {}, guest: p.guest, by: p.by, updatedAt: p.updatedAt }));
       const me = ch.peers.find((p) => p.sameTab);
       if (me) this.selfId = me.peer;
       for (const cb of this.cbs) cb(list);
-    }, (e) => { console.warn('salle', e.code); this.dead = true; this.statusCbs.forEach((f) => f(false)); });
-    room.onConnection((c) => this.statusCbs.forEach((f) => f(c)), () => {});
+    }, (e) => { console.warn('salle', e.code); this.dead = true; this.statusCbs.forEach((f) => f(false)); }));
+    this.unsubs.push(room.onConnection((c) => this.statusCbs.forEach((f) => f(c)), () => {}));
   }
   get connected() { try { return !this.dead && this.room.connected(); } catch { return false; } }
   setPresence(obj) {
@@ -31,7 +31,14 @@ export class RoomTransport {
   }
   onPeers(cb) { this.cbs.push(cb); }
   onStatus(cb) { this.statusCbs.push(cb); }
-  close() { try { this.room.presence({ g: null }); } catch { /* */ } }
+  close() {
+    if (this.closed) return;
+    this.closed = true;
+    for (const u of this.unsubs) { try { u?.(); } catch { /* */ } }
+    this.cbs.length = 0; this.statusCbs.length = 0;
+    // la salle commune garde notre place (on la quitte juste en retirant notre héros) ; une salle de groupe se quitte
+    if (this.named) { try { this.room.leave(); } catch { /* */ } } else { try { this.room.presence({ g: null }); } catch { /* */ } }
+  }
 }
 
 // 2) Onglets du même navigateur (BroadcastChannel) : multijoueur local pour tester.
