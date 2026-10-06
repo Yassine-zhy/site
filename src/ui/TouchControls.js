@@ -1,9 +1,10 @@
+import * as THREE from 'three';
 import { h, svgIcon } from './dom.js';
 import { ABILITIES, ABILITY_ICONS } from '../game/Abilities.js';
 
 const ICON = {
   jump: 'M12 19V5M5 12l7-7 7 7', dodge: 'M4 12h12M12 6l6 6-6 6M4 6v12', interact: 'M8 12h8M12 8v8M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0',
-  map: 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6ZM9 3v15M15 6v15', party: 'M7 21v-2a4 4 0 0 1 4-4h2a4 4 0 0 1 4 4v2M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M4 21v-1a3 3 0 0 1 3-3M20 21v-1a3 3 0 0 0-3-3', bag: 'M5 8h14l-1 13H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2', menu: 'M4 6h16M4 12h16M4 18h16', chat: 'M4 5h16v11H9l-5 4V5Z', quest: 'M6 3h12v18l-6-4-6 4V3Z',
+  map: 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6ZM9 3v15M15 6v15', lock: 'M12 3v4M12 17v4M3 12h4M17 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8', party: 'M7 21v-2a4 4 0 0 1 4-4h2a4 4 0 0 1 4 4v2M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M4 21v-1a3 3 0 0 1 3-3M20 21v-1a3 3 0 0 0-3-3', bag: 'M5 8h14l-1 13H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2', menu: 'M4 6h16M4 12h16M4 18h16', chat: 'M4 5h16v11H9l-5 4V5Z', quest: 'M6 3h12v18l-6-4-6 4V3Z',
 };
 
 // Commandes tactiles : joystick, caméra au doigt, boutons d'action.
@@ -68,8 +69,12 @@ export class TouchControls {
     const lend = (e) => {
       if (e.pointerId !== lookId) return;
       lookId = null;
-      // une tape brève sur la scène attaque (comme un clic)
-      if (e.type === 'pointerup' && travel < 10 && performance.now() - lt < 350) input.mouse.clicked = true;
+      // une tape brève sur la scène attaque (comme un clic) ; sur un ennemi, elle le verrouille aussi
+      if (e.type === 'pointerup' && travel < 10 && performance.now() - lt < 350) {
+        const hit = this.enemyAt(e.clientX, e.clientY);
+        if (hit && hit !== game.locked) game.lock(hit);
+        input.mouse.clicked = true;
+      }
     };
     canvas.addEventListener('pointerup', lend); canvas.addEventListener('pointercancel', lend);
     // boutons
@@ -101,6 +106,13 @@ export class TouchControls {
     { const [x, y] = arc(160, 28); btn('dodge', ICON.dodge, x, y, false, () => input.touch.pressed.add('dodge'), null, 'esquive'); }
     { const [x, y] = arc(160, 58); btn('rune', ABILITY_ICONS.rune, x, y, false, () => game.runes?.beginTouch(), null, 'rune'); }
     { const [x, y] = arc(160, 88); btn('potion', ABILITY_ICONS.potion, x, y, false, () => game.usePotion(), null, 'élixir'); }
+    // cible : appui = verrouiller / ennemi suivant, appui long = déverrouiller
+    {
+      let t0 = 0, held = null;
+      const b = btn('lock', ICON.lock, 4, 214, false, () => { t0 = performance.now(); held = setTimeout(() => { held = null; game.unlock(); }, 450); }, () => { if (held) { clearTimeout(held); held = null; if (performance.now() - t0 < 450) game.lockNext(); } }, 'cible');
+      b.classList.add('tb-lock');
+      this.lockBtn = b;
+    }
     // bouton d'interaction (apparaît au besoin)
     this.interactBtn = h('button', { class: 'btn small interactive tinteract', style: { position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(250px + var(--safe-b))', pointerEvents: 'auto', maxWidth: '70%' } }, 'Interagir');
     this.interactBtn.addEventListener('click', () => game.interactions?.interact());
@@ -118,9 +130,24 @@ export class TouchControls {
     this.joyHide = false;
   }
 
+  // ennemi le plus proche d'un point de l'écran (tape pour verrouiller)
+  enemyAt(cx, cy) {
+    const g = this.game, cam = g.camera, v = this._v || (this._v = new THREE.Vector3());
+    let best = null, bd = 56;
+    for (const e of g.enemies.hittable()) {
+      v.set(e.position.x, e.position.y + e.height * 0.5, e.position.z).project(cam);
+      if (v.z > 1) continue;
+      const sx = (v.x * 0.5 + 0.5) * innerWidth, sy = (-v.y * 0.5 + 0.5) * innerHeight;
+      const d = Math.hypot(sx - cx, sy - cy);
+      if (d < bd) { bd = d; best = e; }
+    }
+    return best;
+  }
+
   update(dt) {
     const g = this.game;
     this.autoCamera(dt);
+    this.lockBtn?.classList.toggle('on', !!g.locked);
     const set = (id, remain, total) => { const el = this.cdEls[id]; if (el) el.style.setProperty('--p', (remain > 0 ? Math.round(remain / total * 100) : 0) + '%'); };
     set('attack', g.cooldowns.attack || 0, g.basicCd);
     g.classDef.abilities.forEach((a) => set(a, g.cooldowns[a] || 0, ABILITIES[a].cd));
@@ -134,7 +161,7 @@ export class TouchControls {
   // La caméra se replace doucement derrière le héros quand on court sans toucher à la vue.
   autoCamera(dt) {
     const g = this.game, p = g.player, rig = g.rig;
-    if (!p || p.dead || g.settings.autoCam === false || g.runes?.drawing) return;
+    if (!p || p.dead || g.settings.autoCam === false || g.runes?.drawing || g.locked) return;
     const now = performance.now();
     if (now - (this.lastLook || 0) < 1200) return;
     const mv = g.input.touch.move, mag = Math.hypot(mv.x, mv.y);

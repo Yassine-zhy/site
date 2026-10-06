@@ -28,7 +28,7 @@ export class CameraRig {
     if (look.wheel) this.targetDistance = clamp(this.targetDistance + look.wheel * 1.4, this.minDist, this.maxDist);
   }
 
-  shake(amount) { this.shakeAmt = Math.min(1.2, this.shakeAmt + amount); }
+  shake(amount) { this.shakeAmt = Math.min(1.2, this.shakeAmt + amount * (this.shakeMult ?? 1)); }
 
   forward(out = new THREE.Vector3()) { return out.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)); }
 

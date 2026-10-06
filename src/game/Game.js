@@ -98,6 +98,8 @@ export class Game {
     this.rig.pitch = 0.3;
     this.rig.initialized = false;
     if (this.input.isTouch) { this.rig.targetDistance = this.rig.distance = 11; }
+    this.locked = null;
+    this.applySettings();
     this.hud = new Hud(this.ui, this);
     this.hud.portrait.src = this.icons.portrait(this.classDef.model);
     this.world.sky.override = null;
@@ -230,6 +232,7 @@ export class Game {
     hero.playTime += dt;
     if (first) {
       const look = input.consumeLook();
+      if (Math.abs(look.dx) + Math.abs(look.dy) > 3) this.lastLookT = performance.now();
       if (!this.runes?.drawing) this.rig.handleLook(look);
       else this.runes.feedLook(look);
     }
@@ -264,6 +267,15 @@ export class Game {
     this.promptText = this.interactions?.prompt() || '';
     this.hud?.update(dt);
     this.updatePlates();
+    const lk = this.locked;
+    if (lk && !p.dead && this.settings.lockCam !== false && !this.runes?.drawing && performance.now() - (this.lastLookT || 0) > 700) {
+      const dx = lk.position.x - p.position.x, dz = lk.position.z - p.position.z;
+      if (Math.hypot(dx, dz) > 2.5) {
+        let diff = Math.atan2(-dx, -dz) - this.rig.yaw;
+        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+        this.rig.yaw += diff * Math.min(1, dt * 3.2);
+      }
+    }
     this.rig.update(dt, p.position, Math.max(0, Math.hypot(p.velocity.x, p.velocity.z) - 8) / 4);
     p.char.setOpacity(!p.dead && this.rig.closeFade < 1 ? Math.round(this.rig.closeFade * 10) / 10 : 1);
   }
@@ -274,7 +286,9 @@ export class Game {
     this.runes?.handleInput(input);
     if (this.runes?.drawing) return;
     // attaque de base
-    const wantAttack = input.mouse.clicked || (input.locked && input.mouse.left && !input.mouse.dragging) || input.touch.buttons.has('attack');
+    const lk = this.locked, p = this.player;
+    const auto = this.settings.autoAttack && lk && lk.alive && Math.hypot(lk.position.x - p.position.x, lk.position.z - p.position.z) < (this.classDef.ranged ? 24 : 3.2);
+    const wantAttack = input.mouse.clicked || (input.locked && input.mouse.left && !input.mouse.dragging) || input.touch.buttons.has('attack') || auto;
     if (wantAttack && (this.cooldowns.attack || 0) <= 0 && !this.player.dash && !this.player.dodge) this.basicAttack();
     const cls = this.classDef;
     for (let i = 0; i < 4; i++) if (input.pressed('ability' + (i + 1))) this.useAbility(i);
@@ -355,14 +369,25 @@ export class Game {
     const list = this.enemies.hittable();
     const range = this.classDef.ranged ? 32 : 14;
     const touch = this.input.isTouch;
+    // cible verrouillée : elle reste la cible tant qu'elle vit et n'est pas trop loin
+    const L = this.locked;
+    if (L && (!L.alive || !this.enemies.map.has(L.id) || Math.hypot(L.position.x - p.position.x, L.position.z - p.position.z) > 42)) {
+      this.locked = null;
+      if (!L.alive && this.settings.autoRelock !== false) {
+        const next = list.filter((e) => e !== L && Math.hypot(e.position.x - p.position.x, e.position.z - p.position.z) < 18)
+          .sort((a, b) => Math.hypot(a.position.x - p.position.x, a.position.z - p.position.z) - Math.hypot(b.position.x - p.position.x, b.position.z - p.position.z))[0];
+        if (next) this.lock(next, true);
+      }
+    }
     const keep = this.target && this.target.alive && Math.hypot(this.target.position.x - p.position.x, this.target.position.z - p.position.z) < range + 6;
     if (!keep) this.target = null;
+    if (this.locked) this.target = this.locked;
     // sur écran tactile, viser est plus difficile : cône plus large, orienté vers la course
     const moving = touch && Math.hypot(p.velocity.x, p.velocity.z) > 2;
     const yaw = moving ? Math.atan2(p.velocity.x, p.velocity.z) : this.rig.yaw + Math.PI;
     const cand = pickSoftTarget(p.position, yaw, list, range, (this.classDef.ranged ? 0.45 : 0.9) * (touch ? 1.7 : 1));
     // on change de cible si la nouvelle est nettement mieux centrée
-    if (!this.target || (cand && cand !== this.target && this.elapsed - (this.lastCombat || 0) > 1.2)) this.target = cand || this.target;
+    if (!this.locked && (!this.target || (cand && cand !== this.target && this.elapsed - (this.lastCombat || 0) > 1.2))) this.target = cand || this.target;
     // anneau sous la cible
     if (!this.targetRing) {
       this.targetRing = new THREE.Mesh(new THREE.RingGeometry(0.85, 1.0, 40), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff6b5e').multiplyScalar(2), transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
@@ -375,11 +400,69 @@ export class Game {
       this.targetRing.position.set(t.position.x, t.position.y + 0.12, t.position.z);
       const s = t.radius * 1.9 * (1 + Math.sin(this.elapsed * 6) * 0.06);
       this.targetRing.scale.setScalar(s);
-      this.targetRing.material.color.set(t.elite ? '#ffd36b' : '#ff6b5e').multiplyScalar(2);
+      this.targetRing.material.color.set(this.locked ? '#7fe0ff' : t.elite ? '#ffd36b' : '#ff6b5e').multiplyScalar(2);
+    }
+    // réticule de verrouillage : quatre flèches qui tournent autour de la cible
+    if (!this.lockMark) {
+      const g = new THREE.Group();
+      const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#7fe0ff').multiplyScalar(2.2), toneMapped: false, transparent: true, opacity: 0.95, depthWrite: false, side: THREE.DoubleSide });
+      const geo = new THREE.ConeGeometry(0.22, 0.5, 3); geo.rotateZ(Math.PI / 2);
+      for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(geo, mat); const a = i * Math.PI / 2; m.position.set(Math.cos(a) * 1.2, 0, Math.sin(a) * 1.2); m.rotation.y = -a; g.add(m); }
+      g.renderOrder = 6;
+      this.scene.add(g);
+      this.lockMark = g;
+    }
+    const lk = this.locked;
+    this.lockMark.visible = !!lk;
+    if (lk) {
+      const k = lk.radius * 1.6 + 0.4 + Math.sin(this.elapsed * 5) * 0.08;
+      this.lockMark.position.set(lk.position.x, lk.position.y + lk.height * 0.55, lk.position.z);
+      this.lockMark.scale.setScalar(k);
+      this.lockMark.rotation.y = this.elapsed * 1.6;
     }
     // boss engagé
     this.bossEngaged = null;
     for (const e of this.enemies.map.values()) if (e.def.boss && e.alive && Math.hypot(e.position.x - p.position.x, e.position.z - p.position.z) < 55) this.bossEngaged = e;
+  }
+
+  // ------------------------------------------------------------------ verrouillage de cible
+  // Tab (PC) ou bouton cible (mobile) : verrouille l'ennemi le mieux placé, puis passe au suivant.
+  lockNext() {
+    const p = this.player;
+    if (!p || p.dead) return;
+    const d = (e) => Math.hypot(e.position.x - p.position.x, e.position.z - p.position.z);
+    const list = this.enemies.hittable().filter((e) => d(e) < 30).sort((a, b) => d(a) - d(b));
+    if (!list.length) { if (this.locked) this.unlock(); else this.ui.toast('Aucun ennemi à portée.', { time: 1.5 }); return; }
+    if (!this.locked) {
+      const best = pickSoftTarget(p.position, this.rig.yaw + Math.PI, list, 30, 1.2) || list[0];
+      this.lock(best);
+      return;
+    }
+    const i = list.indexOf(this.locked);
+    if (list.length === 1 && i === 0) { this.unlock(); return; }
+    this.lock(list[(i + 1) % list.length]);
+  }
+
+  lock(e, quiet = false) {
+    this.locked = e; this.target = e;
+    if (!quiet) { this.audio?.play('select'); this.vibrate(12); }
+  }
+
+  unlock() { if (!this.locked) return; this.locked = null; this.audio?.play('select'); }
+
+  vibrate(ms) { if (this.input.isTouch && this.settings.vibrate !== false) try { navigator.vibrate?.(ms); } catch { /* */ } }
+
+  // options appliquées au héros et à la caméra
+  applySettings() {
+    const s = this.settings, rig = this.rig;
+    rig.invertY = !!s.invertY;
+    rig.sensitivity = 0.0023 * (s.sensitivity || 1);
+    rig.baseFov = s.fov || 60;
+    rig.shakeMult = s.shake === false ? 0 : 1;
+    if (s.camDist) rig.targetDistance = rig.distance = s.camDist;
+    document.documentElement.style.setProperty('--tbtn-scale', String(s.touchScale || 1));
+    this.ui.root.classList.toggle('no-dmg-numbers', s.dmgNumbers === false);
+    this.ui.root.classList.toggle('no-plates', s.plates === false);
   }
 
   updatePlates() {
@@ -450,6 +533,7 @@ export class Game {
       this.fx.burst(p.position.clone().setY(p.position.y + 1.2), '#bfe8ff', { count: 14, speed: 3, size: 0.3, life: 0.6, gravity: 2 });
     }
     this.rig.shake(Math.min(0.5, dmg / hero.stats.hp * 3));
+    if (dmg > hero.stats.hp * 0.04) this.vibrate(Math.min(60, 15 + dmg / hero.stats.hp * 200));
     this.audio?.play('hurt', p.position);
     if (!wall && !p.char.oneShot && dmg > hero.stats.hp * 0.08) p.char.playAction('Hit_A', { timeScale: 1.8 });
     if (hero.hp <= 0) this.die(source, opts);

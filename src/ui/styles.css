@@ -329,7 +329,7 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
 .joy.active { opacity: 1; transition: none; }
 .joyzone { position: absolute; left: 0; bottom: 0; width: 46%; height: 62%; pointer-events: auto; touch-action: none; }
 .joy .knob { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, var(--gold-hi), var(--gold-deep)); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); }
-.tbtns { position: absolute; right: calc(14px + var(--safe-r)); bottom: calc(22px + var(--safe-b)); width: 240px; height: 240px; pointer-events: none; }
+.tbtns { position: absolute; right: calc(14px + var(--safe-r)); bottom: calc(22px + var(--safe-b)); width: 240px; height: 240px; pointer-events: none; transform: scale(var(--tbtn-scale, 1)); transform-origin: 100% 100%; }
 .tb { position: absolute; width: 54px; height: 54px; border-radius: 50%; border: 1.5px solid var(--line); background: radial-gradient(circle at 50% 30%, rgba(44, 35, 80, 0.85), rgba(18, 14, 34, 0.85)); display: grid; place-items: center; pointer-events: auto; overflow: hidden; }
 .tb svg { width: 26px; height: 26px; stroke: var(--gold-hi); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .tb.big { width: 82px; height: 82px; }
@@ -461,7 +461,7 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
   .minimap-wrap .zone, .minimap-wrap .clock { display: none; }
   .minimap-wrap { width: 104px; }
   .minimap { width: 104px; height: 104px; }
-  .tbtns { transform: scale(0.8); transform-origin: 100% 100%; }
+  .tbtns { transform: scale(calc(0.8 * var(--tbtn-scale, 1))); transform-origin: 100% 100%; }
   .tmenu { display: grid !important; grid-template-columns: repeat(2, 40px); top: calc(122px + var(--safe-t)) !important; gap: 6px !important; }
   .joy { left: calc(118px + var(--safe-l)); bottom: calc(16px + var(--safe-b)); width: 118px; height: 118px; }
   .joy .knob { width: 50px; height: 50px; margin: -25px 0 0 -25px; }
@@ -486,3 +486,15 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
   .slot-info.dim { display: none; }
   #title .tagline { display: none; }
 }
+
+/* bouton de verrouillage de cible */
+.tb.tb-lock { width: 48px; height: 48px; }
+.tb.tb-lock.on { border-color: #7fe0ff; box-shadow: 0 0 14px rgba(127, 224, 255, 0.6); }
+.tb.tb-lock.on svg { stroke: #bff0ff; }
+/* options d'affichage */
+.no-dmg-numbers .ft.dmg, .no-dmg-numbers .ft.crit, .no-dmg-numbers .ft.hurt { display: none; }
+.no-plates .plate[data-kind="enemy"], .no-plates .plate[data-kind="elite"] { display: none; }
+
+.opt-sec { font-family: var(--font-sc); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin: 16px 0 4px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.opt-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.fps-counter { position: absolute; left: calc(14px + var(--safe-l)); bottom: calc(8px + var(--safe-b)); font: 600 12px/1 var(--font-ui, sans-serif); color: #9fe8b0; text-shadow: 0 1px 2px #000; pointer-events: none; }

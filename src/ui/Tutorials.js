@@ -182,6 +182,7 @@ function killTutorial(g, o, touch) {
       h('ol', { class: 'tut-steps' },
         step('Allez vers ', zone ? h('b', {}, zone) : 'la Brume (zones violettes)', ' : une étoile rouge la signale sur la carte.'),
         step('Attaquez : ', touch ? ['bouton d’attaque (le grand, en bas à droite) ou une tape sur la scène'] : ['clic gauche (cliquez d’abord dans le jeu pour capturer la souris)']),
+        step('Verrouillez une cible : ', touch ? ['bouton « cible » ou touchez l’ennemi (appui long sur « cible » pour libérer)'] : [kbd('Tab'), ' (encore pour passer au suivant)'], ' : la caméra et vos coups la suivent.'),
         step('Compétences : ', touch ? 'les boutons autour de l’attaque' : [kbd('1'), ' ', kbd('2'), ' ', kbd('3'), ' ', kbd('4')], ' — elles se débloquent avec les niveaux.'),
         step('Esquivez les cercles rouges : ', touch ? 'bouton « esquive »' : kbd('C'), '. Élixir de vie : ', touch ? 'bouton « élixir »' : kbd('R'), '.')),
       h('p', { class: 'tut-note' }, 'Les runes Ignis (triangle) et Fulgur (éclair) font de gros dégâts de zone.'),

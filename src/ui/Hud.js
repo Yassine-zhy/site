@@ -95,6 +95,9 @@ export class Hud {
     this.wp = h('div', { class: 'waypoint' }, this.wpArrow, h('div', { class: 'wp-gem' }), this.wpDist, this.wpLabel);
     this.wp.hidden = true;
     root.appendChild(this.wp);
+    this.fpsEl = h('div', { class: 'fps-counter' });
+    this.fpsEl.hidden = true;
+    root.appendChild(this.fpsEl);
     this.wpT = 0; this.wpTarget = null; this._wv = new THREE.Vector3();
     ui.root.insertBefore(root, ui.floatLayer.nextSibling);
     this.cache = {};
@@ -192,6 +195,9 @@ export class Hud {
     const qk = g.quests ? g.quests.trackerKey() : '';
     this.set('quests', qk, () => this.renderTracker());
     this.updateWaypoint(dt);
+    const showFps = !!g.settings.showFps;
+    this.set('fpsvis', showFps, (v) => { this.fpsEl.hidden = !v; });
+    if (showFps) this.set('fps', Math.round(g.fps), (v) => { this.fpsEl.textContent = `${v} i/s · ${Math.round((g.renderer.dyn?.ratio || 1) * 100)} %`; });
     // minicarte (10 fps)
     this.mmT -= dt;
     if (this.mmT <= 0) { this.mmT = 0.1; this.drawMinimap(); }

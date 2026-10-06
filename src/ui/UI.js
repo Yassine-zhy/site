@@ -135,7 +135,7 @@ export class UI {
       const sc = Math.max(0.65, Math.min(1.05, 14 / Math.max(d, 1) + 0.55));
       p.el.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px) translate(-50%, -100%) scale(${sc.toFixed(3)})`;
       if (p.cache.name !== e.name) { p.name.textContent = e.name; p.cache.name = e.name; }
-      if (p.cache.kind !== e.kind) { p.name.className = 'pn ' + e.kind; p.cache.kind = e.kind; p.bar.className = 'pbar' + (e.kind === 'player' ? ' friend' : ''); }
+      if (p.cache.kind !== e.kind) { p.name.className = 'pn ' + e.kind; p.el.dataset.kind = e.kind; p.cache.kind = e.kind; p.bar.className = 'pbar' + (e.kind === 'player' ? ' friend' : ''); }
       const showBar = e.hpPct !== undefined && e.hpPct < 0.999;
       if (p.cache.bar !== showBar) { p.bar.hidden = !showBar; p.cache.bar = showBar; }
       if (showBar) {

@@ -69,6 +69,7 @@ export async function boot(game) {
     if (map[code]) game.windows.toggle(map[code]);
     else if (code === 'KeyT' && !game.windowOpen) game.echoes.composeWindow();
     else if (code === 'KeyG' && !game.windowOpen) game.emote('wave');
+    else if (code === 'Tab' && !game.windowOpen) game.lockNext();
   });
   // première visite : guide rapide
   if (!game.save?.hadSave && !game.save?.data?.some(Boolean)) game.schedule(1.2, () => {

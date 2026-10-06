@@ -143,7 +143,7 @@ export class Windows {
           row(g.input.isTouch ? 'joystick' : 'ZQSD / WASD', 'Se déplacer'), row('Souris', 'Regarder (cliquez pour capturer la souris)'), row('Clic gauche', 'Attaquer'),
           row('1 · 2 · 3 · 4', 'Compétences'), row('Clic droit maintenu / X', 'Tracer une rune'), row('Espace', 'Sauter · 2e appui en l’air : paravoile'),
           row('Maj', 'Sprint'), row('C', 'Esquive'), row('R', 'Élixir de vie'), row('E', 'Parler · interagir'), row('Entrée', 'Discuter'), row('T', 'Laisser un écho'),
-          row('G', 'Saluer'), row('M · I · J · K', 'Carte · Sac · Quêtes · Classement'), row('P', 'Multijoueur · Expéditions'), row('Échap', 'Options'),
+          row('G', 'Saluer'), row('Tab', 'Verrouiller une cible · suivante'), row('M · I · J · K', 'Carte · Sac · Quêtes · Classement'), row('P', 'Multijoueur · Expéditions'), row('Échap', 'Options'),
           h('h4', { class: 'sc', style: { color: 'var(--gold)', margin: '12px 0 6px' } }, 'bon à savoir'),
           h('div', { class: 'istats', style: { lineHeight: '1.5' } },
             'Le losange doré à l’écran mène à l’objectif de votre quête. Touchez un objectif dans le journal pour un tutoriel. ',
@@ -178,23 +178,44 @@ export class Windows {
       inp.addEventListener('change', () => { on(inp.checked); Save.saveSettings(s); });
       return h('label', { for: id, style: { display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0', fontSize: '15px' } }, inp, label);
     };
+    const touch = g.input.isTouch;
+    const sec = (title) => h('h4', { class: 'opt-sec' }, title);
+    const apply = () => g.applySettings();
+    const buttons = h('div', { class: 'row opt-actions' },
+      h('button', { class: 'btn', onclick: () => this.close() }, 'Reprendre'),
+      h('button', { class: 'btn ghost', onclick: () => this.open('help') }, 'Guide du voyageur'),
+      h('button', { class: 'btn ghost', onclick: () => { g.save.write(true); g.ui.toast(`Partie sauvegardée (emplacement ${(g.save.slot || 0) + 1}).`); } }, 'Sauvegarder'),
+      h('button', { class: 'btn ghost', id: 'btn-home', title: 'Sauvegarde puis revient au menu (changer de héros, de sauvegarde…)', onclick: () => g.exitToTitle() }, '⌂ Retour à l’accueil'));
     return this.frame('Options',
+      buttons,
+      sec('Graphismes'),
       h('div', { class: 'field' }, h('label', { for: 'opt-quality' }, 'qualité graphique'), qsel),
       h('div', { class: 'istats' }, `${Math.round(g.fps)} images/s · rendu à ${Math.round((g.renderer.dyn?.ratio || 1) * 100)} %`),
       check('opt-adaptive', 'Résolution adaptative (garde le jeu fluide)', s.adaptive !== false, (v) => { s.adaptive = v; if (!v) g.renderer.setRatio(Math.min(devicePixelRatio || 1, g.renderer.quality.pixelRatio)); }),
+      slider('opt-fov', 'champ de vision', s.fov || 60, 50, 85, 1, (v) => { s.fov = v; apply(); }),
+      check('opt-fps', 'Afficher les images par seconde', !!s.showFps, (v) => { s.showFps = v; }),
+      sec('Son'),
       slider('opt-vol', 'volume général', s.volume, 0, 1, 0.05, (v) => { s.volume = v; g.audio.setVolume(s.volume, s.music); }),
       slider('opt-music', 'musique', s.music, 0, 1, 0.05, (v) => { s.music = v; g.audio.setVolume(s.volume, s.music); }),
-      g.input.isTouch ? null : slider('opt-sens', 'sensibilité de la souris', s.sensitivity, 0.3, 2.5, 0.1, (v) => { s.sensitivity = v; g.rig.sensitivity = 0.0023 * v; }),
-      g.input.isTouch ? null : check('opt-invert', 'Inverser l’axe vertical', !!s.invertY, (v) => { s.invertY = v; g.rig.invertY = v; }),
-      g.input.isTouch ? slider('opt-tsens', 'sensibilité tactile de la caméra', s.touchSens || 1, 0.4, 2.5, 0.1, (v) => { s.touchSens = v; }) : null,
-      g.input.isTouch ? check('opt-autocam', 'La caméra suit le héros quand il court', s.autoCam !== false, (v) => { s.autoCam = v; }) : null,
+      sec('Caméra et commandes'),
+      touch ? slider('opt-tsens', 'sensibilité tactile de la caméra', s.touchSens || 1, 0.4, 2.5, 0.1, (v) => { s.touchSens = v; })
+        : slider('opt-sens', 'sensibilité de la souris', s.sensitivity || 1, 0.3, 2.5, 0.1, (v) => { s.sensitivity = v; apply(); }),
+      touch ? null : check('opt-invert', 'Inverser l’axe vertical', !!s.invertY, (v) => { s.invertY = v; apply(); }),
+      slider('opt-camdist', 'distance de la caméra', s.camDist || g.rig.targetDistance || 9, 4, 20, 0.5, (v) => { s.camDist = v; apply(); }),
+      check('opt-shake', 'Secousses de la caméra', s.shake !== false, (v) => { s.shake = v; apply(); }),
+      check('opt-lockcam', 'La caméra suit la cible verrouillée', s.lockCam !== false, (v) => { s.lockCam = v; }),
+      touch ? check('opt-autocam', 'La caméra suit le héros quand il court', s.autoCam !== false, (v) => { s.autoCam = v; }) : null,
+      sec('Combat'),
+      h('div', { class: 'istats' }, touch ? 'Verrouiller une cible : bouton « cible » (appui long pour libérer) ou touchez l’ennemi.' : 'Verrouiller une cible : touche Tab (appuyez encore pour passer à la suivante).'),
+      check('opt-relock', 'Verrouiller automatiquement l’ennemi suivant', s.autoRelock !== false, (v) => { s.autoRelock = v; }),
+      check('opt-autoatk', 'Attaque automatique de la cible verrouillée', !!s.autoAttack, (v) => { s.autoAttack = v; }),
+      check('opt-dmg', 'Chiffres de dégâts', s.dmgNumbers !== false, (v) => { s.dmgNumbers = v; apply(); }),
+      check('opt-plates', 'Noms et vie au-dessus des ennemis', s.plates !== false, (v) => { s.plates = v; apply(); }),
       check('opt-autoequip', 'Équiper automatiquement les meilleurs objets', !!s.autoEquip, (v) => { s.autoEquip = v; }),
+      sec('Interface'),
       check('opt-waypoint', 'Afficher la balise de l’objectif de quête', s.waypoint !== false, (v) => { s.waypoint = v; }),
-      h('div', { class: 'row', style: { display: 'flex', gap: '10px', marginTop: '14px', flexWrap: 'wrap' } },
-        h('button', { class: 'btn', onclick: () => this.close() }, 'Reprendre'),
-        h('button', { class: 'btn ghost', onclick: () => this.open('help') }, 'Guide du voyageur'),
-        h('button', { class: 'btn ghost', onclick: () => { g.save.write(true); g.ui.toast(`Partie sauvegardée (emplacement ${(g.save.slot || 0) + 1}).`); } }, 'Sauvegarder'),
-        h('button', { class: 'btn ghost', id: 'btn-home', title: 'Sauvegarde puis revient au menu (changer de héros, de sauvegarde…)', onclick: () => g.exitToTitle() }, '⌂ Retour à l’accueil')),
+      touch ? slider('opt-tscale', 'taille des boutons tactiles', s.touchScale || 1, 0.75, 1.35, 0.05, (v) => { s.touchScale = v; apply(); }) : null,
+      touch ? check('opt-vibrate', 'Vibrations (coups reçus, verrouillage)', s.vibrate !== false, (v) => { s.vibrate = v; }) : null,
     );
   }
 }
