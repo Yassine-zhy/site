@@ -224,7 +224,7 @@ export class Hud {
     if (!behind) {
       v.applyMatrix4(cam.projectionMatrix);
       sx = (v.x * 0.5 + 0.5) * W; sy = (-v.y * 0.5 + 0.5) * H;
-      on = sx > 48 && sx < W - 48 && sy > 70 && sy < H - 90;
+      on = sx > 48 && sx < W - 48 && sy > 70 && sy < H - 135;
     }
     let ang = 0;
     if (!on) {
@@ -233,7 +233,9 @@ export class Hud {
       if (behind) { dx = v.x; dy = Math.max(Math.abs(v.z), 1) * 0.6 + Math.max(0, -v.y); }
       else { dx = sx - W / 2; dy = sy - H / 2; }
       const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
-      const mx = W / 2 - 54, my = H / 2 - 90;
+      // bords réservés : colonne de boutons à gauche sur mobile
+      const left = g.input.isTouch ? 96 : 54;
+      const mx = dx < 0 ? W / 2 - left : W / 2 - 54, my = dy > 0 ? H / 2 - 135 : H / 2 - 90;
       const k = Math.min(mx / Math.max(1e-3, Math.abs(dx)), my / Math.max(1e-3, Math.abs(dy)));
       sx = W / 2 + dx * k; sy = H / 2 + dy * k;
       ang = Math.atan2(dy, dx);

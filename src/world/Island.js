@@ -109,6 +109,35 @@ export class Island {
     return this;
   }
 
+  // Tuiles de la surface (mêmes sommets partagés, index propre) : seules les tuiles
+  // visibles sont dessinées, et l'ombre portée ne concerne que celles proches du joueur.
+  chunkGeometries(target = 48) {
+    const N = this.cells, geo = this.topGeometry;
+    const C = Math.max(16, Math.ceil(N / Math.max(1, Math.round(N / target))));
+    if (C >= N) return [geo];
+    const pos = geo.attributes.position.array, P = this.projected;
+    const out = [], v = new THREE.Vector3();
+    for (let cj = 0; cj < N; cj += C) for (let ci = 0; ci < N; ci += C) {
+      const idx = [];
+      const j1 = Math.min(N, cj + C), i1 = Math.min(N, ci + C);
+      for (let j = cj; j < j1; j++) for (let i = ci; i < i1; i++) {
+        const a = j * (N + 1) + i, b = a + 1, c = a + (N + 1), d = c + 1;
+        if (P[a] && P[b] && P[c] && P[d]) continue;
+        idx.push(a, c, b, c, d, b);
+      }
+      if (!idx.length) continue;
+      const g = new THREE.BufferGeometry();
+      for (const k of ['position', 'normal', 'color']) g.setAttribute(k, geo.attributes[k]);
+      g.setIndex(idx);
+      const box = new THREE.Box3();
+      for (let j = cj; j <= j1; j++) for (let i = ci; i <= i1; i++) box.expandByPoint(v.fromArray(pos, (j * (N + 1) + i) * 3));
+      g.boundingBox = box;
+      g.boundingSphere = box.getBoundingSphere(new THREE.Sphere());
+      out.push(g);
+    }
+    return out;
+  }
+
   buildUnderside() {
     const segs = Math.max(48, Math.round(this.radius * 1.1));
     const rings = Math.max(10, Math.round(this.depth / 7));

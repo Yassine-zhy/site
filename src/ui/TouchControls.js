@@ -12,30 +12,58 @@ export class TouchControls {
     this.game = game;
     const input = game.input;
     this.root = h('div', { class: 'touch' });
-    // joystick
+    // joystick flottant : il apparaît sous le pouce, n'importe où dans la moitié gauche
     this.knob = h('div', { class: 'knob' });
     this.joy = h('div', { class: 'joy' }, this.knob);
-    this.root.appendChild(this.joy);
+    this.zone = h('div', { class: 'joyzone' });
+    this.root.append(this.zone, this.joy);
     let joyId = null, cx = 0, cy = 0;
-    this.joy.addEventListener('pointerdown', (e) => { joyId = e.pointerId; this.joy.setPointerCapture(e.pointerId); const r = this.joy.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; move(e); });
+    const start = (e) => {
+      if (joyId !== null) return;
+      e.preventDefault();
+      joyId = e.pointerId;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      const r = this.joy.getBoundingClientRect();
+      if (e.currentTarget === this.zone) {
+        // recentre le joystick sous le doigt (sans sortir de l'écran)
+        const R = r.width / 2;
+        cx = Math.max(R + 8, Math.min(innerWidth * 0.5, e.clientX));
+        cy = Math.max(R + 8, Math.min(innerHeight - R - 8, e.clientY));
+        this.joy.style.left = (cx - R) + 'px'; this.joy.style.top = (cy - R) + 'px'; this.joy.style.bottom = 'auto';
+      } else { cx = r.left + r.width / 2; cy = r.top + r.height / 2; }
+      this.joy.classList.add('active');
+      move(e);
+    };
     const move = (e) => {
       if (e.pointerId !== joyId) return;
       let dx = e.clientX - cx, dy = e.clientY - cy;
       const max = 52, l = Math.hypot(dx, dy);
       if (l > max) { dx = dx / l * max; dy = dy / l * max; }
       this.knob.style.transform = `translate(${dx}px, ${dy}px)`;
-      input.touch.move.x = dx / max; input.touch.move.y = -dy / max;
+      // petite zone morte, puis réponse progressive
+      const m = Math.max(0, (Math.min(l, max) - 6) / (max - 6));
+      const k = l > 0 ? m / (Math.min(l, max) / max) : 0;
+      input.touch.move.x = dx / max * k; input.touch.move.y = -dy / max * k;
       if (l > max * 0.95) input.touch.buttons.add('sprint'); else input.touch.buttons.delete('sprint');
+      this.lastMove = performance.now();
     };
-    const end = (e) => { if (e.pointerId !== joyId) return; joyId = null; this.knob.style.transform = ''; input.touch.move.x = input.touch.move.y = 0; input.touch.buttons.delete('sprint'); };
-    this.joy.addEventListener('pointermove', move);
-    this.joy.addEventListener('pointerup', end);
-    this.joy.addEventListener('pointercancel', end);
+    const end = (e) => {
+      if (e.pointerId !== joyId) return;
+      joyId = null; this.knob.style.transform = ''; input.touch.move.x = input.touch.move.y = 0; input.touch.buttons.delete('sprint');
+      this.joy.classList.remove('active');
+      this.joy.style.left = ''; this.joy.style.top = ''; this.joy.style.bottom = '';
+    };
+    for (const el of [this.joy, this.zone]) {
+      el.addEventListener('pointerdown', start);
+      el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', end);
+      el.addEventListener('pointercancel', end);
+    }
     // caméra : glisser sur le canevas
     const canvas = game.renderer.canvas;
     let lookId = null, lx = 0, ly = 0, lt = 0, travel = 0;
     canvas.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch' || lookId !== null) return; lookId = e.pointerId; lx = e.clientX; ly = e.clientY; lt = performance.now(); travel = 0; });
-    canvas.addEventListener('pointermove', (e) => { if (e.pointerId !== lookId) return; input.touch.look.dx += (e.clientX - lx) * 1.6; input.touch.look.dy += (e.clientY - ly) * 1.6; travel += Math.hypot(e.clientX - lx, e.clientY - ly); lx = e.clientX; ly = e.clientY; });
+    canvas.addEventListener('pointermove', (e) => { if (e.pointerId !== lookId) return; const sens = 1.6 * (game.settings.touchSens || 1); input.touch.look.dx += (e.clientX - lx) * sens; input.touch.look.dy += (e.clientY - ly) * sens; travel += Math.hypot(e.clientX - lx, e.clientY - ly); lx = e.clientX; ly = e.clientY; if (travel > 10) this.lastLook = performance.now(); });
     const lend = (e) => {
       if (e.pointerId !== lookId) return;
       lookId = null;
@@ -50,6 +78,7 @@ export class TouchControls {
     const noGesture = (e) => e.preventDefault();
     this.btns.addEventListener('touchstart', noGesture, { passive: false });
     this.joy.addEventListener('touchstart', noGesture, { passive: false });
+    this.zone.addEventListener('touchstart', noGesture, { passive: false });
     const cls = game.classDef;
     this.cdEls = {};
     const btn = (id, icon, x, y, big = false, onPress, onRelease, label) => {
@@ -88,8 +117,9 @@ export class TouchControls {
     this.joyHide = false;
   }
 
-  update() {
+  update(dt) {
     const g = this.game;
+    this.autoCamera(dt);
     const set = (id, remain, total) => { const el = this.cdEls[id]; if (el) el.style.setProperty('--p', (remain > 0 ? Math.round(remain / total * 100) : 0) + '%'); };
     set('attack', g.cooldowns.attack || 0, g.basicCd);
     g.classDef.abilities.forEach((a) => set(a, g.cooldowns[a] || 0, ABILITIES[a].cd));
@@ -98,5 +128,23 @@ export class TouchControls {
     if (g.promptText) this.interactBtn.textContent = g.promptText.length > 26 ? g.promptText.slice(0, 24) + '…' : g.promptText;
     const hide = g.windowOpen || g.dialogueOpen;
     this.root.style.display = hide ? 'none' : '';
+  }
+
+  // La caméra se replace doucement derrière le héros quand on court sans toucher à la vue.
+  autoCamera(dt) {
+    const g = this.game, p = g.player, rig = g.rig;
+    if (!p || p.dead || g.settings.autoCam === false || g.runes?.drawing) return;
+    const now = performance.now();
+    if (now - (this.lastLook || 0) < 1200) return;
+    const mv = g.input.touch.move, mag = Math.hypot(mv.x, mv.y);
+    if (mag < 0.3) return;
+    const speed = Math.hypot(p.velocity.x, p.velocity.z);
+    if (speed < 2) return;
+    const want = Math.atan2(p.velocity.x, p.velocity.z) + Math.PI;
+    let d = want - rig.yaw;
+    d = Math.atan2(Math.sin(d), Math.cos(d));
+    // on ne fait pas demi-tour quand le héros revient vers la caméra
+    if (Math.abs(d) > 2.3) return;
+    rig.yaw += d * Math.min(1, dt * 1.6 * Math.min(1, mag)) * (p.gliding ? 0.6 : 1);
   }
 }

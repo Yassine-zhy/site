@@ -141,6 +141,7 @@ export class Game {
   // ------------------------------------------------------------------ boucle
   frame(rawDt) {
     rawDt = Math.min(rawDt, this.maxDt || 0.25);
+    this.renderer.adapt?.(rawDt, this.settings.adaptive !== false);
     this.fpsAcc += rawDt; this.fpsN++;
     if (this.fpsAcc > 1) { this.fps = this.fpsN / this.fpsAcc; this.fpsAcc = 0; this.fpsN = 0; }
     // simulation à pas fixes (stable même quand l'affichage ralentit)
@@ -317,10 +318,13 @@ export class Game {
     const p = this.player;
     const list = this.enemies.hittable();
     const range = this.classDef.ranged ? 32 : 14;
+    const touch = this.input.isTouch;
     const keep = this.target && this.target.alive && Math.hypot(this.target.position.x - p.position.x, this.target.position.z - p.position.z) < range + 6;
     if (!keep) this.target = null;
-    const yaw = this.rig.yaw + Math.PI;
-    const cand = pickSoftTarget(p.position, yaw, list, range, this.classDef.ranged ? 0.45 : 0.9);
+    // sur écran tactile, viser est plus difficile : cône plus large, orienté vers la course
+    const moving = touch && Math.hypot(p.velocity.x, p.velocity.z) > 2;
+    const yaw = moving ? Math.atan2(p.velocity.x, p.velocity.z) : this.rig.yaw + Math.PI;
+    const cand = pickSoftTarget(p.position, yaw, list, range, (this.classDef.ranged ? 0.45 : 0.9) * (touch ? 1.7 : 1));
     // on change de cible si la nouvelle est nettement mieux centrée
     if (!this.target || (cand && cand !== this.target && this.elapsed - (this.lastCombat || 0) > 1.2)) this.target = cand || this.target;
     // anneau sous la cible

@@ -36,15 +36,7 @@ export class World {
     applyCorruption(this.terrainMat, this.maps, 1);
     this.underMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1, metalness: 0 });
     this.islandMeshes = [];
-    for (const isl of this.terrain.islands) {
-      const top = new THREE.Mesh(isl.topGeometry, this.terrainMat);
-      top.receiveShadow = true;
-      top.castShadow = isl !== this.terrain.main;
-      const under = new THREE.Mesh(isl.underGeometry, this.underMat);
-      under.receiveShadow = false; under.castShadow = false;
-      this.scene.add(top, under);
-      this.islandMeshes.push(top, under);
-    }
+    for (const isl of this.terrain.islands) this.addIslandMeshes(isl);
 
     await step('Le ciel s’éveille…');
     this.sky = new Sky(this.scene);
@@ -61,6 +53,7 @@ export class World {
     this.grass = new Grass(this.scene, this.maps, quality.grass, quality.grassRadius);
     await step('Les forêts murmurent…');
     this.vegetation = new Vegetation(this.scene, assets, this.terrain, this.colliders, this.maps, quality.trees);
+    this.vegetation.setViewDistance(quality.vegView);
     await step('Havrelumière se construit…');
     this.village = new Village(this.scene, assets, this.terrain, this.colliders, this.maps);
     await step('Les campements s’allument…');
@@ -90,15 +83,25 @@ export class World {
   // île ajoutée après le chargement (Citadelle des expéditions)
   addIsland(isl) {
     this.terrain.islands.push(isl);
-    const top = new THREE.Mesh(isl.topGeometry, this.terrainMat);
-    top.receiveShadow = true; top.castShadow = true;
+    this.addIslandMeshes(isl);
+  }
+
+  addIslandMeshes(isl) {
+    for (const g of isl.chunkGeometries()) {
+      const top = new THREE.Mesh(g, this.terrainMat);
+      top.receiveShadow = true; top.castShadow = true;
+      this.scene.add(top);
+      this.islandMeshes.push(top);
+    }
     const under = new THREE.Mesh(isl.underGeometry, this.underMat);
-    this.scene.add(top, under);
-    this.islandMeshes.push(top, under);
+    under.receiveShadow = false; under.castShadow = false;
+    this.scene.add(under);
+    this.islandMeshes.push(under);
   }
 
   setQuality(q) {
     this.quality = q;
+    this.vegetation.setViewDistance(q.vegView);
     this.grass.build(q.grass, q.grassRadius);
     this.sky.setShadowSize(q.shadowSize, q.shadowSize >= 2048 ? 75 : 60);
     this.lightPool.setSize(q.lights ?? 6);
@@ -113,7 +116,7 @@ export class World {
     this.clouds.update(dt, e, this.sky, camera);
     this.water.update(dt, e, this.sky);
     this.grass.update(dt, e, focus, pushers, this.sky);
-    this.vegetation.update(dt, e, this.playerFocus);
+    this.vegetation.update(dt, e, this.playerFocus || focus, camera);
     this.village.update(dt, e, st.night);
     this.outposts?.update(dt, e, st.night);
     if (focus) this.lightPool.update(focus);

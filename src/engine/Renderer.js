@@ -6,8 +6,8 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 export const QUALITY = {
-  low: { label: 'Basse', lights: 3, pixelRatio: 0.8, shadows: false, shadowSize: 1024, bloom: false, grass: 9000, grassRadius: 42, trees: 0.55, far: 1400 },
-  medium: { label: 'Moyenne', lights: 5, pixelRatio: 1, shadows: true, shadowSize: 1024, bloom: true, grass: 22000, grassRadius: 56, trees: 0.8, far: 2200 },
+  low: { label: 'Basse', lights: 3, pixelRatio: 0.8, shadows: false, shadowSize: 1024, bloom: false, grass: 9000, grassRadius: 42, trees: 0.55, far: 1400, vegView: 300, maxPixelRatio: 1.1 },
+  medium: { label: 'Moyenne', lights: 5, pixelRatio: 1, shadows: true, shadowSize: 1024, bloom: true, grass: 22000, grassRadius: 56, trees: 0.8, far: 2200, maxPixelRatio: 1.25 },
   high: { label: 'Haute', lights: 7, pixelRatio: 1.5, shadows: true, shadowSize: 2048, bloom: true, grass: 42000, grassRadius: 70, trees: 1, far: 3200 },
   ultra: { label: 'Ultra', lights: 9, pixelRatio: 2, shadows: true, shadowSize: 4096, bloom: true, grass: 64000, grassRadius: 84, trees: 1, far: 4000 },
 };
@@ -66,7 +66,11 @@ export class Renderer {
     this.qualityName = name;
     this.quality = QUALITY[name] || QUALITY.medium;
     const q = this.quality;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.pixelRatio));
+    const dpr = window.devicePixelRatio || 1;
+    const base = Math.min(dpr, q.pixelRatio);
+    // résolution adaptative : entre min et max selon les images/s mesurées
+    this.dyn = { ratio: base, min: Math.max(0.5, base * 0.62), max: Math.min(dpr, q.maxPixelRatio ?? q.pixelRatio), t: 0, n: 0, good: 0, cool: 3, ceiling: Infinity };
+    this.renderer.setPixelRatio(base);
     this.renderer.shadowMap.enabled = q.shadows;
     this.camera.far = q.far;
     this.camera.updateProjectionMatrix();
@@ -101,6 +105,38 @@ export class Renderer {
       this.composer.setPixelRatio(this.renderer.getPixelRatio());
       this.composer.setSize(w, h);
     }
+  }
+
+  // Appelée à chaque image avec le temps réel écoulé : ajuste la résolution interne
+  // pour garder une animation fluide (baisse rapide, remontée prudente).
+  adapt(rawDt, enabled = true) {
+    const d = this.dyn;
+    if (!d || !enabled || document.hidden || rawDt > 0.25) return;
+    d.cool -= rawDt;
+    d.t += rawDt; d.n++;
+    if (d.t < 2) return;
+    const fps = d.n / d.t;
+    d.t = 0; d.n = 0;
+    if (d.cool > 0) return;
+    const target = this.targetFps || (this.targetFps = matchMedia('(pointer: coarse)').matches ? 42 : 50);
+    if (fps < target && d.ratio > d.min + 0.01) {
+      d.ceiling = d.ratio; // ce niveau était trop lourd : on n'y remonte pas tout de suite
+      d.ceilingT = 40;
+      this.setRatio(Math.max(d.min, d.ratio * (fps < target * 0.7 ? 0.75 : 0.87)));
+      d.good = 0;
+    } else if (fps > Math.min(57, target + 8)) {
+      d.good++;
+      if (d.ceilingT > 0) d.ceilingT -= 2; else d.ceiling = Infinity;
+      const next = Math.min(d.max, d.ratio / 0.9);
+      if (d.good >= 3 && next > d.ratio + 0.01 && next < d.ceiling - 0.01) { this.setRatio(next); d.good = 0; }
+    } else d.good = 0;
+  }
+
+  setRatio(r) {
+    const d = this.dyn;
+    d.ratio = r; d.cool = 2.5;
+    this.renderer.setPixelRatio(r);
+    this.resize();
   }
 
   render(dt, elapsed) {

@@ -77,8 +77,11 @@ export async function boot(game) {
   });
   // première visite : guide rapide
   if (!game.save?.hadSave) game.schedule(1.2, () => {
-    game.ui.announce('Aetheria', 'Parlez à Maëlis, près de l’église (E). Touche H pour le guide.', 5);
-    game.chat.system('Bienvenue à Havrelumière. Clic pour capturer la souris, Échap pour la libérer. H : guide du voyageur.', 20);
+    const touch = game.input.isTouch;
+    game.ui.announce('Aetheria', touch ? 'Suivez le losange doré jusqu’à Maëlis, près de l’église.' : 'Suivez le losange doré jusqu’à Maëlis, près de l’église (E). Touche H pour le guide.', 5);
+    game.chat.system(touch
+      ? 'Bienvenue à Havrelumière. Pouce gauche : se déplacer (n’importe où à gauche). Glisser à droite : tourner la caméra. Tape sur la scène : attaquer.'
+      : 'Bienvenue à Havrelumière. Clic pour capturer la souris, Échap pour la libérer. H : guide du voyageur.', 20);
   });
   addEventListener('beforeunload', () => { game.save?.write(true); game.net?.transport?.close(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) game.save?.write(true); });

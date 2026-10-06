@@ -226,14 +226,25 @@ export class Vegetation {
       const isTree = /tree/.test(name);
       const mat = isTree ? (this.treeMats[look] || this.treeMats.base) : (this.staticMats[look] || this.staticMats.base);
       const mesh = new THREE.InstancedMesh(g.geometry, mat, list.length);
+      const n = list.length;
+      if (!g.geometry.boundingSphere) g.geometry.computeBoundingSphere();
+      const gs = g.geometry.boundingSphere;
+      // par instance : matrice + sphère englobante (tri au plus près / hors champ)
+      const mats = new Float32Array(n * 16), sph = new Float32Array(n * 4);
       list.forEach((it, i) => {
         q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, it.r);
         v.set(it.x, it.y, it.z); sc.set(it.s, it.s * it.sy, it.s);
         m.compose(v, q, sc);
         mesh.setMatrixAt(i, m);
+        m.toArray(mats, i * 16);
+        sph[i * 4] = it.x; sph[i * 4 + 1] = it.y + gs.center.y * it.s * it.sy; sph[i * 4 + 2] = it.z;
+        sph[i * 4 + 3] = (gs.radius + Math.hypot(gs.center.x, gs.center.z)) * it.s * Math.max(1, it.sy);
       });
       mesh.castShadow = true; mesh.receiveShadow = true;
       mesh.computeBoundingSphere();
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      mesh.userData = { mats, sph, n, near: n };
+      mesh.onBeforeShadow = shadowBefore; mesh.onAfterShadow = shadowAfter;
       scene.add(mesh);
       this.meshes.push(mesh);
     }
@@ -241,10 +252,61 @@ export class Vegetation {
     for (const [key, list] of buckets) if (/tree/.test(key)) for (const it of list) this.treePositions.push(it);
   }
 
-  update(dt, elapsed, focus) {
+  update(dt, elapsed, focus, camera) {
     this.treeUniforms.uTime.value = elapsed;
-    if (focus) this.treeUniforms.uPlayerPos.value.copy(focus);
+    if (!focus) return;
+    this.treeUniforms.uPlayerPos.value.copy(focus);
+    if (!camera) return;
+    // on ne refait le tri que si la caméra a bougé ou tourné sensiblement (marge de 4,5°)
+    const cs = this._cs || (this._cs = { p: new THREE.Vector3(1e9, 0, 0), d: new THREE.Vector3(), f: new THREE.Vector3(), fx: 1e9, fz: 1e9 });
+    camera.getWorldDirection(cs.d);
+    const moved = camera.position.distanceToSquared(cs.p) > 1.5 * 1.5 || cs.d.dot(cs.f) < 0.9986
+      || Math.hypot(focus.x - cs.fx, focus.z - cs.fz) > 4 || this.dirty;
+    if (!moved) return;
+    cs.p.copy(camera.position); cs.f.copy(cs.d); cs.fx = focus.x; cs.fz = focus.z; this.dirty = false;
+    this.cull(focus, camera);
+  }
+
+  // viewDist : au-delà, les instances ne sont plus dessinées (qualité basse)
+  setViewDistance(d) { this.viewDist = d || Infinity; this.dirty = true; }
+
+  // Instances dessinées : proches du héros (elles portent les ombres) puis celles dans le champ.
+  cull(focus, camera) {
+    const fr = this._fr || (this._fr = new THREE.Frustum()), pm = this._pm || (this._pm = new THREE.Matrix4());
+    camera.updateMatrixWorld();
+    fr.setFromProjectionMatrix(pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+    const planes = fr.planes, cp = camera.position;
+    const SR2 = SHADOW_RADIUS * SHADOW_RADIUS, VR = this.viewDist ?? Infinity, VR2 = VR * VR;
+    const far = this._far || (this._far = new Uint32Array(4096));
+    for (const mesh of this.meshes) {
+      const u = mesh.userData, bs = mesh.boundingSphere, n = u.n;
+      const dc = Math.hypot(bs.center.x - focus.x, bs.center.z - focus.z);
+      const nearAny = dc - bs.radius < SHADOW_RADIUS;
+      if (!nearAny && (dc - bs.radius > VR || !fr.intersectsSphere(bs))) { mesh.count = 0; u.near = 0; mesh.castShadow = false; continue; }
+      const { sph, mats } = u, arr = mesh.instanceMatrix.array;
+      let k = 0, nf = 0;
+      for (let i = 0; i < n; i++) {
+        const x = sph[i * 4], y = sph[i * 4 + 1], z = sph[i * 4 + 2];
+        const dx = x - focus.x, dz = z - focus.z, d2 = dx * dx + dz * dz;
+        if (d2 < SR2) { arr.set(mats.subarray(i * 16, i * 16 + 16), k * 16); k++; continue; }
+        if (d2 > VR2) continue;
+        // test de la sphère contre le cône de vue, élargi avec la distance
+        const r = sph[i * 4 + 3] + Math.hypot(x - cp.x, z - cp.z) * 0.08;
+        let inside = true;
+        for (let p = 0; p < 6; p++) { const pl = planes[p]; if (pl.normal.x * x + pl.normal.y * y + pl.normal.z * z + pl.constant < -r) { inside = false; break; } }
+        if (inside) { if (nf >= far.length) break; far[nf++] = i; }
+      }
+      u.near = k;
+      for (let j = 0; j < nf; j++) { const i = far[j]; arr.set(mats.subarray(i * 16, i * 16 + 16), k * 16); k++; }
+      mesh.count = k;
+      mesh.castShadow = u.near > 0;
+      if (k) { mesh.instanceMatrix.clearUpdateRanges(); mesh.instanceMatrix.addUpdateRange(0, k * 16); mesh.instanceMatrix.needsUpdate = true; }
+    }
   }
 }
+
+const SHADOW_RADIUS = 85;
+function shadowBefore() { this.userData.cnt = this.count; this.count = this.userData.near; }
+function shadowAfter() { this.count = this.userData.cnt; }
 
 export { smoothstep };

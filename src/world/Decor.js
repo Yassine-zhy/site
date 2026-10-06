@@ -6,6 +6,8 @@ const BSCALE = 7;
 
 // Décors posés à la main (bâtiments, objets, lanternes) avec leurs contours de collision.
 // Une fois tout placé, mergeStatic() fusionne les maillages immobiles par matériau.
+const _wp = new THREE.Vector3();
+
 export class Decor {
   constructor(scene, assets, terrain, colliders, name = 'decor') {
     this.scene = scene; this.assets = assets; this.terrain = terrain; this.colliders = colliders;
@@ -18,8 +20,9 @@ export class Decor {
     this.fallbackY = 14;
   }
 
-  // Fusionne tous les décors immobiles par matériau : quelques appels de rendu au lieu de centaines.
-  mergeStatic() {
+  // Fusionne les décors immobiles par matériau et par case de 64 m : peu d'appels de rendu,
+  // et les cases hors champ (ou loin de l'ombre du joueur) ne sont pas dessinées.
+  mergeStatic(cell = 64) {
     const g = this.group;
     g.updateMatrixWorld(true);
     const keep = new Set();
@@ -45,12 +48,14 @@ export class Decor {
       if (!geo.attributes.normal) geo.computeVertexNormals();
       geo.applyMatrix4(o.matrixWorld);
       const ng = geo.index ? geo.toNonIndexed() : geo;
-      if (!byMat.has(o.material)) byMat.set(o.material, []);
-      byMat.get(o.material).push(ng);
+      const wp = o.getWorldPosition(_wp);
+      const key = o.material.uuid + '|' + Math.floor(wp.x / cell) + ',' + Math.floor(wp.z / cell);
+      if (!byMat.has(key)) byMat.set(key, { mat: o.material, list: [] });
+      byMat.get(key).list.push(ng);
       remove.push(o);
     });
     for (const o of remove) o.removeFromParent();
-    for (const [mat, list] of byMat) {
+    for (const { mat, list } of byMat.values()) {
       const merged = mergeGeometries(list, false);
       if (!merged) continue;
       merged.computeBoundingSphere();
