@@ -15,19 +15,22 @@ Un MMO 3D qui tourne entièrement dans le navigateur. Au-dessus d’une mer de n
 | **Des habitants qui pensent** | Maëlis, Brom, Sir Aldric, Lysa et l’Oracle des Échos répondent librement à ce que vous leur dites (via Claude), dans leur caractère, en connaissant l’état du monde, votre progression et vos quêtes. Ils se souviennent de vos échanges. L’Oracle invente des quêtes uniques, validées et récompensées par le jeu. Sans IA disponible, un repli scénarisé prend le relais. |
 | **Les Échos** | Gravez des messages dans le monde pour les autres joueurs (« Attention : une embuscade droit devant »). Ceux qui les trouvent utiles les font résonner. Quand un héros tombe, une tache rouge marque l’endroit : en l’approchant, on revoit son fantôme rejouer ses dernières secondes. |
 | **Vrai multijoueur, sans serveur dédié** | Chaque joueur publie son état complet dans une salle temps réel. Le joueur le plus ancien devient l’hôte et simule les squelettes pour tout le monde ; s’il part, un autre reprend la main sans perdre la partie. |
-| **Voler entre les îles** | Double saut pour ouvrir la paravoile, colonnes de vent visibles de loin pour gagner de l’altitude, îlots flottants avec coffres célestes et un phare perché au-dessus des nuages. |
+| **Voler entre les îles** | Double saut pour ouvrir la paravoile, colonnes de vent visibles de loin pour gagner de l’altitude, îlots flottants avec coffres célestes et un phare perché au-dessus des nuages, anneaux de vent à traverser en planant. |
+| **Expéditions entre amis** | Menu *Multijoueur* (touche P) : un joueur héberge, le jeu crée une salle privée et affiche un code à 5 lettres ; jusqu’à trois amis le tapent pour rejoindre. Le groupe part dans la **Citadelle des Ombres** (gardes, autels à purifier, braseros à allumer, puis la Sentinelle, la Liche et l’Avatar de la Brume) ou dans l’**Arène des Champions** (les trois seigneurs à la suite). Difficulté adaptée au groupe, rejouable plus dur. |
 
 ![Phare de l’Aube rallumé](docs/screenshots/phare.jpg)
 
 ## Contenu
 
 - **4 classes** jouables (Chevalier, Barbare, Mage, Rôdeuse), 16 compétences débloquées au fil des niveaux, attaques de base en combo.
-- **5 types d’ennemis** (serviteurs, guerriers à bouclier, rôdeurs archers, nécromanciens qui invoquent) dont des élites, et un **boss** au sommet du Pic du Silence, *le Roi Sans Lumière*, avec attaques annoncées au sol et une phase enragée. Ses points de vie s’adaptent au nombre de joueurs présents.
-- **9 quêtes principales** scénarisées, des quêtes secondaires, et des quêtes infinies générées par l’Oracle. Chaque objectif s’ouvre sur un **tutoriel « Comment faire ? »** adapté au PC ou au mobile ; celui des runes montre le tracé animé et propose une zone d’entraînement notée comme en jeu.
+- **12 types d’ennemis** (squelettes de l’archipel, pillards d’ambre, squelettes de givre qui ralentissent) dont des élites dorées, **3 boss du monde** (*le Roi Sans Lumière*, *le Colosse d’Ambre*, *la Reine de Givre*) et **3 boss d’expédition**, avec une bibliothèque d’attaques annoncées au sol (charges, séismes, météores, blizzard, téléportations, salves…). Leurs points de vie s’adaptent au nombre de joueurs.
+- **15 quêtes principales**, **plus de 30 quêtes secondaires** réparties chez 11 habitants (récolte, exploration, chasse, élites, runes, anneaux de vent, pierres de passage…), et des quêtes infinies générées par l’Oracle. Un **losange doré à l’écran** guide toujours vers l’objectif suivi, avec la distance. Chaque objectif s’ouvre sur un **tutoriel « Comment faire ? »** adapté au PC ou au mobile.
+- **Récolte** : fleurs d’aube, mousses d’argent, plumes des nuées, éclats d’ambre et cristaux de givre se ramassent en marchant dessus.
 - **Butin** à quatre raretés (commun, rare, épique, légendaire), équipement, amélioration d’armes chez le forgeron, élixirs chez la marchande.
-- **Monde** : île principale (village, lac, forêt, ruines, montagne) et cinq îlots flottants, cycle jour/nuit synchronisé sur l’heure réelle (une journée = 24 minutes, identique pour tous), aurores boréales la nuit.
+- **Monde** : île principale (village, lac, forêt, ruines, montagne), deux grandes îles — les **Terres d’Ambre** (mesas, gorge, mine, cirque) et les **Cimes de Givre** (lac gelé, sanctuaire, mont enneigé) — reliées par des ponts de corde et dix îlots flottants. **Pierres de passage** pour voyager instantanément, carte interactive (zoom, déplacement), cycle jour/nuit synchronisé sur l’heure réelle, aurores boréales, lucioles, neige et poussière d’ambre selon la région.
 - **Audio 100 % procédural** : musique générative qui change entre le jour, la nuit, le combat et le boss ; bruitages synthétisés en temps réel ; vent, oiseaux et grillons.
-- **Mobile** : joystick, caméra au doigt, boutons d’action en arc, tracé des runes au doigt.
+- **Mobile** : joystick flottant (sous le pouce, n’importe où à gauche), caméra qui se replace derrière le héros quand il court, ciblage tolérant, boutons d’action en arc, tracé des runes au doigt, mise en page adaptée au portrait et au paysage.
+- **Collisions précises** : les contours au sol des bâtiments, arbres, rochers et décors sont calculés depuis la géométrie réelle des modèles ; on peut monter sur les obstacles bas, mais plus traverser les murs.
 
 ![Vol plané au coucher du soleil](docs/screenshots/vol-plane.jpg)
 
@@ -35,7 +38,7 @@ Un MMO 3D qui tourne entièrement dans le navigateur. Au-dessus d’une mer de n
 
 | Action | Clavier / souris | Tactile |
 | --- | --- | --- |
-| Se déplacer | ZQSD ou WASD | joystick |
+| Se déplacer | ZQSD ou WASD | pouce n’importe où à gauche |
 | Regarder | souris (cliquer pour capturer, Échap pour libérer) | glisser sur l’écran |
 | Attaquer | clic gauche | bouton épée |
 | Compétences | 1 · 2 · 3 · 4 | boutons en arc |
@@ -46,6 +49,7 @@ Un MMO 3D qui tourne entièrement dans le navigateur. Au-dessus d’une mer de n
 | Parler, canaliser un phare, ouvrir un coffre | E | bouton « Interagir » |
 | Discuter · graver un écho · saluer | Entrée · T · G | bouton bulle |
 | Carte · sac · quêtes · légendes · guide | M · I · J · K · H | boutons à gauche |
+| Multijoueur · expéditions | P (ou bouton « Expéditions ») | bouton groupe |
 
 ## Lancer le projet
 
@@ -54,8 +58,8 @@ npm install
 npm run dev            # http://localhost:5173
 ```
 
-- **Multijoueur local** : ouvrez le jeu dans plusieurs onglets du même navigateur, ils se voient automatiquement.
-- **Multijoueur sur votre propre serveur** : `npm run relay` (port 8787, relais WebSocket sans dépendance), puis ouvrez le jeu avec `?server=ws://votre-hote:8787`.
+- **Multijoueur local** : ouvrez le jeu dans plusieurs onglets du même navigateur, ils se voient automatiquement. Les expéditions marchent aussi entre onglets (héberger dans l’un, rejoindre avec le code dans l’autre).
+- **Multijoueur sur votre propre serveur** : `npm run relay` (port 8787, relais WebSocket sans dépendance), puis ouvrez le jeu avec `?server=ws://votre-hote:8787`. Chaque groupe d’expédition y a sa propre salle.
 - **Raccourcis de test** : `?play=mage` saute l’écran titre, `?q=low|medium|high|ultra` force la qualité graphique.
 
 ### Construire
@@ -89,7 +93,9 @@ Quelques choix techniques :
 
 - **Rendu des modèles** : le ciel courant est préfiltré en éclairage d’environnement (PMREM, rafraîchi toutes les 2,5 s) ; des cartes métal/rugosité déduites des atlas KayKit font briller l’acier et l’or des armures et des armes ; un liseré de lumière (soleil le jour, lune la nuit) détache les silhouettes ; ombres douces et ombre de contact sous chaque personnage.
 - **Personnages** : les morceaux de chaque modèle sont fusionnés au chargement en un seul maillage animé et une bibliothèque d’animations unique (76 clips) est partagée par tous les personnages. Chaque animation est découpée en deux couches pour attaquer en courant.
-- **Décors** : forêts et rochers instanciés, bâtiments fusionnés par matériau. Environ 80 appels de rendu en qualité basse, 150 en haute.
+- **Décors** : forêts et rochers instanciés avec un tri par instance à chaque mouvement de caméra (seuls les arbres dans le champ, ou proches pour les ombres, sont dessinés) ; terrain découpé en tuiles ; bâtiments fusionnés par matériau et par case de 64 m.
+- **Fluidité** : résolution interne adaptative (baisse dès que les images/s chutent, remonte prudemment), lumières ponctuelles virtuelles limitées aux plus proches, shaders précompilés au chargement.
+- **Collisions** : contours convexes calculés en tranchant les triangles des modèles, déplacement par petits pas (pas de traversée des parois fines), dessus praticables pour les obstacles bas.
 - **Herbe** : un seul maillage instancié qui s’enroule autour du joueur, hauteur et couleur lues dans des textures du monde, courbée par le vent et les personnages.
 - **La Brume** : une carte de corruption recalculée depuis la lumière des phares teinte le sol, l’herbe et les arbres en direct.
 - **Simulation** à pas fixes découplée de l’affichage, stable même quand l’image ralentit.
