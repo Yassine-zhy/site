@@ -94,7 +94,7 @@ export class Game {
   startHero(hero) {
     // changement de héros : on retire l'ancien et sa barre d'action
     if (this.player) { this.scene.remove(this.player.object); this.player.char?.dispose?.(); }
-    if (this.hud) { this.hud.root.remove(); this.hud = null; }
+    if (this.hud) { this.hud.dispose(); this.hud = null; }
     this.cooldowns = {}; this.target = null; this.combo = 0; this.lastCombat = -100; this.bossEngaged = null;
     this.hero = hero;
     this.player = new Player(this, hero.classId, hero.name);
@@ -124,7 +124,7 @@ export class Game {
     this.net?.switchTransport(null);
     this.inGame = false;
     this.input.exitLock();
-    if (this.hud) { this.hud.root.remove(); this.hud = null; }
+    if (this.hud) { this.hud.dispose(); this.hud = null; }
     if (this.touch) this.touch.root.style.display = 'none';
     if (this.player) { this.scene.remove(this.player.object); this.player.char?.dispose?.(); this.player = null; }
     this.loot.clear();
@@ -477,7 +477,7 @@ export class Game {
     const ui = this.ui;
     for (const e of this.enemies.map.values()) {
       if (!e.alive && e.deadT > 1.5) continue;
-      ui.setPlate({ id: e.id, position: e.position, height: e.height + 0.2, name: (e.elite ? '★ ' : '') + e.def.name + ' · ' + e.level, kind: e.elite || e.def.boss ? 'elite' : 'enemy', hpPct: e.alive ? Math.max(0, e.hpPct) : 0, hidden: e.def.boss });
+      ui.setPlate({ id: e.id, position: e.position, height: e.height + 0.2, name: (e.elite ? '★ ' : '') + e.def.name + ' · ' + e.level, kind: e.elite || e.def.boss ? 'elite' : 'enemy', hpPct: e.alive ? Math.max(0, e.hpPct) : 0, hidden: e.def.boss, focus: e === this.target });
     }
     this.npcs?.plates(ui);
     for (const rp of this.remotePlayers.values()) rp.plate(ui);

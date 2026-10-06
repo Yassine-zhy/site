@@ -41,11 +41,11 @@ export class Hud {
     this.tFill = h('div', { class: 'fill' }); this.tTxt = h('span');
     this.tframe = h('div', { class: 'tframe panel' }, this.tName, this.tLvl, h('div', { class: 'bar hp' }, this.tFill, this.tTxt));
     this.tframe.hidden = true;
-    root.appendChild(this.tframe);
+    ui.topStack.appendChild(this.tframe);
     this.bossName = h('div', { class: 'bn' }); this.bossFill = h('div', { class: 'fill' }); this.bossTxt = h('span');
     this.bossbar = h('div', { class: 'bossbar' }, this.bossName, h('div', { class: 'bar' }, this.bossFill, this.bossTxt));
     this.bossbar.hidden = true;
-    root.appendChild(this.bossbar);
+    ui.topStack.appendChild(this.bossbar);
     // minicarte
     this.mmCanvas = h('canvas', { width: 392, height: 392 });
     this.zoneEl = h('div', { class: 'zone' });
@@ -104,6 +104,8 @@ export class Hud {
     this.mmT = 0;
     this.buffCache = '';
   }
+
+  dispose() { this.root.remove(); this.tframe.remove(); this.bossbar.remove(); }
 
   set(key, val, fn) { if (this.cache[key] !== val) { this.cache[key] = val; fn(val); } }
 
@@ -194,6 +196,7 @@ export class Hud {
     // quêtes
     const qk = g.quests ? g.quests.trackerKey() : '';
     this.set('quests', qk, () => this.renderTracker());
+    this.set('modal', !!(g.windowOpen || g.dialogueOpen), (v) => this.ui.root.classList.toggle('modal-open', v));
     this.updateWaypoint(dt);
     const showFps = !!g.settings.showFps;
     this.set('fpsvis', showFps, (v) => { this.fpsEl.hidden = !v; });
@@ -215,7 +218,11 @@ export class Hud {
         t.wy = t.ring ? t.y : Math.max(gy, t.y ?? -Infinity) + 2.6;
       }
       this.wpTarget = t;
-      this.wpAvoid = [this.tracker, this.mmWrap].filter((e) => e && e.offsetWidth > 0).map((e) => e.getBoundingClientRect());
+      // tous les panneaux de l'interface que la balise doit contourner
+      const sel = '.tracker, .minimap-wrap, .pframe, .beacons, .actionbar, .topstack > :not(:empty), .tmenu, .tb, .joy, .tinteract, .xpbar';
+      this.wpAvoid = [...document.querySelectorAll(sel)].filter((e) => e.offsetWidth > 0 && e.offsetHeight > 0 && getComputedStyle(e).visibility !== 'hidden').map((e) => e.getBoundingClientRect());
+      const log = this.game.chat?.log;
+      if (log && [...log.children].some((l) => !l.classList.contains('old'))) this.wpAvoid.push(log.getBoundingClientRect());
       const key = t ? t.label + '|' + t.color : '';
       this.set('wp', key, () => { this.wpLabel.textContent = t?.label || ''; this.wp.style.setProperty('--wc', t?.color || '#ffe3a3'); });
     }
@@ -246,14 +253,23 @@ export class Hud {
       const k = Math.min(mx / Math.max(1e-3, Math.abs(dx)), my / Math.max(1e-3, Math.abs(dy)));
       sx = W / 2 + dx * k; sy = H / 2 + dy * k;
       ang = Math.atan2(dy, dx);
-      // pas par-dessus la minicarte ni le suivi des quêtes
+    }
+    // jamais par-dessus un panneau : on le contourne par le côté le plus proche (au bord comme au centre)
+    for (let pass = 0; pass < 3; pass++) {
+      let moved = false;
       for (const r of this.wpAvoid || []) {
         if (sx > r.left - 34 && sx < r.right + 34 && sy > r.top - 24 && sy < r.bottom + 30) {
-          if (sx > W / 2) sx = r.left - 40; else sx = r.right + 40;
+          const opts = [[r.left - 40, sy], [r.right + 40, sy], [sx, r.top - 30], [sx, r.bottom + 34]]
+            .filter(([x, y]) => x > 30 && x < W - 30 && y > 30 && y < H - 30)
+            .sort((a, b) => Math.hypot(a[0] - sx, a[1] - sy) - Math.hypot(b[0] - sx, b[1] - sy));
+          if (opts.length) { [sx, sy] = opts[0]; moved = true; }
         }
       }
+      if (!moved) break;
     }
     this.set('wpon', on, (v2) => this.wp.classList.toggle('edge', !v2));
+    // habitant en vue : son « ! » et son nom suffisent, la balise s'efface pour ne pas doubler le texte
+    this.set('wpnpc', !!(on && t.npc && dist < 45), (v2) => this.wp.classList.toggle('wp-quiet', v2));
     this.wp.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0)`;
     if (!on) this.wpArrow.style.transform = `rotate(${ang.toFixed(3)}rad)`;
     this.set('wpd', Math.round(dist / (dist > 200 ? 10 : 1)), () => { this.wpDist.textContent = dist >= 1000 ? (dist / 1000).toFixed(1).replace('.', ',') + ' km' : Math.round(dist / (dist > 200 ? 10 : 1)) * (dist > 200 ? 10 : 1) + ' m'; });

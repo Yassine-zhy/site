@@ -348,7 +348,7 @@ export class Quests {
       }
       case 'elite': return zoneTarget(nearest(SPAWN_ZONES, (z) => z.level[0] <= (g.hero?.level || 1) + 1 && z.level[1] >= (g.hero?.level || 1) - 3) || nearest(SPAWN_ZONES));
       case 'boss': { const b = BOSS_OF[o.boss || 'roi']; return b && { x: b.x, z: b.z, color: red, label: BOSS_KITS[b.id]?.name, y: b.minY }; }
-      case 'talk': case 'return': { const n = g.npcs?.byId(o.npc); return n && { x: n.spot.x, z: n.spot.z, color: gold, label: n.name }; }
+      case 'talk': case 'return': { const n = g.npcs?.byId(o.npc); return n && { x: n.spot.x, z: n.spot.z, color: gold, label: n.name, npc: true }; }
       case 'collect': { const n = g.gathering?.nearest(o.item, pos); return n && { x: n.x, z: n.z, color: ITEMS_GATHER[o.item].color, label: ITEMS_GATHER[o.item].name }; }
       case 'waystone': { const w = nearest(WAYSTONES, (w) => !g.waystones?.known(w.id)); return w && { x: w.x, z: w.z, color: '#9fe8ff', label: 'Pierre de passage' }; }
       case 'updraft': { const u = nearest(UPDRAFTS); return u && { x: u.x, z: u.z, color: '#bfe6ff', label: 'Colonne de vent' }; }

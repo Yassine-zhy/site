@@ -21,7 +21,12 @@ export class Chat {
       .chat.open .chat-line.old { opacity:.85; }
       .chat-input { pointer-events:auto; width:100%; margin-top:6px; background:rgba(15,12,28,.85); border:1px solid var(--line); color:var(--parch); border-radius:4px; padding:8px 10px; font-size:15px; font-family:var(--font-ui); outline:none; user-select:text; -webkit-user-select:text; }
       .chat-input:focus { border-color:var(--gold); }
-      @media (max-width:760px), (pointer:coarse) { .chat { bottom:calc(200px + var(--safe-b)); width:min(300px, 60%); } .chat-log { max-height:110px; } .chat-line { font-size:12.5px; } }
+      @media (max-width:760px) and (pointer:fine) { .chat { width:min(300px, 40%); } .chat-log { max-height:110px; } .chat-line { font-size:12.5px; } }
+      /* téléphone en portrait : au-dessus des boutons, sous l'invite d'interaction */
+      @media (pointer:coarse) { .chat { bottom:calc(272px + var(--safe-b)); width:min(280px, 56%); } .chat-log { max-height:74px; } .chat-line { font-size:12px; line-height:1.3; } }
+      /* téléphone à l'horizontale : en bas au centre, entre le joystick et les boutons */
+      @media (pointer:coarse) and (max-height:500px) { .chat { left:50%; transform:translateX(-50%); width:max(200px, calc(100% - 560px)); bottom:calc(14px + var(--safe-b)); } .chat-log { max-height:31px; mask-image:none; -webkit-mask-image:none; } .chat-line { text-align:center; font-size:11.5px; line-height:1.3; } .chat:not(.open) .chat-line.old { display:none; } }
+      @media (pointer:coarse) { .chat:not(.open) .chat-line.old { display:none; } }
     `);
     document.head.appendChild(style);
     this.input.addEventListener('keydown', (e) => {
@@ -84,6 +89,8 @@ export class Chat {
   }
 
   push(line, time = 14) {
+    // sur téléphone, la place est comptée : messages plus courts à l'écran
+    if (this.game.input.isTouch) time = Math.min(time, 8);
     this.log.appendChild(line);
     while (this.log.children.length > 40) this.log.firstChild.remove();
     setTimeout(() => line.classList.add('old'), time * 1000);

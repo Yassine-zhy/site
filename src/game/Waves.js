@@ -18,7 +18,7 @@ export class Waves {
     this.portal = null;
     this.banner = h('div', { class: 'wave-banner' });
     this.banner.hidden = true;
-    game.ui.root.appendChild(this.banner);
+    game.ui.topStack.appendChild(this.banner);
   }
 
   reset() {

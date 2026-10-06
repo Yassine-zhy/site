@@ -13,6 +13,7 @@ export class TouchControls {
     this.game = game;
     const input = game.input;
     this.root = h('div', { class: 'touch' });
+    game.ui.root.classList.add('touch-ui');
     // joystick flottant : il apparaît sous le pouce, n'importe où dans la moitié gauche
     this.knob = h('div', { class: 'knob' });
     this.joy = h('div', { class: 'joy' }, this.knob);
@@ -153,7 +154,7 @@ export class TouchControls {
     g.classDef.abilities.forEach((a) => set(a, g.cooldowns[a] || 0, ABILITIES[a].cd));
     set('potion', g.cooldowns.potion || 0, 8);
     this.interactBtn.hidden = !g.promptText;
-    if (g.promptText) this.interactBtn.textContent = g.promptText.length > 26 ? g.promptText.slice(0, 24) + '…' : g.promptText;
+    if (g.promptText && this.interactBtn.dataset.t !== g.promptText) { this.interactBtn.dataset.t = g.promptText; this.interactBtn.textContent = '✋ ' + g.promptText; }
     const hide = g.windowOpen || g.dialogueOpen;
     this.root.style.display = hide ? 'none' : '';
   }
