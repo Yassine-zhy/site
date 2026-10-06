@@ -37,6 +37,7 @@ export class Beacons {
         p.position.set(Math.cos(a) * 3.6, 1.1, Math.sin(a) * 3.6);
         p.rotation.y = -a;
         g.add(p);
+        colliders.addCircle(b.x + Math.cos(a) * 3.6, b.z + Math.sin(a) * 3.6, 0.85, y - 1, y + 5, 'ruin');
       }
       const crystalMat = new THREE.MeshStandardMaterial({ color: '#d9ccff', emissive: new THREE.Color('#6a4bd6'), emissiveIntensity: 0.4, roughness: 0.25, metalness: 0.1, flatShading: true, transparent: true, opacity: 0.92 });
       const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(1.3, 0), crystalMat);

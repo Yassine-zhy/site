@@ -35,7 +35,7 @@ export class Character {
     this.bones = {};
     this.model.traverse((o) => {
       if (o.isBone || o.type === 'Object3D' || o.isGroup) this.bones[o.name] = o;
-      if (o.isMesh) this.materials.push(o.material);
+      if (o.isMesh) this.materials.push(...(Array.isArray(o.material) ? o.material : [o.material]));
     });
     if (tint) for (const m of this.materials) m.color.multiply(new THREE.Color(tint));
     if (show) this.showOnly(show);

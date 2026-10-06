@@ -105,7 +105,7 @@ export class Grass {
           vec3 fl = mix(vec3(1.0, 0.85, 0.35), vec3(0.95, 0.55, 0.85), fract(vColor.r * 37.0));
           col = mix(col, fl * 1.2, vFlower * smoothstep(0.75, 0.95, vY));
           float lum = dot(col, vec3(0.299,0.587,0.114));
-          col = mix(col, vec3(lum) * vec3(0.78,0.66,0.98), vCor * 0.7);
+          col = mix(col, vec3(lum) * vec3(0.66,0.56,0.86), vCor * 0.6);
           vec3 light = uAmbient + uSunColor * max(uSunDir.y, 0.0) * 0.55;
           col *= light;
           gl_FragColor = vec4(col, 1.0);

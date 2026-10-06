@@ -13,6 +13,7 @@ import { CLOUD_SEA_Y } from '../world/Clouds.js';
 import { renderWorldMap } from '../ui/MapRender.js';
 import { Hud } from '../ui/Hud.js';
 import { Icons } from '../ui/Icons.js';
+import { Updrafts } from '../world/Updrafts.js';
 
 // Orchestrateur principal : boucle de jeu, combat, liens entre systèmes.
 export class Game {
@@ -49,6 +50,7 @@ export class Game {
     this.projectiles = new Projectiles(this);
     this.loot = new Loot(this);
     this.icons = new Icons(this.renderer, this.assets);
+    this.world.updrafts = new Updrafts(this.scene, this.world.terrain, this.fx);
     onStep?.('Cartographie de l’archipel…');
     await new Promise((r) => setTimeout(r, 0));
     this.mapImage = renderWorldMap(this.world.terrain, 512);
@@ -64,6 +66,7 @@ export class Game {
     this.rig.yaw = sp.facing + Math.PI;
     this.rig.pitch = 0.3;
     this.rig.initialized = false;
+    if (this.input.isTouch) { this.rig.targetDistance = this.rig.distance = 11; }
     this.hud = new Hud(this.ui, this);
     this.hud.portrait.src = this.icons.portrait(this.classDef.model);
     this.world.sky.override = null;
@@ -141,6 +144,7 @@ export class Game {
     }
     this.world.playerFocus = inGame ? this.player.position : null;
     this.world.update(dt, focus, this.camera, pushers);
+    this.world.updrafts?.update(dt, this.elapsed, focus);
     this.systemsUpdate?.(dt);
     this.audio?.update(dt);
     this.fx.update(dt, this.camera, this.renderer.renderer.domElement.clientHeight * this.renderer.renderer.getPixelRatio());

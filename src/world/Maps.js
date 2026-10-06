@@ -128,8 +128,8 @@ export function applyCorruption(material, maps, strength = 1) {
           vec2 cuv = (vWorldPosC.xz + ${MAP_EXTENT.toFixed(1)}) / ${(MAP_EXTENT * 2).toFixed(1)};
           float cor = texture2D(uCorruption, cuv).r * uCorruptStrength;
           float lum = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
-          vec3 mist = vec3(lum) * vec3(0.78, 0.66, 0.98);
-          diffuseColor.rgb = mix(diffuseColor.rgb, mist, cor * 0.72);
+          vec3 mist = vec3(lum) * vec3(0.72, 0.62, 0.92);
+          diffuseColor.rgb = mix(diffuseColor.rgb, mist, cor * 0.62);
         }`);
   };
   material.customProgramCacheKey = () => 'corrupt' + strength;

@@ -80,13 +80,16 @@ export class Assets {
     }
     for (const k of ['knight', 'barbarian', 'mage', 'rogue', 'rogue_hooded', 'skel_minion', 'skel_warrior', 'skel_rogue', 'skel_mage']) {
       const scene = this.gltf[k].scene;
+      mergeSkinned(scene);
       scene.traverse((o) => {
         if (o.isMesh) {
           o.castShadow = true; o.receiveShadow = false;
-          o.frustumCulled = false;
-          const m = o.material;
-          if (m) { m.roughness = 0.85; m.metalness = 0; if (m.map) m.map.anisotropy = 4; }
-          if (m && m.name === 'Glow') { m.emissive = new THREE.Color('#7af0ff'); m.emissiveIntensity = 3.0; m.toneMapped = true; }
+          const ms = Array.isArray(o.material) ? o.material : [o.material];
+          for (const m of ms) {
+            if (!m) continue;
+            m.roughness = 0.85; m.metalness = 0; if (m.map) m.map.anisotropy = 4;
+            if (m.name === 'Glow') { m.emissive = new THREE.Color('#7af0ff'); m.emissiveIntensity = 3.0; }
+          }
         }
       });
     }
@@ -100,9 +103,8 @@ export class Assets {
     const obj = skeletonClone(src);
     obj.traverse((o) => {
       if (o.isMesh) {
-        o.material = o.material.clone();
-        o.material.userData.baseEmissive = o.material.emissive.clone();
-        o.material.userData.baseEmissiveIntensity = o.material.emissiveIntensity;
+        const cl = (m) => { const c = m.clone(); c.userData.baseEmissive = c.emissive.clone(); c.userData.baseEmissiveIntensity = c.emissiveIntensity; return c; };
+        o.material = Array.isArray(o.material) ? o.material.map(cl) : cl(o.material);
       }
     });
     return obj;
@@ -157,4 +159,62 @@ export class Assets {
     const g = this.propGeometry(name);
     return g ? g.box : new THREE.Box3(new THREE.Vector3(-1, 0, -1), new THREE.Vector3(1, 1, 1));
   }
+}
+
+// Fusionne les morceaux d'un personnage (bras, corps, tête, jambes...) en un seul maillage
+// animé partageant un squelette unique : beaucoup moins d'appels de rendu et de squelettes.
+function toFloat(attr) {
+  const arr = new Float32Array(attr.count * attr.itemSize);
+  for (let i = 0; i < attr.count; i++) for (let k = 0; k < attr.itemSize; k++) arr[i * attr.itemSize + k] = attr.getComponent(i, k);
+  return arr;
+}
+
+export function mergeSkinned(scene) {
+  scene.updateMatrixWorld(true);
+  const skinned = [];
+  scene.traverse((o) => { if (o.isSkinnedMesh) skinned.push(o); });
+  if (skinned.length < 2) return;
+  const boneSet = new Map();
+  const bones = [];
+  for (const m of skinned) for (const b of m.skeleton.bones) if (!boneSet.has(b)) { boneSet.set(b, bones.length); bones.push(b); }
+  const inverses = bones.map((b) => new THREE.Matrix4().copy(b.matrixWorld).invert());
+  const byMat = new Map();
+  const Q = new THREE.Matrix4(), N = new THREE.Matrix3(), v = new THREE.Vector3();
+  for (const m of skinned) {
+    const sk = m.skeleton;
+    Q.multiplyMatrices(sk.bones[0].matrixWorld, sk.boneInverses[0]).multiply(m.bindMatrix);
+    N.getNormalMatrix(Q);
+    const g = m.geometry;
+    const pos = toFloat(g.attributes.position);
+    for (let i = 0; i < pos.length; i += 3) { v.set(pos[i], pos[i + 1], pos[i + 2]).applyMatrix4(Q); pos[i] = v.x; pos[i + 1] = v.y; pos[i + 2] = v.z; }
+    const out = new THREE.BufferGeometry();
+    out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    if (g.attributes.normal) {
+      const nor = toFloat(g.attributes.normal);
+      for (let i = 0; i < nor.length; i += 3) { v.set(nor[i], nor[i + 1], nor[i + 2]).applyMatrix3(N).normalize(); nor[i] = v.x; nor[i + 1] = v.y; nor[i + 2] = v.z; }
+      out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    }
+    out.setAttribute('uv', new THREE.BufferAttribute(g.attributes.uv ? toFloat(g.attributes.uv) : new Float32Array(pos.length / 3 * 2), 2));
+    const si = g.attributes.skinIndex, sw = g.attributes.skinWeight;
+    const idx = new Uint16Array(si.count * 4), wts = new Float32Array(si.count * 4);
+    for (let i = 0; i < si.count; i++) for (let k = 0; k < 4; k++) { idx[i * 4 + k] = boneSet.get(sk.bones[si.getComponent(i, k)]) ?? 0; wts[i * 4 + k] = sw.getComponent(i, k); }
+    out.setAttribute('skinIndex', new THREE.BufferAttribute(idx, 4));
+    out.setAttribute('skinWeight', new THREE.BufferAttribute(wts, 4));
+    if (g.index) out.setIndex(Array.from(g.index.array));
+    const key = m.material;
+    if (!byMat.has(key)) byMat.set(key, []);
+    byMat.get(key).push(out.index ? out.toNonIndexed() : out);
+  }
+  const mats = [...byMat.keys()];
+  const merged = mats.map((mat) => mergeGeometries(byMat.get(mat), false));
+  const geo = merged.length === 1 ? merged[0] : mergeGeometries(merged, true);
+  const parent = skinned[0].parent;
+  const mesh = new THREE.SkinnedMesh(geo, mats.length === 1 ? mats[0] : mats);
+  mesh.name = 'Body';
+  parent.add(mesh);
+  for (const m of skinned) m.removeFromParent();
+  const skeleton = new THREE.Skeleton(bones, inverses);
+  mesh.bind(skeleton, new THREE.Matrix4());
+  mesh.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 1.2, 0), 2.4);
+  mesh.frustumCulled = true;
 }

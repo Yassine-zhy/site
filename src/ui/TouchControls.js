@@ -53,19 +53,21 @@ export class TouchControls {
       this.cdEls[id] = cd;
       return b;
     };
+    // disposition en arcs autour du bouton d'attaque (coin inférieur droit)
+    const C = 41, B = 27;
+    const arc = (r, deg) => { const a = deg * Math.PI / 180; return [Math.round(C + r * Math.cos(a) - B), Math.round(C + r * Math.sin(a) - B)]; };
     btn('attack', ABILITY_ICONS.attack, 0, 0, true, () => input.touch.buttons.add('attack'), () => input.touch.buttons.delete('attack'));
-    const pos = [[96, 6], [104, 78], [64, 140], [0, 104]];
-    cls.abilities.forEach((a, i) => btn(a, ABILITY_ICONS[ABILITIES[a].icon], pos[i][0] + 2, pos[i][1] + 2, false, () => game.useAbility(i)));
-    btn('jump', ICON.jump, 160, 0, false, () => { input.touch.pressed.add('jump'); input.touch.buttons.add('jump'); }, () => input.touch.buttons.delete('jump'), 'saut');
-    btn('dodge', ICON.dodge, 168, 70, false, () => input.touch.pressed.add('dodge'), null, 'esquive');
-    btn('rune', ABILITY_ICONS.rune, 140, 136, false, () => game.runes?.beginTouch(), null, 'rune');
-    btn('potion', ABILITY_ICONS.potion, 70, 200, false, () => game.usePotion(), null);
+    cls.abilities.forEach((a, i) => { const [x, y] = arc(96, i * 30); btn(a, ABILITY_ICONS[ABILITIES[a].icon], x, y, false, () => game.useAbility(i)); });
+    { const [x, y] = arc(160, 0); btn('jump', ICON.jump, x, y, false, () => { input.touch.pressed.add('jump'); input.touch.buttons.add('jump'); }, () => input.touch.buttons.delete('jump'), 'saut'); }
+    { const [x, y] = arc(160, 28); btn('dodge', ICON.dodge, x, y, false, () => input.touch.pressed.add('dodge'), null, 'esquive'); }
+    { const [x, y] = arc(160, 58); btn('rune', ABILITY_ICONS.rune, x, y, false, () => game.runes?.beginTouch(), null, 'rune'); }
+    { const [x, y] = arc(160, 88); btn('potion', ABILITY_ICONS.potion, x, y, false, () => game.usePotion(), null, 'élixir'); }
     // bouton d'interaction (apparaît au besoin)
-    this.interactBtn = h('button', { class: 'btn small interactive', style: { position: 'absolute', right: '250px', bottom: 'calc(40px + var(--safe-b))', pointerEvents: 'auto' } }, 'Interagir');
+    this.interactBtn = h('button', { class: 'btn small interactive', style: { position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(250px + var(--safe-b))', pointerEvents: 'auto', maxWidth: '70%' } }, 'Interagir');
     this.interactBtn.addEventListener('click', () => game.interactions?.interact());
     this.root.appendChild(this.interactBtn);
     // petits boutons de menu
-    const top = h('div', { style: { position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(8px + var(--safe-b))', display: 'flex', gap: '8px', pointerEvents: 'auto' } });
+    const top = h('div', { style: { position: 'absolute', left: 'calc(14px + var(--safe-l))', top: 'calc(132px + var(--safe-t))', display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' } });
     for (const [id, icon, fn] of [['map', ICON.map, () => game.toggleWindow('map')], ['bag', ICON.bag, () => game.toggleWindow('inventory')], ['quest', ICON.quest, () => game.toggleWindow('quests')], ['chat', ICON.chat, () => game.chat?.open()], ['menu', ICON.menu, () => game.toggleWindow('settings')]]) {
       const b = h('button', { class: 'tb', style: { position: 'relative', width: '40px', height: '40px' }, 'aria-label': id }, svgIcon(icon));
       b.addEventListener('click', fn);

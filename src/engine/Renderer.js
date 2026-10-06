@@ -104,6 +104,8 @@ export class Renderer {
   }
 
   render(dt, elapsed) {
+    this.renderer.info.autoReset = false;
+    this.renderer.info.reset();
     if (this.grade) this.grade.uniforms.uTime.value = elapsed % 10;
     if (this.composer) this.composer.render(dt);
     else this.renderer.render(this.scene, this.camera);

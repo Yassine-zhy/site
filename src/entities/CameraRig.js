@@ -75,7 +75,9 @@ export class CameraRig {
       this.shakeAmt = Math.max(0, this.shakeAmt - dt * 2.5);
     }
     this.camera.lookAt(look);
-    const fov = this.baseFov + speedFactor * 8 + this.fovKick;
+    const aspect = this.camera.aspect;
+    const portrait = aspect < 1 ? Math.min(18, (1 - aspect) * 30) : 0; // téléphone en portrait : champ plus large
+    const fov = this.baseFov + portrait + speedFactor * 8 + this.fovKick;
     if (Math.abs(this.camera.fov - fov) > 0.05) { this.camera.fov = damp(this.camera.fov, fov, 5, dt); this.camera.updateProjectionMatrix(); }
     this.fovKick = damp(this.fovKick, 0, 6, dt);
   }

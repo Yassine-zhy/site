@@ -15,7 +15,7 @@ import { CLASSES } from './config.js';
 const params = new URLSearchParams(location.search);
 const frame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
 
-async function main() {
+async function main(hotData = {}) {
   const canvas = document.getElementById('game');
   const ui = new UI(document.getElementById('ui'));
   window.__ui = ui;
@@ -61,6 +61,17 @@ async function main() {
     game.save.soon(1);
   };
 
+  // reprise après une mise à jour de la page (le jeu continue là où il en était)
+  const hot = window.claude?.hot;
+  try { hot?.snapshot?.(() => (game.inGame ? { resume: game.save.snapshot() } : {})); } catch { /* */ }
+  if (hotData?.resume?.hero) {
+    const r = hotData.resume;
+    game.save.loaded = { ...r.hero, pos: r.pos, quests: r.quests, savedAt: r.savedAt };
+    game.save.hadSave = true;
+    await begin(Hero.deserialize(r.hero));
+    return;
+  }
+
   // raccourcis de test : ?play=knight
   if (params.get('play')) {
     const cls = CLASSES[params.get('play')] ? params.get('play') : 'knight';
@@ -84,4 +95,6 @@ async function main() {
   platform.onOnline?.((n) => game.screens.setOnline(n));
 }
 
-main().catch((e) => { console.error(e); window.__error = String(e && e.stack || e); window.__ui?.showError?.('Erreur : ' + (e.message || e)); });
+const start = (data) => main(data).catch((e) => { console.error(e); window.__error = String(e && e.stack || e); window.__ui?.showError?.('Erreur : ' + (e.message || e)); });
+if (window.claude?.hot?.ready) window.claude.hot.ready(start);
+else start(window.claude?.hot?.data ?? {});

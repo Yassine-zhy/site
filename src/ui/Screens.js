@@ -83,7 +83,7 @@ export class Screens {
       g.scene.add(ring); this.previewRing = ring;
     }
     let cls = 'knight';
-    const name = NAMES[Math.floor(Math.random() * NAMES.length)];
+    const name = (g.platform?.firstName() || '').replace(/[^\p{L}\p{N} '\-]/gu, '').slice(0, 16) || NAMES[Math.floor(Math.random() * NAMES.length)];
     const info = h('div', { class: 'clsinfo' });
     const buttons = Object.values(CLASSES).map((c) => h('button', { class: 'cls' + (c.id === cls ? ' on' : ''), 'data-cls': c.id, onclick: () => select(c.id) },
       h('div', { class: 'n', style: { color: c.color } }, c.name), h('div', { class: 'r' }, c.role)));
@@ -93,10 +93,10 @@ export class Screens {
       h('h2', {}, 'Votre héros'),
       h('div', { class: 'hint' }, 'Choisissez une vocation. Chacune maîtrise les runes à sa manière.'),
       h('div', { class: 'classes' }, buttons),
-      info,
-      h('div', { class: 'field' }, h('label', { for: 'hero-name' }, 'nom du héros'), input),
-      h('div', { class: 'row', style: { display: 'flex', gap: '10px', flexWrap: 'wrap' } }, go,
-        h('button', { class: 'btn ghost', onclick: () => { input.value = NAMES[Math.floor(Math.random() * NAMES.length)]; } }, 'Autre nom')));
+      h('div', { class: 'field namerow' }, h('label', { for: 'hero-name' }, 'nom du héros'),
+        h('div', { style: { display: 'flex', gap: '8px' } }, input, h('button', { class: 'btn ghost small', title: 'Autre nom', onclick: () => { input.value = NAMES[Math.floor(Math.random() * NAMES.length)]; } }, '↻'))),
+      go,
+      info);
     this.create = h('div', { id: 'create' }, h('div'), side);
     this.ui.root.appendChild(this.create);
     const select = (id) => {
@@ -135,8 +135,8 @@ export class Screens {
     g.scene.add(ch.object);
     ch.setLocomotion(c.weapons.idle);
     ch.playAction(id === 'knight' ? 'Cheer' : id === 'barbarian' ? 'Taunt' : id === 'mage' ? 'Spellcast_Raise' : '1H_Ranged_Shoot', { full: true, timeScale: 1.2 });
-    g.fx.beam(this.spot, c.color, { height: 16, radius: 1.4, life: 1 });
-    g.fx.burst(this.spot.clone().setY(this.spot.y + 1), c.color, { count: 30, speed: 5, size: 0.35, life: 0.8 });
+    g.fx.ring(this.spot, c.color, { from: 0.5, to: 3.5, life: 0.7 });
+    g.fx.burst(this.spot.clone().setY(this.spot.y + 1), c.color, { count: 30, speed: 5, size: 0.3, life: 0.8 });
     this.preview = ch;
   }
 

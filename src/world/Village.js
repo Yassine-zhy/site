@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mulberry32 } from '../engine/math.js';
 import { VILLAGE, RUINS, BRIDGES } from '../config.js';
 import { applyCorruption } from './Maps.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const BSCALE = 7;
 
@@ -76,6 +77,49 @@ export class Village {
     this.buildMonument(maps);
     this.buildRuins(rng);
     this.buildBridges();
+    this.mergeStatic();
+  }
+
+  // Fusionne tous les décors immobiles par matériau : quelques appels de rendu au lieu de centaines.
+  mergeStatic() {
+    const g = this.group;
+    g.updateMatrixWorld(true);
+    const keep = new Set();
+    if (this.windmillBlades) keep.add(this.windmillBlades);
+    for (const f of this.flames) keep.add(f);
+    const byMat = new Map();
+    const remove = [];
+    g.traverse((o) => {
+      if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || keep.has(o)) return;
+      if (Array.isArray(o.material)) return;
+      const geo = o.geometry.clone();
+      for (const key of Object.keys(geo.attributes)) {
+        const a = geo.attributes[key];
+        if (a.isInterleavedBufferAttribute || a.normalized || !(a.array instanceof Float32Array)) {
+          const arr = new Float32Array(a.count * a.itemSize);
+          for (let i = 0; i < a.count; i++) for (let k = 0; k < a.itemSize; k++) arr[i * a.itemSize + k] = a.getComponent(i, k);
+          geo.setAttribute(key, new THREE.BufferAttribute(arr, a.itemSize));
+        }
+      }
+      for (const key of Object.keys(geo.attributes)) if (!['position', 'normal', 'uv'].includes(key)) geo.deleteAttribute(key);
+      if (!geo.attributes.uv) geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count * 2), 2));
+      if (!geo.attributes.normal) geo.computeVertexNormals();
+      geo.applyMatrix4(o.matrixWorld);
+      const ng = geo.index ? geo.toNonIndexed() : geo;
+      if (!byMat.has(o.material)) byMat.set(o.material, []);
+      byMat.get(o.material).push(ng);
+      remove.push(o);
+    });
+    for (const o of remove) o.removeFromParent();
+    for (const [mat, list] of byMat) {
+      const merged = mergeGeometries(list, false);
+      if (!merged) continue;
+      merged.computeBoundingSphere();
+      const m = new THREE.Mesh(merged, mat);
+      m.castShadow = true; m.receiveShadow = true;
+      this.scene.add(m);
+    }
+    // les objets restants (pales, flammes, lumières) restent dans le groupe
   }
 
   ground(x, z) { return this.terrain.heightAt(x, z) ?? VILLAGE.height; }
@@ -119,7 +163,9 @@ export class Village {
 
   placeLantern(x, z, withLight) {
     const y = this.ground(x, z);
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 3.2, 6), new THREE.MeshStandardMaterial({ color: '#5b3d26', roughness: 0.9 }));
+    this.postMat = this.postMat || new THREE.MeshStandardMaterial({ color: '#5b3d26', roughness: 0.9 });
+    this.postGeo = this.postGeo || new THREE.CylinderGeometry(0.12, 0.16, 3.2, 6);
+    const post = new THREE.Mesh(this.postGeo, this.postMat);
     post.position.set(x, y + 1.6, z);
     post.castShadow = true;
     this.group.add(post);
@@ -127,7 +173,9 @@ export class Village {
     torch.position.set(x, y + 3.35, z);
     torch.scale.setScalar(0.9);
     this.group.add(torch);
-    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffb347').multiplyScalar(4), toneMapped: false }));
+    this.glowMat = this.glowMat || new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffb347').multiplyScalar(4), toneMapped: false });
+    this.glowGeo = this.glowGeo || new THREE.SphereGeometry(0.28, 10, 8);
+    const glow = new THREE.Mesh(this.glowGeo, this.glowMat);
     glow.position.set(x, y + 3.9, z);
     this.group.add(glow);
     this.flames.push(glow);
@@ -158,12 +206,12 @@ export class Village {
       p.position.set(Math.cos(a) * 4.2, 1.2, Math.sin(a) * 4.2);
       g.add(p);
     }
-    const crystalMat = new THREE.MeshStandardMaterial({ color: '#fff2c8', emissive: new THREE.Color('#ffcf6b'), emissiveIntensity: 2.2, roughness: 0.2, metalness: 0.1, flatShading: true, transparent: true, opacity: 0.95 });
+    const crystalMat = new THREE.MeshStandardMaterial({ color: '#fff2c8', emissive: new THREE.Color('#ffcf6b'), emissiveIntensity: 1.5, roughness: 0.2, metalness: 0.1, flatShading: true, transparent: true, opacity: 0.95 });
     const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(1.6, 0), crystalMat);
     crystal.scale.set(1, 1.8, 1);
     crystal.position.y = 7.2;
     g.add(crystal);
-    const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd98a').multiplyScalar(2.5), transparent: true, opacity: 0.55, side: THREE.DoubleSide, toneMapped: false, depthWrite: false, blending: THREE.AdditiveBlending });
+    const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd98a').multiplyScalar(1.6), transparent: true, opacity: 0.5, side: THREE.DoubleSide, toneMapped: false, depthWrite: false, blending: THREE.AdditiveBlending });
     const rings = [];
     for (let i = 0; i < 3; i++) {
       const r = new THREE.Mesh(new THREE.TorusGeometry(2.6 + i * 0.7, 0.05, 6, 64), ringMat);
@@ -277,7 +325,7 @@ export class Village {
       m.crystal.rotation.y += dt * 0.6;
       m.crystal.position.y = 7.2 + Math.sin(elapsed * 1.3) * 0.35;
       m.rings.forEach((r, i) => { r.rotation.x = elapsed * (0.3 + i * 0.17) + i; r.rotation.y = elapsed * (0.21 + i * 0.11); r.position.y = m.crystal.position.y; });
-      m.light.intensity = 10 + night * 30;
+      m.light.intensity = 6 + night * 16;
     }
     const flick = 0.85 + Math.sin(elapsed * 13.1) * 0.08 + Math.sin(elapsed * 7.3) * 0.07;
     for (const l of this.lights) l.intensity = night * 26 * flick;
