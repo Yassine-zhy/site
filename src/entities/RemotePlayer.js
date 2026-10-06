@@ -91,6 +91,8 @@ export class RemotePlayer {
     this.glider.visible = this.gOpen > 0.02;
     this.glider.scale.set(this.gOpen, 0.3 + this.gOpen * 0.7, 1);
     if (this.bubbleT > 0) { this.bubbleT -= dt; if (this.bubbleT <= 0) this.bubble = ''; }
+    const fl = this.game.world.terrain.groundBelow(this.position.x, this.position.y, this.position.z);
+    this.char.groundOffset = fl === null ? 99 : Math.max(0, this.position.y - fl);
     this.char.update(dt);
   }
 

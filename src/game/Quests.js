@@ -2,6 +2,7 @@ import { h } from '../ui/dom.js';
 import { BEACONS, ISLETS, MOUNTAIN, RUINS, LAKE, FOREST, SPAWN_ZONES, ENEMIES } from '../config.js';
 import { generateItem } from './Items.js';
 import { RUNE_SPELLS } from './Runes.js';
+import { hasTutorial } from '../ui/Tutorials.js';
 
 export const PLACES = {
   nuees: { name: 'l’Îlot des Nuées', x: ISLETS[0].x, z: ISLETS[0].z, r: 30 },
@@ -80,6 +81,7 @@ export class Quests {
     const q = this.instantiate(def);
     this.active.unshift(q);
     if (!auto) this.game.ui.toast(`Nouvelle quête : <b>${q.title}</b>`);
+    if (this.mainIdx >= 1) this.tutorialHint();
     this.game.audio?.play('quest');
     this.changed();
     return q;
@@ -193,12 +195,27 @@ export class Quests {
 
   npcName(id) { return this.game.npcs?.byId(id)?.name || 'le donneur'; }
 
+  returnObjective(q) { return { type: 'return', npc: q.giver, npcName: this.npcName(q.giver), text: `Retourner voir ${this.npcName(q.giver)}`, count: 1, have: 0, done: false }; }
+
+  // ligne d'objectif cliquable : ouvre le tutoriel « Comment faire ? »
+  objectiveRow(win, o, label) {
+    if (!hasTutorial(o)) return h('div', { class: 'qo' + (o.done ? ' done' : '') }, label);
+    return h('button', { class: 'qo qo-link' + (o.done ? ' done' : ''), type: 'button', title: 'Comment faire ?', onclick: () => win.openTutorial(o) },
+      h('span', {}, label), h('span', { class: 'qhelp' }, '?'));
+  }
+
+  // une seule fois : signaler que les objectifs ouvrent un tutoriel
+  tutorialHint() {
+    try { if (localStorage.getItem('aetheria.tuthint')) return; localStorage.setItem('aetheria.tuthint', '1'); } catch { /* */ }
+    setTimeout(() => this.game.ui.toast(`Astuce : touchez un objectif de quête (${this.game.input?.isTouch ? 'bouton quêtes' : 'touche J'}) pour savoir comment le réussir.`, { time: 6 }), 2500);
+  }
+
   changed() { this.trackedKey = JSON.stringify(this.active.map((q) => [q.id, q.state, q.objectives.map((o) => Math.floor(o.have))])); }
   trackerKey() { return this.trackedKey; }
   tracked() {
     return this.active.slice(0, 3).map((q) => ({
       title: q.title, ai: q.ai,
-      objectives: q.state === 'ready' ? [{ text: `Retourner voir ${this.npcName(q.giver)}`, done: false, count: 1, have: 0 }] : q.objectives.map((o) => ({ text: o.text, done: o.done, count: o.type === 'light' ? 1 : o.count, have: o.have })),
+      objectives: q.state === 'ready' ? [{ text: `Retourner voir ${this.npcName(q.giver)}`, done: false, count: 1, have: 0, obj: this.returnObjective(q) }] : q.objectives.map((o) => ({ text: o.text, done: o.done, count: o.type === 'light' ? 1 : o.count, have: o.have, obj: o })),
     }));
   }
 
@@ -227,11 +244,13 @@ export class Quests {
       list.appendChild(h('div', { style: { padding: '10px 0', borderBottom: '1px solid var(--line-soft)' } },
         h('div', { class: 'q' }, h('div', { class: 'qt' + (q.ai ? ' ai' : '') }, q.title)),
         h('div', { style: { fontFamily: 'var(--font-body)', fontSize: '15px', lineHeight: '1.45', margin: '4px 0 6px', color: 'var(--parch)' } }, q.desc || ''),
-        ...q.objectives.map((o) => h('div', { class: 'qo' + (o.done ? ' done' : '') }, '◆ ' + o.text + (o.count > 1 && o.type !== 'light' ? ` (${Math.floor(o.have)}/${o.count})` : o.type === 'light' ? ` (${o.have.toFixed(1)}/${o.count} %)` : ''))),
+        ...q.objectives.map((o) => this.objectiveRow(win, o, '◆ ' + o.text + (o.count > 1 && o.type !== 'light' ? ` (${Math.floor(o.have)}/${o.count})` : o.type === 'light' ? ` (${o.have.toFixed(1)}/${o.count} %)` : ''))),
+        q.state === 'ready' ? this.objectiveRow(win, this.returnObjective(q), '◆ Retourner voir ' + this.npcName(q.giver)) : null,
         h('div', { class: 'istats', style: { marginTop: '6px' } }, `Récompense : ${q.rewards?.xp || 0} xp · ${q.rewards?.gold || 0} or${q.rewards?.item !== undefined ? ' · un objet' : ''}`),
         q.state === 'ready' ? h('div', { class: 'istats', style: { color: 'var(--good)' } }, `Prêt à rendre à ${this.npcName(q.giver)}.`) : null,
       ));
     }
+    if (this.active.length) list.prepend(h('div', { class: 'istats', style: { marginBottom: '4px' } }, 'Touchez un objectif pour savoir comment le réussir.'));
     const doneN = this.done.size;
     return win.frame('Journal de quêtes', list, h('div', { class: 'istats', style: { marginTop: '10px' } }, `${doneN} quête${doneN > 1 ? 's' : ''} accomplie${doneN > 1 ? 's' : ''}.`));
   }

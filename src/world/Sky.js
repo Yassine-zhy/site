@@ -84,6 +84,7 @@ export class Sky {
     this.sun.castShadow = true;
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.6;
+    this.sun.shadow.radius = 2.2; // pénombre douce (filtrage PCF élargi)
     this.setShadowSize(2048, 70);
     scene.add(this.sun, this.sun.target);
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);

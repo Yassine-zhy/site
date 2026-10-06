@@ -192,7 +192,11 @@ export class Hud {
     if (!list.length) { this.trackBody.appendChild(h('div', { class: 'qo' }, 'Parlez aux habitants de Havrelumière.')); return; }
     for (const q of list.slice(0, 3)) {
       const el = h('div', { class: 'q' }, h('div', { class: 'qt' + (q.ai ? ' ai' : '') }, q.title));
-      for (const o of q.objectives) el.appendChild(h('div', { class: 'qo' + (o.done ? ' done' : '') }, o.text + (o.count > 1 ? ` (${Math.min(o.have, o.count)}/${o.count})` : '')));
+      for (const o of q.objectives) {
+        const row = h('div', { class: 'qo' + (o.done ? ' done' : '') + (o.obj ? ' qo-tip' : ''), title: o.obj ? 'Comment faire ?' : '' }, o.text + (o.count > 1 ? ` (${Math.min(o.have, o.count)}/${o.count})` : ''), o.obj && !o.done ? h('span', { class: 'qhelp' }, '?') : null);
+        if (o.obj) row.addEventListener('click', (e) => { e.stopPropagation(); g.windows?.openTutorial(o.obj); });
+        el.appendChild(row);
+      }
       this.trackBody.appendChild(el);
     }
   }

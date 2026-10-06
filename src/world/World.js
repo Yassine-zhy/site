@@ -8,6 +8,7 @@ import { Maps, applyCorruption } from './Maps.js';
 import { Vegetation } from './Vegetation.js';
 import { Village } from './Village.js';
 import { Colliders } from './Colliders.js';
+import { EnvLight, updateRim } from '../engine/ModelLook.js';
 
 // Le monde d'Aetheria : îles, ciel, eau, végétation, village.
 export class World {
@@ -46,6 +47,11 @@ export class World {
     await step('Le ciel s’éveille…');
     this.sky = new Sky(this.scene);
     this.sky.setShadowSize(quality.shadowSize, quality.shadowSize >= 2048 ? 75 : 60);
+    // reflets et lumière ambiante des modèles 3D : le ciel courant, préfiltré
+    this.sky.update(0, null, 0);
+    this.env = new EnvLight(renderer.renderer, this.sky);
+    this.env.update(0);
+    updateRim(this.sky);
     this.clouds = new Clouds(this.scene, assets, renderer.qualityName);
     this.water = new Water(this.scene, this.terrain);
     await step('Les herbes poussent…');
@@ -68,6 +74,8 @@ export class World {
     this.elapsed += dt;
     const e = this.elapsed;
     const st = this.sky.update(dt, focus, e);
+    this.env.update(dt);
+    updateRim(this.sky);
     this.clouds.update(dt, e, this.sky, camera);
     this.water.update(dt, e, this.sky);
     this.grass.update(dt, e, focus, pushers, this.sky);

@@ -208,6 +208,7 @@ export class Player {
       floor = Math.max(ground, LAKE.level - 1.5); this.inWater = true;
     }
     const wasGround = this.onGround;
+    this.char.groundOffset = floor === null ? 99 : Math.max(0, pos.y - floor);
     if (floor !== null && pos.y <= floor + 0.02 && vel.y <= 0.5) {
       // pente trop raide : glissade
       const slope = terrain.slopeAt(pos.x, pos.z);

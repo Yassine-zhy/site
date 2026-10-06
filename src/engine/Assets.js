@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { enhanceModelMaterial, cloneModelMaterial } from './ModelLook.js';
 
 const BASE = './assets/';
 
@@ -100,6 +101,8 @@ export class Assets {
             const m = o.material;
             if (m && m.map) { m.map.anisotropy = 4; }
             if (m) { m.roughness = Math.max(0.6, m.roughness ?? 1); m.metalness = Math.min(0.2, m.metalness ?? 0); }
+            // armes et accessoires : reflets métalliques et liseré comme les personnages
+            if (lib === 'items') for (const mm of [].concat(o.material)) enhanceModelMaterial(mm);
           }
         });
         this.props.set(child.name, child);
@@ -116,6 +119,7 @@ export class Assets {
             if (!m) continue;
             m.roughness = 0.85; m.metalness = 0; if (m.map) m.map.anisotropy = 4;
             if (m.name === 'Glow') { m.emissive = new THREE.Color('#7af0ff'); m.emissiveIntensity = 3.0; }
+            enhanceModelMaterial(m);
           }
         }
       });
@@ -130,7 +134,7 @@ export class Assets {
     const obj = skeletonClone(src);
     obj.traverse((o) => {
       if (o.isMesh) {
-        const cl = (m) => { const c = m.clone(); c.userData.baseEmissive = c.emissive.clone(); c.userData.baseEmissiveIntensity = c.emissiveIntensity; return c; };
+        const cl = (m) => { const c = cloneModelMaterial(m); c.userData.baseEmissive = c.emissive.clone(); c.userData.baseEmissiveIntensity = c.emissiveIntensity; return c; };
         o.material = Array.isArray(o.material) ? o.material.map(cl) : cl(o.material);
       }
     });

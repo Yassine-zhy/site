@@ -23,7 +23,7 @@ Un MMO 3D qui tourne entièrement dans le navigateur. Au-dessus d’une mer de n
 
 - **4 classes** jouables (Chevalier, Barbare, Mage, Rôdeuse), 16 compétences débloquées au fil des niveaux, attaques de base en combo.
 - **5 types d’ennemis** (serviteurs, guerriers à bouclier, rôdeurs archers, nécromanciens qui invoquent) dont des élites, et un **boss** au sommet du Pic du Silence, *le Roi Sans Lumière*, avec attaques annoncées au sol et une phase enragée. Ses points de vie s’adaptent au nombre de joueurs présents.
-- **9 quêtes principales** scénarisées, des quêtes secondaires, et des quêtes infinies générées par l’Oracle.
+- **9 quêtes principales** scénarisées, des quêtes secondaires, et des quêtes infinies générées par l’Oracle. Chaque objectif s’ouvre sur un **tutoriel « Comment faire ? »** adapté au PC ou au mobile ; celui des runes montre le tracé animé et propose une zone d’entraînement notée comme en jeu.
 - **Butin** à quatre raretés (commun, rare, épique, légendaire), équipement, amélioration d’armes chez le forgeron, élixirs chez la marchande.
 - **Monde** : île principale (village, lac, forêt, ruines, montagne) et cinq îlots flottants, cycle jour/nuit synchronisé sur l’heure réelle (une journée = 24 minutes, identique pour tous), aurores boréales la nuit.
 - **Audio 100 % procédural** : musique générative qui change entre le jour, la nuit, le combat et le boss ; bruitages synthétisés en temps réel ; vent, oiseaux et grillons.
@@ -87,6 +87,7 @@ tools/make-artifact.mjs construction de la page claude.ai
 
 Quelques choix techniques :
 
+- **Rendu des modèles** : le ciel courant est préfiltré en éclairage d’environnement (PMREM, rafraîchi toutes les 2,5 s) ; des cartes métal/rugosité déduites des atlas KayKit font briller l’acier et l’or des armures et des armes ; un liseré de lumière (soleil le jour, lune la nuit) détache les silhouettes ; ombres douces et ombre de contact sous chaque personnage.
 - **Personnages** : les morceaux de chaque modèle sont fusionnés au chargement en un seul maillage animé et une bibliothèque d’animations unique (76 clips) est partagée par tous les personnages. Chaque animation est découpée en deux couches pour attaquer en courant.
 - **Décors** : forêts et rochers instanciés, bâtiments fusionnés par matériau. Environ 80 appels de rendu en qualité basse, 150 en haute.
 - **Herbe** : un seul maillage instancié qui s’enroule autour du joueur, hauteur et couleur lues dans des textures du monde, courbée par le vent et les personnages.

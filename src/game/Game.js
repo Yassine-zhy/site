@@ -14,6 +14,7 @@ import { renderWorldMap } from '../ui/MapRender.js';
 import { Hud } from '../ui/Hud.js';
 import { Icons } from '../ui/Icons.js';
 import { Updrafts } from '../world/Updrafts.js';
+import { cloneModelMaterial } from '../engine/ModelLook.js';
 
 // Orchestrateur principal : boucle de jeu, combat, liens entre systèmes.
 export class Game {
@@ -72,7 +73,7 @@ export class Game {
         if (!w) continue;
         for (const f of [false, true]) {
           const p = this.assets.prop(w[0]);
-          p.traverse((m) => { if (m.isMesh) m.material = Array.isArray(m.material) ? m.material.map((x) => x.clone()) : m.material.clone(); });
+          p.traverse((m) => { if (m.isMesh) m.material = Array.isArray(m.material) ? m.material.map(cloneModelMaterial) : cloneModelMaterial(m.material); });
           if (f) fade(p);
           keep.push(p);
         }

@@ -362,3 +362,41 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
 @media (prefers-reduced-motion: reduce) {
   .announce .a1, .toast, .plate .quest-mark { animation: none !important; }
 }
+
+/* ---------- tutoriels de quêtes */
+.qo-link { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px; background: rgba(242, 196, 109, 0.05); border: 1px solid var(--line-soft); border-radius: 4px; padding: 6px 9px; margin: 4px 0; color: var(--parch); font: inherit; font-size: 14.5px; text-align: left; cursor: pointer; }
+.qo-link:hover, .qo-link:focus-visible { background: rgba(242, 196, 109, 0.13); border-color: var(--line); outline: none; }
+.qo-link.done { color: var(--good); }
+.qo-link.done > span:first-child { text-decoration: line-through; opacity: 0.75; }
+.qhelp { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--gold); color: var(--gold-hi); font-weight: 800; font-size: 12px; line-height: 1; }
+.q .qo-tip { cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 6px; border-radius: 3px; }
+.q .qo-tip:hover { color: var(--gold-hi); background: rgba(242, 196, 109, 0.08); }
+.q .qo-tip .qhelp { width: 16px; height: 16px; font-size: 10px; }
+.tut { font-size: 15px; line-height: 1.5; }
+.tut-obj { font-family: var(--font-body); font-weight: 700; color: var(--gold-hi); font-size: 17px; }
+.tut-lead { font-family: var(--font-body); font-size: 16px; margin: 6px 0 12px; color: var(--parch); }
+.tut-row { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.tut-glyph-box { flex: none; width: 170px; text-align: center; margin: 0 auto; }
+.tut-cap { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.tut-glyph { display: block; margin: 0 auto; background: radial-gradient(circle, rgba(140, 110, 220, 0.2), transparent 70%); border-radius: 50%; overflow: visible; }
+.tut-glyph .ghost { fill: none; stroke: rgba(255, 255, 255, 0.12); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+.tut-glyph .ink { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 5px currentColor); animation: tutdraw 2.4s linear infinite; }
+@keyframes tutdraw { 0% { stroke-dashoffset: var(--len, 400); } 70%, 100% { stroke-dashoffset: 0; } }
+.tut-glyph .start { fill: #7ee0a8; }
+.tut-glyph .dot { filter: drop-shadow(0 0 5px #fff); }
+.tut-steps { margin: 0; padding-left: 22px; flex: 1 1 260px; }
+.tut-steps li { margin: 5px 0; }
+.tk { display: inline-block; min-width: 22px; padding: 0 6px; border-radius: 3px; background: var(--gold); color: var(--ink); font-weight: 800; font-family: var(--font-ui); font-size: 13px; text-align: center; line-height: 1.5; }
+.tut-note { font-size: 13.5px; color: var(--muted); margin: 10px 0; }
+.tut-h { font-family: var(--font-sc); color: var(--gold); font-size: 12px; letter-spacing: 0.12em; margin: 14px 0 6px; font-weight: 700; }
+.tut-pad { border: 1px dashed var(--line); border-radius: 6px; background: rgba(0, 0, 0, 0.32); overflow: hidden; }
+.tut-canvas { display: block; width: 100%; height: 220px; touch-action: none; cursor: crosshair; }
+.tut-result { padding: 8px 10px; border-top: 1px solid var(--line-soft); font-size: 14px; min-height: 22px; }
+.tut .good { color: var(--good); font-weight: 700; }
+.tut .bad { color: #ffb4a8; font-weight: 600; }
+.tut-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.tut-runes { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 6px 10px; margin: 10px 0 4px; }
+.tut-rune { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.tut-rune .tut-glyph { flex: none; }
+.tut-rune .tut-glyph .ink { stroke-width: 3; }
+.tut-rune .tut-glyph .ghost { stroke-width: 5; }

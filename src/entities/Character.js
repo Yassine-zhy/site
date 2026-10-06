@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { cloneModelMaterial } from '../engine/ModelLook.js';
 
 const LOWER = new Set(['root', 'hips', 'upperlegl', 'upperlegr', 'lowerlegl', 'lowerlegr', 'footl', 'footr', 'toesl', 'toesr']);
 const splitCache = new Map();
@@ -14,6 +15,20 @@ function splitClip(clip) {
   s = { lower, upper, full: clip };
   splitCache.set(clip, s);
   return s;
+}
+
+// Ombre de contact : halo sombre et doux sous les pieds, partagé par tous les personnages.
+let BLOB = null;
+function blobAssets() {
+  if (BLOB) return BLOB;
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(0,0,0,1)'); grd.addColorStop(0.45, 'rgba(0,0,0,0.65)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
+  const geo = new THREE.PlaneGeometry(1, 1); geo.rotateX(-Math.PI / 2);
+  BLOB = { geo, tex: new THREE.CanvasTexture(c) };
+  return BLOB;
 }
 
 // Personnage animé KayKit : mixeur à deux couches, armes, flash d'impact, dissolution.
@@ -42,6 +57,14 @@ export class Character {
     for (const [prop, bone, s = 1] of attach) this.attach(prop, bone, s);
     this.mixer.addEventListener('finished', (e) => this.onFinished(e));
     this.opacity = 1;
+    const b = blobAssets();
+    this.blob = new THREE.Mesh(b.geo, new THREE.MeshBasicMaterial({ map: b.tex, color: 0x000000, transparent: true, depthWrite: false, opacity: 0.4, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    this.blobSize = 1.25 * scale;
+    this.blob.scale.setScalar(this.blobSize);
+    this.blob.renderOrder = 1;
+    this.blob.position.y = 0.05;
+    this.object.add(this.blob);
+    this.groundOffset = 0; // hauteur au-dessus du sol (saut, vol plané)
   }
 
   // n'affiche que les accessoires listés parmi ceux tenus en main / sur la tête
@@ -59,7 +82,7 @@ export class Character {
     if (!bone) return null;
     const p = this.assets.prop(propName);
     p.scale.setScalar(s);
-    p.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.material = o.material.clone(); this.materials.push(o.material); } });
+    p.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.material = cloneModelMaterial(o.material); this.materials.push(o.material); } });
     bone.add(p);
     return p;
   }
@@ -158,6 +181,13 @@ export class Character {
 
   update(dt) {
     this.mixer.update(dt);
+    const off = Math.max(0, this.groundOffset || 0), k = Math.max(0, 1 - off / 5) * this.opacity;
+    this.blob.visible = k > 0.03;
+    if (this.blob.visible) {
+      this.blob.position.y = 0.05 - off;
+      this.blob.material.opacity = 0.4 * k;
+      this.blob.scale.setScalar(this.blobSize * (1 + off * 0.12));
+    }
     if (this.flash > 0 || this._flashing) {
       this.flash = Math.max(0, this.flash - dt * 5);
       this._flashing = this.flash > 0;
@@ -175,5 +205,6 @@ export class Character {
     this.mixer.stopAllAction();
     this.object.removeFromParent();
     for (const m of this.materials) m.dispose();
+    this.blob.material.dispose();
   }
 }

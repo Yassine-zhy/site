@@ -6,6 +6,7 @@ import { MAP_RANGE, worldToMap } from './MapRender.js';
 import { ABILITIES, ABILITY_ICONS } from '../game/Abilities.js';
 import { KEY_LABELS } from '../engine/Input.js';
 import { Save } from '../game/Save.js';
+import { tutorialView } from './Tutorials.js';
 
 const SLOT_NAMES = { weapon: 'Arme', armor: 'Protection', relic: 'Relique' };
 
@@ -35,7 +36,7 @@ export class Windows {
     this.current = name;
     this.game.windowOpen = true;
     this.game.input.exitLock();
-    const builders = { inventory: () => this.inventory(), map: () => this.map(), help: () => this.help(), settings: () => this.settings(), quests: () => this.game.quests?.window(this) || this.help(), leaderboard: () => this.game.worldState?.leaderboardWindow(this) || this.help() };
+    const builders = { inventory: () => this.inventory(), map: () => this.map(), help: () => this.help(), settings: () => this.settings(), quests: () => this.game.quests?.window(this) || this.help(), leaderboard: () => this.game.worldState?.leaderboardWindow(this) || this.help(), tutorial: () => this.tutorial() };
     const body = (builders[name] || builders.help)();
     this.el = body;
     this.ui.root.appendChild(body);
@@ -49,6 +50,17 @@ export class Windows {
   }
 
   refresh() { if (this.current) this.open(this.current); }
+
+  // ------------------------------------------------------------ tutoriel d'un objectif de quête
+  openTutorial(objective) {
+    this.tut = objective;
+    this.open('tutorial');
+  }
+
+  tutorial() {
+    const o = this.tut || { type: 'talk', text: '' };
+    return this.frame('Comment faire ?', tutorialView(this.game, o, { onBack: () => this.open('quests') }));
+  }
 
   // ------------------------------------------------------------ personnage & sac
   inventory() {
