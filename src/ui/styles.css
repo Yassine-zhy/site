@@ -469,6 +469,10 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
   .joy { left: calc(118px + var(--safe-l)); bottom: calc(16px + var(--safe-b)); width: 118px; height: 118px; }
   .joy .knob { width: 50px; height: 50px; margin: -25px 0 0 -25px; }
   .tinteract { bottom: calc(130px + var(--safe-b)) !important; }
+  .tframe { top: calc(6px + var(--safe-t)); width: 230px; padding: 4px 10px 6px; }
+  .tframe .tn { font-size: 13px; }
+  .tframe .tl { display: none; }
+  .wave-banner { top: calc(52px + var(--safe-t)); }
 }
 /* emplacements de sauvegarde */
 .slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -541,4 +545,4 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
 /* vagues de la Brume */
 .wave-banner { position: absolute; left: 50%; top: calc(138px + var(--safe-t)); transform: translateX(-50%); padding: 7px 18px; border-radius: 20px; background: rgba(40, 14, 70, 0.82); border: 1px solid rgba(199, 139, 255, 0.7); color: #ecdcff; font-family: var(--font-sc); font-size: 14px; letter-spacing: 0.06em; box-shadow: 0 0 18px rgba(160, 90, 255, 0.45); pointer-events: none; z-index: 5; white-space: nowrap; animation: wavePulse 1.6s ease-in-out infinite; }
 @keyframes wavePulse { 50% { box-shadow: 0 0 28px rgba(190, 120, 255, 0.7); } }
-@media (pointer: coarse) and (max-height: 500px) { .wave-banner { top: calc(8px + var(--safe-t)); font-size: 12px; } }
+@media (pointer: coarse) and (max-height: 500px) { .wave-banner { top: calc(52px + var(--safe-t)); font-size: 12px; } }

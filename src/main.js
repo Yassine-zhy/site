@@ -63,26 +63,6 @@ async function main(hotData = {}) {
     game.save.soon(1);
   };
 
-  // reprise après une mise à jour de la page (le jeu continue là où il en était)
-  const hot = window.claude?.hot;
-  try { hot?.snapshot?.(() => (game.inGame ? { resume: game.save.snapshot() } : {})); } catch { /* */ }
-  if (hotData?.resume?.hero) {
-    const r = clone(hotData.resume);
-    game.save.select(r.slot ?? game.save.slot);
-    game.save.loaded = { ...r.hero, pos: r.pos, quests: r.quests, savedAt: r.savedAt };
-    game.save.hadSave = true;
-    await begin(Hero.deserialize(r.hero));
-    return;
-  }
-
-  // raccourcis de test : ?play=knight
-  if (params.get('play')) {
-    const cls = CLASSES[params.get('play')] ? params.get('play') : 'knight';
-    await begin(new Hero(cls, params.get('name') || 'Testeur'));
-    if (params.get('t')) game.world.sky.override = parseFloat(params.get('t'));
-    return;
-  }
-
   // menu principal : quatre emplacements de sauvegarde
   const openParty = () => game.windows?.open('party');
   const createIn = (i, then) => {
@@ -104,6 +84,27 @@ async function main(hotData = {}) {
     onMulti: (i) => playSlot(i, openParty),
   });
   game.showMainMenu = showMainMenu;
+
+  // reprise après une mise à jour de la page (le jeu continue là où il en était)
+  const hot = window.claude?.hot;
+  try { hot?.snapshot?.(() => (game.inGame ? { resume: game.save.snapshot() } : {})); } catch { /* */ }
+  if (hotData?.resume?.hero) {
+    const r = clone(hotData.resume);
+    game.save.select(r.slot ?? game.save.slot);
+    game.save.loaded = { ...r.hero, pos: r.pos, quests: r.quests, savedAt: r.savedAt };
+    game.save.hadSave = true;
+    await begin(Hero.deserialize(r.hero));
+    return;
+  }
+
+  // raccourcis de test : ?play=knight
+  if (params.get('play')) {
+    const cls = CLASSES[params.get('play')] ? params.get('play') : 'knight';
+    await begin(new Hero(cls, params.get('name') || 'Testeur'));
+    if (params.get('t')) game.world.sky.override = parseFloat(params.get('t'));
+    return;
+  }
+
   showMainMenu();
   platform.onOnline?.((n) => game.screens.setOnline(n));
 }

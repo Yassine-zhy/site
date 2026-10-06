@@ -23,12 +23,18 @@ Un MMO 3D qui tourne entièrement dans le navigateur. Au-dessus d’une mer de n
 ## Contenu
 
 - **4 classes** jouables (Chevalier, Barbare, Mage, Rôdeuse), 16 compétences débloquées au fil des niveaux, attaques de base en combo.
-- **12 types d’ennemis** (squelettes de l’archipel, pillards d’ambre, squelettes de givre qui ralentissent) dont des élites dorées, **3 boss du monde** (*le Roi Sans Lumière*, *le Colosse d’Ambre*, *la Reine de Givre*) et **3 boss d’expédition**, avec une bibliothèque d’attaques annoncées au sol (charges, séismes, météores, blizzard, téléportations, salves…). Leurs points de vie s’adaptent au nombre de joueurs.
+- **22 types d’ennemis** : squelettes de l’archipel, pillards d’ambre, squelettes de givre qui ralentissent, et les **créatures de la Brume** modélisées et animées par le jeu (gelées qui se divisent, araignées, loups, golems à onde de choc, feux follets, et leurs variantes d’ambre et de givre), dont des élites dorées ; **3 boss du monde** (*le Roi Sans Lumière*, *le Colosse d’Ambre*, *la Reine de Givre*) et **3 boss d’expédition**, avec une bibliothèque d’attaques annoncées au sol (charges, séismes, météores, blizzard, téléportations, salves…). Leurs points de vie s’adaptent au nombre de joueurs.
 - **15 quêtes principales**, **plus de 30 quêtes secondaires** réparties chez 11 habitants (récolte, exploration, chasse, élites, runes, anneaux de vent, pierres de passage…), et des quêtes infinies générées par l’Oracle. Un **losange doré à l’écran** guide toujours vers l’objectif suivi, avec la distance. Chaque objectif s’ouvre sur un **tutoriel « Comment faire ? »** adapté au PC ou au mobile.
+- **Vagues de la Brume** : de temps en temps, une faille s’ouvre près des héros et lâche trois vagues de monstres de la région ; chaque héros présent à la fin reçoit un coffre.
+- **Coffres** en bois, de fer, dorés et mythiques : 21 coffres cachés dans le monde (forêt, ruines, îlots, sommets), lâchés par les boss et les élites, ou achetés. L’ouverture se fait **façon roulette** : une bande d’objets défile puis ralentit sur le gain, avec les probabilités de chaque rareté affichées et un légendaire garanti au bout de 35 coffres.
+- **Cinq raretés** (commun, rare, épique, légendaire, mythique avec vol de vie). Plus c’est rare, plus c’est fort, mais avec mesure (environ +30 % de dégâts pour un mythique face à un commun), et un objet d’un niveau supérieur est ramené au niveau du héros.
+- **Quatre emplacements de sauvegarde** et retour à l’accueil depuis les options pour changer de héros.
 - **Récolte** : fleurs d’aube, mousses d’argent, plumes des nuées, éclats d’ambre et cristaux de givre se ramassent en marchant dessus.
-- **Butin** à quatre raretés (commun, rare, épique, légendaire), équipement, amélioration d’armes chez le forgeron, élixirs chez la marchande.
+- **Butin** remodélisé (piles de pièces, fioles, petits coffres, objets avec halo et colonne de lumière selon la rareté), amélioration d’armes chez le forgeron, élixirs et coffres chez la marchande.
 - **Monde** : île principale (village, lac, forêt, ruines, montagne), deux grandes îles — les **Terres d’Ambre** (mesas, gorge, mine, cirque) et les **Cimes de Givre** (lac gelé, sanctuaire, mont enneigé) — reliées par des ponts de corde et dix îlots flottants. **Pierres de passage** pour voyager instantanément, carte interactive (zoom, déplacement), cycle jour/nuit synchronisé sur l’heure réelle, aurores boréales, lucioles, neige et poussière d’ambre selon la région.
 - **Audio 100 % procédural** : musique générative qui change entre le jour, la nuit, le combat et le boss ; bruitages synthétisés en temps réel ; vent, oiseaux et grillons.
+- **Verrouillage de cible** : Tab sur PC, bouton « cible » ou une tape sur l’ennemi sur mobile ; la caméra suit la cible et passe à la suivante quand elle tombe.
+- **Options** : champ de vision, distance et secousses de caméra, chiffres de dégâts, noms des ennemis, attaque automatique, taille des boutons tactiles, vibrations, compteur d’images.
 - **Mobile** : joystick flottant (sous le pouce, n’importe où à gauche), caméra qui se replace derrière le héros quand il court, ciblage tolérant, boutons d’action en arc, tracé des runes au doigt, mise en page adaptée au portrait et au paysage.
 - **Collisions précises** : les contours au sol des bâtiments, arbres, rochers et décors sont calculés depuis la géométrie réelle des modèles ; on peut monter sur les obstacles bas, mais plus traverser les murs.
 
@@ -50,6 +56,7 @@ Un MMO 3D qui tourne entièrement dans le navigateur. Au-dessus d’une mer de n
 | Discuter · graver un écho · saluer | Entrée · T · G | bouton bulle |
 | Carte · sac · quêtes · légendes · guide | M · I · J · K · H | boutons à gauche |
 | Multijoueur · expéditions | P (ou bouton « Expéditions ») | bouton groupe |
+| Verrouiller une cible · suivante | Tab | bouton « cible » ou toucher l’ennemi (appui long : libérer) |
 
 ## Lancer le projet
 
