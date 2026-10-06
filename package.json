@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview --host",
     "build:artifact": "vite build && node tools/make-artifact.mjs",
-    "relay": "node server/relay.mjs"
+    "relay": "node server/relay.mjs",
+    "build:apk": "node tools/build-apk.mjs"
   },
   "dependencies": {
     "three": "^0.186.1"

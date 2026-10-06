@@ -3,3 +3,5 @@ dist
 artifact
 .DS_Store
 *.log
+android/build
+android/.tools

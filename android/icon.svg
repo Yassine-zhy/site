@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="sky" cx="50%" cy="38%" r="75%">
+      <stop offset="0" stop-color="#5b3aa6"/>
+      <stop offset="0.45" stop-color="#2c1b5e"/>
+      <stop offset="1" stop-color="#0e0a24"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffe7a3" stop-opacity="0.95"/>
+      <stop offset="0.35" stop-color="#f2c46d" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#f2c46d" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fd36a"/>
+      <stop offset="1" stop-color="#4f9a45"/>
+    </linearGradient>
+    <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a6442"/>
+      <stop offset="0.45" stop-color="#6d625c"/>
+      <stop offset="1" stop-color="#3b3354"/>
+    </linearGradient>
+    <linearGradient id="crys" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff6d6"/>
+      <stop offset="0.45" stop-color="#ffd877"/>
+      <stop offset="1" stop-color="#e09a2e"/>
+    </linearGradient>
+    <linearGradient id="crysDark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffcf63"/>
+      <stop offset="1" stop-color="#b8701a"/>
+    </linearGradient>
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9dcff"/>
+      <stop offset="1" stop-color="#9c86d6"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
+  </defs>
+  <g id="bg">
+    <rect width="1024" height="1024" fill="url(#sky)"/>
+    <g fill="#fff">
+      <circle cx="170" cy="190" r="6" opacity="0.9"/><circle cx="820" cy="150" r="7" opacity="0.9"/><circle cx="880" cy="380" r="4" opacity="0.7"/>
+      <circle cx="120" cy="420" r="4" opacity="0.6"/><circle cx="300" cy="110" r="3.5" opacity="0.7"/><circle cx="700" cy="90" r="4" opacity="0.6"/>
+      <circle cx="905" cy="560" r="3" opacity="0.5"/><circle cx="95" cy="610" r="3" opacity="0.5"/>
+    </g>
+    <g fill="url(#cloud)" opacity="0.85">
+      <ellipse cx="190" cy="905" rx="230" ry="80"/><ellipse cx="520" cy="950" rx="300" ry="90"/><ellipse cx="860" cy="900" rx="220" ry="78"/>
+    </g>
+  </g>
+  <g id="fg">
+    <circle cx="512" cy="360" r="300" fill="url(#halo)"/>
+    <!-- cercle de rune -->
+    <g fill="none" stroke="#ffd877" stroke-linecap="round" opacity="0.9">
+      <circle cx="512" cy="360" r="215" stroke-width="10" stroke-dasharray="60 26"/>
+      <circle cx="512" cy="360" r="182" stroke-width="4" opacity="0.6"/>
+    </g>
+    <!-- île flottante -->
+    <path d="M222 575 Q512 520 802 575 L740 640 Q640 700 600 760 L560 860 L512 930 L470 850 L420 760 Q370 690 290 640 Z" fill="url(#rock)"/>
+    <path d="M300 640 L420 700 L380 650 Z M640 690 L720 640 L600 660 Z" fill="#2c2546" opacity="0.5"/>
+    <path d="M206 580 Q512 505 818 580 Q790 625 720 632 Q512 660 300 632 Q232 625 206 580 Z" fill="url(#grass)"/>
+    <path d="M206 580 Q512 505 818 580 Q700 560 512 556 Q330 560 206 580 Z" fill="#b6e98a" opacity="0.7"/>
+    <!-- petits sapins -->
+    <g fill="#2f7a4f"><path d="M300 600 l26 -70 l26 70 z"/><path d="M335 596 l20 -54 l20 54 z"/><path d="M680 598 l24 -66 l24 66 z"/><path d="M712 600 l18 -48 l18 48 z"/></g>
+    <!-- socle et cristal du Cœur de Lumière -->
+    <path d="M462 560 L562 560 L548 528 L476 528 Z" fill="#cfc6d8"/>
+    <g filter="url(#glow)" opacity="0.85"><path d="M512 150 L600 340 L512 520 L424 340 Z" fill="#ffd877"/></g>
+    <path d="M512 150 L600 340 L512 520 L424 340 Z" fill="url(#crys)"/>
+    <path d="M512 150 L512 520 L424 340 Z" fill="url(#crysDark)" opacity="0.55"/>
+    <path d="M512 150 L560 340 L512 520" fill="none" stroke="#fffbe8" stroke-width="6" opacity="0.8"/>
+    <!-- étincelles -->
+    <g fill="#fff3c4"><circle cx="640" cy="230" r="9"/><circle cx="380" cy="260" r="7"/><circle cx="660" cy="430" r="6"/><circle cx="360" cy="450" r="5"/></g>
+  </g>
+</svg>

@@ -4,6 +4,9 @@ import { CLASSES, VILLAGE } from '../config.js';
 import { ABILITIES, ABILITY_ICONS } from '../game/Abilities.js';
 import { Character } from '../entities/Character.js';
 
+// application Android (hors-ligne) : pas de monde partagé ni d'expéditions en ligne
+const APP = typeof navigator !== 'undefined' && /AetheriaApp/.test(navigator.userAgent);
+const TAGLINE = APP ? 'Aventure hors-ligne · progression sauvegardée sur le téléphone' : 'Monde partagé · progression sauvegardée';
 const NAMES = ['Aëlys', 'Brannoc', 'Céleste', 'Dorian', 'Elouan', 'Faëlle', 'Gaïus', 'Héliane', 'Isaure', 'Joran', 'Kaëlig', 'Lysandre', 'Maëlon', 'Nimue', 'Orsan', 'Perrine', 'Quentel', 'Rozenn', 'Soren', 'Tiphaine', 'Ulric', 'Vianne', 'Wenna', 'Ysolde'];
 
 // Écrans : titre, création du héros, mort.
@@ -28,7 +31,7 @@ export class Screens {
         h('div', { class: 'logo-sub' }, "l'archipel des échos"),
         h('div', { class: 'tagline' }, 'Au-dessus d’une mer de nuages, la Brume ramène les morts. Rallumez les Phares avec tous les héros du monde, tracez des runes pour lancer vos sorts, et parlez à des habitants qui pensent vraiment.'),
         this.menuBox,
-        this.onlineEl = h('div', { class: 'online' }, online > 0 ? [h('b', {}, String(online)), ' héros en ligne en ce moment'] : 'Monde partagé · progression sauvegardée'),
+        this.onlineEl = h('div', { class: 'online' }, online > 0 ? [h('b', {}, String(online)), ' héros en ligne en ce moment'] : TAGLINE),
       ),
       h('div', { class: 'credits' }, 'Modèles 3D : KayKit par Kay Lousberg (CC0) · Moteur : three.js'),
     );
@@ -63,7 +66,7 @@ export class Screens {
     const multi = h('button', { class: 'btn ghost', id: 'btn-multi', title: 'Héberger ou rejoindre une expédition entre amis (jusqu’à 4)', onclick: () => {
       if (cur) { this.hideTitle(); onMulti(save.slot); } else this.showSlots('multi');
     } }, '⚔ Multijoueur');
-    box.append(h('div', { class: 'row' }, main, saves, multi));
+    box.append(h('div', { class: 'row' }, main, saves, APP ? null : multi));
     setTimeout(() => main.focus(), 50);
   }
 
@@ -109,7 +112,7 @@ export class Screens {
     if (!this.onlineEl?.isConnected) return;
     this.onlineEl.innerHTML = '';
     if (n > 1) this.onlineEl.append(h('b', {}, String(n)), ' héros en ligne en ce moment');
-    else this.onlineEl.append('Monde partagé · progression sauvegardée');
+    else this.onlineEl.append(TAGLINE);
   }
 
   hideTitle() { this.title?.remove(); window.removeEventListener('keydown', this.onKey); }

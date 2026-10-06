@@ -54,6 +54,21 @@ async function main(hotData = {}) {
   ui.hideLoading();
   window.__ready = true;
 
+  // application Android : bouton retour du téléphone et passage en arrière-plan
+  window.__appBack = () => {
+    const back = [...document.querySelectorAll('#btn-create-back, #btn-back')].find((b) => b.offsetParent);
+    if (back) { back.click(); return true; }
+    if (!game.inGame) return false;
+    if (game.chatOpen) game.chat.close();
+    else if (game.windows?.current) game.windows.close();
+    else if (game.dialogueOpen) game.dialogue.close();
+    else game.windows?.open('settings');
+    return true;
+  };
+  window.__appPause = () => { if (game.inGame) game.save?.write(true); audio.ctx?.suspend(); };
+  window.__appResume = () => { if (audio.ctx?.state === 'suspended') audio.ctx.resume(); };
+  document.addEventListener('visibilitychange', () => (document.hidden ? window.__appPause() : window.__appResume()));
+
   const begin = async (hero) => {
     audio.unlock();
     game.startHero(hero);
