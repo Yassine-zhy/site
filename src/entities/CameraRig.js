@@ -55,11 +55,13 @@ export class CameraRig {
       const steps = Math.ceil(d / 0.6);
       for (let s = 1; s <= steps; s++) {
         const k = (s / steps) * d;
-        if (this.colliders.insideSolid(this.smoothFocus.x + dir.x * k, this.smoothFocus.z + dir.z * k, this.smoothFocus.y + dir.y * k)) { d = Math.max(this.minDist * 0.6, k - 0.7); break; }
+        if (this.colliders.insideSolid(this.smoothFocus.x + dir.x * k, this.smoothFocus.z + dir.z * k, this.smoothFocus.y + dir.y * k)) { d = Math.max(1.2, k - 0.7); break; }
       }
     }
     this.solidD = this.solidD === undefined ? d : (d < this.solidD ? d : this.solidD + (d - this.solidD) * Math.min(1, dt * 3));
     d = this.solidD;
+    // caméra très proche : on estompe le héros pour ne pas voir l'intérieur de son casque
+    this.closeFade = d < 2.8 ? Math.max(0.15, (d - 1.2) / 1.6) : 1;
     const pos = this.camera.position;
     pos.set(this.smoothFocus.x + dir.x * d, this.smoothFocus.y + dir.y * d, this.smoothFocus.z + dir.z * d);
     const g = this.terrain.heightAt(pos.x, pos.z);

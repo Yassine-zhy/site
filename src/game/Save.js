@@ -3,6 +3,8 @@
 const KEY = 'aetheria.save.v1';
 const SKEY = 'aetheria.settings.v1';
 
+// les documents de la base sont figés : on travaille toujours sur une copie
+export function clone(v) { return v === undefined || v === null ? v : JSON.parse(JSON.stringify(v)); }
 function lsGet(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } }
 
@@ -29,7 +31,7 @@ export class Save {
     let remote = null;
     const ref = this.docRef();
     if (ref) {
-      try { const snap = await ref.get(); if (snap.exists) remote = snap.data()?.save || null; } catch { /* hors ligne */ }
+      try { const snap = await ref.get(); if (snap.exists) remote = clone(snap.data()?.save) || null; } catch { /* hors ligne */ }
     }
     // la sauvegarde la plus récente l'emporte
     const pick = [local, remote].filter(Boolean).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0] || null;

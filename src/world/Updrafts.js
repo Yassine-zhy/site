@@ -9,15 +9,16 @@ export class Updrafts {
     this.uniforms = { uTime: { value: 0 } };
     const mat = new THREE.ShaderMaterial({
       uniforms: this.uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
-      vertexShader: `varying vec2 vUv; varying float vH; void main(){ vUv = uv; vH = position.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-      fragmentShader: `uniform float uTime; varying vec2 vUv;
+      vertexShader: `varying vec2 vUv; varying float vDist; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.0); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`,
+      fragmentShader: `uniform float uTime; varying vec2 vUv; varying float vDist;
         void main(){
           float s1 = sin((vUv.x * 6.0 + vUv.y * 9.0 - uTime * 1.6) * 6.2831);
           float s2 = sin((vUv.x * 3.0 - vUv.y * 5.0 - uTime * 0.9) * 6.2831);
           float streak = smoothstep(0.75, 1.0, s1) * 0.8 + smoothstep(0.85, 1.0, s2) * 0.5;
           float fade = smoothstep(0.0, 0.08, vUv.y) * smoothstep(1.0, 0.75, vUv.y);
           vec3 col = mix(vec3(0.75, 0.95, 1.0), vec3(1.0, 0.95, 0.8), vUv.y);
-          gl_FragColor = vec4(col * streak * 0.9, streak * fade * 0.5);
+          float near = smoothstep(6.0, 30.0, vDist);
+          gl_FragColor = vec4(col * streak * 0.9 * near, streak * fade * 0.5 * near);
         }`,
     });
     for (const u of UPDRAFTS) {

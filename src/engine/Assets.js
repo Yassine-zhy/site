@@ -39,19 +39,46 @@ export class Assets {
       const sum = keys.reduce((s, k) => s + Math.min(loaded[k] || 0, SIZES[k]), 0);
       onProgress?.(sum / total);
     };
+    // Hébergement en page unique : les modèles sont publiés en base64 (.glb.txt) puis décodés ici.
+    const b64 = typeof window !== 'undefined' && window.__AETHERIA_B64;
+    const fetchBinary = async (url, onBytes) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      if (!res.body || !res.body.getReader) return new Uint8Array(await res.arrayBuffer());
+      const reader = res.body.getReader();
+      const chunks = []; let n = 0;
+      for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); n += value.length; onBytes(n); }
+      const out = new Uint8Array(n); let o = 0;
+      for (const c of chunks) { out.set(c, o); o += c.length; }
+      return out;
+    };
+    const decodeB64 = (bytes) => {
+      const text = new TextDecoder().decode(bytes).replace(/\s+/g, '');
+      const bin = atob(text);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out.buffer;
+    };
+    const accept = (k, g, attempt, resolve, reject) => {
+      // vérifie que les textures sont bien décodées, sinon on recharge
+      let missing = false;
+      g.scene.traverse((o) => { if (o.isMesh && o.material && o.material.map === null && /texture|skeleton|hexagon|dungeon/i.test(o.material.name)) missing = true; });
+      if (missing && attempt < 3) { setTimeout(() => loadOne(k, attempt + 1).then(resolve, reject), 300); return; }
+      loaded[k] = SIZES[k]; report(); this.gltf[k] = g; resolve();
+    };
     const loadOne = (k, attempt = 0) => new Promise((resolve, reject) => {
-      this.loader.load(BASE + FILES[k], (g) => {
-        // vérifie que les textures sont bien décodées, sinon on recharge
-        let missing = false;
-        g.scene.traverse((o) => { if (o.isMesh && o.material && o.material.map === null && /texture|skeleton|hexagon|dungeon/i.test(o.material.name)) missing = true; });
-        if (missing && attempt < 3) { setTimeout(() => loadOne(k, attempt + 1).then(resolve, reject), 300); return; }
-        loaded[k] = SIZES[k]; report(); this.gltf[k] = g; resolve();
-      },
-        (e) => { loaded[k] = e.loaded; report(); },
-        (err) => {
-          if (attempt < 3) setTimeout(() => loadOne(k, attempt + 1).then(resolve, reject), 400 * (attempt + 1));
-          else reject(new Error('Impossible de charger ' + FILES[k] + ' : ' + (err?.message || err)));
-        });
+      const fail = (err) => {
+        if (attempt < 3) setTimeout(() => loadOne(k, attempt + 1).then(resolve, reject), 400 * (attempt + 1));
+        else reject(new Error('Impossible de charger ' + FILES[k] + ' : ' + (err?.message || err)));
+      };
+      if (b64) {
+        fetchBinary(BASE + FILES[k] + '.txt', (n) => { loaded[k] = Math.min(SIZES[k], n * 0.75); report(); })
+          .then((bytes) => this.loader.parse(decodeB64(bytes), BASE, (g) => accept(k, g, attempt, resolve, reject), fail))
+          .catch(fail);
+        return;
+      }
+      this.loader.load(BASE + FILES[k], (g) => accept(k, g, attempt, resolve, reject),
+        (e) => { loaded[k] = e.loaded; report(); }, fail);
     });
     await Promise.all(keys.map((k) => loadOne(k)));
     this.prepare();

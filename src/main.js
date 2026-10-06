@@ -65,7 +65,7 @@ async function main(hotData = {}) {
   const hot = window.claude?.hot;
   try { hot?.snapshot?.(() => (game.inGame ? { resume: game.save.snapshot() } : {})); } catch { /* */ }
   if (hotData?.resume?.hero) {
-    const r = hotData.resume;
+    const r = JSON.parse(JSON.stringify(hotData.resume));
     game.save.loaded = { ...r.hero, pos: r.pos, quests: r.quests, savedAt: r.savedAt };
     game.save.hadSave = true;
     await begin(Hero.deserialize(r.hero));

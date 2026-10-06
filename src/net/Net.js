@@ -34,7 +34,7 @@ export class Net {
     const room = g.platform.room;
     if (room) this.useTransport(new RoomTransport(room), 'room');
     else if (ws) this.useTransport(new WSTransport(ws), 'ws');
-    else if (params.get('local') !== '0' && typeof BroadcastChannel !== 'undefined') this.useTransport(new BroadcastTransport(), 'local');
+    else if (params.get('local') !== '0' && typeof BroadcastChannel !== 'undefined') { try { this.useTransport(new BroadcastTransport(), 'local'); } catch (e) { console.warn('multijoueur local indisponible', e); } }
     // la salle peut arriver plus tard
     if (!room) g.platform.onRoom((r) => { if (this.mode !== 'room') { this.transport?.close(); this.useTransport(new RoomTransport(r), 'room'); } });
   }
@@ -120,7 +120,7 @@ export class Net {
         g.onRemoteKill?.({ type, x, y, z, boss: !!boss });
       }
       for (const [s, target, dmg, kind, sx, sz] of fresh(pr.D, st.seen, 'D')) {
-        if (target === this.selfId) g.takeDamage(Math.min(2000, dmg | 0), sx !== undefined ? { position: new THREE.Vector3(sx, 0, sz), def: { name: kind === 'boss' ? 'le Roi Sans Lumière' : 'un squelette' } } : null, { kind });
+        if (target === this.selfId) g.takeDamage(Math.min(2000, dmg | 0), sx != null && sz != null ? { position: new THREE.Vector3(sx, 0, sz), def: { name: kind === 'boss' ? 'le Roi Sans Lumière' : 'un squelette' } } : null, { kind });
       }
       for (const ev of fresh(pr.X, st.seen, 'X')) { const [s, type, x, y, z, data] = ev; try { g.enemies.playFx({ type, x, y, z, ...(data || {}) }); } catch { /* */ } }
     }
@@ -192,7 +192,12 @@ export class Net {
     const rate = g.enemies.isHost && this.peers.size ? 0.09 : 0.1;
     if (this.sendT > 0) return;
     this.sendT = rate;
-    this.transport.setPresence(this.buildPresence());
+    // JSON strict (pas d'undefined ni de NaN) et taille bornée : la salle refuse sinon la mise à jour entière
+    let pr = JSON.parse(JSON.stringify(this.buildPresence()));
+    if (byteLen(pr) > MAX_BYTES) { pr.fx = []; pr.a = pr.a?.slice(-2) || []; pr.h = pr.h?.slice(-6) || []; }
+    while (byteLen(pr) > MAX_BYTES && Array.isArray(pr.E) && pr.E.length) pr.E = pr.E.slice(0, Math.floor(pr.E.length * 0.8));
+    if (byteLen(pr) > MAX_BYTES) return;
+    this.transport.setPresence(pr);
   }
 
   buildPresence() {
@@ -225,13 +230,15 @@ export class Net {
       return { e, d: e[1] === 4 ? 0 : d };
     }).filter((s) => s.d < 140).sort((a, b) => a.d - b.d);
     let out = scored.map((s) => s.e);
-    const base = JSON.stringify({ ...pr, E: [] }).length;
-    let size = base + JSON.stringify(out).length;
-    while (size > MAX_BYTES && out.length) { out = out.slice(0, Math.floor(out.length * 0.8)); size = base + JSON.stringify(out).length; }
+    const base = byteLen({ ...pr, E: [] });
+    let size = base + byteLen(out);
+    while (size > MAX_BYTES && out.length) { out = out.slice(0, Math.floor(out.length * 0.8)); size = base + byteLen(out); }
     return out;
   }
 }
 
+const enc = new TextEncoder();
+function byteLen(v) { return enc.encode(JSON.stringify(v)).length; }
 function maxSeq(list) { return Array.isArray(list) && list.length ? Math.max(...list.map((e) => (Array.isArray(e) ? e[0] | 0 : 0))) : 0; }
 function fresh(list, seen, chan) {
   if (!Array.isArray(list)) return [];

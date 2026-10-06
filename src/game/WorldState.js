@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { BEACONS, CLASSES } from '../config.js';
 import { h } from '../ui/dom.js';
 import { escapeHtml } from '../net/Net.js';
+import { clone } from './Save.js';
 
 const LOCAL_KEY = 'aetheria.world.local.v1';
 const DECAY = BEACONS.map((b) => 100 / (b.decayHours * 3600)); // points par seconde
@@ -39,11 +40,11 @@ export class WorldState {
           for (const d of snap.docs) {
             if (d.id === this.uid) {
               // notre propre document fait foi s'il est plus récent
-              const data = d.data() || {};
+              const data = clone(d.data()) || {};
               for (const [k, v] of Object.entries(data.b || {})) if (!this.mine[k] || (v.t || 0) > (this.mine[k].t || 0)) this.mine[k] = v;
               continue;
             }
-            this.others.set(d.id, d.data() || {});
+            this.others.set(d.id, clone(d.data()) || {});
           }
           this.recompute(true);
         }, (e) => console.warn('lumière', e.code));

@@ -53,7 +53,7 @@ void main() {
 
 // Palette du ciel par moment de la journée (t : 0 minuit, 0.5 midi).
 const KEYS = [
-  { t: 0.00, zen: '#070b24', hor: '#1e2d58', below: '#1a2448', fog: '#1b2950', sun: '#ffb070', sunI: 0, hemiS: '#3d5aa0', hemiG: '#1d1d33', hemiI: 0.8, exp: 1.0 },
+  { t: 0.00, zen: '#070b24', hor: '#1e2d58', below: '#1a2448', fog: '#1b2950', sun: '#ffb070', sunI: 0, hemiS: '#5068b4', hemiG: '#26243e', hemiI: 1.05, exp: 1.0 },
   { t: 0.20, zen: '#0d1236', hor: '#3a3a72', below: '#2a2b58', fog: '#2b2f5e', sun: '#ff9a5a', sunI: 0, hemiS: '#4d5aa0', hemiG: '#24203a', hemiI: 0.85, exp: 1.0 },
   { t: 0.26, zen: '#3b5aa6', hor: '#ff9e6e', below: '#a8728a', fog: '#c98d84', sun: '#ffa060', sunI: 1.4, hemiS: '#9aa8e0', hemiG: '#6a4a3a', hemiI: 1.0, exp: 1.0 },
   { t: 0.33, zen: '#3f82dc', hor: '#b4d8f6', below: '#a9c4e0', fog: '#b9d4ee', sun: '#fff0d8', sunI: 2.6, hemiS: '#bcd8ff', hemiG: '#6c7a4a', hemiI: 1.15, exp: 1.0 },
@@ -61,8 +61,8 @@ const KEYS = [
   { t: 0.67, zen: '#3678d6', hor: '#c8def2', below: '#b8c8e0', fog: '#cfdcec', sun: '#fff1dc', sunI: 2.7, hemiS: '#c4d8ff', hemiG: '#74804a', hemiI: 1.15, exp: 1.0 },
   { t: 0.735, zen: '#4b5ba6', hor: '#ff9358', below: '#b06a78', fog: '#d6886e', sun: '#ff8048', sunI: 1.7, hemiS: '#a89ad8', hemiG: '#6e4838', hemiI: 1.0, exp: 1.0 },
   { t: 0.78, zen: '#222765', hor: '#b85476', below: '#5b3a68', fog: '#6a3f6e', sun: '#ff6a50', sunI: 0.35, hemiS: '#6a5aa8', hemiG: '#2c2038', hemiI: 0.9, exp: 1.0 },
-  { t: 0.84, zen: '#0a0e2c', hor: '#26306a', below: '#1c2450', fog: '#202c58', sun: '#ffb070', sunI: 0, hemiS: '#4258a0', hemiG: '#1d1d33', hemiI: 0.8, exp: 1.0 },
-  { t: 1.00, zen: '#070b24', hor: '#1e2d58', below: '#1a2448', fog: '#1b2950', sun: '#ffb070', sunI: 0, hemiS: '#3d5aa0', hemiG: '#1d1d33', hemiI: 0.8, exp: 1.0 },
+  { t: 0.84, zen: '#0a0e2c', hor: '#26306a', below: '#1c2450', fog: '#202c58', sun: '#ffb070', sunI: 0, hemiS: '#5068b4', hemiG: '#26243e', hemiI: 1.0, exp: 1.0 },
+  { t: 1.00, zen: '#070b24', hor: '#1e2d58', below: '#1a2448', fog: '#1b2950', sun: '#ffb070', sunI: 0, hemiS: '#5068b4', hemiG: '#26243e', hemiI: 1.05, exp: 1.0 },
 ];
 for (const k of KEYS) for (const key of ['zen', 'hor', 'below', 'fog', 'sun', 'hemiS', 'hemiG']) k[key] = new THREE.Color(k[key]);
 
@@ -153,7 +153,7 @@ export class Sky {
       this.sun.intensity = sunI;
     } else {
       this.sun.color.set('#9db4ff');
-      this.sun.intensity = 0.55 * smoothstep(-0.02, -0.25, el);
+      this.sun.intensity = 0.9 * smoothstep(-0.02, -0.25, el);
     }
     st.sunI = this.sun.intensity;
     this.sample(t, 'hemiS', this.hemi.color);

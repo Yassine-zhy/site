@@ -3,6 +3,7 @@ import { h } from '../ui/dom.js';
 import { Character } from '../entities/Character.js';
 import { CLASSES } from '../config.js';
 import { cleanText } from '../net/Net.js';
+import { clone } from './Save.js';
 
 // Phrases d'échos : un gabarit + un mot, à la manière des messages gravés des anciens.
 export const ECHO_TEMPLATES = [
@@ -42,8 +43,8 @@ export class Echoes {
       sub('echoes', (snap) => {
         const seen = new Set();
         for (const d of snap.docs) {
-          const list = d.data()?.list || [];
-          if (d.id === this.uid) { this.mineEchoes = list; }
+          const list = clone(d.data()?.list) || [];
+          if (d.id === this.uid) { this.mineEchoes = clone(list); }
           for (const e of list.slice(0, 5)) { const key = d.id + ':' + e.id; seen.add(key); this.upsertEcho(key, d.id, e); }
         }
         for (const k of [...this.echoes.keys()]) if (!seen.has(k)) this.removeEcho(k);
@@ -51,8 +52,8 @@ export class Echoes {
       sub('ghosts', (snap) => {
         const seen = new Set();
         for (const d of snap.docs) {
-          const list = d.data()?.list || [];
-          if (d.id === this.uid) this.mineGhosts = list;
+          const list = clone(d.data()?.list) || [];
+          if (d.id === this.uid) this.mineGhosts = clone(list);
           for (const gh of list.slice(0, 3)) { const key = d.id + ':' + gh.id; seen.add(key); this.upsertGhost(key, d.id, gh); }
         }
         for (const k of [...this.ghosts.keys()]) if (!seen.has(k)) this.removeGhost(k);
@@ -60,8 +61,8 @@ export class Echoes {
       sub('resonance', (snap) => {
         this.likes.clear();
         for (const d of snap.docs) {
-          const m = d.data()?.e || {};
-          if (d.id === this.uid) this.myLikes = m;
+          const m = clone(d.data()?.e) || {};
+          if (d.id === this.uid) this.myLikes = clone(m);
           for (const key of Object.keys(m)) { if (!this.likes.has(key)) this.likes.set(key, new Set()); this.likes.get(key).add(d.id); }
         }
         this.checkMyResonance();

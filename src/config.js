@@ -122,7 +122,7 @@ export const ENEMIES = {
   warrior: { name: 'Guerrier squelette', model: 'skel_warrior', hp: 90, atk: 11, def: 6, speed: 3.1, range: 3.0, cd: 2.1, xp: 26, weapon: ['Skeleton_Axe', 'handslot.r'], shield: ['Skeleton_Shield_Large_A', 'handslot.l'], attack: ['1H_Melee_Attack_Chop', '1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Jump_Chop'], walk: 'Walking_D_Skeletons', run: 'Running_A' },
   rogue: { name: 'Rôdeur squelette', model: 'skel_rogue', hp: 50, atk: 9, def: 3, speed: 3.8, range: 22, ranged: true, cd: 2.4, xp: 20, weapon: ['Skeleton_Crossbow', 'handslot.r'], attack: ['1H_Ranged_Shoot'], walk: 'Walking_B', run: 'Running_B' },
   mage: { name: 'Nécromancien', model: 'skel_mage', hp: 58, atk: 13, def: 2, speed: 3.0, range: 20, ranged: true, caster: true, cd: 2.8, xp: 28, weapon: ['Skeleton_Staff', 'handslot.r'], attack: ['Spellcast_Shoot', 'Spellcast_Long'], walk: 'Walking_A', run: 'Running_A' },
-  boss: { name: 'Le Roi Sans Lumière', model: 'skel_warrior', hp: 3200, atk: 28, def: 14, speed: 3.4, range: 6.5, cd: 2.2, xp: 900, scale: 2.6, weapon: ['Skeleton_Axe', 'handslot.r'], shield: ['Skeleton_Shield_Large_A', 'handslot.l'], attack: ['2H_Melee_Attack_Chop', '1H_Melee_Attack_Jump_Chop', '2H_Melee_Attack_Spin'], walk: 'Walking_D_Skeletons', run: 'Running_A', boss: true },
+  boss: { name: 'Le Roi Sans Lumière', model: 'skel_warrior', hp: 2200, atk: 26, def: 10, speed: 3.4, range: 6.5, cd: 2.2, xp: 900, scale: 2.6, weapon: ['Skeleton_Axe', 'handslot.r'], shield: ['Skeleton_Shield_Large_A', 'handslot.l'], attack: ['2H_Melee_Attack_Chop', '1H_Melee_Attack_Jump_Chop', '2H_Melee_Attack_Spin'], walk: 'Walking_D_Skeletons', run: 'Running_A', boss: true },
 };
 
 export function xpForLevel(l) { return Math.round(60 * Math.pow(l, 1.55) + 40 * l); }
