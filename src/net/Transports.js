@@ -65,18 +65,28 @@ export class BroadcastTransport {
   }
   get connected() { return true; }
   emit() {
+    if (this.closed) return;
     const list = [{ id: this.selfId, isMe: true, presence: this.presence }];
     for (const [id, p] of this.peers) list.push({ id, isMe: false, presence: p.presence });
     for (const cb of this.cbs) cb(list);
   }
   setPresence(obj) {
+    if (this.closed) return;
     this.presence = { ...this.presence, ...obj };
     for (const k of Object.keys(this.presence)) if (this.presence[k] === null) delete this.presence[k];
     this.ch.postMessage({ type: 'p', from: this.selfId, presence: this.presence });
   }
   onPeers(cb) { this.cbs.push(cb); }
   onStatus(cb) { this.statusCbs.push(cb); }
-  close() { clearInterval(this.iv); try { this.ch.postMessage({ type: 'bye', from: this.selfId }); } catch { /* */ } }
+  close() {
+    if (this.closed) return;
+    this.closed = true;
+    clearInterval(this.iv);
+    try { this.ch.postMessage({ type: 'bye', from: this.selfId }); } catch { /* */ }
+    this.ch.onmessage = null;
+    try { this.ch.close(); } catch { /* */ }
+    this.cbs.length = 0; this.statusCbs.length = 0;
+  }
 }
 
 // 3) Serveur relais WebSocket (server/relay.mjs) pour un hébergement indépendant.
@@ -99,12 +109,13 @@ export class WSTransport {
         else if (m.t === 'all') { this.peers.clear(); for (const [id, p] of Object.entries(m.peers)) this.peers.set(id, p); }
         this.emit();
       };
-      ws.onclose = () => { this.ok = false; this.statusCbs.forEach((f) => f(false)); setTimeout(open, 3000); };
+      ws.onclose = () => { this.ok = false; if (this.closed) return; this.statusCbs.forEach((f) => f(false)); setTimeout(() => { if (!this.closed) open(); }, 3000); };
     };
     open();
   }
   get connected() { return this.ok; }
   emit() {
+    if (this.closed) return;
     const list = [{ id: this.selfId || 'me', isMe: true, presence: this.presence }];
     for (const [id, p] of this.peers) if (id !== this.selfId) list.push({ id, isMe: false, presence: p });
     for (const cb of this.cbs) cb(list);
@@ -116,5 +127,5 @@ export class WSTransport {
   }
   onPeers(cb) { this.cbs.push(cb); }
   onStatus(cb) { this.statusCbs.push(cb); }
-  close() { try { this.ws?.close(); } catch { /* */ } }
+  close() { this.closed = true; this.cbs.length = 0; this.statusCbs.length = 0; try { this.ws?.close(); } catch { /* */ } }
 }

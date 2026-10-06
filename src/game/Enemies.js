@@ -394,7 +394,9 @@ export class Enemies {
     const out = [];
     for (const e of this.map.values()) {
       if (e.state === 'dead' && e.deadT > 3) continue;
-      out.push([e.id, ENEMY_TYPES.indexOf(e.type), e.level, Math.round(e.position.x * 10), Math.round(e.position.z * 10), Math.round(e.rot * 100), Math.round(e.hpPct * 1000), STATES.indexOf(e.state), e.atkCount % 100, e.hitCount % 100, e.elite ? 1 : 0, e.target ? e.target.id : 0]);
+      const row = [e.id, ENEMY_TYPES.indexOf(e.type), e.level, Math.round(e.position.x * 10), Math.round(e.position.z * 10), Math.round(e.rot * 100), Math.round(e.hpPct * 1000), STATES.indexOf(e.state), e.atkCount % 100, e.hitCount % 100, e.elite ? 1 : 0, e.target ? e.target.id : 0];
+      if (e.def.boss) row.push(e.maxHp); // le boss est renforcé selon le nombre de joueurs
+      out.push(row);
     }
     return out;
   }
@@ -402,7 +404,7 @@ export class Enemies {
   applySnapshot(list, now = performance.now()) {
     const seen = new Set();
     for (const s of list) {
-      const [id, ti, level, x10, z10, r100, hp1000, si, atk, hit, elite, tgt] = s;
+      const [id, ti, level, x10, z10, r100, hp1000, si, atk, hit, elite, tgt, maxHp] = s;
       seen.add(id);
       let e = this.map.get(id);
       const x = x10 / 10, z = z10 / 10;
@@ -413,6 +415,7 @@ export class Enemies {
         if (STATES[si] !== 'spawn') { e.char.stopAction(0); e.state = STATES[si]; }
         e.lastAtk = atk; e.lastHit = hit;
       }
+      if (maxHp > 0 && maxHp < 1e7) e.maxHp = maxHp;
       e.applyNet({ x, z, rot: r100 / 100, hp: hp1000 / 1000, state: STATES[si], atk, hit, tgt }, now);
     }
     for (const id of [...this.map.keys()]) if (!seen.has(id)) { const e = this.map.get(id); if (e.state !== 'dead' || e.deadT > 1) this.remove(id); }

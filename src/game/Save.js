@@ -3,8 +3,9 @@
 const KEY = 'aetheria.save.v1';
 const SKEY = 'aetheria.settings.v1';
 
-// les documents de la base sont figés : on travaille toujours sur une copie
-export function clone(v) { return v === undefined || v === null ? v : JSON.parse(JSON.stringify(v)); }
+import { clone } from '../engine/math.js';
+
+export { clone };
 function lsGet(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } }
 

@@ -3,7 +3,7 @@ import { h } from '../ui/dom.js';
 import { Character } from '../entities/Character.js';
 import { CLASSES } from '../config.js';
 import { cleanText } from '../net/Net.js';
-import { clone } from './Save.js';
+import { clone } from '../engine/math.js';
 
 // Phrases d'échos : un gabarit + un mot, à la manière des messages gravés des anciens.
 export const ECHO_TEMPLATES = [

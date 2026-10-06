@@ -11,6 +11,7 @@ import { Platform } from './net/Platform.js';
 import { Save } from './game/Save.js';
 import { Audio } from './engine/Audio.js';
 import { CLASSES } from './config.js';
+import { clone } from './engine/math.js';
 
 const params = new URLSearchParams(location.search);
 const frame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
@@ -65,7 +66,7 @@ async function main(hotData = {}) {
   const hot = window.claude?.hot;
   try { hot?.snapshot?.(() => (game.inGame ? { resume: game.save.snapshot() } : {})); } catch { /* */ }
   if (hotData?.resume?.hero) {
-    const r = JSON.parse(JSON.stringify(hotData.resume));
+    const r = clone(hotData.resume);
     game.save.loaded = { ...r.hero, pos: r.pos, quests: r.quests, savedAt: r.savedAt };
     game.save.hadSave = true;
     await begin(Hero.deserialize(r.hero));

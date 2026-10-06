@@ -40,11 +40,18 @@ export class Net {
   }
 
   useTransport(t, mode) {
+    try {
+      t.onPeers((list) => { if (this.transport === t) this.onPeers(list); });
+      t.onStatus((c) => { if (this.transport === t) this.connected = c; });
+      t.connect();
+    } catch (e) {
+      console.warn('transport indisponible', mode, e);
+      try { t.close(); } catch { /* */ }
+      return false;
+    }
     this.transport = t; this.mode = mode;
-    t.onPeers((list) => this.onPeers(list));
-    t.onStatus((c) => { this.connected = c; });
-    t.connect();
     this.shortId = this.short(t.selfId) || this.shortId;
+    return true;
   }
 
   // ------------------------------------------------------------------ réception
@@ -192,12 +199,16 @@ export class Net {
     const rate = g.enemies.isHost && this.peers.size ? 0.09 : 0.1;
     if (this.sendT > 0) return;
     this.sendT = rate;
-    // JSON strict (pas d'undefined ni de NaN) et taille bornée : la salle refuse sinon la mise à jour entière
-    let pr = JSON.parse(JSON.stringify(this.buildPresence()));
-    if (byteLen(pr) > MAX_BYTES) { pr.fx = []; pr.a = pr.a?.slice(-2) || []; pr.h = pr.h?.slice(-6) || []; }
-    while (byteLen(pr) > MAX_BYTES && Array.isArray(pr.E) && pr.E.length) pr.E = pr.E.slice(0, Math.floor(pr.E.length * 0.8));
-    if (byteLen(pr) > MAX_BYTES) return;
-    this.transport.setPresence(pr);
+    // JSON strict (pas d'undefined ni de NaN) et taille bornée : la salle refuse sinon la mise à jour entière.
+    // On réduit d'abord ce qui est purement visuel ; les coups portés et les évènements de l'hôte passent en dernier.
+    const pr = this.buildPresence();
+    let json = JSON.stringify(pr), bytes = enc.encode(json).length;
+    const shrink = () => { json = JSON.stringify(pr); bytes = enc.encode(json).length; };
+    if (bytes > MAX_BYTES) { pr.fx = []; if (pr.a) pr.a = pr.a.slice(-2); pr.ti = ''; shrink(); }
+    while (bytes > MAX_BYTES && Array.isArray(pr.E) && pr.E.length) { pr.E = pr.E.slice(0, Math.floor(pr.E.length * 0.75)); shrink(); }
+    if (bytes > MAX_BYTES) { for (const k of ['X', 'K', 'D', 'h']) if (Array.isArray(pr[k])) pr[k] = pr[k].slice(-4); shrink(); }
+    if (bytes > MAX_BYTES) { if (!this.warned) { this.warned = true; console.warn('présence trop volumineuse', bytes); } return; }
+    try { this.transport.setPresence(JSON.parse(json)); } catch (e) { console.warn('envoi de la présence', e); }
   }
 
   buildPresence() {
@@ -215,13 +226,13 @@ export class Net {
     if (g.enemies.isHost && g.inGame) {
       pr.H = 1;
       pr.K = this.out.K; pr.D = this.out.D; pr.X = this.out.X;
-      pr.E = this.trimEnemies(g.enemies.snapshot(), pr);
+      pr.E = this.trimEnemies(g.enemies.snapshot());
     } else { pr.H = 0; pr.E = null; pr.K = null; pr.D = null; pr.X = null; }
     return pr;
   }
 
   // garde la présence sous la limite de 4 Kio : on ne publie que les squelettes proches des joueurs
-  trimEnemies(list, pr) {
+  trimEnemies(list) {
     const g = this.game;
     const pts = g.playerTargets().map((t) => t.position);
     const scored = list.map((e) => {
@@ -229,16 +240,11 @@ export class Net {
       let d = Infinity; for (const p of pts) d = Math.min(d, Math.hypot(p.x - x, p.z - z));
       return { e, d: e[1] === 4 ? 0 : d };
     }).filter((s) => s.d < 140).sort((a, b) => a.d - b.d);
-    let out = scored.map((s) => s.e);
-    const base = byteLen({ ...pr, E: [] });
-    let size = base + byteLen(out);
-    while (size > MAX_BYTES && out.length) { out = out.slice(0, Math.floor(out.length * 0.8)); size = base + byteLen(out); }
-    return out;
+    return scored.slice(0, 32).map((s) => s.e);
   }
 }
 
 const enc = new TextEncoder();
-function byteLen(v) { return enc.encode(JSON.stringify(v)).length; }
 function maxSeq(list) { return Array.isArray(list) && list.length ? Math.max(...list.map((e) => (Array.isArray(e) ? e[0] | 0 : 0))) : 0; }
 function fresh(list, seen, chan) {
   if (!Array.isArray(list)) return [];

@@ -199,7 +199,7 @@ export class Game {
     this.hud?.update(dt);
     this.updatePlates();
     this.rig.update(dt, p.position, Math.max(0, Math.hypot(p.velocity.x, p.velocity.z) - 8) / 4);
-    if (!p.dead) p.char.setOpacity(this.rig.closeFade < 1 ? Math.round(this.rig.closeFade * 10) / 10 : 1);
+    p.char.setOpacity(!p.dead && this.rig.closeFade < 1 ? Math.round(this.rig.closeFade * 10) / 10 : 1);
   }
 
   handleCombatInput() {

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { BEACONS, CLASSES } from '../config.js';
 import { h } from '../ui/dom.js';
 import { escapeHtml } from '../net/Net.js';
-import { clone } from './Save.js';
+import { clone } from '../engine/math.js';
 
 const LOCAL_KEY = 'aetheria.world.local.v1';
 const DECAY = BEACONS.map((b) => 100 / (b.decayHours * 3600)); // points par seconde

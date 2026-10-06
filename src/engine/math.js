@@ -124,3 +124,6 @@ export function formatNumber(n) {
   if (n >= 1e4) return (n / 1e3).toFixed(1) + 'k';
   return String(Math.round(n));
 }
+
+// Copie profonde de données JSON (les documents de la plateforme sont figés).
+export function clone(v) { return v === undefined || v === null ? v : JSON.parse(JSON.stringify(v)); }
