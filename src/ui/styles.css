@@ -454,3 +454,16 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
   .window .wh h3 { font-size: 19px; }
   .window .wb { padding: 10px 12px; }
 }
+
+/* téléphone à l'horizontale : tout doit tenir dans ~360 px de haut */
+@media (pointer: coarse) and (max-height: 500px) {
+  .tracker { display: none; }
+  .minimap-wrap .zone, .minimap-wrap .clock { display: none; }
+  .minimap-wrap { width: 104px; }
+  .minimap { width: 104px; height: 104px; }
+  .tbtns { transform: scale(0.8); transform-origin: 100% 100%; }
+  .tmenu { display: grid !important; grid-template-columns: repeat(2, 40px); top: calc(122px + var(--safe-t)) !important; gap: 6px !important; }
+  .joy { left: calc(118px + var(--safe-l)); bottom: calc(16px + var(--safe-b)); width: 118px; height: 118px; }
+  .joy .knob { width: 50px; height: 50px; margin: -25px 0 0 -25px; }
+  .tinteract { bottom: calc(130px + var(--safe-b)) !important; }
+}

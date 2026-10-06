@@ -24,6 +24,7 @@ export class TouchControls {
       joyId = e.pointerId;
       e.currentTarget.setPointerCapture(e.pointerId);
       const r = this.joy.getBoundingClientRect();
+      this.joyMax = Math.max(36, r.width * 0.38);
       if (e.currentTarget === this.zone) {
         // recentre le joystick sous le doigt (sans sortir de l'écran)
         const R = r.width / 2;
@@ -37,7 +38,7 @@ export class TouchControls {
     const move = (e) => {
       if (e.pointerId !== joyId) return;
       let dx = e.clientX - cx, dy = e.clientY - cy;
-      const max = 52, l = Math.hypot(dx, dy);
+      const max = this.joyMax || 52, l = Math.hypot(dx, dy);
       if (l > max) { dx = dx / l * max; dy = dy / l * max; }
       this.knob.style.transform = `translate(${dx}px, ${dy}px)`;
       // petite zone morte, puis réponse progressive
@@ -101,11 +102,11 @@ export class TouchControls {
     { const [x, y] = arc(160, 58); btn('rune', ABILITY_ICONS.rune, x, y, false, () => game.runes?.beginTouch(), null, 'rune'); }
     { const [x, y] = arc(160, 88); btn('potion', ABILITY_ICONS.potion, x, y, false, () => game.usePotion(), null, 'élixir'); }
     // bouton d'interaction (apparaît au besoin)
-    this.interactBtn = h('button', { class: 'btn small interactive', style: { position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(250px + var(--safe-b))', pointerEvents: 'auto', maxWidth: '70%' } }, 'Interagir');
+    this.interactBtn = h('button', { class: 'btn small interactive tinteract', style: { position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(250px + var(--safe-b))', pointerEvents: 'auto', maxWidth: '70%' } }, 'Interagir');
     this.interactBtn.addEventListener('click', () => game.interactions?.interact());
     this.root.appendChild(this.interactBtn);
     // petits boutons de menu
-    const top = h('div', { style: { position: 'absolute', left: 'calc(14px + var(--safe-l))', top: 'calc(132px + var(--safe-t))', display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' } });
+    const top = h('div', { class: 'tmenu', style: { position: 'absolute', left: 'calc(14px + var(--safe-l))', top: 'calc(132px + var(--safe-t))', display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' } });
     for (const [id, icon, fn] of [['map', ICON.map, () => game.toggleWindow('map')], ['bag', ICON.bag, () => game.toggleWindow('inventory')], ['quest', ICON.quest, () => game.toggleWindow('quests')], ['party', ICON.party, () => game.toggleWindow('party')], ['chat', ICON.chat, () => game.chat?.open()], ['menu', ICON.menu, () => game.toggleWindow('settings')]]) {
       const b = h('button', { class: 'tb', style: { position: 'relative', width: '40px', height: '40px' }, 'aria-label': id }, svgIcon(icon));
       b.addEventListener('click', fn);
