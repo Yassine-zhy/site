@@ -11,19 +11,24 @@ import { Colliders } from './Colliders.js';
 
 // Le monde d'Aetheria : îles, ciel, eau, végétation, village.
 export class World {
-  constructor(renderer, assets, quality, onStep) {
+  constructor(renderer, assets, quality) {
     this.renderer = renderer;
     this.scene = renderer.scene;
     this.assets = assets;
     this.quality = quality;
-    const step = onStep || (() => {});
-    step('Façonnage des îles flottantes…');
+  }
+
+  async init(onStep) {
+    const { renderer, assets, quality } = this;
+    const yieldFrame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+    const step = async (s) => { onStep?.(s); await yieldFrame(); };
+    await step('Façonnage des îles flottantes…');
     this.terrain = new Terrain();
     this.colliders = new Colliders();
-    step('Cartographie de la Brume…');
+    await step('Cartographie de la Brume…');
     this.maps = new Maps(this.terrain, quality.grass > 20000 ? 384 : 256);
 
-    step('Élévation de l’archipel…');
+    await step('Élévation de l’archipel…');
     this.terrainMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: false, roughness: 0.95, metalness: 0 });
     applyCorruption(this.terrainMat, this.maps, 1);
     this.underMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1, metalness: 0 });
@@ -38,18 +43,19 @@ export class World {
       this.islandMeshes.push(top, under);
     }
 
-    step('Le ciel s’éveille…');
+    await step('Le ciel s’éveille…');
     this.sky = new Sky(this.scene);
     this.sky.setShadowSize(quality.shadowSize, quality.shadowSize >= 2048 ? 75 : 60);
     this.clouds = new Clouds(this.scene, assets, renderer.qualityName);
     this.water = new Water(this.scene, this.terrain);
-    step('Les herbes poussent…');
+    await step('Les herbes poussent…');
     this.grass = new Grass(this.scene, this.maps, quality.grass, quality.grassRadius);
-    step('Les forêts murmurent…');
+    await step('Les forêts murmurent…');
     this.vegetation = new Vegetation(this.scene, assets, this.terrain, this.colliders, this.maps, quality.trees);
-    step('Havrelumière se construit…');
+    await step('Havrelumière se construit…');
     this.village = new Village(this.scene, assets, this.terrain, this.colliders, this.maps);
     this.elapsed = 0;
+    return this;
   }
 
   setQuality(q) {
@@ -65,7 +71,7 @@ export class World {
     this.clouds.update(dt, e, this.sky, camera);
     this.water.update(dt, e, this.sky);
     this.grass.update(dt, e, focus, pushers, this.sky);
-    this.vegetation.update(dt, e);
+    this.vegetation.update(dt, e, this.playerFocus);
     this.village.update(dt, e, st.night);
     return st;
   }

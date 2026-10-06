@@ -95,11 +95,11 @@ export class Vegetation {
     // matériaux : arbres (vent) / statiques
     const baseMat = assets.propGeometry('tree_single_A').material;
     this.treeMat = baseMat.clone();
-    this.treeUniforms = { uTime: { value: 0 }, uWind: { value: 1 } };
+    this.treeUniforms = { uTime: { value: 0 }, uWind: { value: 1 }, uPlayerPos: { value: new THREE.Vector3(0, -999, 0) } };
     const tu = this.treeUniforms;
     const maps2 = maps;
     this.treeMat.onBeforeCompile = (shader) => {
-      shader.uniforms.uTime = tu.uTime; shader.uniforms.uWind = tu.uWind;
+      shader.uniforms.uTime = tu.uTime; shader.uniforms.uWind = tu.uWind; shader.uniforms.uPlayerPos = tu.uPlayerPos;
       shader.uniforms.uCorruption = { value: maps2.corruptionTex };
       shader.vertexShader = shader.vertexShader
         .replace('#include <common>', '#include <common>\nuniform float uTime; uniform float uWind; varying vec3 vWorldPosC;')
@@ -115,7 +115,23 @@ export class Vegetation {
         .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
           vWorldPosC = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;`);
       shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vWorldPosC; uniform sampler2D uCorruption;')
+        .replace('#include <common>', `#include <common>
+          varying vec3 vWorldPosC; uniform sampler2D uCorruption; uniform vec3 uPlayerPos;
+          float bayer4(vec2 p) { vec2 q = mod(floor(p), 4.0); int i = int(q.x) + int(q.y) * 4;
+            int m[16] = int[16](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5); return (float(m[i]) + 0.5) / 16.0; }`)
+        .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+          {
+            // feuillage translucide entre la caméra et le héros (tramage)
+            vec3 seg = uPlayerPos + vec3(0.0, 1.4, 0.0) - cameraPosition;
+            float segL = length(seg);
+            vec3 sd = seg / max(segL, 0.001);
+            vec3 cf = vWorldPosC - cameraPosition;
+            float tt = clamp(dot(cf, sd), 0.0, segL);
+            float dseg = length(cameraPosition + sd * tt - vWorldPosC);
+            float fade = (tt < segL - 0.8) ? 1.0 - smoothstep(1.2, 3.2, dseg) : 0.0;
+            fade = max(fade, 1.0 - smoothstep(1.5, 4.0, length(cf)));
+            if (fade * 0.85 > bayer4(gl_FragCoord.xy)) discard;
+          }`)
         .replace('#include <color_fragment>', `#include <color_fragment>
           {
             vec2 cuv = (vWorldPosC.xz + 250.0) / 500.0;
@@ -149,7 +165,10 @@ export class Vegetation {
     for (const [name, list] of buckets) if (/tree/.test(name)) for (const it of list) this.treePositions.push(it);
   }
 
-  update(dt, elapsed) { this.treeUniforms.uTime.value = elapsed; }
+  update(dt, elapsed, focus) {
+    this.treeUniforms.uTime.value = elapsed;
+    if (focus) this.treeUniforms.uPlayerPos.value.copy(focus);
+  }
 }
 
 export { smoothstep };

@@ -40,17 +40,18 @@ export class Input {
         if (this.wantLock && !this.locked) this.requestLock();
         else if (this.locked) this.mouse.clicked = true;
       }
-      if (e.button === 2) { this.mouse.right = true; this.mouse.rightPressed = true; }
+      if (e.button === 2) { this.mouse.right = true; this.mouse.rightPressed = true; this.emit('rightdown', e); }
     });
     window.addEventListener('mouseup', (e) => {
       if (e.button === 0) {
         if (this.mouse.left && !this.locked && !this.mouse.dragging && e.target === canvas) this.mouse.clicked = true;
         this.mouse.left = false; this.mouse.dragging = false;
       }
-      if (e.button === 2) { this.mouse.right = false; this.mouse.rightReleased = true; }
+      if (e.button === 2) { this.mouse.right = false; this.mouse.rightReleased = true; this.emit('rightup', e); }
     });
     window.addEventListener('mousemove', (e) => {
       this.mouse.x = e.clientX; this.mouse.y = e.clientY;
+      if (this.listeners.mousemove) this.emit('mousemove', e, this.locked);
       if (this.locked) { this.mouse.dx += e.movementX; this.mouse.dy += e.movementY; return; }
       if (this.mouse.left) {
         if (!this.mouse.dragging && Math.hypot(e.clientX - this.mouse.downX, e.clientY - this.mouse.downY) > 6) this.mouse.dragging = true;
@@ -103,6 +104,15 @@ export class Input {
     this.mouse.dx = this.mouse.dy = this.mouse.wheel = 0;
     this.touch.look.dx = this.touch.look.dy = 0;
     return r;
+  }
+
+  // efface les appuis ponctuels (après le premier sous-pas de simulation)
+  clearPressed() {
+    this.pressedSet.clear();
+    this.touch.pressed.clear();
+    this.mouse.clicked = false;
+    this.mouse.rightPressed = false;
+    this.mouse.rightReleased = false;
   }
 
   endFrame() {

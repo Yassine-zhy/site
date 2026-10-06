@@ -1,22 +1,87 @@
+import './ui/styles.css';
 import { Renderer, detectQuality } from './engine/Renderer.js';
 import { Assets } from './engine/Assets.js';
 import { Input } from './engine/Input.js';
 import { Game } from './game/Game.js';
+import { Hero } from './game/Hero.js';
+import { UI } from './ui/UI.js';
+import { Screens } from './ui/Screens.js';
+import { boot as bootSystems } from './game/Systems.js';
+import { Platform } from './net/Platform.js';
+import { Save } from './game/Save.js';
+import { Audio } from './engine/Audio.js';
+import { CLASSES } from './config.js';
 
 const params = new URLSearchParams(location.search);
-const canvas = document.getElementById('game');
-const renderer = new Renderer(canvas);
-renderer.setQuality(params.get('q') || detectQuality());
-const assets = new Assets();
-const input = new Input(canvas);
-window.__log = [];
-(async () => {
-  await assets.load((p) => { window.__progress = p; });
-  const game = new Game({ renderer, assets, input });
+const frame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+
+async function main() {
+  const canvas = document.getElementById('game');
+  const ui = new UI(document.getElementById('ui'));
+  window.__ui = ui;
+  let renderer;
+  try {
+    renderer = new Renderer(canvas);
+  } catch (e) {
+    ui.showError('WebGL est indisponible sur cet appareil : Aetheria a besoin de l’accélération 3D du navigateur.');
+    throw e;
+  }
+  const savedQ = Save.localSettings()?.quality;
+  renderer.setQuality(params.get('q') || savedQ || detectQuality());
+  const input = new Input(canvas);
+  const audio = new Audio();
+  const platform = new Platform();
+  const platformReady = platform.init();
+  const assets = new Assets();
+  ui.setStep('Chargement des héros et des squelettes…');
+  await assets.load((p) => ui.setProgress(p * 0.7));
+  const game = new Game({ renderer, assets, input, ui, platform, audio });
   window.game = game;
-  game.buildWorld((s) => window.__log.push(s));
-  if (params.get('t')) game.world.sky.override = parseFloat(params.get('t'));
-  game.spawnPlayer(params.get('cls') || 'knight', 'Test');
+  if (params.get('maxdt')) game.maxDt = parseFloat(params.get('maxdt'));
+  if (params.get('renderEvery')) game.renderEvery = parseInt(params.get('renderEvery'));
+  audio.game = game;
+  let n = 0;
+  await game.buildWorld((s) => { ui.setStep(s); ui.setProgress(0.7 + 0.3 * Math.min(1, ++n / 9)); });
+  game.screens = new Screens(ui, game);
+  game.updateMenu = (dt) => game.screens.updateMenu(dt);
+  await Promise.race([platformReady, new Promise((r) => setTimeout(r, 2500))]);
+  game.save = new Save(game, platform);
+  await game.save.init();
+  game.settings = { ...game.settings, ...(Save.localSettings() || {}) };
+  audio.setVolume(game.settings.volume, game.settings.music);
   game.start();
+  ui.hideLoading();
   window.__ready = true;
-})().catch((e) => { console.error(e); window.__error = String(e && e.stack || e); });
+
+  const begin = async (hero) => {
+    audio.unlock();
+    game.startHero(hero);
+    await bootSystems(game);
+    if (!game.save.hadSave) game.quests?.startIntro();
+    game.save.soon(1);
+  };
+
+  // raccourcis de test : ?play=knight
+  if (params.get('play')) {
+    const cls = CLASSES[params.get('play')] ? params.get('play') : 'knight';
+    await begin(new Hero(cls, params.get('name') || 'Testeur'));
+    if (params.get('t')) game.world.sky.override = parseFloat(params.get('t'));
+    return;
+  }
+
+  const existing = game.save.loaded;
+  game.screens.showTitle({
+    hasSave: !!existing,
+    saveInfo: existing ? `${existing.name} · ${CLASSES[existing.classId]?.name || ''} de niveau ${existing.level}` : '',
+    online: 0,
+    onPlay: () => {
+      audio.unlock();
+      if (existing) begin(Hero.deserialize(existing));
+      else game.screens.showCreate((cls, name) => begin(new Hero(cls, name)));
+    },
+    onNew: () => { audio.unlock(); game.screens.showCreate((cls, name) => begin(new Hero(cls, name))); },
+  });
+  platform.onOnline?.((n) => game.screens.setOnline(n));
+}
+
+main().catch((e) => { console.error(e); window.__error = String(e && e.stack || e); window.__ui?.showError?.('Erreur : ' + (e.message || e)); });

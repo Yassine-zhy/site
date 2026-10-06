@@ -3,8 +3,8 @@ import { clamp, damp } from '../engine/math.js';
 
 // Caméra à la troisième personne : orbite, zoom, évitement du relief, tremblements.
 export class CameraRig {
-  constructor(camera, terrain) {
-    this.camera = camera; this.terrain = terrain;
+  constructor(camera, terrain, colliders) {
+    this.camera = camera; this.terrain = terrain; this.colliders = colliders;
     this.yaw = Math.PI; this.pitch = 0.32;
     this.distance = 9; this.targetDistance = 9;
     this.minDist = 3; this.maxDist = 22;
@@ -45,12 +45,21 @@ export class CameraRig {
     const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
     const dir = this.tmp.set(Math.sin(this.yaw) * cp, sp, Math.cos(this.yaw) * cp);
     let d = this.distance;
-    // évite de traverser le relief
+    // évite de traverser le relief et les bâtiments
     for (let i = 0; i < 6; i++) {
       const px = this.smoothFocus.x + dir.x * d, pz = this.smoothFocus.z + dir.z * d, py = this.smoothFocus.y + dir.y * d;
       const g = this.terrain.heightAt(px, pz);
       if (g !== null && py < g + 0.8 && this.smoothFocus.y > g - 2) d *= 0.8; else break;
     }
+    if (this.colliders) {
+      const steps = Math.ceil(d / 0.6);
+      for (let s = 1; s <= steps; s++) {
+        const k = (s / steps) * d;
+        if (this.colliders.insideSolid(this.smoothFocus.x + dir.x * k, this.smoothFocus.z + dir.z * k, this.smoothFocus.y + dir.y * k)) { d = Math.max(this.minDist * 0.6, k - 0.7); break; }
+      }
+    }
+    this.solidD = this.solidD === undefined ? d : (d < this.solidD ? d : this.solidD + (d - this.solidD) * Math.min(1, dt * 3));
+    d = this.solidD;
     const pos = this.camera.position;
     pos.set(this.smoothFocus.x + dir.x * d, this.smoothFocus.y + dir.y * d, this.smoothFocus.z + dir.z * d);
     const g = this.terrain.heightAt(pos.x, pos.z);

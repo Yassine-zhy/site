@@ -64,6 +64,23 @@ export class Colliders {
     return hit;
   }
 
+  // un point est-il à l'intérieur d'un bâtiment / d'une ruine ?
+  insideSolid(x, z, y) {
+    const list = this.grid.get(this.key(Math.floor(x / CELL), Math.floor(z / CELL)));
+    if (!list) return false;
+    for (const c of list) {
+      if (c.tag !== 'building' && c.tag !== 'ruin' && c.tag !== 'monument') continue;
+      if (y < c.y0 || y > c.y1) continue;
+      if (c.type === 'circle') { if (Math.hypot(x - c.x, z - c.z) < c.r) return true; }
+      else {
+        const dx = x - c.x, dz = z - c.z;
+        const lx = dx * c.cos - dz * c.sin, lz = dx * c.sin + dz * c.cos;
+        if (Math.abs(lx) < c.hw && Math.abs(lz) < c.hd) return true;
+      }
+    }
+    return false;
+  }
+
   // Test de ligne de vue grossier (projectiles) : renvoie true si un obstacle coupe le segment.
   segmentBlocked(ax, az, bx, bz, y) {
     const steps = Math.ceil(Math.hypot(bx - ax, bz - az) / 1.5);
