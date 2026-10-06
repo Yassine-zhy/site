@@ -6,10 +6,10 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 export const QUALITY = {
-  low: { label: 'Basse', lights: 3, pixelRatio: 0.8, shadows: false, shadowSize: 1024, bloom: false, grass: 9000, grassRadius: 42, trees: 0.55, far: 1400, vegView: 300, maxPixelRatio: 1.1 },
-  medium: { label: 'Moyenne', lights: 5, pixelRatio: 1, shadows: true, shadowSize: 1024, bloom: true, grass: 22000, grassRadius: 56, trees: 0.8, far: 2200, maxPixelRatio: 1.25 },
-  high: { label: 'Haute', lights: 7, pixelRatio: 1.5, shadows: true, shadowSize: 2048, bloom: true, grass: 42000, grassRadius: 70, trees: 1, far: 3200 },
-  ultra: { label: 'Ultra', lights: 9, pixelRatio: 2, shadows: true, shadowSize: 4096, bloom: true, grass: 64000, grassRadius: 84, trees: 1, far: 4000 },
+  low: { label: 'Basse', lights: 3, pixelRatio: 0.8, shadows: false, shadowSize: 1024, bloom: false, grass: 9000, grassRadius: 42, trees: 0.55, far: 1400, vegView: 300, maxPixelRatio: 1.1, particles: 280 },
+  medium: { label: 'Moyenne', lights: 5, pixelRatio: 1, shadows: true, shadowSize: 1024, bloom: true, grass: 22000, grassRadius: 56, trees: 0.8, far: 2200, maxPixelRatio: 1.25, particles: 560 },
+  high: { label: 'Haute', lights: 7, pixelRatio: 1.5, shadows: true, shadowSize: 2048, bloom: true, grass: 42000, grassRadius: 70, trees: 1, far: 3200, particles: 800 },
+  ultra: { label: 'Ultra', lights: 9, pixelRatio: 2, shadows: true, shadowSize: 4096, bloom: true, grass: 64000, grassRadius: 84, trees: 1, far: 4000, particles: 900 },
 };
 
 export function detectQuality() {

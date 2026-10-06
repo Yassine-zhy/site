@@ -1,8 +1,8 @@
 import { h, svgIcon } from './dom.js';
 import { RARITY, STAT_LABELS, itemPower } from '../game/Items.js';
-import { CLASSES, BEACONS, ISLETS, xpForLevel } from '../config.js';
+import { CLASSES, BEACONS, xpForLevel } from '../config.js';
 import { QUALITY } from '../engine/Renderer.js';
-import { MAP_RANGE, worldToMap } from './MapRender.js';
+import { MapView } from './MapView.js';
 import { ABILITIES, ABILITY_ICONS } from '../game/Abilities.js';
 import { KEY_LABELS } from '../engine/Input.js';
 import { Save } from '../game/Save.js';
@@ -124,41 +124,11 @@ export class Windows {
 
   // ------------------------------------------------------------ carte
   map() {
-    const g = this.game;
-    const size = Math.min(620, innerWidth - 64, innerHeight - 190);
-    const c = h('canvas', { width: 1024, height: 1024, style: { width: size + 'px', height: size + 'px', borderRadius: '6px', display: 'block', margin: '0 auto', border: '1px solid var(--line)' } });
-    const ctx = c.getContext('2d');
-    ctx.drawImage(g.mapImage, 0, 0, 1024, 1024);
-    const P = (x, z) => worldToMap(x, z, 1024);
-    ctx.font = '600 22px Alegreya, Georgia, serif';
-    ctx.textAlign = 'center';
-    const label = (txt, x, z, color = '#fff3d6', dy = -18) => { const [px, py] = P(x, z); ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(15,12,28,0.85)'; ctx.strokeText(txt, px, py + dy); ctx.fillStyle = color; ctx.fillText(txt, px, py + dy); };
-    BEACONS.forEach((b, i) => {
-      const lv = g.worldState?.levels[i] || 0;
-      const [x, y] = P(b.x, b.z);
-      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4);
-      ctx.fillStyle = lv >= 0.999 ? '#ffe3a3' : '#8e7cc3'; ctx.strokeStyle = '#120f1f'; ctx.lineWidth = 3;
-      ctx.fillRect(-11, -11, 22, 22); ctx.strokeRect(-11, -11, 22, 22); ctx.restore();
-      label(`${b.name} · ${Math.round(lv * 100)} %`, b.x, b.z, lv >= 0.999 ? '#ffe3a3' : '#d9ccff', -22);
-    });
-    label('Havrelumière', 0, 0, '#ffe3a3', 34);
-    for (const isl of ISLETS) label(isl.name, isl.x, isl.z + isl.radius, '#cfe6ff', 26);
-    const markers = g.mapMarkers();
-    for (const m of markers) {
-      const [x, y] = P(m.x, m.z);
-      ctx.fillStyle = m.color; ctx.strokeStyle = '#120f1f'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      if (m.label) label(m.label, m.x, m.z, m.color, -14);
-    }
-    for (const rp of g.remotePlayers.values()) { const [x, y] = P(rp.position.x, rp.position.z); ctx.fillStyle = '#7fd4ff'; ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fill(); }
-    const p = g.player;
-    const [px, py] = P(p.position.x, p.position.z);
-    ctx.save(); ctx.translate(px, py); ctx.rotate(Math.PI - p.facing);
-    ctx.fillStyle = '#ffe3a3'; ctx.strokeStyle = '#120f1f'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(13, 14); ctx.lineTo(0, 7); ctx.lineTo(-13, 14); ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.restore();
-    const legend = h('div', { class: 'istats', style: { textAlign: 'center', marginTop: '10px' } }, 'Losanges dorés : phares allumés par la communauté. Violets : phares éteints, à rallumer ensemble.');
-    void MAP_RANGE;
-    return this.frame('Carte de l’archipel', c, legend);
+    const view = new MapView(this.game);
+    const legend = h('div', { class: 'istats', style: { textAlign: 'center', marginTop: '8px' } },
+      this.game.input.isTouch ? 'Pincez pour zoomer, glissez pour vous déplacer. ' : 'Molette pour zoomer, glisser pour vous déplacer. ',
+      'Losanges : phares (dorés = allumés). Étoiles : objectifs de quête. Points bleus : pierres de passage.');
+    return this.frame('Carte de l’archipel', view.element(), legend);
   }
 
   // ------------------------------------------------------------ aide
@@ -173,7 +143,13 @@ export class Windows {
           row(g.input.isTouch ? 'joystick' : 'ZQSD / WASD', 'Se déplacer'), row('Souris', 'Regarder (cliquez pour capturer la souris)'), row('Clic gauche', 'Attaquer'),
           row('1 · 2 · 3 · 4', 'Compétences'), row('Clic droit maintenu / X', 'Tracer une rune'), row('Espace', 'Sauter · 2e appui en l’air : paravoile'),
           row('Maj', 'Sprint'), row('C', 'Esquive'), row('R', 'Élixir de vie'), row('E', 'Parler · interagir'), row('Entrée', 'Discuter'), row('T', 'Laisser un écho'),
-          row('G', 'Saluer'), row('M · I · J · K', 'Carte · Sac · Quêtes · Classement'), row('Échap', 'Options'),
+          row('G', 'Saluer'), row('M · I · J · K', 'Carte · Sac · Quêtes · Classement'), row('P', 'Multijoueur · Expéditions'), row('Échap', 'Options'),
+          h('h4', { class: 'sc', style: { color: 'var(--gold)', margin: '12px 0 6px' } }, 'bon à savoir'),
+          h('div', { class: 'istats', style: { lineHeight: '1.5' } },
+            'Le losange doré à l’écran mène à l’objectif de votre quête. Touchez un objectif dans le journal pour un tutoriel. ',
+            'Les pierres de passage (obélisques bleus) s’éveillent avec E et permettent de voyager. ',
+            'Les fleurs, mousses, plumes et cristaux lumineux se récoltent en marchant dessus. ',
+            'Expéditions : jusqu’à 4 amis avec un code de groupe, contre les boss de la Citadelle des Ombres.'),
         ),
         h('div', {},
           h('h4', { class: 'sc', style: { color: 'var(--gold)', margin: '0 0 6px' } }, 'les runes'),

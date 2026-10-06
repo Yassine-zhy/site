@@ -440,3 +440,17 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
 .waypoint.edge .wp-gem { animation: none; opacity: 0.9; }
 @keyframes wpPulse { 0%, 100% { transform: rotate(45deg) scale(1); } 50% { transform: rotate(45deg) scale(1.18); } }
 @media (pointer: coarse) { .waypoint .wp-label { display: none; } .waypoint .wp-dist { font-size: 12px; } }
+
+/* carte interactive */
+.map-wrap { position: relative; margin: 0 auto; }
+.mapview { display: block; border-radius: 6px; border: 1px solid var(--line); touch-action: none; cursor: grab; }
+.mapview:active { cursor: grabbing; }
+.map-tools { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.map-tools .btn { width: 34px; height: 34px; padding: 0; font-size: 18px; line-height: 1; background: rgba(15, 12, 28, 0.75); }
+/* petits écrans (téléphone à l'horizontale) : fenêtres presque plein écran */
+@media (max-height: 600px) {
+  .window { max-height: calc(100% - 20px); }
+  .window .wh { padding: 6px 12px; }
+  .window .wh h3 { font-size: 19px; }
+  .window .wb { padding: 10px 12px; }
+}

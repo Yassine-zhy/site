@@ -11,6 +11,7 @@ import { Outposts } from './Outposts.js';
 import { Colliders } from './Colliders.js';
 import { EnvLight, updateRim } from '../engine/ModelLook.js';
 import { LightPool } from './Lights.js';
+import { Ambient } from '../fx/Ambient.js';
 
 // Le monde d'Aetheria : îles, ciel, eau, végétation, village.
 export class World {
@@ -49,6 +50,8 @@ export class World {
     updateRim(this.sky);
     this.clouds = new Clouds(this.scene, assets, renderer.qualityName);
     this.water = new Water(this.scene, this.terrain);
+    this.ambient = new Ambient(this.scene, 900);
+    this.ambient.setCount(quality.particles ?? 600);
     await step('Les herbes poussent…');
     this.grass = new Grass(this.scene, this.maps, quality.grass, quality.grassRadius);
     await step('Les forêts murmurent…');
@@ -102,6 +105,7 @@ export class World {
   setQuality(q) {
     this.quality = q;
     this.vegetation.setViewDistance(q.vegView);
+    this.ambient.setCount(q.particles ?? 600);
     this.grass.build(q.grass, q.grassRadius);
     this.sky.setShadowSize(q.shadowSize, q.shadowSize >= 2048 ? 75 : 60);
     this.lightPool.setSize(q.lights ?? 6);
@@ -120,6 +124,7 @@ export class World {
     this.village.update(dt, e, st.night);
     this.outposts?.update(dt, e, st.night);
     if (focus) this.lightPool.update(focus);
+    if (camera) this.ambient.update(dt, e, camera, this.playerFocus || focus, st.night, this.renderer.renderer.domElement.height);
     return st;
   }
 }

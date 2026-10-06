@@ -50,7 +50,7 @@ export class Hud {
     this.mmCanvas = h('canvas', { width: 392, height: 392 });
     this.zoneEl = h('div', { class: 'zone' });
     this.clockEl = h('div', { class: 'clock' });
-    root.appendChild(h('div', { class: 'minimap-wrap interactive' },
+    root.appendChild(this.mmWrap = h('div', { class: 'minimap-wrap interactive' },
       h('div', { class: 'minimap', title: 'Carte (M)', onclick: () => game.toggleWindow?.('map') }, this.mmCanvas),
       this.zoneEl, this.clockEl,
       h('button', { class: 'btn small exp-btn', title: 'Expéditions entre amis (P)', onclick: () => game.toggleWindow?.('party') }, '⚔ Expéditions')));
@@ -209,6 +209,7 @@ export class Hud {
         t.wy = t.ring ? t.y : Math.max(gy, t.y ?? -Infinity) + 2.6;
       }
       this.wpTarget = t;
+      this.wpAvoid = [this.tracker, this.mmWrap].filter((e) => e && e.offsetWidth > 0).map((e) => e.getBoundingClientRect());
       const key = t ? t.label + '|' + t.color : '';
       this.set('wp', key, () => { this.wpLabel.textContent = t?.label || ''; this.wp.style.setProperty('--wc', t?.color || '#ffe3a3'); });
     }
@@ -239,6 +240,12 @@ export class Hud {
       const k = Math.min(mx / Math.max(1e-3, Math.abs(dx)), my / Math.max(1e-3, Math.abs(dy)));
       sx = W / 2 + dx * k; sy = H / 2 + dy * k;
       ang = Math.atan2(dy, dx);
+      // pas par-dessus la minicarte ni le suivi des quêtes
+      for (const r of this.wpAvoid || []) {
+        if (sx > r.left - 34 && sx < r.right + 34 && sy > r.top - 24 && sy < r.bottom + 30) {
+          if (sx > W / 2) sx = r.left - 40; else sx = r.right + 40;
+        }
+      }
     }
     this.set('wpon', on, (v2) => this.wp.classList.toggle('edge', !v2));
     this.wp.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0)`;

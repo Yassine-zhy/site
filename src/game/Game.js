@@ -8,7 +8,7 @@ import { Projectiles, pickSoftTarget } from './Combat.js';
 import { Loot } from './Loot.js';
 import { generateItem, rollRarity } from './Items.js';
 import { ABILITIES, BASIC, basicAttack, basicVisual } from './Abilities.js';
-import { CLASSES, ENEMIES, VILLAGE, BEACONS, FOREST, RUINS, LAKE, MOUNTAIN, HILLS, ISLETS } from '../config.js';
+import { CLASSES, ENEMIES, VILLAGE, BEACONS, FOREST, RUINS, LAKE, MOUNTAIN, HILLS, ISLETS, WAYSTONES } from '../config.js';
 import { CLOUD_SEA_Y } from '../world/Clouds.js';
 import { renderWorldMap } from '../ui/MapRender.js';
 import { Hud } from '../ui/Hud.js';
@@ -113,6 +113,14 @@ export class Game {
         if (d < bd) { bd = d; best = b; }
       });
       if (best) { x = best.x + 4; z = best.z + 4; facing = 0; }
+      // ou à la pierre de passage éveillée la plus proche
+      let ws = null;
+      for (const w of WAYSTONES) {
+        if (!this.waystones?.known(w.id)) continue;
+        const d = Math.hypot(this.player.position.x - w.x, this.player.position.z - w.z);
+        if (d < bd) { bd = d; ws = w; }
+      }
+      if (ws) { x = ws.x; z = ws.z + 4; facing = 0; }
     }
     const y = this.world.terrain.heightAt(x, z) ?? 20;
     return { x, y, z, facing };

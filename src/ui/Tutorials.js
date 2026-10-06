@@ -302,7 +302,7 @@ const GATHER_WHERE = {
 function collectTutorial(g, o) {
   const it = ITEMS_GATHER[o.item] || { name: 'ressource', plural: 'ressources', color: '#ffe3a3' };
   return {
-    lead: `Les ${it.plural.toLowerCase()} poussent ${GATHER_WHERE[o.item] || 'dans le monde'}. Elles brillent et tournent sur elles-mêmes.`,
+    lead: `On trouve les ${it.plural.toLowerCase()} ${GATHER_WHERE[o.item] || 'dans le monde'}. Elles brillent et tournent sur elles-mêmes.`,
     body: [
       h('ol', { class: 'tut-steps' },
         step('Suivez la balise de couleur ', h('b', { style: { color: it.color } }, it.name), ' : elle indique la plus proche.'),
