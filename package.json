@@ -1,0 +1,20 @@
+{
+  "name": "aetheria",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Aetheria — L'Archipel des Échos : un MMO 3D dans le navigateur",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "build:artifact": "vite build && node tools/make-artifact.mjs",
+    "relay": "node server/relay.mjs"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "vite": "^8.3.3"
+  }
+}
