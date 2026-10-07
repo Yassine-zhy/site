@@ -29,7 +29,7 @@ export class MapView {
       zoomBtn('+', 'Zoomer', () => this.zoomAt(size / 2, size / 2, 1.6)),
       zoomBtn('−', 'Dézoomer', () => this.zoomAt(size / 2, size / 2, 1 / 1.6)),
       zoomBtn('◎', 'Centrer sur moi', () => { const p = g.player.position; this.st.cx = p.x; this.st.cz = p.z; this.st.zoom = Math.max(this.st.zoom, 2.5); this.clamp(); this.draw(); }),
-      zoomBtn('⤢', 'Tout l’archipel', () => { Object.assign(this.st, { zoom: 1, cx: MAP_CX, cz: MAP_CZ }); this.draw(); }));
+      zoomBtn('⤢', 'Tout le continent', () => { Object.assign(this.st, { zoom: 1, cx: MAP_CX, cz: MAP_CZ }); this.draw(); }));
     this.bind(c);
     requestAnimationFrame(() => this.draw());
     this.draw();

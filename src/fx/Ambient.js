@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { GIVRE, AMBRE, HANTEE, SYLVE } from '../config.js';
 
 // Particules d'ambiance autour de la caméra, animées entièrement par le GPU :
 // lucioles la nuit, pollen le jour, neige aux Cimes, poussière dorée en Ambre,
@@ -83,10 +82,12 @@ export class Ambient {
 
   pick(pos, night) {
     if (pos.x > 3500) return 'embers';
-    if (Math.hypot(pos.x - GIVRE.x, pos.z - GIVRE.z) < GIVRE.radius * 1.25) return 'snow';
-    if (Math.hypot(pos.x - AMBRE.x, pos.z - AMBRE.z) < AMBRE.radius * 1.25) return night ? 'fireflies' : 'dust';
-    if (Math.hypot(pos.x - HANTEE.x, pos.z - HANTEE.z) < HANTEE.radius * 1.25) return 'souls';
-    if (Math.hypot(pos.x - SYLVE.x, pos.z - SYLVE.z) < SYLVE.radius * 1.25) return night ? 'fireflies' : 'spores';
+    // biome dominant sous le joueur (fourni par le monde)
+    const b = this.biome;
+    if (b === 'snow') return 'snow';
+    if (b === 'amber') return night ? 'fireflies' : 'dust';
+    if (b === 'haunted' || (b === 'swamp' && night)) return 'souls';
+    if (b === 'jungle' || b === 'swamp') return night ? 'fireflies' : 'spores';
     return night ? 'fireflies' : 'pollen';
   }
 

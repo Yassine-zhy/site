@@ -6,7 +6,7 @@ import { VirtualLight } from '../world/Lights.js';
 const REGION_OF = { havre: 'Aetheria', cendres: 'Aetheria', pic: 'Aetheria', givre: 'Cimes de Givre', sanct: 'Cimes de Givre', ambre: 'Terres d’Ambre', gorge: 'Terres d’Ambre' };
 
 // Pierres de passage : une fois éveillées (touche E), elles permettent de voyager
-// instantanément de l'une à l'autre. Indispensable dans un archipel aussi vaste.
+// instantanément de l'une à l'autre. Indispensable sur un continent aussi vaste.
 export class Waystones {
   constructor(game) {
     this.game = game;

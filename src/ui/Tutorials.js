@@ -208,7 +208,7 @@ function talkTutorial(g, o, touch) {
 
 function visitTutorial(g, o, touch) {
   const pl = PLACES[o.place];
-  const islet = /Îlot|Éclat/.test(pl?.name || '');
+  const islet = false;
   return {
     lead: `Rejoignez ${pl?.name || 'ce lieu'} : une étoile dorée le marque sur la carte.`,
     body: [
@@ -295,7 +295,7 @@ function bossTutorial(g, o, touch) {
 const GATHER_WHERE = {
   aube: 'dans les prairies autour de Havrelumière et dans les Collines',
   mousse: 'sur les rives du Lac Miroir et dans le Bois-Murmure',
-  plume: 'sur les îlots flottants (Nuées, Trésor, Pèlerin, Éclat, Suspendu)',
+  plume: 'au pied des colonnes de vent (tourbillons lumineux)',
   ambre: 'dans les Terres d’Ambre : mesas, mine de Kessa, Gorge Rouge',
   givre: 'aux Cimes de Givre : autour du Lac de Cristal et du Sanctuaire',
 };
@@ -384,7 +384,7 @@ function expeditionTutorial(g, o, touch) {
 
 function treasureTutorial(g, o, touch) {
   return {
-    lead: 'Des coffres sont cachés dans tout le monde : forêts, ruines, îlots flottants, sommets… Les plus précieux sont les plus difficiles à atteindre.',
+    lead: 'Des coffres sont cachés dans tout le continent : forêts, ruines, plages, sommets… Les plus précieux sont les plus difficiles à atteindre.',
     body: [
       h('ol', { class: 'tut-steps' },
         step('Suivez la balise : elle mène au coffre le plus proche encore fermé (sa couleur indique sa valeur).'),

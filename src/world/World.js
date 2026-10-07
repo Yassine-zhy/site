@@ -15,8 +15,7 @@ import { EnvLight, updateRim } from '../engine/ModelLook.js';
 import { LightPool } from './Lights.js';
 import { Ambient } from '../fx/Ambient.js';
 import { Updrafts } from './Updrafts.js';
-import { UPDRAFTS, HANTEE, SYLVE } from '../config.js';
-import { smoothstep } from '../engine/math.js';
+import { UPDRAFTS } from '../config.js';
 
 // Le monde d'Aetheria : îles, ciel, eau, végétation, village.
 export class World {
@@ -169,9 +168,12 @@ export class World {
     if (camera && this.lodT <= 0) { this.lodT = 0.25; this.updateLod(camera); }
     if (camera) this.terrainRenderer.update(camera);
     if (focus) {
-      // ambiance régionale (brume des Landes, moiteur de la Canopée)
-      const near = (d) => (d ? 1 - smoothstep(d.radius * 0.9, d.radius * 1.3, Math.hypot(focus.x - d.x, focus.z - d.z)) : 0);
-      this.sky.region.haunted = near(HANTEE); this.sky.region.jungle = near(SYLVE);
+      // ambiance régionale (brume des Landes et du Marais, moiteur de la Canopée et des Récifs)
+      const b = focus.x < 3000 ? this.terrain.regionAt(focus.x, focus.z).biome : null;
+      this.sky.region.haunted = b === 'haunted' ? 1 : b === 'swamp' ? 0.5 : 0;
+      this.sky.region.jungle = b === 'jungle' ? 1 : b === 'beach' ? 0.25 : 0;
+      this.region = b;
+      this.ambient.biome = b;
     }
     const st = this.sky.update(dt, focus, e);
     this.env.update(dt);

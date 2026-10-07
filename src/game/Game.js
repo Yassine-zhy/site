@@ -55,7 +55,7 @@ export class Game {
     this.loot = new Loot(this);
     this.icons = new Icons(this.renderer, this.assets);
     this.world.updrafts = new Updrafts(this.scene, this.world.terrain, this.fx);
-    onStep?.('Cartographie de l’archipel…');
+    onStep?.('Cartographie du continent…');
     await new Promise((r) => setTimeout(r, 0));
     this.mapImage = renderWorldMap(this.world.terrain, 768);
   }
@@ -239,6 +239,7 @@ export class Game {
   updateGame(dt, first) {
     const input = this.input, p = this.player, hero = this.hero;
     hero.playTime += dt;
+    if (first) this.checkZoneEntry(dt);
     if (first) {
       const look = input.consumeLook();
       if (Math.abs(look.dx) + Math.abs(look.dy) > 3) this.lastLookT = performance.now();
@@ -686,6 +687,27 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ zones & carte
+  // bannière à l'entrée d'une nouvelle zone (après quelques secondes passées dedans)
+  checkZoneEntry(dt) {
+    this.zoneT = (this.zoneT || 0) - dt;
+    if (this.zoneT > 0) return;
+    this.zoneT = 0.5;
+    const p = this.player.position;
+    if (p.x > 3000 || this.player.dead) return;
+    const zn = zoneAt(p.x, p.z);
+    const id = zn?.id || null;
+    if (id !== this.zoneCand) { this.zoneCand = id; this.zoneStable = 0; return; }
+    this.zoneStable += 0.5;
+    if (this.zoneStable < 1.5 || id === this.zoneShown) return;
+    const first = this.zoneShown === undefined;
+    this.zoneShown = id;
+    if (!zn || first) return;
+    const lv = `Niveaux ${zn.level[0]} à ${zn.level[1]}`;
+    const warn = this.hero.level < zn.level[0] - 2 ? ' · Danger !' : '';
+    this.ui.announce(zn.n ? `Zone ${zn.n} — ${zn.name}` : zn.name, (zn.n ? '' : 'Terres sauvages · ') + lv + warn, 3.2);
+    this.audio?.play?.('discover');
+  }
+
   currentZone() {
     const p = this.player.position;
     const t = this.world.terrain;

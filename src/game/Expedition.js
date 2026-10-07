@@ -134,7 +134,7 @@ export class Expedition {
     const g = this.game;
     const sp = g.respawnPoint(true);
     g.ui.fade?.(0.35);
-    g.schedule(0.3, () => { g.player.spawn(sp.x, sp.y + 0.3, sp.z, sp.facing); g.rig.yaw = sp.facing + Math.PI; g.rig.initialized = false; g.ui.announce('Havrelumière', 'De retour dans l’archipel', 2.5); });
+    g.schedule(0.3, () => { g.player.spawn(sp.x, sp.y + 0.3, sp.z, sp.facing); g.rig.yaw = sp.facing + Math.PI; g.rig.initialized = false; g.ui.announce('Havrelumière', 'De retour sur le continent', 2.5); });
   }
 
   // ------------------------------------------------------------------ hôte
@@ -356,7 +356,7 @@ export class Expedition {
         h('div', { class: 'exp-actions' },
           h('button', { class: 'btn', onclick: () => this.host() }, 'Héberger une expédition'),
           h('div', { class: 'exp-join' }, input, h('button', { class: 'btn ghost', onclick: () => this.join(input.value) }, 'Rejoindre'))),
-        h('p', { class: 'tut-note' }, 'Héberger crée un groupe et vous donne un code. Vos amis le saisissent ici pour vous rejoindre, où qu’ils soient dans l’archipel.'),
+        h('p', { class: 'tut-note' }, 'Héberger crée un groupe et vous donne un code. Vos amis le saisissent ici pour vous rejoindre, où qu’ils soient sur le continent.'),
       );
       return win.frame('Expéditions', body);
     }

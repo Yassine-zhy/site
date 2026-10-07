@@ -250,7 +250,7 @@ function crickets(A, t, out) {
   for (let i = 0; i < 6; i++) A.tone(out, t + i * 0.045, { type: 'square', f: 4300, a: 0.002, d: 0.02, v: 0.012 });
 }
 
-const REVERBY = new Set(['cast', 'holy', 'levelup', 'beacon', 'rune', 'runeok', 'summon', 'blink', 'storm', 'respawn', 'death', 'epic', 'quest', 'oracle', 'frost', 'rally', 'heal']);
+const REVERBY = new Set(['discover', 'cast', 'holy', 'levelup', 'beacon', 'rune', 'runeok', 'summon', 'blink', 'storm', 'respawn', 'death', 'epic', 'quest', 'oracle', 'frost', 'rally', 'heal']);
 
 // Bibliothèque de bruitages.
 const SOUNDS = {
@@ -301,6 +301,8 @@ const SOUNDS = {
   ui: (A, t, o) => A.tone(o, t, { type: 'sine', f: 1200, d: 0.05, v: 0.05 }),
   chat: (A, t, o) => A.tone(o, t, { type: 'sine', f: 1400, f2: 1800, d: 0.08, v: 0.06 }),
   quest: (A, t, o) => [0, 4, 7, 12].forEach((s, i) => A.tone(o, t + i * 0.09, { type: 'triangle', f: midi(67 + s), d: 0.5, v: 0.1 })),
+  // entrée dans une nouvelle zone : accord ouvert, lent, avec un souffle
+  discover: (A, t, o) => { [0, 7, 14, 19].forEach((s, i) => A.tone(o, t + i * 0.16, { type: 'triangle', f: midi(55 + s), a: 0.12, d: 2.4, v: 0.07 })); A.noise(o, t, { a: 0.6, d: 1.6, v: 0.06, type: 'bandpass', f: 600, f2: 1400, q: 0.6 }); },
   rune: (A, t, o) => A.tone(o, t, { type: 'sine', f: 1500 + Math.random() * 900, d: 0.08, v: 0.03 }),
   runeok: (A, t, o) => { [0, 5, 12, 17].forEach((s, i) => A.tone(o, t + i * 0.04, { type: 'sine', f: midi(74 + s), d: 0.7, v: 0.09 })); },
   runefail: (A, t, o) => { A.tone(o, t, { type: 'sawtooth', f: 300, f2: 120, d: 0.3, v: 0.07 }); A.noise(o, t, { d: 0.3, v: 0.1, f: 600 }); },

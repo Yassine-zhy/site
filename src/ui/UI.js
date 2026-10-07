@@ -4,7 +4,7 @@ import { h } from './dom.js';
 const TIPS = [
   "Les Phares sont partagés par tous les joueurs du monde : chaque squelette vaincu près d'un phare lui rend un peu de lumière.",
   'Maintenez le clic droit (ou X) et dessinez une rune : un triangle pour le feu, un cercle pour soigner, un éclair pour la foudre.',
-  'Appuyez deux fois sur Espace en l’air pour déployer la paravoile. Les colonnes de vent vous portent vers les îlots.',
+  'Appuyez deux fois sur Espace en l’air pour déployer la paravoile. Les colonnes de vent vous portent jusqu’aux nuages.',
   'La Brume recule autour des phares allumés : la terre retrouve ses couleurs, les fleurs repoussent.',
   'Les Échos sont des messages laissés par d’autres aventuriers. Lisez-les, et laissez les vôtres avec T.',
   "L'Oracle de Havrelumière invente des quêtes que personne d'autre n'a jamais reçues.",
@@ -19,7 +19,7 @@ export class UI {
     this.loading = h('div', { id: 'loading' },
       h('div', { class: 'inner' },
         h('div', { class: 'logo' }, 'Aetheria'),
-        h('div', { class: 'logo-sub' }, "l'archipel des échos"),
+        h('div', { class: 'logo-sub' }, "le continent des échos"),
         h('div', { class: 'loadbar' }, this.loadFill = h('div')),
         this.loadStep = h('div', { class: 'loadstep' }, 'Ouverture du ciel…'),
         this.loadTip = h('div', { class: 'loadtip' }, TIPS[Math.floor(Math.random() * TIPS.length)]),
@@ -80,12 +80,26 @@ export class UI {
     this._fadeT = setTimeout(() => { el.style.transition = 'opacity 0.6s ease'; el.style.opacity = '0'; }, t * 1000 + 120);
   }
 
+  // grandes annonces : elles se succèdent au lieu de s'écraser (titre identique ignoré)
   announce(title, sub = '', time = 3) {
+    const q = this._annQ || (this._annQ = []);
+    if (this._annCur === title || q.some((a) => a[0] === title)) return;
+    q.push([title, sub, time]);
+    if (!this._annBusy) this.nextAnnounce();
+  }
+
+  nextAnnounce() {
+    const a = this._annQ.shift();
+    if (!a) { this._annBusy = false; this._annCur = null; return; }
+    const [title, sub, time] = a;
+    this._annBusy = true; this._annCur = title;
     this.announceBox.innerHTML = '';
     const el = h('div', { class: 'announce' }, h('div', { class: 'a1' }, title), sub ? h('div', { class: 'a2' }, sub) : null);
     this.announceBox.appendChild(el);
     clearTimeout(this._annT);
-    this._annT = setTimeout(() => { el.classList.add('fade'); setTimeout(() => el.remove(), 800); }, time * 1000);
+    // s'il en attend une autre, celle-ci s'efface plus tôt
+    const t = this._annQ.length ? Math.min(time, 2) : time;
+    this._annT = setTimeout(() => { el.classList.add('fade'); setTimeout(() => { el.remove(); this.nextAnnounce(); }, 650); }, t * 1000);
   }
 
   // ------------------------------------------------ plaques au-dessus des têtes

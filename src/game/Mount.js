@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Creature } from '../entities/Creature.js';
 
-// Monture d'éther : un cerf spectral qu'on invoque hors combat pour traverser l'archipel.
+// Monture d'éther : un cerf spectral qu'on invoque hors combat pour traverser le continent.
 // Le héros monte en selle (pose assise, jambes écartées) ; frapper, lancer un sort, planer,
 // nager ou recevoir un coup le fait descendre.
 const SEAT = 0.45; // hauteur du cavalier au-dessus du dos de la monture

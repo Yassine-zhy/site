@@ -207,7 +207,7 @@ export class Windows {
     const legend = h('div', { class: 'istats', style: { textAlign: 'center', marginTop: '8px' } },
       this.game.input.isTouch ? 'Pincez pour zoomer, glissez pour vous déplacer. ' : 'Molette pour zoomer, glisser pour vous déplacer. ',
       'Losanges : phares (dorés = allumés). Étoiles : objectifs de quête. Points bleus : pierres de passage.');
-    return this.frame('Carte de l’archipel', view.element(), legend);
+    return this.frame('Carte d’Aetheria', view.element(), legend);
   }
 
   // ------------------------------------------------------------ aide
@@ -227,7 +227,7 @@ export class Windows {
           h('div', { class: 'istats', style: { lineHeight: '1.5' } },
             'Le losange doré à l’écran mène à l’objectif de votre quête. Touchez un objectif dans le journal pour un tutoriel. ',
             'Votre héros frappe ou tire tout seul sur l’ennemi le plus proche : concentrez-vous sur les compétences et les runes. ',
-            'L’archipel est immense : invoquez votre monture d’éther pour galoper, et sautez de son dos pour ouvrir la paravoile. ',
+            'Le continent est immense : invoquez votre monture d’éther (N) pour galoper sur les routes, et sautez de son dos pour ouvrir la paravoile. Les zones sont numérotées de 1 à 8 : plus le numéro est grand, plus les monstres sont forts. ',
             'Les pierres de passage (obélisques bleus) s’éveillent avec E et permettent de voyager. ',
             'Les fleurs, mousses, plumes et cristaux lumineux se récoltent en marchant dessus. ',
             'Expéditions : jusqu’à 4 amis avec un code de groupe, contre les boss de la Citadelle des Ombres.'),

@@ -11,8 +11,8 @@ export const ECHO_TEMPLATES = [
   'Le Phare a besoin de {w}', 'Ne faites pas confiance à {w}', 'Je rêve de {w}', 'Merci pour {w}', 'Regardez {w}',
 ];
 export const ECHO_WORDS = [
-  'un squelette d’élite', 'la Brume', 'la mer de nuages', 'planer', 'tracer Ventus', 'tracer Lux', 'la lumière', 'en haut', 'derrière', 'sous le pont',
-  'l’îlot', 'le Roi Sans Lumière', 'le vent', 'la nuit', 'l’aurore', 'voyageur', 'ensemble', 'la paravoile', 'un coffre', 'l’Oracle',
+  'un squelette d’élite', 'la Brume', 'la mer', 'planer', 'tracer Ventus', 'tracer Lux', 'la lumière', 'en haut', 'derrière', 'sur la route',
+  'la plage', 'le Roi Sans Lumière', 'le vent', 'la nuit', 'l’aurore', 'voyageur', 'ensemble', 'la paravoile', 'un coffre', 'l’Oracle',
   'votre aide', 'patience', 'une embuscade', 'la vue', 'repos', 'la forêt', 'les ruines', 'l’amitié', 'un saut de foi', 'rien du tout',
 ];
 
