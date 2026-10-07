@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mulberry32 } from '../engine/math.js';
-import { VILLAGE, RUINS, BRIDGES } from '../config.js';
+import { VILLAGE, RUINS, BRIDGES, LAKE, MOUNTAIN, FOREST, HAMLET } from '../config.js';
 import { applyCorruption } from './Maps.js';
 import { Decor } from './Decor.js';
 import { VirtualLight } from './Lights.js';
@@ -24,9 +24,10 @@ export const BUILDINGS = [
   { name: 'building_barracks', x: -26, z: -48, s: 7 },
   { name: 'building_archeryrange', x: 30, z: -44, s: 6.5 },
   { name: 'building_well', x: 11, z: 9, s: 6, face: [0, 0] },
-  { name: 'building_lumbermill', x: 72, z: 26, s: 7, face: [118, 14] },
-  { name: 'building_watermill', x: -98, z: 58, s: 7, face: [-122, 34] },
-  { name: 'building_mine', x: -42, z: -86, s: 7, face: [0, 0] },
+  { name: 'building_lumbermill', x: 72, z: 26, s: 7, face: [FOREST.x, FOREST.z] },
+  // moulin à eau au bord du lac Miroir, mine au pied du Pic du Silence
+  { name: 'building_watermill', x: LAKE.x + LAKE.radius + 12, z: LAKE.z + 16, s: 7, face: [LAKE.x, LAKE.z] },
+  { name: 'building_mine', x: MOUNTAIN.x - 18, z: MOUNTAIN.z + MOUNTAIN.radius * 0.7, s: 7, face: [0, 0] },
 ];
 
 export const NPC_SPOTS = {
@@ -38,6 +39,7 @@ export const NPC_SPOTS = {
   ondine: { x: -33, z: 27, face: [-20, 20] },
   pip: { x: 37, z: 7, face: [20, 10] },
   rhea: { x: 19, z: -33, face: [8, -20] },
+  agathe: { x: HAMLET.x - 6, z: HAMLET.z + 5, face: [HAMLET.x, HAMLET.z] },
 };
 
 export class Village extends Decor {
@@ -75,6 +77,7 @@ export class Village extends Decor {
 
     this.buildMonument(maps);
     this.buildRuins(rng);
+    this.buildHamlet();
     this.buildBridges(this.terrain.bridges);
     this.mergeStatic();
   }
@@ -120,6 +123,32 @@ export class Village extends Decor {
     this.colliders.addCircle(0, 0, 4.95, y - 2, y + 1.2, 'prop', true);
     this.colliders.addCircle(0, 0, 2.1, y - 2, y + 9, 'monument');
     for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; this.colliders.addCircle(Math.cos(a) * 4.2, Math.sin(a) * 4.2, 0.55, y - 1, y + 5, 'monument'); }
+  }
+
+  // Les Prés-Bas : fermes, moulin, champs clôturés et une cour avec un feu de camp.
+  buildHamlet() {
+    const c = HAMLET;
+    const B = (name, dx, dz, s) => this.placeBuilding({ name, x: c.x + dx, z: c.z + dz, s, cx: c.x, cz: c.z });
+    B('building_windmill', -20, -16, 7.5);
+    B('building_home_A', 18, -14, 6.5);
+    B('building_home_B', 20, 14, 6.5);
+    B('building_grain', -18, 16, 6.5);
+    B('building_well', 8, 4, 5.5);
+    this.placeBonfire(c.x - 2, c.z - 3, 0.9);
+    const P = (name, dx, dz, s, r, col = true, yoff = 0) => this.placeProp(name, c.x + dx, c.z + dz, s, r, yoff, col);
+    P('wheelbarrow', 8, -8, 7, 0.6); P('sack', -8, 10, 9, 0.3); P('sack', -7, 11.5, 9, 1.2); P('resource_lumber', 13, 3, 8, 1.4);
+    P('c_crate_potatoes', -10, 4, 1.5, 0.2); P('c_crate_carrots', -12, 5.5, 1.5, 1.1); P('c_crate_tomatoes', -11, 7.8, 1.5, 0.5);
+    P('c_table_medium_long', 4, 11, 1.6, 1.4); P('c_chair_A_wood', 2.2, 12.5, 1.6, 1.4); P('c_food_dinner', 4, 11, 1.4, 0, false, 1.6);
+    P('hw_pumpkin_orange', -15, 9, 1.6, 0.4); P('hw_pumpkin_yellow', -14, 11, 1.5, 1.6); P('flag_yellow', 22, -20, 13, 0);
+    // champs clôturés au sud et à l'est
+    for (const [fx, fz, rot] of [[0, 30, 0], [32, 0, Math.PI / 2]]) {
+      for (let i = -4; i <= 4; i++) {
+        const along = i * 3.95;
+        const x = c.x + fx + (rot ? 0 : along), z = c.z + fz + (rot ? along : 0);
+        this.placeProp('fence_wood_straight', x, z, 3.6, rot ? 0 : Math.PI / 2, 0, true);
+      }
+    }
+    for (const [dx, dz] of [[11, -3], [-11, 1], [2, 14], [-1, -13], [24, 0]]) this.placeLantern(c.x + dx, c.z + dz, dx === 11 || dx === -11);
   }
 
   // Les Cendres : ruines d'un ancien temple (KayKit Dungeon).

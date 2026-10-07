@@ -8,7 +8,7 @@ import { Projectiles, pickSoftTarget } from './Combat.js';
 import { Loot } from './Loot.js';
 import { generateItem, rollRarity } from './Items.js';
 import { ABILITIES, BASIC, basicAttack, basicVisual } from './Abilities.js';
-import { CLASSES, ENEMIES, VILLAGE, BEACONS, FOREST, RUINS, LAKE, MOUNTAIN, HILLS, ISLETS, WAYSTONES } from '../config.js';
+import { CLASSES, ENEMIES, VILLAGE, HAMLET, BEACONS, FOREST, RUINS, LAKE, MOUNTAIN, HILLS, ISLETS, WAYSTONES, W } from '../config.js';
 import { CLOUD_SEA_Y } from '../world/Clouds.js';
 import { renderWorldMap } from '../ui/MapRender.js';
 import { Hud } from '../ui/Hud.js';
@@ -294,14 +294,37 @@ export class Game {
     this.runes?.handleInput(input);
     if (this.runes?.drawing) return;
     // attaque de base
-    const lk = this.locked, p = this.player;
-    const auto = this.settings.autoAttack && lk && lk.alive && Math.hypot(lk.position.x - p.position.x, lk.position.z - p.position.z) < (this.classDef.ranged ? 24 : 3.2);
-    const wantAttack = input.mouse.clicked || (input.locked && input.mouse.left && !input.mouse.dragging) || input.touch.buttons.has('attack') || auto;
-    if (wantAttack && (this.cooldowns.attack || 0) <= 0 && !this.player.dash && !this.player.dodge) this.basicAttack();
+    const manual = input.mouse.clicked || (input.locked && input.mouse.left && !input.mouse.dragging) || input.touch.buttons.has('attack');
+    if (manual && this.player.mounted) this.mount?.dismount();
+    // attaque de base automatique : le héros frappe ou tire seul sur l'ennemi le plus proche à portée
+    const auto = !manual && this.settings.autoBasic !== false ? this.autoTarget() : null;
+    if ((manual || auto) && (this.cooldowns.attack || 0) <= 0 && !this.player.dash && !this.player.dodge) {
+      if (auto) this.target = auto;
+      this.basicAttack();
+    }
     const cls = this.classDef;
     for (let i = 0; i < 4; i++) if (input.pressed('ability' + (i + 1))) this.useAbility(i);
     if (input.pressed('potion')) this.usePotion();
     void cls; void hero;
+  }
+
+  // Cible de l'attaque automatique : la cible verrouillée si elle est à portée, sinon l'ennemi le plus proche.
+  autoTarget() {
+    const p = this.player;
+    if (p.dead || p.gliding || p.mounted || !p.onGround && p.velocity.y < -6) return null;
+    const ranged = this.classDef.ranged;
+    const reach = ranged ? 22 : this.classDef.attackRange + 0.9;
+    const dist = (e) => Math.hypot(e.position.x - p.position.x, e.position.z - p.position.z);
+    const ok = (e) => e && e.alive && dist(e) < reach && Math.abs(e.position.y - p.position.y) < (ranged ? 12 : 3.5);
+    if (ok(this.locked)) return this.locked;
+    if (ok(this.target)) return this.target;
+    let best = null, bd = Infinity;
+    for (const e of this.enemies.hittable()) {
+      if (!ok(e)) continue;
+      const d = dist(e) - (e.target?.isLocal ? 4 : 0); // priorité à ceux qui nous attaquent
+      if (d < bd) { bd = d; best = e; }
+    }
+    return best;
   }
 
   ctx() { return { game: this, actor: this.player, classId: this.hero.classId, isLocal: true }; }
@@ -331,6 +354,7 @@ export class Game {
     const ab = ABILITIES[id];
     const hero = this.hero, p = this.player;
     if (!ab || p.dead) return;
+    if (p.mounted) this.mount?.dismount();
     if (hero.level < ab.level) { this.ui.toast(`<b>${ab.name}</b> se débloque au niveau ${ab.level}.`); return; }
     if ((this.cooldowns[id] || 0) > 0) return;
     if (hero.mp < ab.mana) { this.ui.toast('Pas assez d’éther.', { color: '#8ef0f6', time: 1.5 }); this.audio?.play('error'); return; }
@@ -516,6 +540,7 @@ export class Game {
     if (!p || p.dead) return;
     if (p.invulnerable && opts.kind !== 'fall') { this.ui.floatText(p.position.clone().setY(p.position.y + 2.4), 'Esquive', 'info'); return; }
     let dmg = raw * (60 / (60 + hero.stats.def * 2.2)) * (0.9 + Math.random() * 0.2);
+    if (p.mounted && opts.kind !== 'fall') this.mount?.dismount(); // un coup fait vider les étriers
     const wall = hero.hasBuff('shieldwall');
     if (wall && source) {
       dmg *= 1 - wall.reduce;
@@ -667,24 +692,24 @@ export class Game {
     if (p.x > 3500) { const P = platformAt(p.x, p.z); return { name: P?.name || 'La Citadelle des Ombres', sub: 'Citadelle des Ombres' }; }
     if (isl?.big) {
       const d = isl.def, near = (o, r) => o && Math.hypot(p.x - o.x, p.z - o.z) < r;
-      if (d.id === 'givre') {
-        if (near(d.camp, d.camp.radius + 10)) return { name: d.camp.name, sub: 'campement · sûr' };
-        if (near(d.lake, d.lake.radius * 1.6)) return { name: d.lake.name, sub: 'squelettes niv. 14–17' };
-        if (near(d.peak, d.peak.radius * 0.8)) return { name: d.peak.name, sub: 'squelettes niv. 16–20' };
-        if (near(d.sanctuary, d.sanctuary.radius + 12)) return { name: d.sanctuary.name, sub: 'squelettes niv. 15–18' };
-        return { name: d.name, sub: 'squelettes niv. 13–16' };
-      }
       if (near(d.camp, d.camp.radius + 10)) return { name: d.camp.name, sub: 'campement · sûr' };
-      if (near(d.mine, 26)) return { name: d.mine.name, sub: 'squelettes niv. 11–14' };
-      if (near(d.cirque, d.cirque.radius * 1.4)) return { name: d.cirque.name, sub: 'arène du Colosse' };
-      if (d.features.some((f) => f.type === 'mesa' && near(f, f.radius * 1.3))) return { name: 'Les Mesas', sub: 'squelettes niv. 12–15' };
-      return { name: d.name, sub: 'squelettes niv. 9–14' };
+      const spots = {
+        givre: [[d.lake, 1.6, 'monstres niv. 14–17'], [d.peak, 0.8, 'monstres niv. 16–20'], [d.sanctuary, 2.2, 'monstres niv. 15–18']],
+        ambre: [[d.mine, 0, 'monstres niv. 11–14', 40], [d.cirque, 1.4, 'arène du Colosse']],
+        sylve: [[d.peak, 0.8, 'monstres niv. 19–22 · Gardien Sylvestre'], [d.temple, 2.4, 'monstres niv. 18–21'], [d.lake, 1.7, 'monstres niv. 17–19']],
+        hantee: [[d.crypt, 1.7, 'arène du Fossoyeur'], [d.cemetery, 2, 'monstres niv. 22–25'], [d.lake, 1.8, 'monstres niv. 23–26'], [d.peak, 0.9, 'monstres niv. 24–27']],
+      }[d.id] || [];
+      for (const [o, k, sub, r] of spots) if (o && near(o, r || (o.radius || 20) * k)) return { name: o.name, sub };
+      if (d.id === 'ambre' && d.features.some((f) => f.type === 'mesa' && near(f, f.radius * 1.3))) return { name: 'Les Mesas', sub: 'monstres niv. 12–15' };
+      const base = { givre: 'monstres niv. 13–16', ambre: 'monstres niv. 9–14', sylve: 'monstres niv. 16–18', hantee: 'monstres niv. 21–23' };
+      return { name: d.name, sub: base[d.id] || '' };
     }
     if (isl && isl !== t.main) return { name: isl.name, sub: 'îlot flottant' };
     if (!isl) return { name: 'Le Ciel', sub: 'au-dessus de la mer de nuages' };
     const zones = [
-      [VILLAGE, VILLAGE.radius + 10, 'havre de paix'], [LAKE, LAKE.radius * 1.8, 'eaux calmes'], [FOREST, FOREST.radius, 'squelettes niv. 3–6'],
-      [RUINS, RUINS.radius, 'squelettes niv. 5–9'], [MOUNTAIN, MOUNTAIN.radius * 0.9, 'squelettes niv. 8–15'], [HILLS, HILLS.radius, 'squelettes niv. 1–3'],
+      [VILLAGE, VILLAGE.radius + 10, 'havre de paix'], [HAMLET, HAMLET.radius + 12, 'hameau · sûr'], [LAKE, LAKE.radius * 1.8, 'eaux calmes'], [FOREST, FOREST.radius, 'squelettes niv. 3–6'],
+      [RUINS, RUINS.radius * 1.4, 'squelettes niv. 5–9'], [MOUNTAIN, MOUNTAIN.radius * 0.9, 'squelettes niv. 8–15'], [HILLS, HILLS.radius, 'monstres niv. 1–3'],
+      [{ name: 'La Prairie du Sud', x: W(40), z: W(190) }, W(48), 'monstres niv. 4–7'], [{ name: 'Les Falaises du Couchant', x: W(-175), z: W(-120) }, W(52), 'monstres niv. 6–9'],
     ];
     for (const [z, r, sub] of zones) if (Math.hypot(p.x - z.x, p.z - z.z) < r) return { name: z.name, sub };
     return { name: 'Terres d’Aetheria', sub: 'squelettes niv. 1–4' };

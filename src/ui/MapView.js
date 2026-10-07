@@ -1,5 +1,5 @@
 import { h } from './dom.js';
-import { BEACONS, ISLETS, WAYSTONES, GIVRE, AMBRE, WORLD_BOSSES } from '../config.js';
+import { BEACONS, ISLETS, WAYSTONES, GIVRE, AMBRE, HANTEE, SYLVE, WORLD_BOSSES } from '../config.js';
 import { MAP_CX, MAP_CZ, MAP_RANGE } from './MapRender.js';
 import { EXP_PORTAL } from '../game/Expedition.js';
 import { BOSS_KITS } from '../game/Boss.js';
@@ -10,6 +10,8 @@ const REGIONS = [
   { name: 'Aetheria', x: 0, z: 20, color: '#fff3d6' },
   { name: 'Cimes de Givre', x: GIVRE.x, z: GIVRE.z - 40, color: '#e6f6ff' },
   { name: 'Terres d’Ambre', x: AMBRE.x, z: AMBRE.z - 60, color: '#ffe0b0' },
+  { name: 'Landes Spectrales', x: HANTEE.x, z: HANTEE.z - 60, color: '#e2d6ff' },
+  { name: 'Canopée d’Émeraude', x: SYLVE.x, z: SYLVE.z - 40, color: '#c8ffc8' },
 ];
 
 export class MapView {

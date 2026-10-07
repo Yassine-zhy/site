@@ -62,6 +62,8 @@ export class Decor {
       const m = new THREE.Mesh(merged, mat);
       m.castShadow = true; m.receiveShadow = true;
       this.scene.add(m);
+      // liste partagée : le monde masque les décors trop lointains
+      (this.scene.userData.staticMeshes = this.scene.userData.staticMeshes || []).push(m);
     }
     // les objets restants (pales, flammes, lumières) restent dans le groupe
   }

@@ -16,6 +16,11 @@ const GREET = {
   neige: ['Que la flamme bleue vous garde, voyageur.', 'Le Sanctuaire a besoin de mains courageuses.'],
   kessa: ['Tiens, un nouveau ! Tu veux faire fortune ou juste te faire mordre par un squelette ?', 'L’ambre n’attend pas, partenaire.'],
   tarek: ['Asseyez-vous, voyageur. Le sable a une histoire à vous conter.', 'Ah… les étoiles m’avaient prévenu de votre venue.'],
+  agathe: ['Ah, de la visite aux Prés-Bas ! Essuie tes bottes.', 'Bonjour, toi ! Tu tombes bien, j’ai du travail.'],
+  liora: ['Bienvenue sous la Canopée. Les arbres t’ont vu arriver.', 'Viens, la sève a besoin de toi.'],
+  tiko: ['Salut ! Attention où tu marches, il y a des mygales partout !', 'Tu viens pour le temple ? Moi aussi ! Enfin, j’y vais demain. Peut-être.'],
+  morwen: ['Soyez le bienvenu parmi les vivants, voyageur. Ils se font rares ici.', 'La lanterne brûle encore. Entrez.'],
+  silas: ['Encore un héros ? Bien. Les tombes se rouvrent plus vite que je ne les ferme.', 'T’as l’air solide. Tant mieux.'],
 };
 
 // Fenêtre de dialogue avec les habitants (choix + conversation libre propulsée par Claude).

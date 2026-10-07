@@ -11,6 +11,7 @@ import { Dialogue } from '../ui/Dialogue.js';
 import { Mind } from '../ai/Mind.js';
 import { Interactions } from './Interactions.js';
 import { Boss } from './Boss.js';
+import { Mount } from './Mount.js';
 import { TouchControls } from '../ui/TouchControls.js';
 import { Waystones } from './Waystones.js';
 import { Expedition } from './Expedition.js';
@@ -39,9 +40,10 @@ export async function boot(game) {
   game.waves = new Waves(game);
   game.interactions = new Interactions(game);
   game.boss = new Boss(game);
+  game.mount = new Mount(game);
   game.net = new Net(game);
   if (game.input.isTouch) game.touch = new TouchControls(game);
-  extra.push(game.waystones, game.expedition, game.gathering, game.chests, game.waves, game.runes, game.worldState, game.quests, game.npcs, game.dialogue, game.echoes, game.chat, game.interactions, game.boss, game.net);
+  extra.push(game.mount, game.waystones, game.expedition, game.gathering, game.chests, game.waves, game.runes, game.worldState, game.quests, game.npcs, game.dialogue, game.echoes, game.chat, game.interactions, game.boss, game.net);
   if (game.touch) extra.push(game.touch);
   game.systems = extra;
   game.worldState.start();
@@ -73,6 +75,7 @@ export async function boot(game) {
     if (map[code]) game.windows.toggle(map[code]);
     else if (code === 'KeyT' && !game.windowOpen) game.echoes.composeWindow();
     else if (code === 'KeyG' && !game.windowOpen) game.emote('wave');
+    else if (code === 'KeyN' && !game.windowOpen) game.mount?.toggle();
     else if (code === 'Tab' && !game.windowOpen) game.lockNext();
   });
   // première visite : guide rapide

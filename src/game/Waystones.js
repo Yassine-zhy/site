@@ -34,6 +34,7 @@ export class Waystones {
       light.position.y = 5.2;
       grp.add(light);
       g.scene.add(grp);
+      g.world.cullFar(grp, 1.2);
       g.world.colliders.addCircle(w.x, w.z, 0.9, y - 1, y + 5, 'monument');
       g.world.colliders.addCircle(w.x, w.z, 2.3, y - 1, y + 0.35, 'prop', true);
       return { ...w, y, grp, crystal, ring, light };

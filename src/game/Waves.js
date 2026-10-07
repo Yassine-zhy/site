@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { h } from '../ui/dom.js';
-import { SPAWN_ZONES, VILLAGE, BIG_ISLANDS, ENEMIES } from '../config.js';
+import { SPAWN_ZONES, VILLAGE, HAMLET, BIG_ISLANDS, ENEMIES } from '../config.js';
 
 // Vagues de la Brume : de temps en temps, une faille s'ouvre près d'un héros et lâche trois
 // vagues de monstres de la région. L'hôte décide et fait apparaître les monstres ; tout le
@@ -31,6 +31,7 @@ export class Waves {
   // ------------------------------------------------------------------ hôte
   inSafeZone(x, z) {
     if (Math.hypot(x - VILLAGE.x, z - VILLAGE.z) < VILLAGE.radius + 45) return true;
+    if (Math.hypot(x - HAMLET.x, z - HAMLET.z) < HAMLET.radius + 40) return true;
     for (const b of BIG_ISLANDS) if (b.camp && Math.hypot(x - b.camp.x, z - b.camp.z) < (b.camp.radius || 20) + 30) return true;
     return false;
   }

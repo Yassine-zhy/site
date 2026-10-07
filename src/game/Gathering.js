@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { mulberry32 } from '../engine/math.js';
-import { VILLAGE, LAKE, FOREST, HILLS, ISLETS, GIVRE, AMBRE } from '../config.js';
+import { VILLAGE, LAKE, FOREST, HILLS, ISLETS, GIVRE, AMBRE, HANTEE, SYLVE, UPDRAFTS, W } from '../config.js';
 import { pathDistance } from '../world/Terrain.js';
 
 // Ressources à récolter (on les ramasse en passant dessus) et anneaux de vent (défis de vol).
@@ -11,21 +11,41 @@ export const ITEMS_GATHER = {
   plume: { name: 'Plume des nuées', plural: 'Plumes des nuées', color: '#bfe6ff' },
   ambre: { name: 'Éclat d’ambre', plural: 'Éclats d’ambre', color: '#ff9a3d' },
   givre: { name: 'Cristal de givre', plural: 'Cristaux de givre', color: '#9fe0ff' },
+  orchidee: { name: 'Orchidée céleste', plural: 'Orchidées célestes', color: '#ff7ad9' },
+  ame: { name: 'Fleur d’âme', plural: 'Fleurs d’âme', color: '#b9a0ff' },
 };
 
-// [x, y, z, cap] : le cap est la direction du vol à travers l'anneau
-// Hauteurs calées sur la pente de vol de la paravoile (≈ 1 m perdu pour 4,8 m parcourus)
-// depuis le sommet d'une colonne de vent : il suffit de suivre la ligne en planant.
-export const RING_SETS = {
-  village: { name: 'au-dessus du village', start: { x: -20, z: -88 }, rings: [[-16, 90, -60, 0.26], [-8, 83, -28, 0.26], [2, 76, 4, 0.26], [12, 69, 36, 0.26], [22, 62, 68, 0.26]] },
-  ambre: { name: 'entre les îlots de l’est', start: { x: 296, z: 58 }, rings: [[326, 63.5, 50, 1.71], [354, 57.5, 46, 1.71], [382, 51.5, 42, 1.71], [452, 69, 38, 1.63], [486, 62, 40, 1.63]] },
+// Anneaux [x, z] sur le plan. Leur hauteur suit la pente de vol de la paravoile
+// (≈ 1 m perdu pour 4,8 m parcourus) depuis le sommet de la colonne de vent de départ :
+// il suffit de suivre la ligne en planant.
+const RING_PLAN = {
+  village: { name: 'au-dessus du village', start: { x: W(-20), z: W(-88) }, rings: [[-16, -62], [-8, -36], [2, -10], [12, 16], [22, 42]] },
+  ambre: { name: 'entre les îlots de l’est', start: { x: W(296), z: W(58) }, rings: [[322, 52], [344, 49], [366, 46], [388, 43], [410, 40]] },
+  sylve: { name: 'au-dessus de la Canopée', start: { x: W(120), z: W(560) }, rings: [[132, 590], [146, 620], [160, 650], [172, 680], [182, 710]] },
 };
+export const RING_SETS = {};
+function planRings() {
+  for (const [id, def] of Object.entries(RING_PLAN)) {
+    // colonne de vent la plus proche du départ (elle a pu être recalée sur un sol plat)
+    let up = UPDRAFTS[0], bd = Infinity;
+    for (const u of UPDRAFTS) { const d = Math.hypot(u.x - def.start.x, u.z - def.start.z); if (d < bd) { bd = d; up = u; } }
+    let px = up.x, pz = up.z, y = up.top - 10;
+    const rings = def.rings.map(([rx, rz]) => {
+      const x = W(rx), z = W(rz), d = Math.hypot(x - px, z - pz);
+      y -= d / 4.8;
+      const yaw = Math.atan2(x - px, z - pz);
+      px = x; pz = z;
+      return [x, Math.round(y * 10) / 10, z, yaw];
+    });
+    RING_SETS[id] = { name: def.name, start: { x: up.x, z: up.z }, rings };
+  }
+}
 
 const RESPAWN = 120;
 
 function nodeGeometry(kind) {
   const parts = [];
-  if (kind === 'aube') {
+  if (kind === 'aube' || kind === 'orchidee' || kind === 'ame') {
     const stem = new THREE.CylinderGeometry(0.03, 0.04, 0.7, 5); stem.translate(0, 0.35, 0); parts.push(stem);
     for (let i = 0; i < 5; i++) { const p = new THREE.SphereGeometry(0.16, 6, 4); p.scale(1, 0.45, 0.6); const a = i / 5 * Math.PI * 2; p.translate(Math.cos(a) * 0.17, 0.74, Math.sin(a) * 0.17); parts.push(p); }
     const c = new THREE.SphereGeometry(0.1, 6, 4); c.translate(0, 0.78, 0); parts.push(c);
@@ -44,6 +64,7 @@ export class Gathering {
   constructor(game) {
     this.game = game;
     const g = game, terrain = g.world.terrain;
+    planRings();
     const rng = mulberry32(31337);
     this.nodes = [];
     const ok = (x, z, opts = {}) => {
@@ -66,20 +87,25 @@ export class Gathering {
     };
     const disc = (cx, cz, r0, r1) => () => { const a = rng() * Math.PI * 2, r = r0 + Math.sqrt(rng()) * (r1 - r0); return [cx + Math.cos(a) * r, cz + Math.sin(a) * r]; };
     // fleurs d'aube : prairies autour du village et dans les collines
-    scatter('aube', 14, disc(VILLAGE.x, VILLAGE.z, VILLAGE.radius + 10, 120));
-    scatter('aube', 8, disc(HILLS.x, HILLS.z, 0, HILLS.radius));
+    scatter('aube', 26, disc(VILLAGE.x, VILLAGE.z, VILLAGE.radius + 10, 260));
+    scatter('aube', 16, disc(HILLS.x, HILLS.z, 0, HILLS.radius));
     // mousse d'argent : rives du lac et sous-bois
-    scatter('mousse', 10, disc(LAKE.x, LAKE.z, LAKE.radius * 1.15, LAKE.radius * 2.2));
-    scatter('mousse', 8, disc(FOREST.x, FOREST.z, 0, FOREST.radius));
+    scatter('mousse', 16, disc(LAKE.x, LAKE.z, LAKE.radius * 1.15, LAKE.radius * 2.4));
+    scatter('mousse', 16, disc(FOREST.x, FOREST.z, 0, FOREST.radius));
     // plumes : sur les îlots flottants
-    for (const isl of ISLETS.filter((i) => ['nuees', 'tresor', 'pelerin', 'eclat', 'suspendu'].includes(i.id))) scatter('plume', 3, disc(isl.x, isl.z, 0, isl.radius * 0.7));
+    for (const isl of ISLETS) scatter('plume', 4, disc(isl.x, isl.z, 0, isl.radius * 0.7));
     // ambre : mesas, mine, gorge
-    scatter('ambre', 10, disc(690, -50, 0, 70), { paths: true });
-    scatter('ambre', 7, disc(AMBRE.mine.x, AMBRE.mine.z, 8, 40), { paths: true });
-    scatter('ambre', 7, disc(700, 120, 0, 50), { paths: true });
+    scatter('ambre', 16, disc(W(690), W(-50), 0, 150), { paths: true });
+    scatter('ambre', 10, disc(AMBRE.mine.x, AMBRE.mine.z, 8, 80), { paths: true });
+    scatter('ambre', 12, disc(W(700), W(120), 0, 110), { paths: true });
     // givre : lac de cristal, sanctuaire
-    scatter('givre', 12, disc(GIVRE.lake.x, GIVRE.lake.z, GIVRE.lake.radius * 0.9, GIVRE.lake.radius * 2), { paths: true });
-    scatter('givre', 10, disc(GIVRE.sanctuary.x, GIVRE.sanctuary.z, 10, 55), { paths: true });
+    scatter('givre', 18, disc(GIVRE.lake.x, GIVRE.lake.z, GIVRE.lake.radius * 0.9, GIVRE.lake.radius * 2), { paths: true });
+    scatter('givre', 14, disc(GIVRE.sanctuary.x, GIVRE.sanctuary.z, 10, 110), { paths: true });
+    // orchidées : Canopée d'Émeraude ; fleurs d'âme : Landes Spectrales
+    scatter('orchidee', 18, disc(SYLVE.lake.x, SYLVE.lake.z, SYLVE.lake.radius * 1.1, SYLVE.lake.radius * 2.6), { paths: true });
+    scatter('orchidee', 14, disc(SYLVE.temple.x, SYLVE.temple.z, 20, 130), { paths: true });
+    scatter('ame', 18, disc(HANTEE.cemetery.x, HANTEE.cemetery.z, 10, 140), { paths: true });
+    scatter('ame', 14, disc(HANTEE.lake.x, HANTEE.lake.z, HANTEE.lake.radius, HANTEE.lake.radius * 2.4), { paths: true });
 
     // un maillage instancié par ressource
     this.meshes = {};

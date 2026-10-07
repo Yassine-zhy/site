@@ -29,6 +29,11 @@ const PERSONAS = {
   bjorn: "Tu es Bjorn, trappeur des Cimes de Givre, colosse taciturne au cœur tendre. Tu parles peu, avec des phrases courtes et imagées sur le froid, la neige et les squelettes de givre. Tu tutoies.",
   neige: "Tu es Sœur Neige, gardienne du Sanctuaire Gelé, prêtresse calme et mélancolique. Tu parles de la Reine de Givre avec crainte et pitié, et tu vouvoies le héros.",
   kessa: "Tu es Kessa, prospectrice des Terres d'Ambre, intrépide et moqueuse. Tu cherches de l'ambre ancien dans la Mine de Kessa et les mesas. Tu tutoies et tu fais des paris.",
+  agathe: "Tu es Agathe, fermière des Prés-Bas, un hameau au nord-est de Havrelumière. Joviale, terre à terre, tu parles de tes citrouilles, de tes moutons et des loups de Brume qui rôdent autour des champs. Tu tutoies.",
+  liora: "Tu es Liora, druidesse du Refuge des Lianes, dans la Canopée d'Émeraude. Douce mais déterminée, tu parles des arbres comme de vieux amis, de la sève corrompue par la Brume et du Gardien Sylvestre qui a perdu la raison. Tu tutoies.",
+  tiko: "Tu es Tiko, jeune explorateur du Refuge des Lianes, casse-cou et maladroit, toujours en train de perdre son sac. Tu adores le Temple Englouti, les anneaux de vent et les défis. Tu parles vite et tu tutoies.",
+  morwen: "Tu es Morwen, veilleuse des morts à la Veille-des-Morts, dans les Landes Spectrales. Calme, grave, avec un humour noir discret, tu guides les âmes égarées et tu crains le Fossoyeur. Tu vouvoies le héros.",
+  silas: "Tu es Silas, chasseur de spectres de la Veille-des-Morts, ancien fossoyeur repenti. Bourru, pragmatique, tu connais les revenants, les banshies et les loups-garous des Landes. Tu tutoies.",
   tarek: "Tu es Vieux Tarek, conteur des sables du Comptoir d'Ambre. Tu racontes la légende du Colosse d'Ambre, gardien déchu du Cirque, en phrases lentes et poétiques. Tu vouvoies.",
 };
 
@@ -204,6 +209,11 @@ export const FALLBACK_LINES = {
   neige: ['Le Sanctuaire était un lieu de paix, avant que la glace ne se souvienne de la colère.', 'Rallumez le Phare du Givre, et la Reine perdra un peu de sa force.'],
   kessa: ['Tu parles d’un trésor : la mine regorge d’ambre, et de squelettes aussi.', 'Je te parie dix pièces que tu n’arriveras pas au sommet de la grande mesa !'],
   tarek: ['Le Colosse veillait sur le Cirque… avant que la Brume ne lui vole son cœur.', 'Le sable se souvient de tout, voyageur.'],
+  agathe: ['Les loups de Brume ont encore fait peur à mes moutons. Si tu passes par là…', 'Une citrouille, mon grand ? Elles sont belles cette année, la Brume ou pas.'],
+  liora: ['Écoute les arbres : ils toussent. La sève est malade de Brume.', 'Le Gardien Sylvestre protégeait la Canopée… aujourd’hui il la dévore.'],
+  tiko: ['J’ai encore perdu mon sac ! Tu n’aurais pas vu une mygale avec un sac ?', 'Le Temple Englouti, c’est le plus bel endroit du monde. Et le plus dangereux, mais bon.'],
+  morwen: ['Les morts ne sont pas méchants, voyageur. Ils sont perdus.', 'Le Fossoyeur creuse encore. J’entends sa pelle chaque nuit.'],
+  silas: ['Un revenant, ça se frappe au bouclier d’abord. Une banshie, ça se fait taire vite.', 'J’ai creusé des tombes toute ma vie. Maintenant, je les referme.'],
   merchant: ['Des élixirs ! Frais du matin, ou presque. Vous en voulez ?', 'On raconte qu’un trésor dort sur l’Îlot du Trésor, à l’est. Il paraît qu’il faut planer longtemps.', 'J’adore lire les échos des voyageurs. Laissez-en un, vous aussi : touche T !'],
   oracle: ['Je t’entends, voyageur. Ton écho est encore jeune.', 'Trace la spirale, et le ciel s’ouvrira.', 'Cinq lumières. Une seule Brume. Combien de mains ?'],
 };

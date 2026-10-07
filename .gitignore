@@ -5,3 +5,4 @@ artifact
 *.log
 android/build
 android/.tools
+public/assets/terrain.bin

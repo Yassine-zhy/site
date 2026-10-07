@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { pathDistance, mainColor } from './Terrain.js';
-import { VILLAGE, LAKE, RUINS, FOREST, HILLS, BEACONS, BIG_ISLANDS } from '../config.js';
+import { VILLAGE, LAKE, RUINS, FOREST, HILLS, HAMLET, BEACONS, BIG_ISLANDS, MAIN_ISLAND, WORLD_BOUNDS } from '../config.js';
 import { smoothstep, clamp, Simplex } from '../engine/math.js';
 
-export const MAP_EXTENT = 250; // carte d'herbe de l'île principale : [-250, 250]²
-// La Brume couvre tout l'archipel (île principale, îlots, Cimes de Givre, Terres d'Ambre).
-export const CORR = { cx: 285, cz: -285, half: 640 };
+export const MAP_EXTENT = MAIN_ISLAND.radius + MAIN_ISLAND.coastNoise + 8; // carte d'herbe de l'île principale
+// La Brume couvre tout l'archipel.
+export const CORR = { cx: WORLD_BOUNDS.cx, cz: WORLD_BOUNDS.cz, half: WORLD_BOUNDS.half };
 
 // Textures « monde » d'une région, cuites au chargement : hauteur, densité d'herbe, couleur du sol.
 // L'herbe (qui ne pousse qu'autour du joueur) lit celles de la région où il se trouve.
@@ -64,6 +64,7 @@ export class Maps {
       dens *= smoothstep(2.2, 4.5, pathDistance(x, z));
       const dv = Math.hypot(x - VILLAGE.x, z - VILLAGE.z);
       dens *= smoothstep(14, 22, dv) * (dv < VILLAGE.radius ? 0.55 : 1);
+      dens *= smoothstep(8, 14, Math.hypot(x - HAMLET.x, z - HAMLET.z));
       if (hh < LAKE.level + 1.2 && Math.hypot(x - LAKE.x, z - LAKE.z) < LAKE.radius * 1.7) dens = 0;
       dens *= 1 - smoothstep(52, 62, hh);
       const dr = Math.hypot(x - RUINS.x, z - RUINS.z);
@@ -74,12 +75,12 @@ export class Maps {
       if (df < FOREST.radius) dens *= 0.8;
       return dens * (0.7 + 0.3 * (n.noise2(x / 9, z / 9) * 0.5 + 0.5));
     };
-    this.regions = [new RegionMap(terrain, terrain.main, { cx: 0, cz: 0, half: MAP_EXTENT, res, density: mainDensity, color: (o, x, y, z, sl, e) => mainColor(o, x, y, z, sl, e) })];
-    const bres = Math.round(res * 0.86);
+    this.regions = [new RegionMap(terrain, terrain.main, { cx: 0, cz: 0, half: MAP_EXTENT, res: Math.round(res * 1.5), density: mainDensity, color: (o, x, y, z, sl, e) => mainColor(o, x, y, z, sl, e) })];
+    const bres = Math.round(res * 1.15);
     terrain.big.forEach((isl) => {
       const def = isl.def, snow = def.biome === 'snow';
       const density = (x, z, hh, slope) => {
-        let dens = snow ? 0.42 : 0.8;
+        let dens = snow ? 0.42 : def.biome === 'jungle' ? 0.95 : def.biome === 'haunted' ? 0.6 : 0.8;
         dens *= 1 - smoothstep(0.3, 0.46, slope);
         dens *= smoothstep(2.2, 4.5, pathDistance(x, z));
         if (def.camp) dens *= smoothstep(def.camp.radius * 0.35, def.camp.radius * 0.85, Math.hypot(x - def.camp.x, z - def.camp.z));
@@ -93,12 +94,12 @@ export class Maps {
     this.heightTex = this.main.heightTex; this.colorTex = this.main.colorTex;
 
     // Corruption (0 = purifié, 1 = Brume) — basse résolution, filtrage linéaire.
-    this.cres = 192;
+    this.cres = 256;
     this.cdata = new Uint8Array(this.cres * this.cres * 4);
     this.corruptionTex = new THREE.DataTexture(this.cdata, this.cres, this.cres, THREE.RGBAFormat);
     this.corruptionTex.magFilter = THREE.LinearFilter; this.corruptionTex.minFilter = THREE.LinearFilter;
     this.corruptionValues = new Float32Array(this.cres * this.cres);
-    this.safe = [{ x: VILLAGE.x, z: VILLAGE.z, r0: VILLAGE.radius + 8, r1: VILLAGE.radius + 38 }];
+    this.safe = [{ x: VILLAGE.x, z: VILLAGE.z, r0: VILLAGE.radius + 8, r1: VILLAGE.radius + 38 }, { x: HAMLET.x, z: HAMLET.z, r0: HAMLET.radius + 6, r1: HAMLET.radius + 30 }];
     for (const def of BIG_ISLANDS) if (def.camp) this.safe.push({ x: def.camp.x, z: def.camp.z, r0: def.camp.radius + 4, r1: def.camp.radius + 26 });
     this.updateCorruption(BEACONS.map(() => 0));
   }

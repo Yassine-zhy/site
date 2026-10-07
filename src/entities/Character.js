@@ -181,6 +181,7 @@ export class Character {
 
   update(dt) {
     this.mixer.update(dt);
+    if (this.legPose) this.applyLegPose(this.legPose);
     const off = Math.max(0, this.groundOffset || 0), k = Math.max(0, 1 - off / 5) * this.opacity;
     this.blob.visible = k > 0.03;
     if (this.blob.visible) {
@@ -198,6 +199,16 @@ export class Character {
         else if (be) { m.emissive.copy(be); m.emissiveIntensity = m.userData.baseEmissiveIntensity ?? 1; }
         else { m.emissive.setRGB(0, 0, 0); }
       }
+    }
+  }
+
+  // décalages appliqués après l'animation (cavalier en selle)
+  applyLegPose(L) {
+    const b = this.bones;
+    for (const [side, sg] of [['l', 1], ['r', -1]]) {
+      const up = b['upperleg.' + side] || b['upperleg' + side], lo = b['lowerleg.' + side] || b['lowerleg' + side];
+      if (up) { up.rotateX(L.drop); up.rotateZ(L.spread * sg); }
+      if (lo) lo.rotateX(L.knee);
     }
   }
 

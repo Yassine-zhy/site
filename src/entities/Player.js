@@ -3,10 +3,12 @@ import { STEP_UP } from '../world/Colliders.js';
 import { Character } from './Character.js';
 import { createGlider } from './Glider.js';
 import { clamp, damp, dampAngle, angleDiff } from '../engine/math.js';
-import { CLASSES, UPDRAFTS, LAKE } from '../config.js';
+import { CLASSES, UPDRAFTS, WATERS } from '../config.js';
 
 const GRAVITY = 28;
 const WALK = 2.9, RUN = 7.2, SPRINT = 10.6;
+// pose en selle : jambes écartées et tombantes (corrige l'animation « assis sur une chaise »)
+const RIDE = { spread: 0.55, drop: 0.75, knee: -0.55 };
 
 // Héros contrôlé par le joueur : déplacements, saut, vol plané, esquive.
 export class Player {
@@ -37,6 +39,7 @@ export class Player {
     this.lastGround = new THREE.Vector3();
     this.inWater = false;
     this.inUpdraft = false;
+    this.mounted = false;
     this.state = 'idle';
     this.locoName = null;
     this.radius = 0.55;
@@ -126,6 +129,7 @@ export class Player {
     this.rooted = Math.max(0, this.rooted - dt);
 
     let speed = this.walkToggle ? WALK : (this.sprinting ? SPRINT : RUN);
+    if (this.mounted) speed = this.sprinting ? 26 : 18.5; // monture d'éther
     speed *= this.cls.base.speed * this.speedMult * (this.game.hero?.hasBuff('chill') ? 0.65 : 1);
     if (this.inWater) speed *= 0.55;
     if (this.attackSlow) speed *= this.attackSlow;
@@ -140,6 +144,7 @@ export class Player {
         this.char.playAction('Jump_Start', { full: true, timeScale: 1.4 });
         this.emit('jump');
       } else if (!this.gliding && this.airTime > 0.18) {
+        if (this.mounted) this.game.mount?.dismount();
         this.gliding = true; this.jumpBuffered = 0;
         this.emit('glide', { open: true });
       } else if (this.gliding) {
@@ -210,8 +215,9 @@ export class Player {
     if (top !== null && (ground === null || top > ground)) ground = top;
     this.inWater = false;
     let floor = ground;
-    if (ground !== null && Math.hypot(pos.x - LAKE.x, pos.z - LAKE.z) < LAKE.radius * 1.8 && ground < LAKE.level - 0.9) {
-      floor = Math.max(ground, LAKE.level - 1.5); this.inWater = true;
+    const lake = ground !== null && WATERS.find((w) => Math.hypot(pos.x - w.x, pos.z - w.z) < w.radius * 1.8 && ground < w.level - 0.9);
+    if (lake) {
+      floor = Math.max(ground, lake.level - 1.5); this.inWater = true;
     }
     const wasGround = this.onGround;
     this.char.groundOffset = floor === null ? 99 : Math.max(0, pos.y - floor);
@@ -262,7 +268,8 @@ export class Player {
     // --- animation de locomotion
     let loco;
     const ratio = hs / RUN;
-    if (this.gliding) loco = 'Jump_Idle';
+    if (this.mounted) loco = 'Sit_Chair_Idle';
+    else if (this.gliding) loco = 'Jump_Idle';
     else if (!this.onGround && this.airTime > 0.25) loco = 'Jump_Idle';
     else if (hs < 0.4) loco = this.combatIdle > 0 ? this.cls.weapons.idle === 'Idle' ? '2H_Melee_Idle' : this.cls.weapons.idle : this.cls.weapons.idle;
     else if (this.walkToggle || hs < 3.6) loco = 'Walking_A';
@@ -270,7 +277,9 @@ export class Player {
     let ts = 1;
     if (loco === 'Walking_A') ts = clamp(hs / 2.9, 0.5, 1.6);
     else if (loco.startsWith('Running')) ts = clamp(hs / (loco === 'Running_B' ? 9 : 6.6), 0.6, 1.6);
+    if (this.mounted) ts = 1;
     if (!this.dodge) this.char.setLocomotion(loco, ts);
+    this.char.legPose = this.mounted ? RIDE : null;
     this.combatIdle = Math.max(0, (this.combatIdle || 0) - dt);
     this.state = loco;
 

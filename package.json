@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build",
+    "build": "node tools/bake-terrain.mjs && vite build",
     "preview": "vite preview --host",
-    "build:artifact": "vite build && node tools/make-artifact.mjs",
+    "build:artifact": "npm run build && node tools/make-artifact.mjs",
     "relay": "node server/relay.mjs",
     "build:apk": "node tools/build-apk.mjs"
   },

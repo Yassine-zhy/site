@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Terrain } from './Terrain.js';
+import { Terrain, parseBakedTerrain } from './Terrain.js';
 import { Sky } from './Sky.js';
 import { Clouds } from './Clouds.js';
 import { Water } from './Water.js';
@@ -12,6 +12,8 @@ import { Colliders } from './Colliders.js';
 import { EnvLight, updateRim } from '../engine/ModelLook.js';
 import { LightPool } from './Lights.js';
 import { Ambient } from '../fx/Ambient.js';
+import { Updrafts } from './Updrafts.js';
+import { UPDRAFTS } from '../config.js';
 
 // Le monde d'Aetheria : îles, ciel, eau, végétation, village.
 export class World {
@@ -25,18 +27,28 @@ export class World {
   async init(onStep) {
     const { renderer, assets, quality } = this;
     const yieldFrame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
-    const step = async (s) => { onStep?.(s); await yieldFrame(); };
+    const perf = new URLSearchParams(location.search).has('perf');
+    let tPrev = performance.now(), sPrev = 'début';
+    const step = async (s) => {
+      if (perf) { const t = performance.now(); console.log(`[perf] ${sPrev} : ${Math.round(t - tPrev)} ms`); tPrev = t; sPrev = s; }
+      onStep?.(s); await yieldFrame();
+    };
+    this.perfDone = () => { if (perf) console.log(`[perf] ${sPrev} : ${Math.round(performance.now() - tPrev)} ms`); };
     await step('Façonnage des îles flottantes…');
-    this.terrain = new Terrain();
+    const baked = assets.bakedTerrain ? parseBakedTerrain(assets.bakedTerrain) : null;
+    this.terrain = new Terrain(baked);
+    assets.bakedTerrain = null;
+    for (const u of UPDRAFTS) Updrafts.anchor(u, this.terrain); // avant la végétation et les quêtes
     this.colliders = new Colliders();
     await step('Cartographie de la Brume…');
-    this.maps = new Maps(this.terrain, quality.grass > 20000 ? 384 : 256);
+    this.maps = new Maps(this.terrain, quality.grass > 20000 ? 384 : quality.grass > 10000 ? 256 : 192);
 
     await step('Élévation de l’archipel…');
     this.terrainMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: false, roughness: 0.95, metalness: 0 });
     applyCorruption(this.terrainMat, this.maps, 1);
     this.underMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1, metalness: 0 });
     this.islandMeshes = [];
+    this.farCull = [];
     for (const isl of this.terrain.islands) this.addIslandMeshes(isl);
 
     await step('Le ciel s’éveille…');
@@ -61,7 +73,11 @@ export class World {
     this.village = new Village(this.scene, assets, this.terrain, this.colliders, this.maps);
     await step('Les campements s’allument…');
     this.outposts = new Outposts(this.scene, assets, this.terrain, this.colliders);
+    // flammes, lumières et pales restés hors fusion : masqués au loin
+    this.cullFar(this.village.group, 1, true);
+    this.cullFar(this.outposts.group, 1, true);
     this.elapsed = 0;
+    this.perfDone();
     if (new URLSearchParams(location.search).get('colliders')) this.debugColliders();
     return this;
   }
@@ -90,11 +106,13 @@ export class World {
   }
 
   addIslandMeshes(isl) {
-    for (const g of isl.chunkGeometries()) {
-      const top = new THREE.Mesh(g, this.terrainMat);
+    this.terrainChunks = this.terrainChunks || [];
+    for (const ch of isl.chunkGeometries()) {
+      const top = new THREE.Mesh(ch.lods[0], this.terrainMat);
       top.receiveShadow = true; top.castShadow = true;
       this.scene.add(top);
       this.islandMeshes.push(top);
+      this.terrainChunks.push({ mesh: top, lods: ch.lods, c: ch.sphere.center, r: ch.sphere.radius, lod: 0 });
     }
     const under = new THREE.Mesh(isl.underGeometry, this.underMat);
     under.receiveShadow = false; under.castShadow = false;
@@ -111,9 +129,39 @@ export class World {
     this.lightPool.setSize(q.lights ?? 6);
   }
 
+  // Niveau de détail du relief et visibilité des décors lointains, selon la distance à la caméra.
+  updateLod(camera) {
+    const cp = camera.position;
+    const q = this.quality || {};
+    const near = q.terrainNear ?? 180, mid = q.terrainMid ?? 420;
+    for (const ch of this.terrainChunks || []) {
+      const d = Math.max(0, Math.hypot(ch.c.x - cp.x, ch.c.z - cp.z) - ch.r);
+      const lod = d < near ? 0 : d < mid ? 1 : 2;
+      if (lod !== ch.lod) { ch.lod = lod; ch.mesh.geometry = ch.lods[lod]; ch.mesh.castShadow = lod === 0; }
+    }
+    const far = q.decorView ?? 650;
+    for (const m of this.scene.userData.staticMeshes || []) {
+      const s = m.geometry.boundingSphere;
+      m.visible = Math.hypot(s.center.x - cp.x, s.center.z - cp.z) - s.radius < far;
+    }
+    // objets inscrits pour disparaître au loin : [objet, facteur de la distance des décors]
+    for (const [o, k] of this.farCull) {
+      const wp = o.userData.cullPos || o.position;
+      o.visible = Math.hypot(wp.x - cp.x, wp.z - cp.z) < far * k;
+    }
+  }
+
+  // inscrit un objet (ou ses enfants) pour qu'il soit masqué au-delà de k × distance des décors
+  cullFar(o, k = 1, children = false) {
+    if (children) { o.updateMatrixWorld(true); for (const c of [...o.children]) { c.userData.cullPos = c.getWorldPosition(new THREE.Vector3()); this.farCull.push([c, k]); } return; }
+    this.farCull.push([o, k]);
+  }
+
   update(dt, focus, camera, pushers) {
     this.elapsed += dt;
     const e = this.elapsed;
+    this.lodT = (this.lodT || 0) - dt;
+    if (camera && this.lodT <= 0) { this.lodT = 0.25; this.updateLod(camera); }
     const st = this.sky.update(dt, focus, e);
     this.env.update(dt);
     updateRim(this.sky);

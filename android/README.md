@@ -5,9 +5,9 @@ Le jeu (HTML/JS/WebGL) est embarqué tel quel dans un APK : une activité plein 
 hors-ligne depuis `https://appassets.androidplatform.net/` (modules, `fetch()` des modèles 3D
 et sauvegardes `localStorage` fonctionnent comme dans un navigateur).
 
-- **Installer** : copier `release/Aetheria.apk` sur le téléphone, l'ouvrir et autoriser
+- **Installer** : copier `release/Aetheria.apk` (version 1.1) sur le téléphone, l'ouvrir et autoriser
   « Installer des applis inconnues » pour l'appli qui l'ouvre (Chrome, Fichiers…). Android 7+.
-- **Construire** : `npm run build:apk` (Node + Java 11+, aucun SDK Android). Les outils (aapt2,
+- **Construire** : `npm run build:apk` (Node + Java 11+, aucun SDK Android). Le relief des îles est pré-calculé pendant le build (`public/assets/terrain.bin`), le téléphone n'a plus qu'à le lire. Les outils (aapt2,
   dx, apksig) sont téléchargés depuis Maven Central dans `android/.tools`.
 - **Mettre à jour** : augmenter `versionCode` dans `app.json` et garder la même clé
   (`keystore/aetheria.p12`) ; sinon Android refuse la mise à jour et il faudrait désinstaller,

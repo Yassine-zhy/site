@@ -71,7 +71,8 @@ export class Windows {
     const g = this.game, hero = g.hero;
     const cls = CLASSES[hero.classId];
     let sel = null;
-    const detail = h('div', { class: 'detail' }, h('div', { class: 'istats' }, 'Choisissez un objet pour le comparer.'));
+    const detail = h('div', { class: 'detail' });
+    detail.hidden = true;
     // valeurs effectives : un objet de niveau supérieur est ramené au niveau du héros
     const statLine = (it) => { const f = levelFactor(it.level, hero.level); return Object.entries(it.stats).map(([k, v]) => `${STAT_LABELS[k] || k} +${k === 'leech' ? v : Math.round(v * f)}`).join(' · '); };
     const icon = (it) => {
@@ -79,19 +80,38 @@ export class Windows {
       if (it?.model) { const url = g.icons.item(it.model); if (url) ic.appendChild(h('img', { src: url, alt: '' })); }
       return ic;
     };
+    // équiper : bouton, double-touche, toucher l'emplacement, ou glisser l'objet dessus (souris)
+    const equipNow = (it) => {
+      if (!it || !hero.inventory.includes(it)) return;
+      if (!hero.equipItem(it.id)) return;
+      g.audio?.play('pickup'); g.vibrate?.(20);
+      g.ui.toast(`Équipé : <b class="r${it.rarity}">${it.name}</b>`);
+      g.save?.soon(); this.refresh();
+    };
+    const select = (it, el) => {
+      grid.querySelectorAll('.sel').forEach((x) => x.classList.remove('sel'));
+      equipEl.querySelectorAll('.target').forEach((x) => x.classList.remove('target'));
+      sel = it;
+      if (el) el.classList.add('sel');
+      if (it) equipEl.querySelector(`[data-slot="${it.slot}"]`)?.classList.add('target');
+      showDetail(it, false);
+    };
     const showDetail = (it, equipped) => {
       detail.innerHTML = '';
+      detail.hidden = !it;
       if (!it) return;
       const cur = hero.equip[it.slot];
       const diff = equipped ? null : itemPower(it) * levelFactor(it.level, hero.level) - itemPower(cur) * levelFactor(cur?.level, hero.level);
       detail.append(
-        h('div', { class: 'iname r' + it.rarity }, it.name),
-        h('div', { class: 'istats' }, `${RARITY[it.rarity].name} · ${SLOT_NAMES[it.slot]} · niveau ${it.level}`),
-        h('div', { class: 'istats', style: { marginTop: '4px' } }, statLine(it)),
-        it.level > hero.level ? h('div', { class: 'istats', style: { color: 'var(--muted)' } }, `Ramené à votre niveau (${hero.level}) : il gagnera en puissance avec vous.`) : null,
-        diff !== null ? h('div', { class: 'istats', style: { color: diff >= 0 ? 'var(--good)' : 'var(--bad)', marginTop: '4px' } }, diff >= 0 ? `▲ +${Math.round(diff)} puissance par rapport à l'équipement actuel` : `▼ ${Math.round(diff)} puissance`) : null,
+        h('div', { class: 'dhead' }, icon(it), h('div', {},
+          h('div', { class: 'iname r' + it.rarity }, it.name),
+          h('div', { class: 'istats' }, `${RARITY[it.rarity].name} · ${SLOT_NAMES[it.slot]} · niveau ${it.level}`),
+          h('div', { class: 'istats' }, statLine(it)),
+          it.level > hero.level ? h('div', { class: 'istats', style: { color: 'var(--muted)' } }, `Ramené à votre niveau (${hero.level}) : il gagnera en puissance avec vous.`) : null,
+          diff !== null ? h('div', { class: 'istats', style: { color: diff >= 0 ? 'var(--good)' : 'var(--bad)' } }, diff >= 0 ? `▲ +${Math.round(diff)} puissance par rapport à l'équipement actuel` : `▼ ${Math.round(diff)} puissance`) : null),
+          h('button', { class: 'xbtn', title: 'Fermer', onclick: () => select(null) }, '×')),
         equipped ? null : h('div', { class: 'row' },
-          h('button', { class: 'btn small', onclick: () => { hero.equipItem(it.id); g.audio?.play('pickup'); g.save?.soon(); this.refresh(); } }, 'Équiper'),
+          h('button', { class: 'btn small', id: 'btn-equip', onclick: () => equipNow(it) }, 'Équiper'),
           h('button', { class: 'btn small ghost', onclick: () => { const v = hero.sellItem(it.id); g.ui.toast(`Vendu pour <b>${v} or</b>`); g.audio?.play('coin'); g.save?.soon(); this.refresh(); } }, `Vendre (${Math.round(it.value * 0.5)} or)`)),
       );
     };
@@ -105,12 +125,25 @@ export class Windows {
           h('button', { class: 'btn small', disabled: !n, onclick: () => g.chests.roll(tier, { fromStock: true }) }, 'Ouvrir'),
           h('button', { class: 'btn small ghost', onclick: () => { if (g.chests.buy(tier)) this.refresh(); } }, `Acheter · ${price} or`));
       }));
-    const equip = h('div', { class: 'equip' },
+    const upgrades = hero.inventory.filter((it) => hero.isUpgrade(it));
+    const equipEl = h('div', { class: 'eslots' },
       ...['weapon', 'armor', 'relic'].map((s) => {
         const it = hero.equip[s];
-        const el = h('div', { class: 'eslot interactive', onclick: () => it && showDetail(it, true) }, icon(it), h('div', {}, h('div', { class: 'lab' }, SLOT_NAMES[s]), it ? h('div', { class: 'iname r' + it.rarity }, it.name) : h('div', { class: 'istats' }, '— vide —'), it ? h('div', { class: 'istats' }, statLine(it)) : null));
-        return el;
-      }),
+        const better = upgrades.some((u) => u.slot === s);
+        return h('div', { class: 'eslot interactive' + (better ? ' up' : ''), 'data-slot': s, onclick: () => { if (sel && sel.slot === s) equipNow(sel); else if (it) showDetail(it, true); } },
+          icon(it), h('div', {}, h('div', { class: 'lab' }, SLOT_NAMES[s]), it ? h('div', { class: 'iname r' + it.rarity }, it.name) : h('div', { class: 'istats' }, '— vide —'), it ? h('div', { class: 'istats' }, statLine(it)) : null));
+      }));
+    const best = () => {
+      let n = 0;
+      for (const slot of ['weapon', 'armor', 'relic']) {
+        const pick = hero.inventory.filter((it) => it.slot === slot && hero.isUpgrade(it)).sort((a, b) => itemPower(b) * levelFactor(b.level, hero.level) - itemPower(a) * levelFactor(a.level, hero.level))[0];
+        if (pick && hero.equipItem(pick.id)) n++;
+      }
+      if (n) { g.audio?.play('pickup'); g.ui.toast(`${n} objet${n > 1 ? 's' : ''} équipé${n > 1 ? 's' : ''}`); g.save?.soon(); this.refresh(); }
+    };
+    const equip = h('div', { class: 'equip' },
+      equipEl,
+      upgrades.length ? h('button', { class: 'btn small', id: 'btn-best', onclick: best }, '▲ Équiper le meilleur') : null,
       chests,
       h('div', { class: 'charstats' },
         h('span', {}, 'Niveau'), h('span', {}, `${hero.level} (${hero.xp}/${xpForLevel(hero.level)} xp)`),
@@ -127,13 +160,45 @@ export class Windows {
     for (let i = 0; i < 30; i++) {
       const it = hero.inventory[i];
       if (!it) { grid.appendChild(h('div', { class: 'item' }, h('div', { class: 'ic' }))); continue; }
-      const el = h('div', { class: 'item interactive' + (hero.isUpgrade(it) ? ' up' : ''), title: it.name, onclick: () => { grid.querySelectorAll('.sel').forEach((x) => x.classList.remove('sel')); el.classList.add('sel'); sel = it; showDetail(it, false); } }, icon(it));
+      let last = 0;
+      const el = h('div', { class: 'item interactive' + (hero.isUpgrade(it) ? ' up' : ''), title: it.name, onclick: () => {
+        const now = performance.now();
+        if (sel === it && now - last < 420) return equipNow(it);
+        last = now;
+        select(it, el);
+      } }, icon(it));
+      el.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse' && e.button === 0) this.dragItem(e, it, el, equipEl, equipNow); });
       grid.appendChild(el);
     }
     const potions = h('div', { class: 'row', style: { display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' } },
       h('button', { class: 'btn small ghost', onclick: () => { if ((hero.potions.mp || 0) > 0 && hero.mp < hero.stats.mp) { hero.potions.mp--; hero.mp = Math.min(hero.stats.mp, hero.mp + hero.stats.mp * 0.5); g.audio?.play('potion'); this.refresh(); } } }, `Boire un élixir d’éther (${hero.potions.mp || 0})`));
-    void sel;
-    return this.frame(`${hero.name} — ${cls.name}`, h('div', { class: 'inv' }, equip, h('div', {}, h('div', { class: 'lab sc', style: { color: 'var(--muted)', fontSize: '12px', marginBottom: '6px' } }, `sac · ${hero.inventory.length}/30`), grid, detail, potions)));
+    return this.frame(`${hero.name} — ${cls.name}`, h('div', { class: 'inv' }, equip, h('div', {}, h('div', { class: 'lab sc', style: { color: 'var(--muted)', fontSize: '12px', marginBottom: '6px' } }, `sac · ${hero.inventory.length}/30 · touchez un objet, puis « Équiper »`), grid, potions)), detail);
+  }
+
+  // glisser un objet du sac sur l'emplacement d'équipement (souris)
+  dragItem(e, it, el, equipEl, equipNow) {
+    const x0 = e.clientX, y0 = e.clientY;
+    let ghost = null;
+    const slotAt = (x, y) => document.elementFromPoint(x, y)?.closest?.('.eslot[data-slot]');
+    const move = (ev) => {
+      if (!ghost && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+      if (!ghost) {
+        ghost = el.querySelector('.ic').cloneNode(true);
+        ghost.className += ' drag-ghost';
+        document.body.appendChild(ghost);
+        equipEl.querySelector(`[data-slot="${it.slot}"]`)?.classList.add('target');
+      }
+      ghost.style.left = ev.clientX + 'px'; ghost.style.top = ev.clientY + 'px';
+      equipEl.querySelectorAll('.eslot').forEach((x) => x.classList.toggle('hover', x === slotAt(ev.clientX, ev.clientY)));
+    };
+    const up = (ev) => {
+      removeEventListener('pointermove', move); removeEventListener('pointerup', up);
+      if (!ghost) return;
+      ghost.remove();
+      equipEl.querySelectorAll('.hover').forEach((x) => x.classList.remove('hover'));
+      if (slotAt(ev.clientX, ev.clientY)?.dataset.slot === it.slot) equipNow(it);
+    };
+    addEventListener('pointermove', move); addEventListener('pointerup', up);
   }
 
   // ------------------------------------------------------------ carte
@@ -154,13 +219,15 @@ export class Windows {
       h('div', { class: 'inv' },
         h('div', {},
           h('h4', { class: 'sc', style: { color: 'var(--gold)', margin: '0 0 6px' } }, 'commandes'),
-          row(g.input.isTouch ? 'joystick' : 'ZQSD / WASD', 'Se déplacer'), row('Souris', 'Regarder (cliquez pour capturer la souris)'), row('Clic gauche', 'Attaquer'),
+          row(g.input.isTouch ? 'joystick' : 'ZQSD / WASD', 'Se déplacer'), row('Souris', 'Regarder (cliquez pour capturer la souris)'), row('Automatique', 'Attaque de base (clic gauche pour frapper vous-même)'),
           row('1 · 2 · 3 · 4', 'Compétences'), row('Clic droit maintenu / X', 'Tracer une rune'), row('Espace', 'Sauter · 2e appui en l’air : paravoile'),
-          row('Maj', 'Sprint'), row('C', 'Esquive'), row('R', 'Élixir de vie'), row('E', 'Parler · interagir'), row('Entrée', 'Discuter'), row('T', 'Laisser un écho'),
+          row('N', 'Monture d’éther (hors combat)'), row('Maj', 'Sprint · galop'), row('C', 'Esquive'), row('R', 'Élixir de vie'), row('E', 'Parler · interagir'), row('Entrée', 'Discuter'), row('T', 'Laisser un écho'),
           row('G', 'Saluer'), row('Tab', 'Verrouiller une cible · suivante'), row('M · I · J · K', 'Carte · Sac · Quêtes · Classement'), row('P', 'Multijoueur · Expéditions'), row('Échap', 'Options'),
           h('h4', { class: 'sc', style: { color: 'var(--gold)', margin: '12px 0 6px' } }, 'bon à savoir'),
           h('div', { class: 'istats', style: { lineHeight: '1.5' } },
             'Le losange doré à l’écran mène à l’objectif de votre quête. Touchez un objectif dans le journal pour un tutoriel. ',
+            'Votre héros frappe ou tire tout seul sur l’ennemi le plus proche : concentrez-vous sur les compétences et les runes. ',
+            'L’archipel est immense : invoquez votre monture d’éther pour galoper, et sautez de son dos pour ouvrir la paravoile. ',
             'Les pierres de passage (obélisques bleus) s’éveillent avec E et permettent de voyager. ',
             'Les fleurs, mousses, plumes et cristaux lumineux se récoltent en marchant dessus. ',
             'Expéditions : jusqu’à 4 amis avec un code de groupe, contre les boss de la Citadelle des Ombres.'),
@@ -222,7 +289,7 @@ export class Windows {
       sec('Combat'),
       h('div', { class: 'istats' }, touch ? 'Verrouiller une cible : bouton « cible » (appui long pour libérer) ou touchez l’ennemi.' : 'Verrouiller une cible : touche Tab (appuyez encore pour passer à la suivante).'),
       check('opt-relock', 'Verrouiller automatiquement l’ennemi suivant', s.autoRelock !== false, (v) => { s.autoRelock = v; }),
-      check('opt-autoatk', 'Attaque automatique de la cible verrouillée', !!s.autoAttack, (v) => { s.autoAttack = v; }),
+      check('opt-autoatk', 'Attaque de base automatique (le héros frappe seul l’ennemi le plus proche)', s.autoBasic !== false, (v) => { s.autoBasic = v; }),
       check('opt-dmg', 'Chiffres de dégâts', s.dmgNumbers !== false, (v) => { s.dmgNumbers = v; apply(); }),
       check('opt-plates', 'Noms et vie au-dessus des ennemis', s.plates !== false, (v) => { s.plates = v; apply(); }),
       check('opt-autoequip', 'Équiper automatiquement les meilleurs objets', !!s.autoEquip, (v) => { s.autoEquip = v; }),

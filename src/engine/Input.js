@@ -5,7 +5,7 @@ const BIND = {
   jump: ['Space'], sprint: ['ShiftLeft', 'ShiftRight'], interact: ['KeyE', 'KeyF'], dodge: ['KeyC', 'ControlLeft'],
   ability1: ['Digit1', 'Numpad1'], ability2: ['Digit2', 'Numpad2'], ability3: ['Digit3', 'Numpad3'], ability4: ['Digit4', 'Numpad4'],
   potion: ['KeyR'], rune: ['KeyX'], map: ['KeyM'], inventory: ['KeyI', 'KeyB'], quests: ['KeyJ', 'KeyL'], chat: ['Enter'], escape: ['Escape'],
-  emote: ['KeyG'], echo: ['KeyT'], help: ['KeyH', 'F1'], leaderboard: ['KeyK'], walk: ['KeyV'],
+  emote: ['KeyG'], echo: ['KeyT'], help: ['KeyH', 'F1'], leaderboard: ['KeyK'], walk: ['KeyV'], mount: ['KeyN'],
 };
 
 export class Input {
@@ -128,4 +128,4 @@ export class Input {
   }
 }
 
-export const KEY_LABELS = { forward: 'Z/W', back: 'S', left: 'Q/A', right: 'D', jump: 'Espace', sprint: 'Maj', interact: 'E', dodge: 'C', potion: 'R', rune: 'Clic droit / X', map: 'M', inventory: 'I', quests: 'J', chat: 'Entrée', emote: 'G', echo: 'T', help: 'H', leaderboard: 'K' };
+export const KEY_LABELS = { forward: 'Z/W', back: 'S', left: 'Q/A', right: 'D', jump: 'Espace', sprint: 'Maj', interact: 'E', dodge: 'C', potion: 'R', rune: 'Clic droit / X', map: 'M', inventory: 'I', quests: 'J', chat: 'Entrée', emote: 'G', echo: 'T', help: 'H', leaderboard: 'K', mount: 'N' };

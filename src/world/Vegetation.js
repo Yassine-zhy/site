@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 import { mulberry32, smoothstep } from '../engine/math.js';
 import { pathDistance } from './Terrain.js';
-import { VILLAGE, LAKE, FOREST, MOUNTAIN, RUINS, HILLS, BEACONS, ISLETS, UPDRAFTS, WAYSTONES, WORLD_BOSSES } from '../config.js';
+import { VILLAGE, LAKE, FOREST, MOUNTAIN, RUINS, HILLS, HAMLET, BEACONS, ISLETS, UPDRAFTS, WAYSTONES, WORLD_BOSSES, MAIN_ISLAND, W } from '../config.js';
+
+// taille des tuiles de végétation (une tuile hors de vue n'est pas parcourue)
+const TILE = 300;
 import { applyCorruption, CORR_UV_GLSL } from './Maps.js';
 
 // Arbres et rochers instanciés (modèles KayKit), avec balancement au vent.
@@ -14,7 +17,7 @@ export class Vegetation {
     const add = (name, x, z, scale, rotY, opts = {}) => {
       const y = opts.y ?? terrain.heightAt(x, z);
       if (y === null) return false;
-      const key = `${opts.region || 'main'}|${opts.look || 'base'}|${name}`;
+      const key = `${opts.region || 'main'}|${opts.look || 'base'}|${name}|${Math.floor(x / TILE)},${Math.floor(z / TILE)}`;
       if (!buckets.has(key)) buckets.set(key, []);
       buckets.get(key).push({ x, y: y - (opts.sink ?? 0.15), z, s: scale, r: rotY, sy: opts.sy ?? 1 });
       if (opts.col) {
@@ -30,6 +33,7 @@ export class Vegetation {
     const blocked = (x, z) => {
       const dv = Math.hypot(x - VILLAGE.x, z - VILLAGE.z);
       if (dv < VILLAGE.radius + 6) return true;
+      if (Math.hypot(x - HAMLET.x, z - HAMLET.z) < HAMLET.radius + 10) return true;
       if (pathDistance(x, z) < 4.5) return true;
       if (Math.hypot(x - LAKE.x, z - LAKE.z) < LAKE.radius * 1.35) return true;
       for (const b of BEACONS) if (Math.hypot(x - b.x, z - b.z) < 12) return true;
@@ -41,57 +45,75 @@ export class Vegetation {
     const singles = ['tree_single_A', 'tree_single_B'];
     const rocks = ['rock_single_A', 'rock_single_B', 'rock_single_C', 'rock_single_D', 'rock_single_E'];
     const clusters = ['trees_A_large', 'trees_A_medium', 'trees_B_large', 'trees_B_medium', 'trees_A_small', 'trees_B_small'];
+    const MR = MAIN_ISLAND.radius;
     // Bois-Murmure : forêt dense
-    const nForest = Math.round(340 * density);
+    const nForest = Math.round(1400 * density);
     for (let i = 0, tries = 0; i < nForest && tries < nForest * 6; tries++) {
       const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * FOREST.radius * 1.05;
       const x = FOREST.x + Math.cos(a) * r, z = FOREST.z + Math.sin(a) * r;
       if (blocked(x, z) || !terrain.main.isInside(x, z)) continue;
       if (terrain.slopeAt(x, z) > 0.75) continue;
+      // clairières
+      if (Math.sin(x * 0.031) * Math.cos(z * 0.027) > 0.55) continue;
       const cl = rng() < 0.3;
       const s = cl ? 6 + rng() * 2.5 : 6.5 + rng() * 3.5;
       if (add(cl ? rng.pick(clusters) : rng.pick(singles), x, z, s, rng() * Math.PI * 2, { col: 'tree' })) i++;
     }
-    // arbres épars sur toute l'île
-    const nSparse = Math.round(260 * density);
+    // arbres épars et bosquets sur toute l'île
+    const nSparse = Math.round(1100 * density);
     for (let i = 0, tries = 0; i < nSparse && tries < nSparse * 8; tries++) {
-      const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * 205;
+      const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * MR * 0.96;
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
       if (blocked(x, z) || !terrain.main.isInside(x, z)) continue;
       const h = terrain.heightAt(x, z);
-      if (h === null || h > 62 || terrain.slopeAt(x, z) > 0.7) continue;
+      if (h === null || h > 80 || terrain.slopeAt(x, z) > 0.7) continue;
+      const grove = Math.sin(x * 0.017 + 1.3) * Math.cos(z * 0.021 - 0.7) * 0.5 + 0.5;
       const near = Math.hypot(x - HILLS.x, z - HILLS.z) < HILLS.radius ? 0.5 : 1;
-      if (rng() > near) continue;
-      const cl = rng() < 0.18;
+      if (rng() > near * (0.2 + grove * 0.8)) continue;
+      const cl = rng() < 0.22;
       const s = cl ? 5.5 + rng() * 2 : 6 + rng() * 3.5;
       if (add(cl ? rng.pick(clusters) : rng.pick(singles), x, z, s, rng() * Math.PI * 2, { col: 'tree' })) i++;
     }
-    // îlots
+    // îlots (biomes propres)
     for (const def of ISLETS) {
-      const n = Math.round(def.radius * 0.45 * density);
+      const n = Math.round(def.radius * 0.5 * density);
+      const look = def.biome === 'snowy' ? 'snow' : def.biome === 'dry' ? 'autumn' : def.biome === 'lush' ? 'jungle' : 'base';
       for (let i = 0; i < n; i++) {
-        const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * def.radius * 0.8;
+        const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * def.radius * 0.85;
         const x = def.x + Math.cos(a) * r, z = def.z + Math.sin(a) * r;
-        if (BEACONS.some((b) => Math.hypot(x - b.x, z - b.z) < 10)) continue;
-        if (Math.hypot(x - def.x, z - def.z) < 6) continue;
-        add(rng.pick(singles), x, z, 5.5 + rng() * 3, rng() * Math.PI * 2, { col: 'tree' });
+        if (BEACONS.some((b) => Math.hypot(x - b.x, z - b.z) < 12)) continue;
+        if (UPDRAFTS.some((u) => Math.hypot(x - u.x, z - u.z) < u.radius + 4)) continue;
+        if (Math.hypot(x - def.x, z - def.z) < 9) continue;
+        if (def.biome === 'dusk') { add(rng.pick(['hw_tree_dead_large', 'hw_tree_dead_medium', 'hw_tree_pine_orange_medium']), x, z, 1.7 + rng() * 0.8, rng() * Math.PI * 2, { col: 'tree', look: 'hw', region: def.id }); continue; }
+        const cl = rng() < 0.25;
+        add(cl ? rng.pick(clusters) : rng.pick(singles), x, z, (cl ? 5.5 : 6) + rng() * 3, rng() * Math.PI * 2, { col: 'tree', look, region: def.id });
+      }
+      for (let i = 0; i < Math.round(def.radius * 0.18); i++) {
+        const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * def.radius * 0.85;
+        const x = def.x + Math.cos(a) * r, z = def.z + Math.sin(a) * r;
+        const s = 6 + rng() * 9;
+        add(rng.pick(rocks), x, z, s, rng() * Math.PI * 2, { col: 'rock', sink: s * 0.03, sy: 0.8 + rng() * 0.7, region: def.id, look: def.biome === 'snowy' ? 'snow' : def.biome === 'dusk' ? 'dark' : def.biome === 'dry' ? 'red' : 'base' });
       }
     }
     // rochers
-    const nRocks = Math.round(320 * density);
+    const nRocks = Math.round(1000 * density);
     for (let i = 0, tries = 0; i < nRocks && tries < nRocks * 5; tries++) {
-      const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * 212;
+      const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * MR * 0.98;
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (!terrain.main.isInside(x, z)) continue;
       if (Math.hypot(x - VILLAGE.x, z - VILLAGE.z) < VILLAGE.radius - 4) continue;
+      if (Math.hypot(x - HAMLET.x, z - HAMLET.z) < HAMLET.radius + 4) continue;
       if (pathDistance(x, z) < 3) continue;
+      if (UPDRAFTS.some((u) => Math.hypot(x - u.x, z - u.z) < u.radius + 4)) continue;
       const mt = Math.hypot(x - MOUNTAIN.x, z - MOUNTAIN.z) < MOUNTAIN.radius;
-      const big = rng() < (mt ? 0.45 : 0.15);
-      const s = big ? 14 + rng() * 16 : 6 + rng() * 8;
-      add(rng.pick(rocks), x, z, s, rng() * Math.PI * 2, { col: 'rock', sink: s * 0.03, sy: 0.8 + rng() * 0.8 });
+      const cliffs = Math.hypot(x - W(-175), z - W(-120)) < W(48);
+      const big = rng() < (mt || cliffs ? 0.5 : 0.15);
+      const s = big ? 14 + rng() * 18 : 6 + rng() * 8;
+      add(rng.pick(rocks), x, z, s, rng() * Math.PI * 2, { col: 'rock', sink: s * 0.03, sy: 0.8 + rng() * (cliffs ? 1.6 : 0.8) });
       i++;
     }
     // plantes du lac
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 90; i++) {
       const a = rng() * Math.PI * 2, r = LAKE.radius * (0.35 + rng() * 0.75);
       const x = LAKE.x + Math.cos(a) * r, z = LAKE.z + Math.sin(a) * r;
       const h = terrain.heightAt(x, z);
@@ -100,46 +122,91 @@ export class Vegetation {
       else add(rng.pick(['waterplant_A', 'waterplant_B', 'waterplant_C']), x, z, 8 + rng() * 5, rng() * 6.28);
     }
 
-    // grandes îles : sapins enneigés au nord, arbres d'automne et rochers rouges à l'est
+    // grandes îles : sapins enneigés au nord, arbres d'automne à l'est, jungle au sud, landes mortes à l'ouest
     for (const isl of terrain.big) {
-      const def = isl.def, snow = def.biome === 'snow', region = def.id;
+      const def = isl.def, biome = def.biome, region = def.id;
+      const snow = biome === 'snow', jungle = biome === 'jungle', haunted = biome === 'haunted';
       const avoid = (x, z) => {
         if (pathDistance(x, z) < 4.5) return true;
-        if (def.camp && Math.hypot(x - def.camp.x, z - def.camp.z) < def.camp.radius + 8) return true;
-        if (def.lake && Math.hypot(x - def.lake.x, z - def.lake.z) < def.lake.radius * 1.35) return true;
-        if (def.sanctuary && Math.hypot(x - def.sanctuary.x, z - def.sanctuary.z) < def.sanctuary.radius + 4) return true;
+        if (def.camp && Math.hypot(x - def.camp.x, z - def.camp.z) < def.camp.radius + 10) return true;
+        if (def.lake && Math.hypot(x - def.lake.x, z - def.lake.z) < def.lake.radius * (haunted ? 1.05 : 1.35)) return true;
+        for (const k of ['sanctuary', 'temple', 'cemetery']) if (def[k] && Math.hypot(x - def[k].x, z - def[k].z) < def[k].radius + 6) return true;
+        if (def.crypt && Math.hypot(x - def.crypt.x, z - def.crypt.z) < def.crypt.radius * 1.6) return true;
         if (def.cirque && Math.hypot(x - def.cirque.x, z - def.cirque.z) < def.cirque.radius * 1.2) return true;
-        if (def.mine && Math.hypot(x - def.mine.x, z - def.mine.z) < 22) return true;
+        if (def.mine && Math.hypot(x - def.mine.x, z - def.mine.z) < 30) return true;
         for (const b of BEACONS) if (Math.hypot(x - b.x, z - b.z) < 13) return true;
         for (const w of WAYSTONES) if (Math.hypot(x - w.x, z - w.z) < 7) return true;
         for (const u of UPDRAFTS) if (Math.hypot(x - u.x, z - u.z) < u.radius + 4) return true;
-        for (const wb of WORLD_BOSSES) if (Math.hypot(x - wb.x, z - wb.z) < 26) return true;
+        for (const wb of WORLD_BOSSES) if (Math.hypot(x - wb.x, z - wb.z) < 28) return true;
         return false;
       };
-      const nT = Math.round((snow ? 520 : 260) * density);
+      const nT = Math.round((snow ? 2000 : jungle ? 2600 : haunted ? 1500 : 1000) * density);
       for (let i = 0, tries = 0; i < nT && tries < nT * 6; tries++) {
         const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * def.radius;
         const x = def.x + Math.cos(a) * r, z = def.z + Math.sin(a) * r;
         if (!isl.isInside(x, z) || avoid(x, z)) continue;
         const h = isl.heightAt(x, z);
-        if (h === null || terrain.slopeAt(x, z) > 0.62 || (snow && h > 118)) continue;
+        if (h === null || terrain.slopeAt(x, z) > 0.62 || (snow && h > 150)) continue;
         // bosquets : le bruit regroupe les arbres en forêts
-        const grove = Math.sin(x * 0.021 + def.seed) * Math.cos(z * 0.017 - def.seed) * 0.5 + 0.5;
-        if (rng() > (snow ? 0.25 + grove * 0.75 : 0.15 + grove * 0.6)) continue;
-        const cl = rng() < (snow ? 0.3 : 0.12);
-        const s = cl ? 5.5 + rng() * 2.5 : 6 + rng() * 3.5;
-        const name = snow ? (cl ? rng.pick(['trees_A_large', 'trees_A_medium', 'trees_A_small']) : 'tree_single_A') : (cl ? rng.pick(['trees_B_medium', 'trees_B_small']) : 'tree_single_B');
-        if (add(name, x, z, s, rng() * Math.PI * 2, { col: 'tree', region, look: snow ? 'snow' : 'autumn' })) i++;
+        const grove = Math.sin(x * 0.011 + def.seed) * Math.cos(z * 0.009 - def.seed) * 0.5 + 0.5;
+        if (rng() > (snow ? 0.25 + grove * 0.75 : jungle ? 0.45 + grove * 0.55 : 0.15 + grove * 0.6)) continue;
+        if (haunted) {
+          const pine = grove > 0.55 && rng() < 0.6;
+          const name = pine ? rng.pick(['hw_tree_pine_orange_large', 'hw_tree_pine_yellow_large', 'hw_tree_pine_orange_medium', 'hw_tree_pine_yellow_medium'])
+            : rng.pick(['hw_tree_dead_large', 'hw_tree_dead_large', 'hw_tree_dead_medium', 'hw_tree_dead_small', 'hw_tree_dead_large_decorated']);
+          if (add(name, x, z, (pine ? 1.5 : 2.0) + rng() * 0.9, rng() * Math.PI * 2, { col: 'tree', region, look: 'hw' })) i++;
+          continue;
+        }
+        const cl = rng() < (snow ? 0.3 : jungle ? 0.45 : 0.12);
+        let s = cl ? 5.5 + rng() * 2.5 : 6 + rng() * 3.5;
+        if (jungle) s *= 1.35 + rng() * 0.6; // arbres géants de la Canopée
+        const name = snow ? (cl ? rng.pick(['trees_A_large', 'trees_A_medium', 'trees_A_small']) : 'tree_single_A')
+          : jungle ? (cl ? rng.pick(['trees_B_large', 'trees_B_large', 'trees_B_medium', 'trees_A_large']) : rng.pick(['tree_single_B', 'tree_single_B', 'tree_single_A']))
+            : (cl ? rng.pick(['trees_B_medium', 'trees_B_small']) : 'tree_single_B');
+        if (add(name, x, z, s, rng() * Math.PI * 2, { col: 'tree', region, look: snow ? 'snow' : jungle ? 'jungle' : 'autumn' })) i++;
       }
-      const nR = Math.round((snow ? 170 : 240) * density);
+      const nR = Math.round((snow ? 650 : jungle ? 500 : haunted ? 600 : 900) * density);
       for (let i = 0, tries = 0; i < nR && tries < nR * 5; tries++) {
         const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * def.radius;
         const x = def.x + Math.cos(a) * r, z = def.z + Math.sin(a) * r;
         if (!isl.isInside(x, z) || pathDistance(x, z) < 3 || avoid(x, z)) continue;
         const big = rng() < (snow ? 0.3 : 0.4);
         const s = big ? 14 + rng() * 18 : 6 + rng() * 8;
-        add(rng.pick(rocks), x, z, s, rng() * Math.PI * 2, { col: 'rock', sink: s * 0.03, sy: snow ? 0.7 + rng() * 0.6 : 0.9 + rng() * 1.2, region, look: snow ? 'snow' : 'red' });
+        add(rng.pick(rocks), x, z, s, rng() * Math.PI * 2, { col: 'rock', sink: s * 0.03, sy: snow ? 0.7 + rng() * 0.6 : 0.9 + rng() * 1.2, region, look: snow ? 'snow' : jungle ? 'moss' : haunted ? 'dark' : 'red' });
         i++;
+      }
+      // terres d'ambre : cactus
+      if (biome === 'amber') {
+        for (let i = 0, tries = 0; i < Math.round(320 * density) && tries < 3000; tries++) {
+          const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * def.radius;
+          const x = def.x + Math.cos(a) * r, z = def.z + Math.sin(a) * r;
+          if (!isl.isInside(x, z) || avoid(x, z) || terrain.slopeAt(x, z) > 0.45) continue;
+          const big = rng() < 0.55;
+          add(big ? rng.pick(['c_cactus_medium_A', 'c_cactus_medium_B']) : rng.pick(['c_cactus_small_A', 'c_cactus_small_B']), x, z, (big ? 4.5 : 4) + rng() * 2.5, rng() * Math.PI * 2, { col: big ? 'rock' : null, region, look: 'cactus', sink: 0.05 });
+          i++;
+        }
+      }
+      // landes : tombes éparses, citrouilles et ossements ; jungle : plantes d'eau
+      if (haunted) {
+        const props = [['hw_gravestone', 1.3], ['hw_grave_A', 1.2], ['hw_grave_B', 1.2], ['hw_gravemarker_A', 1.4], ['hw_gravemarker_B', 1.4], ['hw_grave_A_destroyed', 1.2], ['hw_skull', 1.1], ['hw_bone_C', 1.5], ['hw_pumpkin_orange', 1.4], ['hw_pumpkin_yellow_small', 1.6]];
+        for (let i = 0, tries = 0; i < Math.round(320 * density) && tries < 3000; tries++) {
+          const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * def.radius;
+          const x = def.x + Math.cos(a) * r, z = def.z + Math.sin(a) * r;
+          if (!isl.isInside(x, z) || avoid(x, z) || terrain.slopeAt(x, z) > 0.4) continue;
+          const [name, sc] = rng.pick(props);
+          add(name, x, z, sc * (0.9 + rng() * 0.3), rng() * Math.PI * 2, { col: /grave|stone/.test(name) ? 'rock' : null, region, look: 'hw', sink: 0.05 });
+          i++;
+        }
+      }
+      if (jungle && def.lake) {
+        for (let i = 0; i < 120; i++) {
+          const a = rng() * Math.PI * 2, r = def.lake.radius * (0.3 + rng() * 0.95);
+          const x = def.lake.x + Math.cos(a) * r, z = def.lake.z + Math.sin(a) * r;
+          const h = terrain.heightAt(x, z);
+          if (h === null) continue;
+          if (h < def.lake.level - 0.6) add(rng.pick(['waterlily_A', 'waterlily_B']), x, z, 8 + rng() * 5, rng() * 6.28, { y: def.lake.level + 0.02, sink: 0, region, look: 'jungle' });
+          else add(rng.pick(['waterplant_A', 'waterplant_B', 'waterplant_C']), x, z, 9 + rng() * 6, rng() * 6.28, { region, look: 'jungle' });
+        }
       }
     }
 
@@ -158,8 +225,13 @@ export class Vegetation {
       float lumA = dot(diffuseColor.rgb, vec3(0.3, 0.59, 0.11));
       diffuseColor.rgb = mix(diffuseColor.rgb, autumn * (0.45 + lumA * 1.5), smoothstep(-0.01, 0.07, greenness));
     }`;
-    const makeTreeMat = (mode) => {
-      const mat = baseMat.clone();
+    const JUNGLE_GLSL = `{
+      float greenness = diffuseColor.g - max(diffuseColor.r, diffuseColor.b);
+      vec3 lush = diffuseColor.rgb * vec3(0.62, 1.12, 0.7);
+      diffuseColor.rgb = mix(diffuseColor.rgb, lush, smoothstep(-0.02, 0.06, greenness));
+    }`;
+    const makeTreeMat = (mode, base = baseMat) => {
+      const mat = base.clone();
       mat.onBeforeCompile = (shader) => {
         shader.uniforms.uTime = tu.uTime; shader.uniforms.uWind = tu.uWind; shader.uniforms.uPlayerPos = tu.uPlayerPos;
         shader.uniforms.uCorruption = { value: maps.corruptionTex };
@@ -196,7 +268,7 @@ export class Vegetation {
               if (fade * 0.85 > bayer4(gl_FragCoord.xy)) discard;
             }`)
           .replace('#include <color_fragment>', `#include <color_fragment>
-            ${mode === 'snow' ? SNOW_GLSL : mode === 'autumn' ? AUTUMN_GLSL : ''}
+            ${mode === 'snow' ? SNOW_GLSL : mode === 'autumn' ? AUTUMN_GLSL : mode === 'jungle' ? JUNGLE_GLSL : ''}
             {
               vec2 cuv = ${CORR_UV_GLSL.replace(/WP/g, 'vWorldPosC.xz')};
               float cor = texture2D(uCorruption, cuv).r;
@@ -207,14 +279,25 @@ export class Vegetation {
       mat.customProgramCacheKey = () => 'treewind-' + mode;
       return mat;
     };
-    const makeStaticMat = (mode) => {
-      const mat = baseMat.clone();
+    const makeStaticMat = (mode, base = baseMat) => {
+      const mat = base.clone();
       if (mode === 'red') mat.color.set('#ffab80');
+      if (mode === 'dark') mat.color.set('#a59cbb');
+      if (mode === 'moss') mat.color.set('#a9d39a');
       applyCorruption(mat, maps, 0.8, mode === 'snow' ? SNOW_GLSL : '');
       return mat;
     };
-    this.treeMats = { base: makeTreeMat('base'), snow: makeTreeMat('snow'), autumn: makeTreeMat('autumn') };
-    this.staticMats = { base: makeStaticMat('base'), snow: makeStaticMat('snow'), red: makeStaticMat('red'), autumn: makeStaticMat('base') };
+    this.treeMats = { base: makeTreeMat('base'), snow: makeTreeMat('snow'), autumn: makeTreeMat('autumn'), jungle: makeTreeMat('jungle') };
+    // modèles d'un autre pack (texture propre) : matériaux construits à la demande
+    const extraMats = new Map();
+    const matFor = (name, isTree, look) => {
+      const src = assets.propGeometry(name).material;
+      if (src === baseMat || src.map === baseMat.map) return isTree ? (this.treeMats[look] || this.treeMats.base) : (this.staticMats[look] || this.staticMats.base);
+      const key = src.uuid + (isTree ? '|t' : '|s');
+      if (!extraMats.has(key)) extraMats.set(key, isTree ? makeTreeMat('base', src) : makeStaticMat('base', src));
+      return extraMats.get(key);
+    };
+    this.staticMats = { base: makeStaticMat('base'), snow: makeStaticMat('snow'), red: makeStaticMat('red'), autumn: makeStaticMat('base'), dark: makeStaticMat('dark'), moss: makeStaticMat('moss'), jungle: makeStaticMat('base') };
     this.treeMat = this.treeMats.base; this.staticMat = this.staticMats.base;
 
     // un maillage instancié par (région, rendu, modèle) : chaque île est écartée si hors champ
@@ -224,7 +307,7 @@ export class Vegetation {
       const g = assets.propGeometry(name);
       if (!g) continue;
       const isTree = /tree/.test(name);
-      const mat = isTree ? (this.treeMats[look] || this.treeMats.base) : (this.staticMats[look] || this.staticMats.base);
+      const mat = matFor(name, isTree, look);
       const mesh = new THREE.InstancedMesh(g.geometry, mat, list.length);
       const n = list.length;
       if (!g.geometry.boundingSphere) g.geometry.computeBoundingSphere();

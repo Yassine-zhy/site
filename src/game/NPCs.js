@@ -19,6 +19,11 @@ const DEFS = [
   { id: 'neige', name: 'Sœur Neige', title: 'gardienne du Givre', model: 'mage', tint: '#e2f0ff', show: ['2H_Staff'], idle: 'Idle', gestures: ['Spellcast_Raise', 'Interact'] },
   { id: 'kessa', name: 'Kessa', title: 'la prospectrice', model: 'rogue', tint: '#ffd6a8', show: ['Knife'], idle: 'Idle', gestures: ['Interact', 'PickUp', 'Cheer'] },
   { id: 'tarek', name: 'Vieux Tarek', title: 'le conteur des sables', model: 'rogue_hooded', tint: '#ffd09a', show: [], idle: 'Idle', gestures: ['Spellcasting', 'Interact'] },
+  { id: 'agathe', name: 'Agathe', title: 'la fermière des Prés-Bas', model: 'rogue', tint: '#ffe0c4', show: [], idle: 'Idle', gestures: ['PickUp', 'Interact', 'Cheer'] },
+  { id: 'liora', name: 'Liora', title: 'la druidesse', model: 'mage', tint: '#c8f5c4', show: ['2H_Staff'], idle: 'Idle', gestures: ['Spellcast_Raise', 'Interact'] },
+  { id: 'tiko', name: 'Tiko', title: 'l’explorateur', model: 'rogue', tint: '#e2ffb8', show: ['Knife'], idle: 'Idle', gestures: ['Cheer', 'Interact', 'PickUp'] },
+  { id: 'morwen', name: 'Morwen', title: 'la veilleuse des morts', model: 'mage', tint: '#d9ccff', show: ['2H_Staff'], idle: 'Idle', gestures: ['Spellcasting', 'Interact'] },
+  { id: 'silas', name: 'Silas', title: 'le chasseur de spectres', model: 'rogue_hooded', tint: '#c4bcd8', show: ['1H_Crossbow'], idle: 'Idle', gestures: ['Interact', 'Cheer'] },
 ];
 
 // Habitants de Havrelumière.
@@ -36,6 +41,7 @@ export class NPCs {
       ch.object.rotation.y = face;
       ch.setLocomotion(d.idle);
       game.scene.add(ch.object);
+      game.world.cullFar(ch.object, 0.55);
       game.world.colliders.addCircle(spot.x, spot.z, 0.6, y - 1, y + 3, 'npc');
       const npc = { ...d, char: ch, spot: { x: spot.x, y, z: spot.z }, baseFace: face, facing: face, gestureT: 3 + Math.random() * 6, position: ch.object.position };
       if (d.id === 'oracle') {
@@ -94,7 +100,7 @@ export class NPCs {
       }
       if (n.ring) n.ring.rotation.z += dt * 0.5;
       if (n.bubbleT > 0) { n.bubbleT -= dt; if (n.bubbleT <= 0) n.bubble = ''; }
-      if (d < 70) n.char.update(dt);
+      if (d < 70 && n.char.object.visible) n.char.update(dt);
     }
   }
 }

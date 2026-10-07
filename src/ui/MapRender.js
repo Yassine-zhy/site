@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { LAKE, BIG_ISLANDS } from '../config.js';
+import { LAKE, BIG_ISLANDS, WORLD_BOUNDS } from '../config.js';
 
 // La carte couvre tout l'archipel : carré de demi-côté MAP_RANGE centré sur (MAP_CX, MAP_CZ).
-export const MAP_CX = 285, MAP_CZ = -285, MAP_RANGE = 640;
+export const MAP_CX = WORLD_BOUNDS.cx, MAP_CZ = WORLD_BOUNDS.cz, MAP_RANGE = WORLD_BOUNDS.half;
 
 // Rendu cartographique de l'archipel (style parchemin coloré + ombrage du relief).
 export function renderWorldMap(terrain, size = 512) {
@@ -40,7 +40,7 @@ export function renderWorldMap(terrain, size = 512) {
       const slope = Math.min(1, Math.hypot(y - hl, y - hu) / 3);
       isl.colorFn(col, x, y, z, slope, false);
       if (isl === terrain.main && y < LAKE.level - 0.2 && Math.hypot(x - LAKE.x, z - LAKE.z) < LAKE.radius * 1.6) col.set('#3d8fb0');
-      for (const b of BIG_ISLANDS) if (isl.def === b && b.lake && y < b.lake.level + 0.3 && Math.hypot(x - b.lake.x, z - b.lake.z) < b.lake.radius * 1.5) col.set('#9fd8ee');
+      for (const b of BIG_ISLANDS) if (isl.def === b && b.lake && y < b.lake.level + 0.3 && Math.hypot(x - b.lake.x, z - b.lake.z) < b.lake.radius * 1.8) col.set(b.biome === 'snow' ? '#9fd8ee' : b.biome === 'haunted' ? '#4a5a4a' : '#2f9fa8');
       col.convertLinearToSRGB();
       // ombrage (lumière venant du nord-ouest)
       const shade = 1 + ((hl - y) + (hu - y)) * 0.08;

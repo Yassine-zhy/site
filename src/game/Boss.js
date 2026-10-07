@@ -17,6 +17,12 @@ export const BOSS_KITS = {
   reine: { name: 'La Reine de Givre', color: '#9fe0ff', glow: '#bff0ff', adds: ['frostling', 'frostarcher'],
     attacks: [['volley', 3], ['frostnova', 2], ['blink', 1], ['blizzard', 0, 3]],
     spawn: 'Un chant glacé descend du Mont Givrecroc.', down: 'La glace se tait. Le Givre respire enfin.' },
+  gardien: { name: 'Le Gardien Sylvestre', color: '#7dff8a', glow: '#b8ffa8', adds: ['sylvain', 'druide'],
+    attacks: [['volley', 3], ['meteors', 2], ['waves', 2], ['blink', 1], ['blizzard', 0, 2]],
+    spawn: 'Les arbres gémissent : le Gardien Sylvestre s’éveille au sommet du Mont Feuillu.', down: 'La sève redevient claire. La Canopée respire.' },
+  fossoyeur: { name: 'Le Fossoyeur', color: '#a98cff', glow: '#cdb8ff', adds: ['ghoul', 'revenant'],
+    attacks: [['slam', 3], ['charge', 2], ['spin', 2], ['waves', 0, 2.5], ['quake', 0, 2]],
+    spawn: 'Une pelle racle la pierre : le Fossoyeur sort de sa crypte.', down: 'La dernière tombe se referme. Les Landes s’apaisent.' },
   // boss d'expédition (Citadelle des Ombres)
   sentinelle: { name: 'La Sentinelle d’Os', color: '#ffcf6b', glow: '#ffe08a', adds: ['warrior', 'rogue'],
     attacks: [['cleave', 3], ['slam', 2], ['charge', 2], ['quake', 0, 2]],

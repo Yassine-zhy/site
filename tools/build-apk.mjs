@@ -38,7 +38,7 @@ if (!fs.existsSync(aapt2) || !fs.existsSync(framework)) {
 }
 
 // ------------------------------------------------------------------ jeu (HTML/JS/modèles)
-if (!process.argv.includes('--no-vite')) { step('vite build'); run('npx', ['vite', 'build'], { cwd: root }); }
+if (!process.argv.includes('--no-vite')) { step('build du jeu'); run('npm', ['run', 'build'], { cwd: root }); }
 fs.rmSync(build, { recursive: true, force: true });
 const www = path.join(build, 'assets', 'www');
 fs.mkdirSync(www, { recursive: true });

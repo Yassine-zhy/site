@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { h } from '../ui/dom.js';
-import { ISLETS, LAKE, FOREST, RUINS, HILLS, MOUNTAIN, GIVRE, AMBRE } from '../config.js';
+import { ISLETS, LAKE, FOREST, RUINS, HILLS, MOUNTAIN, GIVRE, AMBRE, HANTEE, SYLVE, HAMLET, W } from '../config.js';
 import { RARITY, generateItem, rollFromTable, STAT_LABELS, levelFactor } from './Items.js';
 
 // Coffres : quatre qualités, chacune avec sa table de probabilités par rareté
@@ -33,12 +33,27 @@ export const TREASURE_SPOTS = [
   { id: 'relais', name: 'l’Îlot du Relais', islet: 'relais', dx: -6, dz: -4, tier: 'bois' },
   { id: 'ventsec', name: 'l’Îlot du Vent Sec', islet: 'ventsec', dx: 5, dz: 4, tier: 'fer' },
   { id: 'mine', name: 'la Mine de Kessa', x: AMBRE.mine.x + 14, z: AMBRE.mine.z - 10, tier: 'fer' },
-  { id: 'gorge', name: 'le fond de la Gorge Rouge', x: 712, z: 128, tier: 'fer' },
-  { id: 'mesa', name: 'le sommet de la Grande Mesa', x: 690, z: -50, tier: 'or', minY: 31 },
+  { id: 'gorge', name: 'le fond de la Gorge Rouge', x: W(712), z: W(128), tier: 'fer' },
+  { id: 'mesa', name: 'le sommet de la Grande Mesa', x: W(690), z: W(-50), tier: 'or', minY: 42 },
   { id: 'cirque', name: 'le Cirque d’Ambre', x: AMBRE.cirque.x + 34, z: AMBRE.cirque.z + 12, tier: 'or' },
   { id: 'cristal', name: 'le Lac de Cristal', x: GIVRE.lake.x + 30, z: GIVRE.lake.z + 26, tier: 'fer' },
   { id: 'sanctuaire', name: 'le Sanctuaire Gelé', x: GIVRE.sanctuary.x + 16, z: GIVRE.sanctuary.z + 12, tier: 'or' },
-  { id: 'cime', name: 'la cime du Mont Givrecroc', x: GIVRE.peak.x - 6, z: GIVRE.peak.z + 8, tier: 'mythique', minY: 90 },
+  { id: 'cime', name: 'la cime du Mont Givrecroc', x: GIVRE.peak.x - 6, z: GIVRE.peak.z + 8, tier: 'mythique', minY: 120 },
+  // nouvelles îles et îles agrandies
+  { id: 'saules', name: 'l’Îlot des Saules', islet: 'saules', dx: 12, dz: -9, tier: 'bois' },
+  { id: 'fanal', name: 'l’Îlot du Fanal', islet: 'fanal', dx: -8, dz: 10, tier: 'fer' },
+  { id: 'fougeres', name: 'l’Îlot des Fougères', islet: 'fougeres', dx: 10, dz: 6, tier: 'bois' },
+  { id: 'cascade', name: 'l’Îlot de la Cascade', islet: 'cascade', dx: -12, dz: -6, tier: 'fer' },
+  { id: 'pres', name: 'les champs des Prés-Bas', x: HAMLET.x + 34, z: HAMLET.z + 30, tier: 'bois' },
+  { id: 'falaises', name: 'les Falaises du Couchant', x: W(-205), z: W(-118), tier: 'fer' },
+  { id: 'prairie', name: 'la Prairie du Sud', x: W(70), z: W(185), tier: 'bois' },
+  { id: 'emeraude', name: 'la rive du Lac Émeraude', x: SYLVE.lake.x + 30, z: SYLVE.lake.z - 82, tier: 'fer' },
+  { id: 'temple', name: 'l’autel du Temple Englouti', x: SYLVE.temple.x, z: SYLVE.temple.z + 19, tier: 'or' },
+  { id: 'feuillu', name: 'la cime du Mont Feuillu', x: SYLVE.peak.x + 8, z: SYLVE.peak.z - 6, tier: 'mythique', minY: 88 },
+  { id: 'cimetiere', name: 'le Grand Cimetière', x: HANTEE.cemetery.x - 14, z: HANTEE.cemetery.z + 10, tier: 'or' },
+  { id: 'marais', name: 'le Marais des Âmes', x: HANTEE.lake.x + 90, z: HANTEE.lake.z - 10, tier: 'fer' },
+  { id: 'corbeaux', name: 'le Mont des Corbeaux', x: HANTEE.peak.x + 10, z: HANTEE.peak.z + 6, tier: 'or' },
+  { id: 'crypte', name: 'la Crypte du Fossoyeur', x: HANTEE.crypt.x + 6, z: HANTEE.crypt.z - 8, tier: 'mythique' },
 ];
 const OPEN_ANGLE = -1.9;
 const RESPAWN_MIN = { bois: 15, fer: 25, or: 45, mythique: 90 };
@@ -69,6 +84,7 @@ export class Chests {
       obj.position.set(spot.x, spot.y, spot.z);
       obj.rotation.y = Math.atan2(-spot.x + x, -spot.z + z) || Math.random() * 6.28;
       g.scene.add(obj);
+      g.world.cullFar(obj, 0.8);
       cols.addCircle(spot.x, spot.z, 0.9, spot.y - 1, spot.y + 1.1, 'prop', true);
       this.spots.push({ ...def, ...spot, obj, lid: obj.userData.lid });
     }

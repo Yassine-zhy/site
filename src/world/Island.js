@@ -4,7 +4,8 @@ import { Simplex, clamp, smoothstep, lerp, TAU } from '../engine/math.js';
 // Une île flottante : surface supérieure (grille projetée sur le littoral)
 // + face inférieure rocheuse en stalactite. Fournit une requête de hauteur exacte.
 export class Island {
-  constructor({ x, z, radius, coastNoise = 8, seed = 1, cells = 96, heightFn, colorFn, depth, name = 'île', lipY }) {
+  constructor({ x, z, radius, coastNoise = 8, seed = 1, cells = 96, heightFn, colorFn, depth, name = 'île', lipY, baked = null }) {
+    this.baked = baked && baked.cells === cells ? baked : null; // relief pré-calculé au build (voir tools/bake-terrain.mjs)
     this.cx = x; this.cz = z; this.radius = radius; this.coastNoise = coastNoise;
     this.noise = new Simplex(seed);
     this.heightFn = heightFn; this.colorFn = colorFn; this.name = name;
@@ -65,19 +66,23 @@ export class Island {
         const rho = Math.hypot(dx, dz), th = Math.atan2(dz, dx);
         const rc = this.coastR(th);
         let y;
+        const B = this.baked;
         if (rho > rc - 0.01) {
           x = this.cx + Math.cos(th) * rc; z = this.cz + Math.sin(th) * rc;
-          y = this.lipY(th) - 1.2;
+          y = B ? B.h[idx] / 50 : this.lipY(th) - 1.2;
           this.projected[idx] = 1;
         } else {
-          y = this.rawHeight(x, z);
+          y = B ? B.h[idx] / 50 : this.rawHeight(x, z);
         }
         this.heights[idx] = y;
         pos[idx * 3] = x; pos[idx * 3 + 1] = y; pos[idx * 3 + 2] = z;
       }
     }
     // couleurs (pente calculée sur la grille)
-    for (let j = 0; j <= N; j++) {
+    if (this.baked) {
+      const c = this.baked.c, lut = srgbToLinearLut();
+      for (let k = 0; k < vcount * 3; k++) col[k] = lut[c[k]];
+    } else for (let j = 0; j <= N; j++) {
       for (let i = 0; i <= N; i++) {
         const idx = j * (N + 1) + i;
         const x = pos[idx * 3], y = pos[idx * 3 + 1], z = pos[idx * 3 + 2];
@@ -103,44 +108,91 @@ export class Island {
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
     geo.setIndex(index);
     geo.computeVertexNormals();
+    // sommets hors de tout triangle (au large de la côte) : normale nulle → NaN dans l'éclairage
+    // dès qu'un niveau de détail grossier les utilise ; on les oriente vers le haut
+    const nrm = geo.attributes.normal.array;
+    for (let k = 0; k < nrm.length; k += 3) if (nrm[k] * nrm[k] + nrm[k + 1] * nrm[k + 1] + nrm[k + 2] * nrm[k + 2] < 1e-6) { nrm[k] = 0; nrm[k + 1] = 1; nrm[k + 2] = 0; }
     geo.computeBoundingSphere();
     this.topGeometry = geo;
     this.underGeometry = this.buildUnderside();
     return this;
   }
 
-  // Tuiles de la surface (mêmes sommets partagés, index propre) : seules les tuiles
-  // visibles sont dessinées, et l'ombre portée ne concerne que celles proches du joueur.
+  // Tuiles de la surface avec trois niveaux de détail (pas de 1, 2 et 4 cellules) partageant
+  // les mêmes sommets. Les niveaux grossiers portent une « jupe » verticale le long de leurs
+  // bords : elle masque les petites fentes entre tuiles de détails différents.
+  // Retourne [{ lods: [g0, g1, g2], sphere }].
   chunkGeometries(target = 48) {
-    const N = this.cells, geo = this.topGeometry;
+    const N = this.cells, src = this.topGeometry, P = this.projected;
     const C = Math.max(16, Math.ceil(N / Math.max(1, Math.round(N / target))));
-    if (C >= N) return [geo];
-    const pos = geo.attributes.position.array, P = this.projected;
+    const R = N + 1;
+    const pos0 = src.attributes.position.array, nor0 = src.attributes.normal.array, col0 = src.attributes.color.array;
+    // sommets de jupe : copies abaissées de tous les sommets situés sur une frontière de tuile
+    const onBorder = (i, j) => i % C === 0 || j % C === 0 || i === N || j === N;
+    const skirtOf = new Int32Array(R * R).fill(-1);
+    let extra = 0;
+    for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) if (onBorder(i, j) && !P[j * R + i]) skirtOf[j * R + i] = R * R + extra++;
+    const total = R * R + extra;
+    const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3);
+    pos.set(pos0); nor.set(nor0); col.set(col0);
+    const drop = Math.max(2.5, this.cellSize * 2.2);
+    for (let v = 0; v < R * R; v++) {
+      const k = skirtOf[v];
+      if (k < 0) continue;
+      pos[k * 3] = pos0[v * 3]; pos[k * 3 + 1] = pos0[v * 3 + 1] - drop; pos[k * 3 + 2] = pos0[v * 3 + 2];
+      nor[k * 3] = nor0[v * 3]; nor[k * 3 + 1] = nor0[v * 3 + 1]; nor[k * 3 + 2] = nor0[v * 3 + 2];
+      col[k * 3] = col0[v * 3] * 0.8; col[k * 3 + 1] = col0[v * 3 + 1] * 0.8; col[k * 3 + 2] = col0[v * 3 + 2] * 0.8;
+    }
+    const attrs = { position: new THREE.BufferAttribute(pos, 3), normal: new THREE.BufferAttribute(nor, 3), color: new THREE.BufferAttribute(col, 3) };
+    const samples = (a, b, L) => { const out = []; for (let k = a; k < b; k += L) out.push(k); out.push(b); return out; };
     const out = [], v = new THREE.Vector3();
-    for (let cj = 0; cj < N; cj += C) for (let ci = 0; ci < N; ci += C) {
-      const idx = [];
-      const j1 = Math.min(N, cj + C), i1 = Math.min(N, ci + C);
-      for (let j = cj; j < j1; j++) for (let i = ci; i < i1; i++) {
-        const a = j * (N + 1) + i, b = a + 1, c = a + (N + 1), d = c + 1;
-        if (P[a] && P[b] && P[c] && P[d]) continue;
-        idx.push(a, c, b, c, d, b);
-      }
-      if (!idx.length) continue;
+    const geoFor = (idx, box) => {
       const g = new THREE.BufferGeometry();
-      for (const k of ['position', 'normal', 'color']) g.setAttribute(k, geo.attributes[k]);
+      for (const k of ['position', 'normal', 'color']) g.setAttribute(k, attrs[k]);
       g.setIndex(idx);
-      const box = new THREE.Box3();
-      for (let j = cj; j <= j1; j++) for (let i = ci; i <= i1; i++) box.expandByPoint(v.fromArray(pos, (j * (N + 1) + i) * 3));
       g.boundingBox = box;
       g.boundingSphere = box.getBoundingSphere(new THREE.Sphere());
-      out.push(g);
+      return g;
+    };
+    for (let cj = 0; cj < N; cj += C) for (let ci = 0; ci < N; ci += C) {
+      const j1 = Math.min(N, cj + C), i1 = Math.min(N, ci + C);
+      const box = new THREE.Box3();
+      for (let j = cj; j <= j1; j++) for (let i = ci; i <= i1; i++) box.expandByPoint(v.fromArray(pos0, (j * R + i) * 3));
+      box.min.y -= drop;
+      const lods = [];
+      for (const L of [1, 2, 4]) {
+        const si = samples(ci, i1, L), sj = samples(cj, j1, L);
+        const idx = [];
+        for (let b = 0; b < sj.length - 1; b++) for (let a = 0; a < si.length - 1; a++) {
+          const A = sj[b] * R + si[a], B = sj[b] * R + si[a + 1], Cc = sj[b + 1] * R + si[a], D = sj[b + 1] * R + si[a + 1];
+          if (P[A] && P[B] && P[Cc] && P[D]) continue;
+          idx.push(A, Cc, B, Cc, D, B);
+        }
+        if (!idx.length) { lods.length = 0; break; }
+        if (L > 1) {
+          // jupe : deux faces (visible des deux côtés) sous chaque segment de bord
+          const edge = (list) => {
+            for (let k = 0; k < list.length - 1; k++) {
+              const a = list[k], b = list[k + 1], a2 = skirtOf[a], b2 = skirtOf[b];
+              if (a2 < 0 || b2 < 0) continue;
+              idx.push(a, b, b2, a, b2, a2, a, b2, b, a, a2, b2);
+            }
+          };
+          edge(si.map((i) => cj * R + i)); edge(si.map((i) => j1 * R + i));
+          edge(sj.map((j) => j * R + ci)); edge(sj.map((j) => j * R + i1));
+        }
+        lods.push(geoFor(idx, box));
+      }
+      if (lods.length) out.push({ lods, sphere: lods[0].boundingSphere });
     }
+    // la géométrie complète ne sert plus qu'aux requêtes : on libère son index
+    src.setIndex(null);
     return out;
   }
 
   buildUnderside() {
-    const segs = Math.max(48, Math.round(this.radius * 1.1));
-    const rings = Math.max(10, Math.round(this.depth / 7));
+    const segs = Math.min(150, Math.max(48, Math.round(this.radius * 1.1)));
+    const rings = Math.min(20, Math.max(10, Math.round(this.depth / 9)));
     const n = this.noise;
     const pos = [], col = [];
     const cTop = new THREE.Color('#7b5a3c'), cMid = new THREE.Color('#6d625c'), cDeep = new THREE.Color('#463f58'), cMoss = new THREE.Color('#5f7d44');
@@ -219,3 +271,22 @@ export class Island {
 }
 
 export function clamp01(v) { return clamp(v, 0, 1); }
+
+let LUT = null;
+function srgbToLinearLut() {
+  if (LUT) return LUT;
+  LUT = new Float32Array(256);
+  for (let i = 0; i < 256; i++) { const v = i / 255; LUT[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+  return LUT;
+}
+
+// Données à pré-calculer : hauteurs (centièmes ×2, entiers 16 bits) et couleurs sRGB 8 bits.
+export function bakeIsland(isl) {
+  const pos = isl.topGeometry.attributes.position.array, col = isl.topGeometry.attributes.color.array;
+  const n = pos.length / 3;
+  const h = new Int16Array(n), c = new Uint8Array(n * 3);
+  const enc = (v) => { v = Math.max(0, Math.min(1, v)); return Math.round((v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055) * 255); };
+  for (let i = 0; i < n; i++) h[i] = Math.round(pos[i * 3 + 1] * 50);
+  for (let i = 0; i < n * 3; i++) c[i] = enc(col[i]);
+  return { cells: isl.cells, h, c };
+}

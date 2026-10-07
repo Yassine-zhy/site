@@ -1,12 +1,17 @@
 import * as THREE from 'three';
-import { LAKE } from '../config.js';
+import { WATERS } from '../config.js';
 
-// Lac stylisé : couleur selon la profondeur, écume sur les rives, reflets du ciel.
+const TINTS = { clear: ['#5fd3c6', '#1d5e8c'], jungle: ['#5fe0b0', '#0f6a6a'], marsh: ['#6f8a5a', '#1e2a24'] };
+
+// Lacs stylisés : couleur selon la profondeur, écume sur les rives, reflets du ciel.
 export class Water {
   constructor(scene, terrain) {
-    const R = LAKE.radius * 1.75;
-    const geo = new THREE.CircleGeometry(R, 96, 0, Math.PI * 2);
-    geo.rotateX(-Math.PI / 2);
+    this.meshes = [];
+    for (const lake of WATERS) this.meshes.push(this.makeLake(scene, terrain, lake));
+  }
+
+  makeLake(scene, terrain, LAKE) {
+    const R = LAKE.radius * 1.85;
     // subdivision radiale pour avoir des profondeurs par sommet
     const ring = new THREE.RingGeometry(0.001, R, 128, 24);
     ring.rotateX(-Math.PI / 2);
@@ -18,13 +23,14 @@ export class Water {
       depth[i] = h === null ? 4 : LAKE.level - h;
     }
     ring.setAttribute('depth', new THREE.BufferAttribute(depth, 1));
-    this.uniforms = {
+    if (!this.uniforms) this.uniforms = {
       uTime: { value: 0 }, uSky: { value: new THREE.Color() }, uSunDir: { value: new THREE.Vector3() }, uSunColor: { value: new THREE.Color() },
-      uShallow: { value: new THREE.Color('#5fd3c6') }, uDeep: { value: new THREE.Color('#1d5e8c') }, uNight: { value: 0 }, uLight: { value: 1 },
+      uNight: { value: 0 }, uLight: { value: 1 },
       fogColor: { value: new THREE.Color() }, fogNear: { value: 1 }, fogFar: { value: 1000 },
     };
+    const [sh, dp] = TINTS[LAKE.kind] || TINTS.clear;
     const mat = new THREE.ShaderMaterial({
-      uniforms: this.uniforms, transparent: true, depthWrite: false, fog: true,
+      uniforms: { ...this.uniforms, uShallow: { value: new THREE.Color(sh) }, uDeep: { value: new THREE.Color(dp) } }, transparent: true, depthWrite: false, fog: true,
       vertexShader: /* glsl */`
         attribute float depth; varying float vDepth; varying vec3 vWorld; varying vec3 vView;
         #include <fog_pars_vertex>
@@ -59,11 +65,11 @@ export class Water {
           #include <fog_fragment>
         }`,
     });
-    this.mesh = new THREE.Mesh(ring, mat);
-    this.mesh.position.set(LAKE.x, LAKE.level, LAKE.z);
-    this.mesh.renderOrder = 2;
-    scene.add(this.mesh);
-    geo.dispose();
+    const mesh = new THREE.Mesh(ring, mat);
+    mesh.position.set(LAKE.x, LAKE.level, LAKE.z);
+    mesh.renderOrder = 2;
+    scene.add(mesh);
+    return mesh;
   }
   update(dt, elapsed, sky) {
     const u = this.uniforms;

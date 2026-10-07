@@ -10,10 +10,10 @@ const FILES = {
   anims: 'chars/anims.glb',
   knight: 'chars/knight.glb', barbarian: 'chars/barbarian.glb', mage: 'chars/mage.glb', rogue: 'chars/rogue.glb', rogue_hooded: 'chars/rogue_hooded.glb',
   skel_minion: 'chars/skel_minion.glb', skel_warrior: 'chars/skel_warrior.glb', skel_rogue: 'chars/skel_rogue.glb', skel_mage: 'chars/skel_mage.glb',
-  nature: 'nature.glb', village: 'village.glb', dungeon: 'dungeon.glb', items: 'items.glb',
+  nature: 'nature.glb', village: 'village.glb', dungeon: 'dungeon.glb', items: 'items.glb', halloween: 'halloween.glb', camp: 'camp.glb',
 };
 // Tailles approximatives (octets) pour une barre de progression fluide.
-const SIZES = { anims: 1285444, knight: 268612, barbarian: 240248, mage: 218800, rogue: 239372, rogue_hooded: 228508, skel_minion: 226448, skel_warrior: 257908, skel_rogue: 231944, skel_mage: 194104, nature: 283888, village: 1921048, dungeon: 1014748, items: 421176 };
+const SIZES = { anims: 1285444, knight: 268612, barbarian: 240248, mage: 218800, rogue: 239372, rogue_hooded: 228508, skel_minion: 226448, skel_warrior: 257908, skel_rogue: 231944, skel_mage: 194104, nature: 283888, village: 1921048, dungeon: 1014748, items: 421176, halloween: 740200, camp: 715392 };
 
 // Chargement et registre des modèles 3D (KayKit, CC0).
 export class Assets {
@@ -85,6 +85,20 @@ export class Assets {
     this.prepare();
   }
 
+  // Fichier binaire annexe (relief pré-calculé…) : ArrayBuffer, ou null s'il est absent.
+  async loadBinary(file) {
+    const b64 = typeof window !== 'undefined' && window.__AETHERIA_B64;
+    try {
+      const res = await fetch(BASE + file + (b64 ? '.txt' : ''));
+      if (!res.ok) return null;
+      if (!b64) return await res.arrayBuffer();
+      const bin = atob((await res.text()).replace(/\s+/g, ''));
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out.buffer;
+    } catch { return null; }
+  }
+
   prepare() {
     for (const clip of this.gltf.anims.animations) {
       // animations sur place : on retire le déplacement racine des esquives
@@ -92,7 +106,9 @@ export class Assets {
       clip.optimize();
       this.clips.set(clip.name, clip);
     }
-    for (const lib of ['nature', 'village', 'dungeon', 'items']) {
+    // les packs ajoutés portent un préfixe (hw_ : landes hantées, c_ : campements) pour éviter les homonymes
+    const PREFIX = { halloween: 'hw_', camp: 'c_' };
+    for (const lib of ['nature', 'village', 'dungeon', 'items', 'halloween', 'camp']) {
       const scene = this.gltf[lib].scene;
       for (const child of scene.children) {
         child.traverse((o) => {
@@ -105,7 +121,7 @@ export class Assets {
             if (lib === 'items') for (const mm of [].concat(o.material)) enhanceModelMaterial(mm);
           }
         });
-        this.props.set(child.name, child);
+        this.props.set((PREFIX[lib] || '') + child.name, child);
       }
     }
     for (const k of ['knight', 'barbarian', 'mage', 'rogue', 'rogue_hooded', 'skel_minion', 'skel_warrior', 'skel_rogue', 'skel_mage']) {
