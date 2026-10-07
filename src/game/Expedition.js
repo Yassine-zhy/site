@@ -212,7 +212,7 @@ export class Expedition {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, r = 6 + Math.random() * (P.r - 10);
       const x = P.x + Math.cos(a) * r, z = P.z + Math.sin(a) * r;
-      if (g.world.terrain.heightAt(x, z) === null) continue;
+      if (!g.world.terrain.isLand(x, z)) continue;
       const elite = Math.random() < 0.18;
       const e = g.enemies.spawn(st.guards[i % st.guards.length], this.state.lv, x, z, { elite, home: { x: P.x, z: P.z } });
       e.exp = true;

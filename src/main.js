@@ -35,8 +35,8 @@ async function main(hotData = {}) {
   const platformReady = platform.init();
   const assets = new Assets();
   ui.setStep('Chargement des héros et des squelettes…');
-  // relief pré-calculé au build (en développement, on le recalcule pour suivre les modifications)
-  const bakedP = import.meta.env.PROD && !params.has('nobake') ? assets.loadBinary('terrain.bin') : Promise.resolve(null);
+  // relief pré-calculé (npm run bake) ; s'il est périmé, le jeu le recalcule au chargement
+  const bakedP = params.has('nobake') ? Promise.resolve(null) : Promise.all([assets.loadBinary('terrain-h.bin'), assets.loadBinary('terrain-c.bin')]);
   await assets.load((p) => ui.setProgress(p * 0.7));
   assets.bakedTerrain = await bakedP;
   const game = new Game({ renderer, assets, input, ui, platform, audio });

@@ -90,6 +90,8 @@ export class NPCs {
     const p = this.game.player?.position;
     for (const n of this.list) {
       const d = p ? Math.hypot(p.x - n.spot.x, p.z - n.spot.z) : 99;
+      // au loin, les habitants ne sont pas dessinés (leurs noms ne s'affichent de toute façon pas)
+      if (p) n.char.object.visible = d < 320 || !!n.talking;
       const target = d < 9 ? Math.atan2(p.x - n.spot.x, p.z - n.spot.z) : n.baseFace;
       n.facing = dampAngle(n.facing, target, 4, dt);
       n.char.object.rotation.y = n.facing;

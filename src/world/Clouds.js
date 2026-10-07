@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 import { mulberry32 } from '../engine/math.js';
-import { ISLETS } from '../config.js';
 
 export const CLOUD_SEA_Y = -78;
 
-// Mer de nuages sous l'archipel + nuages flottants (modèles KayKit).
+// Nuages flottants au-dessus du continent (modèles KayKit) + mer de nuages sous la Citadelle.
 export class Clouds {
   constructor(scene, assets, quality) {
     this.scene = scene;
@@ -13,7 +12,7 @@ export class Clouds {
       uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunColor: { value: new THREE.Color() }, uFog: { value: new THREE.Color() },
       uCam: { value: new THREE.Vector3() }, uNight: { value: 0 }, uOct: { value: quality === 'low' ? 2 : 4 },
     };
-    const geo = new THREE.PlaneGeometry(9000, 9000, 1, 1);
+    const geo = new THREE.PlaneGeometry(5400, 6000, 1, 1);
     geo.rotateX(-Math.PI / 2);
     const mat = new THREE.ShaderMaterial({
       uniforms: this.uniforms, transparent: false, depthWrite: true, fog: false,
@@ -41,7 +40,7 @@ export class Clouds {
         }`,
     });
     this.sea = new THREE.Mesh(geo, mat);
-    this.sea.position.y = CLOUD_SEA_Y;
+    this.sea.position.set(5600, CLOUD_SEA_Y, 0);
     this.sea.renderOrder = -5;
     scene.add(this.sea);
 
@@ -62,13 +61,11 @@ export class Clouds {
       const norm = 1 / Math.max(size.x, size.z);
       for (let i = 0; i < n; i++) {
         let x, z, y;
-        if (rng() < 0.35) {
-          const isl = rng.pick(ISLETS);
-          const a = rng() * Math.PI * 2, r = isl.radius + 10 + rng() * 40;
-          x = isl.x + Math.cos(a) * r; z = isl.z + Math.sin(a) * r; y = isl.baseY - 30 + rng() * 60;
+        if (rng() < 0.2) {
+          // autour de la Citadelle
+          x = 3500 + rng() * 900; z = -300 + rng() * 600; y = 10 + rng() * 90;
         } else {
-          const a = rng() * Math.PI * 2, r = 230 + rng() * 520;
-          x = Math.cos(a) * r; z = Math.sin(a) * r; y = -40 + rng() * 130;
+          x = -1900 + rng() * 3800; z = -1900 + rng() * 3800; y = 170 + rng() * 120;
         }
         const s = (ni === 0 ? 34 : 20) * (0.6 + rng() * 0.9) * norm;
         this.puffs.push({ mesh, i, x, y, z, s, sy: s * (0.5 + rng() * 0.4), rot: rng() * Math.PI * 2, speed: 0.6 + rng() * 1.6 });
@@ -82,9 +79,11 @@ export class Clouds {
   updatePuffs(elapsed) {
     const meshes = new Set();
     for (const p of this.puffs) {
-      const drift = (elapsed * p.speed) % 1600;
+      const citadel = p.x > 1500;
+      const span = citadel ? 1000 : 4000;
+      const drift = (elapsed * p.speed) % span;
       let x = p.x + drift;
-      if (x > 900) x -= 1600;
+      if (citadel ? x > 4400 : x > 2000) x -= span;
       this.v.set(x, p.y + Math.sin(elapsed * 0.1 + p.rot) * 1.5, p.z);
       this.q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, p.rot);
       this.sc.set(p.s, p.sy, p.s);
@@ -105,8 +104,6 @@ export class Clouds {
     u.uShade.value.copy(sky.uniforms.uZenith.value).lerp(new THREE.Color('#c8cfe8'), 0.55);
     u.uNight.value = sky.state.night;
     u.uCam.value.copy(camera.position);
-    this.sea.position.x = Math.round(camera.position.x / 100) * 100;
-    this.sea.position.z = Math.round(camera.position.z / 100) * 100;
     this.cloudMat.emissive.copy(sky.uniforms.uHorizon.value).multiplyScalar(0.35);
     this._acc = (this._acc || 0) + dt;
     if (this._acc > 0.1) { this._acc = 0; this.updatePuffs(elapsed); }

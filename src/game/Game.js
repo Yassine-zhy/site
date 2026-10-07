@@ -8,7 +8,8 @@ import { Projectiles, pickSoftTarget } from './Combat.js';
 import { Loot } from './Loot.js';
 import { generateItem, rollRarity } from './Items.js';
 import { ABILITIES, BASIC, basicAttack, basicVisual } from './Abilities.js';
-import { CLASSES, ENEMIES, VILLAGE, HAMLET, BEACONS, FOREST, RUINS, LAKE, MOUNTAIN, HILLS, ISLETS, WAYSTONES, W } from '../config.js';
+import { CLASSES, ENEMIES, VILLAGE, HAMLET, BEACONS, FOREST, RUINS, LAKE, MOUNTAIN, HILLS, WAYSTONES, REGIONS, W } from '../config.js';
+import { zoneAt } from '../world/Terrain.js';
 import { CLOUD_SEA_Y } from '../world/Clouds.js';
 import { renderWorldMap } from '../ui/MapRender.js';
 import { Hud } from '../ui/Hud.js';
@@ -688,31 +689,13 @@ export class Game {
   currentZone() {
     const p = this.player.position;
     const t = this.world.terrain;
-    const isl = t.islandAt(p.x, p.z);
     if (p.x > 3500) { const P = platformAt(p.x, p.z); return { name: P?.name || 'La Citadelle des Ombres', sub: 'Citadelle des Ombres' }; }
-    if (isl?.big) {
-      const d = isl.def, near = (o, r) => o && Math.hypot(p.x - o.x, p.z - o.z) < r;
-      if (near(d.camp, d.camp.radius + 10)) return { name: d.camp.name, sub: 'campement · sûr' };
-      const spots = {
-        givre: [[d.lake, 1.6, 'monstres niv. 14–17'], [d.peak, 0.8, 'monstres niv. 16–20'], [d.sanctuary, 2.2, 'monstres niv. 15–18']],
-        ambre: [[d.mine, 0, 'monstres niv. 11–14', 40], [d.cirque, 1.4, 'arène du Colosse']],
-        sylve: [[d.peak, 0.8, 'monstres niv. 19–22 · Gardien Sylvestre'], [d.temple, 2.4, 'monstres niv. 18–21'], [d.lake, 1.7, 'monstres niv. 17–19']],
-        hantee: [[d.crypt, 1.7, 'arène du Fossoyeur'], [d.cemetery, 2, 'monstres niv. 22–25'], [d.lake, 1.8, 'monstres niv. 23–26'], [d.peak, 0.9, 'monstres niv. 24–27']],
-      }[d.id] || [];
-      for (const [o, k, sub, r] of spots) if (o && near(o, r || (o.radius || 20) * k)) return { name: o.name, sub };
-      if (d.id === 'ambre' && d.features.some((f) => f.type === 'mesa' && near(f, f.radius * 1.3))) return { name: 'Les Mesas', sub: 'monstres niv. 12–15' };
-      const base = { givre: 'monstres niv. 13–16', ambre: 'monstres niv. 9–14', sylve: 'monstres niv. 16–18', hantee: 'monstres niv. 21–23' };
-      return { name: d.name, sub: base[d.id] || '' };
-    }
-    if (isl && isl !== t.main) return { name: isl.name, sub: 'îlot flottant' };
-    if (!isl) return { name: 'Le Ciel', sub: 'au-dessus de la mer de nuages' };
-    const zones = [
-      [VILLAGE, VILLAGE.radius + 10, 'havre de paix'], [HAMLET, HAMLET.radius + 12, 'hameau · sûr'], [LAKE, LAKE.radius * 1.8, 'eaux calmes'], [FOREST, FOREST.radius, 'squelettes niv. 3–6'],
-      [RUINS, RUINS.radius * 1.4, 'squelettes niv. 5–9'], [MOUNTAIN, MOUNTAIN.radius * 0.9, 'squelettes niv. 8–15'], [HILLS, HILLS.radius, 'monstres niv. 1–3'],
-      [{ name: 'La Prairie du Sud', x: W(40), z: W(190) }, W(48), 'monstres niv. 4–7'], [{ name: 'Les Falaises du Couchant', x: W(-175), z: W(-120) }, W(52), 'monstres niv. 6–9'],
-    ];
-    for (const [z, r, sub] of zones) if (Math.hypot(p.x - z.x, p.z - z.z) < r) return { name: z.name, sub };
-    return { name: 'Terres d’Aetheria', sub: 'squelettes niv. 1–4' };
+    const zone = zoneAt(p.x, p.z);
+    const lv = zone ? `niv. ${zone.level[0]}–${zone.level[1]}` : '';
+    const tag = zone ? (zone.n ? `Zone ${zone.n} · ${lv}` : `Terres sauvages · ${lv}`) : '';
+    if (!t.isLand(p.x, p.z)) return { name: 'La Mer d’Azur', sub: zone ? 'au large · ' + zone.name : 'au large', zone };
+    for (const [o, r, sub] of placeList()) if (Math.hypot(p.x - o.x, p.z - o.z) < r) return { name: o.name, sub: sub || `${zone?.name || ''} · ${lv}`, zone };
+    return { name: zone?.name || 'Terres d’Aetheria', sub: tag, zone };
   }
 
   mapMarkers() {
@@ -724,4 +707,18 @@ export class Game {
   }
 }
 
-export { basicVisual, ISLETS };
+// lieux nommés du continent : [objet {name, x, z}, rayon, sous-titre (sinon zone et niveaux)]
+let PLACES = null;
+function placeList() {
+  if (PLACES) return PLACES;
+  PLACES = [[VILLAGE, VILLAGE.radius + 10, 'havre de paix'], [HAMLET, HAMLET.radius + 12, 'hameau · sûr'], [LAKE, LAKE.radius * 1.6], [RUINS, RUINS.radius * 1.3], [MOUNTAIN, MOUNTAIN.radius * 0.75], [HILLS, HILLS.radius * 0.8], [FOREST, FOREST.radius * 0.8]];
+  for (const d of REGIONS) {
+    if (d.camp) PLACES.push([d.camp, d.camp.radius + 10, 'campement · sûr']);
+    for (const k of ['crypt', 'cirque', 'sanctuary', 'temple', 'cemetery', 'table', 'belvedere', 'mine', 'headland']) if (d[k]?.name) PLACES.push([d[k], (d[k].radius || 30) * (k === 'crypt' || k === 'cirque' ? 1.6 : 1.8), k === 'crypt' ? 'arène du Fossoyeur' : k === 'cirque' ? 'arène du Colosse' : null]);
+    if (d.lake?.name) PLACES.push([d.lake, d.lake.radius * 1.6]);
+    if (d.peak?.name) PLACES.push([d.peak, d.peak.radius * 0.7]);
+  }
+  return PLACES;
+}
+
+export { basicVisual };

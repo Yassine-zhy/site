@@ -37,7 +37,7 @@ export class Updrafts {
       // une colonne naît toujours d'un sol plat : on la déplace sur la terre ferme la plus proche
       Updrafts.anchor(u, terrain);
       const base = terrain.heightAt(u.x, u.z) ?? 0;
-      u.top = Math.max(u.top, base + 30);
+      u.top = Math.max(u.top ?? 0, base + 30);
       const hgt = u.top - base + 6;
       const geo = new THREE.CylinderGeometry(u.radius, u.radius * 0.7, hgt, 28, 1, true);
       geo.translate(0, hgt / 2, 0);
@@ -76,19 +76,21 @@ export class Updrafts {
       for (let k = 0; k <= 8; k++) {
         const a = (k / 8) * Math.PI * 2, r = k ? u.radius + 1.5 : 0;
         const px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r;
-        if (terrain.heightAt(px, pz) === null || terrain.slopeAt(px, pz) > 0.45) return false;
+        if (!terrain.isLand(px, pz) || terrain.slopeAt(px, pz) > 0.45) return false;
       }
       return true;
     };
-    if (ok(u.x, u.z)) return u;
+    // sommet de la colonne : « lift » unités au-dessus du sol
+    const done = () => { if (u.lift) u.top = terrain.heightAt(u.x, u.z) + u.lift; return u; };
+    if (ok(u.x, u.z)) return done();
     for (let r = 3; r <= 80; r += 3) {
       for (let k = 0; k < 24; k++) {
         const a = (k / 24) * Math.PI * 2;
         const x = u.x + Math.cos(a) * r, z = u.z + Math.sin(a) * r;
-        if (ok(x, z)) { u.x = Math.round(x); u.z = Math.round(z); return u; }
+        if (ok(x, z)) { u.x = Math.round(x); u.z = Math.round(z); return done(); }
       }
     }
-    return u;
+    return done();
   }
 
   update(dt, elapsed, focus) {

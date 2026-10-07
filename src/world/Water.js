@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { WATERS } from '../config.js';
 
-const TINTS = { clear: ['#5fd3c6', '#1d5e8c'], jungle: ['#5fe0b0', '#0f6a6a'], marsh: ['#6f8a5a', '#1e2a24'] };
+const TINTS = { clear: ['#5fd3c6', '#1d5e8c'], jungle: ['#5fe0b0', '#0f6a6a'], marsh: ['#6f8a5a', '#1e2a24'], lagoon: ['#6ff0dc', '#1aa0b4'] };
 
 // Lacs stylisés : couleur selon la profondeur, écume sur les rives, reflets du ciel.
 export class Water {
@@ -20,7 +20,7 @@ export class Water {
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i) + LAKE.x, z = pos.getZ(i) + LAKE.z;
       const h = terrain.heightAt(x, z);
-      depth[i] = h === null ? 4 : LAKE.level - h;
+      depth[i] = LAKE.level - h;
     }
     ring.setAttribute('depth', new THREE.BufferAttribute(depth, 1));
     if (!this.uniforms) this.uniforms = {

@@ -5,8 +5,9 @@
   "description": "Aetheria — L'Archipel des Échos : un MMO 3D dans le navigateur",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
-    "build": "node tools/bake-terrain.mjs && vite build",
+    "dev": "node tools/bake-terrain.mjs --if-stale && vite --host",
+    "bake": "node tools/bake-terrain.mjs",
+    "build": "node tools/bake-terrain.mjs --if-stale && vite build",
     "preview": "vite preview --host",
     "build:artifact": "npm run build && node tools/make-artifact.mjs",
     "relay": "node server/relay.mjs",

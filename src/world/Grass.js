@@ -1,13 +1,15 @@
 import * as THREE from 'three';
 import { CORR_UV_GLSL } from './Maps.js';
+import { TERRAIN_HEIGHT_GLSL } from './TerrainRenderer.js';
+import { WORLD_HALF } from '../config.js';
 import { mulberry32 } from '../engine/math.js';
 
 // Herbe GPU : une seule instance de brins qui "s'enroule" autour du joueur.
 // Hauteur, densité et couleur viennent des textures du monde ; le vent et le
 // passage des personnages courbent les brins dans le vertex shader.
 export class Grass {
-  constructor(scene, maps, count, radius) {
-    this.scene = scene; this.maps = maps;
+  constructor(scene, maps, tex, count, radius) {
+    this.scene = scene; this.maps = maps; this.tex = tex;
     this.build(count, radius);
   }
 
@@ -36,8 +38,9 @@ export class Grass {
     blade.setAttribute('aOffset', new THREE.InstancedBufferAttribute(offs, 4));
     blade.instanceCount = count;
     this.uniforms = {
-      uHeight: { value: this.maps.heightTex }, uColor: { value: this.maps.colorTex }, uCorruption: { value: this.maps.corruptionTex },
-      uCenter: { value: new THREE.Vector2() }, uRadius: { value: radius }, uTime: { value: 0 }, uExtent: { value: this.maps.main.half }, uMapCenter: { value: new THREE.Vector2(0, 0) },
+      uHeightMap: { value: this.tex.heightTex }, uTerr: { value: this.tex.uTerr }, uColor: { value: this.tex.colorTex }, uMats: { value: this.tex.matTex },
+      uCorruption: { value: this.maps.corruptionTex },
+      uCenter: { value: new THREE.Vector2() }, uRadius: { value: radius }, uTime: { value: 0 }, uExtent: { value: WORLD_HALF },
       uPushers: { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, -1, 0)) },
       uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunColor: { value: new THREE.Color() }, uAmbient: { value: new THREE.Color() },
       uNight: { value: 0 }, uWind: { value: 1 },
@@ -47,20 +50,27 @@ export class Grass {
       uniforms: this.uniforms, side: THREE.DoubleSide, fog: true,
       vertexShader: /* glsl */`
         attribute vec4 aOffset;
-        uniform sampler2D uHeight; uniform sampler2D uColor; uniform sampler2D uCorruption;
-        uniform vec2 uCenter; uniform float uRadius; uniform float uTime; uniform float uExtent; uniform vec2 uMapCenter; uniform vec4 uPushers[8]; uniform float uWind;
+        uniform sampler2D uColor; uniform sampler2D uMats; uniform sampler2D uCorruption;
+        uniform vec2 uCenter; uniform float uRadius; uniform float uTime; uniform float uExtent; uniform vec4 uPushers[8]; uniform float uWind;
+        ${TERRAIN_HEIGHT_GLSL}
         varying vec3 vColor; varying float vY; varying float vFlower; varying float vCor;
         #include <fog_pars_vertex>
         float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+        float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
         void main(){
           vec2 o = aOffset.xy;
           vec2 p = mod(o - uCenter + uRadius, 2.0 * uRadius) - uRadius + uCenter;
-          vec2 uv = (p - uMapCenter + uExtent) / (2.0 * uExtent);
-          vec4 hm = texture2D(uHeight, uv);
+          vec2 uv = (p + uExtent) / (2.0 * uExtent);
+          float ground = terrHeight(p);
+          vec4 mw = texture2D(uMats, uv);
+          // densité : poids d'herbe, touffes et clairières, rien sous l'eau
+          float dens = smoothstep(0.25, 0.85, mw.r) * (0.55 + 0.45 * vnoise(p / 9.0)) * smoothstep(0.25, 0.7, ground);
           float dist = length(p - uCenter);
           float fade = 1.0 - smoothstep(uRadius * 0.7, uRadius, dist);
           float rnd = aOffset.w;
-          float keep = step(rnd, hm.g) * hm.a * fade;
+          float keep = step(rnd, dens) * fade;
+          vec4 hm = vec4(ground, dens, 0.0, 1.0);
           float cor = texture2D(uCorruption, ${CORR_UV_GLSL.replace(/WP/g, 'p')}).r;
           float hgt = (0.55 + rnd * 0.7) * (0.6 + hm.g * 0.6) * keep * (1.0 - cor * 0.35);
           float flower = step(0.965, hash(o * 3.1)) * (1.0 - cor);
@@ -122,13 +132,6 @@ export class Grass {
     const u = this.uniforms;
     u.uTime.value = elapsed;
     u.uCenter.value.set(center.x, center.z);
-    // région de l'archipel sous le joueur : ses textures de hauteur et de couleur
-    const reg = this.maps.regionAt(center.x, center.z);
-    if (reg !== this.region) {
-      this.region = reg;
-      u.uHeight.value = reg.heightTex; u.uColor.value = reg.colorTex;
-      u.uExtent.value = reg.half; u.uMapCenter.value.set(reg.cx, reg.cz);
-    }
     for (let i = 0; i < 8; i++) {
       const p = pushers[i];
       if (p) u.uPushers.value[i].set(p.x, p.z, p.r, 0); else u.uPushers.value[i].set(0, 0, -1, 0);

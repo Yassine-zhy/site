@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Decor } from './Decor.js';
-import { GIVRE, AMBRE, HANTEE, SYLVE, ISLETS } from '../config.js';
+import { GIVRE, AMBRE, HANTEE, SYLVE, PLATEAUX, RECIFS, SAULES, FALAISES, LANTERN_PASS } from '../config.js';
 import { mulberry32 } from '../engine/math.js';
 import { modelEnvTexture } from '../engine/ModelLook.js';
 
@@ -28,7 +28,7 @@ export class Outposts extends Decor {
     this.buildAmbreCamp();
     this.buildMine();
     this.buildCirque();
-    this.buildIslets();
+    this.buildWildlands();
     this.buildIce();
     // nouvelles îles
     this.buildHanteeCamp();
@@ -130,12 +130,32 @@ export class Outposts extends Decor {
     this.placeLantern(a.x - a.radius * 0.95, a.z - 5, true); this.placeLantern(a.x - a.radius * 0.95, a.z + 5, true);
   }
 
-  // l'Îlot des Lanternes porte bien son nom
-  buildIslets() {
-    const isl = ISLETS.find((i) => i.id === 'lanternes');
-    if (isl) this.ring(isl.x, isl.z, isl.radius * 0.55, 6, (x, z, a, i) => this.placeLantern(x, z, i % 2 === 0));
-    const relais = ISLETS.find((i) => i.id === 'relais');
-    if (relais) { this.placeProp('tent', relais.x + 4, relais.z - 3, 7, 1.2); this.placeLantern(relais.x - 3, relais.z + 2, true); }
+  // terres sauvages : cercle de pierres sur la Table du Vent, camp de pêcheurs aux Récifs,
+  // cabane du Marais des Saules, lanternes du Belvédère
+  buildWildlands() {
+    const t = PLATEAUX.table;
+    this.ring(t.x, t.z, 16, 8, (x, z, a, i) => {
+      const o = this.assets.prop(i % 3 === 2 ? 'rubble_large' : 'pillar'), y = this.ground(x, z);
+      o.position.set(x, y - 0.2, z); o.rotation.y = a; o.scale.setScalar(i % 3 === 2 ? 1.3 : 1.6);
+      this.group.add(o);
+      this.colliders.addCircle(x, z, 0.9, y - 1, y + 5, 'ruin');
+    });
+    this.placeBonfire(t.x, t.z, 1.0);
+    const r = RECIFS.headland, c = { x: 742, z: 668 };
+    const P = (name, x, z, s, rot, col = true) => this.placeProp(name, x, z, s, rot, 0, col);
+    P('tent', c.x + 8, c.z + 3, 7, 2.4); P('tent', c.x - 7, c.z + 6, 7, 0.7);
+    P('crate_A_big', c.x + 10, c.z - 5, 7, 0.4); P('barrel', c.x + 12, c.z - 2, 7, 0); P('sack', c.x - 9, c.z - 4, 9, 0.6);
+    this.placeBonfire(c.x, c.z, 0.9);
+    for (const [dx, dz] of [[14, 8], [-12, -8], [0, 14]]) this.placeLantern(c.x + dx, c.z + dz, true);
+    this.placeLantern(r.x, r.z, true);
+    const sw = { x: SAULES.lake.x - 60, z: SAULES.lake.z - 70 };
+    this.placeBuilding({ name: 'building_home_B', x: sw.x, z: sw.z, s: 6, cx: SAULES.lake.x, cz: SAULES.lake.z });
+    P('c_stew_pot', sw.x + 9, sw.z + 4, 1.6, 0.3); P('hw_lantern_standing', sw.x - 6, sw.z - 7, 1.5, 0.8);
+    for (const [dx, dz] of [[10, -6], [-8, 9], [12, 10]]) this.placeLantern(sw.x + dx, sw.z + dz, true);
+    const lp = LANTERN_PASS;
+    for (let i = 0; i < 8; i++) this.placeLantern(lp.x - 26 + (i >> 1) * 17 + (i & 1 ? 6 : -6), lp.z + 10 - (i >> 1) * 6 + (i & 1 ? 5 : -5), i % 2 === 0);
+    const b = FALAISES.belvedere;
+    this.ring(b.x, b.z, b.radius * 0.7, 6, (x, z, a, i) => this.placeLantern(x, z, i % 2 === 0));
   }
 
   // le Lac de Cristal : une glace lisse qui reflète le ciel

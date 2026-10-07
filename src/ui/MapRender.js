@@ -1,59 +1,50 @@
-import * as THREE from 'three';
-import { LAKE, BIG_ISLANDS, WORLD_BOUNDS } from '../config.js';
+import { WATERS, WORLD_BOUNDS } from '../config.js';
+import { CRES } from '../world/Continent.js';
 
-// La carte couvre tout l'archipel : carré de demi-côté MAP_RANGE centré sur (MAP_CX, MAP_CZ).
+// La carte couvre tout le continent : carré de demi-côté MAP_RANGE centré sur (MAP_CX, MAP_CZ).
 export const MAP_CX = WORLD_BOUNDS.cx, MAP_CZ = WORLD_BOUNDS.cz, MAP_RANGE = WORLD_BOUNDS.half;
 
-// Rendu cartographique de l'archipel (style parchemin coloré + ombrage du relief).
+const LAKE_COL = { clear: [61, 143, 176], jungle: [47, 159, 168], marsh: [74, 90, 74], lagoon: [70, 200, 196] };
+
+// Rendu cartographique du continent (couleurs du sol, ombrage du relief, océan dégradé).
 export function renderWorldMap(terrain, size = 512) {
   const c = document.createElement('canvas');
   c.width = c.height = size;
   const g = c.getContext('2d');
   const img = g.createImageData(size, size);
-  const col = new THREE.Color();
   const heights = new Float32Array(size * size);
-  for (let j = 0; j < size; j++) {
-    for (let i = 0; i < size; i++) {
-      const x = MAP_CX - MAP_RANGE + (i + 0.5) / size * MAP_RANGE * 2, z = MAP_CZ - MAP_RANGE + (j + 0.5) / size * MAP_RANGE * 2;
-      const isl = terrain.islandAt(x, z);
-      const k = (j * size + i);
-      if (!isl) { heights[k] = -999; continue; }
-      const y = isl.heightAt(x, z) ?? 0;
-      heights[k] = y;
-    }
+  const W = MAP_RANGE * 2;
+  for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) {
+    heights[j * size + i] = terrain.continentHeight(MAP_CX - MAP_RANGE + (i + 0.5) / size * W, MAP_CZ - MAP_RANGE + (j + 0.5) / size * W);
   }
-  const sea = [ 0x2a, 0x33, 0x55 ];
+  const col = terrain.color;
   for (let j = 0; j < size; j++) {
     for (let i = 0; i < size; i++) {
-      const k = j * size + i;
-      const p = k * 4;
+      const k = j * size + i, p = k * 4;
+      const x = MAP_CX - MAP_RANGE + (i + 0.5) / size * W, z = MAP_CZ - MAP_RANGE + (j + 0.5) / size * W;
       const y = heights[k];
-      const x = MAP_CX - MAP_RANGE + (i + 0.5) / size * MAP_RANGE * 2, z = MAP_CZ - MAP_RANGE + (j + 0.5) / size * MAP_RANGE * 2;
-      if (y === -999) {
-        // mer de nuages : léger motif
-        const n = (Math.sin(x * 0.05) + Math.sin(z * 0.043 + x * 0.01)) * 4;
-        img.data[p] = sea[0] + n; img.data[p + 1] = sea[1] + n; img.data[p + 2] = sea[2] + n; img.data[p + 3] = 255;
+      if (y < 0) {
+        // océan : turquoise près des côtes, bleu profond au large, légères vagues
+        const d = Math.min(1, -y / 22), wv = (Math.sin(x * 0.045 + Math.sin(z * 0.02) * 2) + Math.sin(z * 0.05 + x * 0.012)) * 2.5;
+        img.data[p] = 70 * (1 - d) + 26 * d + wv; img.data[p + 1] = 190 * (1 - d) + 64 * d + wv; img.data[p + 2] = 196 * (1 - d) + 120 * d + wv; img.data[p + 3] = 255;
+        if (y > -0.6) { img.data[p] = 225; img.data[p + 1] = 240; img.data[p + 2] = 240; }
         continue;
       }
-      const isl = terrain.islandAt(x, z);
-      const hl = heights[k - 1] > -999 ? heights[k - 1] : y, hu = heights[k - size] > -999 ? heights[k - size] : y;
-      const slope = Math.min(1, Math.hypot(y - hl, y - hu) / 3);
-      isl.colorFn(col, x, y, z, slope, false);
-      if (isl === terrain.main && y < LAKE.level - 0.2 && Math.hypot(x - LAKE.x, z - LAKE.z) < LAKE.radius * 1.6) col.set('#3d8fb0');
-      for (const b of BIG_ISLANDS) if (isl.def === b && b.lake && y < b.lake.level + 0.3 && Math.hypot(x - b.lake.x, z - b.lake.z) < b.lake.radius * 1.8) col.set(b.biome === 'snow' ? '#9fd8ee' : b.biome === 'haunted' ? '#4a5a4a' : '#2f9fa8');
-      col.convertLinearToSRGB();
+      const ci = Math.min(CRES - 1, Math.floor((i + 0.5) / size * CRES)), cj = Math.min(CRES - 1, Math.floor((j + 0.5) / size * CRES));
+      const q = (cj * CRES + ci) * 4;
+      let r = col[q], gg = col[q + 1], b = col[q + 2];
+      for (const w of WATERS) if (y < w.level + 0.05 && Math.hypot(x - w.x, z - w.z) < w.radius * 1.8) [r, gg, b] = LAKE_COL[w.kind] || LAKE_COL.clear;
       // ombrage (lumière venant du nord-ouest)
-      const shade = 1 + ((hl - y) + (hu - y)) * 0.08;
-      const alt = 0.85 + Math.min(0.3, y / 260);
-      img.data[p] = Math.min(255, col.r * 255 * shade * alt);
-      img.data[p + 1] = Math.min(255, col.g * 255 * shade * alt);
-      img.data[p + 2] = Math.min(255, col.b * 255 * shade * alt);
+      const hl = i > 0 ? heights[k - 1] : y, hu = j > 0 ? heights[k - size] : y;
+      const shade = Math.max(0.55, Math.min(1.45, 1 + ((hl - y) + (hu - y)) * 0.05));
+      const alt = 0.9 + Math.min(0.25, y / 300);
+      img.data[p] = Math.min(255, r * shade * alt);
+      img.data[p + 1] = Math.min(255, gg * shade * alt);
+      img.data[p + 2] = Math.min(255, b * shade * alt);
       img.data[p + 3] = 255;
     }
   }
   g.putImageData(img, 0, 0);
-  // liseré des côtes
-  g.globalCompositeOperation = 'source-over';
   return c;
 }
 

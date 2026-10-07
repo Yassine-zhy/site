@@ -106,7 +106,7 @@ export class Boss {
           for (let i = 0; i < 4; i++) {
             const a = i / 4 * Math.PI * 2 + Math.random();
             const x = e.position.x + Math.cos(a) * 8, z = e.position.z + Math.sin(a) * 8;
-            if (g.world.terrain.heightAt(x, z) === null) continue;
+            if (!g.world.terrain.isLand(x, z)) continue;
             g.enemies.spawn(kit.adds[i % kit.adds.length], Math.max(1, e.level - 4), x, z, { home: e.home });
           }
           g.enemies.fx('bossSummon', e.position, { b: e.def.bossId });

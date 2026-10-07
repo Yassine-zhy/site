@@ -1,261 +1,312 @@
 // Configuration globale du monde d'Aetheria.
 // Unités : 1 unité ≈ 0,75 m (un héros KayKit mesure ~2,4 unités).
 //
-// Les positions des régions sont écrites sur un « plan » puis agrandies au chargement
-// (voir grow() en bas du fichier) : distances ×WORLD_SCALE, îlots ×ISLET_SCALE, sommets
-// ×PEAK_SCALE. Le village, les campements et les arènes gardent leur taille.
-export const WORLD_SCALE = 2.2;
-export const ISLET_SCALE = 2.6;
-export const PEAK_SCALE = 1.3;
-// plan -> monde (pour les rares positions écrites ailleurs que dans ce fichier)
-export const W = (v) => Math.round(v * WORLD_SCALE);
+// Le monde est un continent unique entouré d'océan (≈ 3,3 km de côté) : huit zones numérotées
+// dont la difficulté grandit en s'éloignant de Havrelumière, et quatre terres sauvages entre elles.
 
 export const WORLD_SEED = 1337;
-export const GAME_VERSION = '1.0.0';
+export const GAME_VERSION = '2.0.0';
+// (héritage : ancienne échelle « plan → monde »)
+export const W = (v) => v;
 
-export const MAIN_ISLAND = { x: 0, z: 0, radius: 215, coastNoise: 22, baseY: 0 };
+// Emprise de la carte de hauteur (carré centré sur l'origine) et niveau de la mer.
+export const WORLD_HALF = 1850;
+export const SEA_LEVEL = 0;
+export const WORLD_BOUNDS = { cx: 0, cz: 0, half: WORLD_HALF };
 
-export const VILLAGE = { x: 0, z: 0, radius: 52, height: 14, name: 'Havrelumière' };
-export const LAKE = { x: -122, z: 34, radius: 30, level: 8.6, name: 'Lac Miroir' };
-export const MOUNTAIN = { x: -12, z: -140, radius: 78, peak: 78, summitRadius: 20, summitHeight: 70, name: 'Pic du Silence' };
-export const FOREST = { x: 118, z: 14, radius: 72, name: 'Bois-Murmure' };
-export const RUINS = { x: 34, z: 132, radius: 46, height: 11, name: 'Les Cendres' };
-export const HILLS = { x: -95, z: 120, radius: 70, name: 'Collines Ambrées' };
-// hameau agricole au nord-est de l'île (sûr, comme le village)
-export const HAMLET = { x: 140, z: -105, radius: 30, height: 13, name: 'Les Prés-Bas' };
-
-// Îlots flottants (relief propre + face inférieure rocheuse).
-export const ISLETS = [
-  { id: 'nuees', name: 'Îlot des Nuées', x: -300, z: -60, radius: 36, baseY: 42, relief: 7, seed: 11 },
-  { id: 'tresor', name: 'Îlot du Trésor', x: 282, z: -96, radius: 23, baseY: 30, relief: 4, seed: 23 },
-  { id: 'suspendu', name: 'Îlot Suspendu', x: 228, z: 196, radius: 20, baseY: 6, relief: 3, seed: 37 },
-  { id: 'pelerin', name: 'Îlot du Pèlerin', x: -206, z: -244, radius: 21, baseY: 64, relief: 4, seed: 41 },
-  { id: 'eclat', name: 'Éclat Errant', x: 96, z: -262, radius: 12, baseY: 22, relief: 2, seed: 53 },
-  // îlots-relais vers les Cimes de Givre (nord) et les Terres d'Ambre (est)
-  { id: 'passeur', name: 'Rocher du Passeur', x: -22, z: -300, radius: 19, baseY: 30, relief: 3, seed: 61, biome: 'snowy' },
-  { id: 'lanternes', name: 'Îlot des Lanternes', x: -48, z: -398, radius: 21, baseY: 36, relief: 4, seed: 67, biome: 'snowy' },
-  { id: 'relais', name: 'Îlot du Relais', x: 300, z: 44, radius: 20, baseY: 16, relief: 3, seed: 73, biome: 'dry' },
-  { id: 'ventsec', name: 'Îlot du Vent Sec', x: 410, z: 30, radius: 19, baseY: 20, relief: 3, seed: 79, biome: 'dry' },
-  // vers les Landes Spectrales (ouest) et la Canopée d'Émeraude (sud)
-  { id: 'saules', name: 'Îlot des Saules', x: -290, z: 95, radius: 28, baseY: 12, relief: 3, seed: 89, biome: 'marsh' },
-  { id: 'fanal', name: 'Îlot du Fanal', x: -415, z: 125, radius: 26, baseY: 16, relief: 4, seed: 97, biome: 'dusk' },
-  { id: 'fougeres', name: 'Îlot des Fougères', x: 60, z: 300, radius: 26, baseY: 9, relief: 3, seed: 101, biome: 'lush' },
-  { id: 'cascade', name: 'Îlot de la Cascade', x: 80, z: 430, radius: 28, baseY: 13, relief: 5, seed: 107, biome: 'lush' },
+// Le continent : union de disques (centre, rayon des terres, côte à falaises 0..1).
+export const LANDMASS = [
+  { id: 'core', x: 0, z: 0, r: 660, cliff: 0.15 },
+  { id: 'givre', x: -60, z: -1080, r: 540, cliff: 0.75 },
+  { id: 'ambre', x: 1080, z: 40, r: 530, cliff: 0.5 },
+  { id: 'sylve', x: 180, z: 1080, r: 530, cliff: 0.2 },
+  { id: 'hantee', x: -1060, z: 260, r: 530, cliff: 0.6 },
+  { id: 'plateaux', x: 650, z: -700, r: 420, cliff: 0.8 },
+  { id: 'recifs', x: 780, z: 720, r: 400, cliff: 0.05 },
+  { id: 'saules', x: -640, z: 860, r: 400, cliff: 0.1 },
+  { id: 'falaises', x: -700, z: -640, r: 420, cliff: 0.95 },
 ];
 
-// Grandes îles (biomes propres). Les reliefs sont décrits par des « traits » combinés.
+// Zones : nom, niveaux, numéro (les terres sauvages n'en ont pas). Une zone couvre un disque.
+export const ZONES = [
+  { id: 'pres', n: 1, name: 'Les Prés d’Havrelumière', x: -40, z: 40, r: 330, level: [1, 5], biome: 'temperate' },
+  { id: 'bois', n: 2, name: 'Le Bois-Murmure', x: 450, z: 40, r: 250, level: [4, 8], biome: 'temperate' },
+  { id: 'cendres', n: 3, name: 'Les Cendres', x: 90, z: 500, r: 250, level: [7, 11], biome: 'temperate' },
+  { id: 'pic', n: 4, name: 'Le Pic du Silence', x: -30, z: -480, r: 260, level: [10, 15], biome: 'temperate' },
+  { id: 'ambre', n: 5, name: 'Les Terres d’Ambre', x: 1080, z: 40, r: 470, level: [12, 17], biome: 'amber' },
+  { id: 'givre', n: 6, name: 'Les Cimes de Givre', x: -60, z: -1080, r: 480, level: [15, 20], biome: 'snow' },
+  { id: 'canopee', n: 7, name: 'La Canopée d’Émeraude', x: 180, z: 1080, r: 470, level: [18, 23], biome: 'jungle' },
+  { id: 'landes', n: 8, name: 'Les Landes Spectrales', x: -1060, z: 260, r: 470, level: [22, 28], biome: 'haunted' },
+  { id: 'falaises', n: 0, name: 'Les Falaises du Couchant', x: -700, z: -640, r: 360, level: [11, 15], biome: 'cliffs' },
+  { id: 'plateaux', n: 0, name: 'Les Hauts-Plateaux du Vent', x: 650, z: -700, r: 360, level: [10, 14], biome: 'highland' },
+  { id: 'recifs', n: 0, name: 'La Côte des Récifs', x: 780, z: 720, r: 340, level: [16, 19], biome: 'beach' },
+  { id: 'saules', n: 0, name: 'Le Marais des Saules', x: -640, z: 860, r: 340, level: [21, 24], biome: 'swamp' },
+];
+
+// ------------------------------------------------------------------ Zones 1 à 4 (cœur du continent)
+export const VILLAGE = { x: 0, z: 0, radius: 52, height: 14, name: 'Havrelumière' };
+export const HAMLET = { x: 300, z: -240, radius: 30, height: 13, name: 'Les Prés-Bas' };
+export const LAKE = { x: -300, z: 90, radius: 60, level: 8.6, name: 'Lac Miroir' };
+export const HILLS = { x: -280, z: 300, radius: 170, name: 'Collines Ambrées' };
+export const FOREST = { x: 450, z: 40, radius: 240, name: 'Bois-Murmure' };
+export const RUINS = { x: 90, z: 480, radius: 90, height: 11, name: 'Les Cendres' };
+export const MOUNTAIN = { x: -30, z: -480, radius: 230, peak: 120, summitRadius: 22, summitHeight: 104, name: 'Pic du Silence' };
+// (héritage) l'île principale n'existe plus : c'est le cœur du continent
+export const MAIN_ISLAND = { x: 0, z: 0, radius: 660, coastNoise: 0, baseY: 0 };
+// plus d'îlots flottants ni de ponts de corde
+export const ISLETS = [];
+export const BRIDGES = [];
+
+// ------------------------------------------------------------------ régions (zones 5 à 8 et terres sauvages)
 //   peak : montagne (+ plateau sommital) · plateau : terrain aplani · basin : cuvette (lac, arène)
 //   mesa : plateau à falaises, avec rampe d'accès · canyon : gorge creusée le long d'une ligne
 export const GIVRE = {
-  id: 'givre', name: 'Les Cimes de Givre', biome: 'snow', x: -40, z: -690, radius: 190, coastNoise: 24, seed: 71, depth: 170, baseY: 34,
-  camp: { x: -46, z: -545, radius: 24, name: 'Halte-du-Givre' },
-  lake: { x: -150, z: -660, radius: 36, level: 32.5, name: 'Lac de Cristal' },
-  peak: { x: 20, z: -775, radius: 92, peak: 100, summitRadius: 20, summitHeight: 108, name: 'Mont Givrecroc' },
-  sanctuary: { x: 95, z: -640, radius: 30, height: 40, name: 'Sanctuaire Gelé' },
+  id: 'givre', name: 'Les Cimes de Givre', biome: 'snow', x: -60, z: -1080, radius: 520, seed: 71, baseY: 34,
+  camp: { x: -73, z: -761, radius: 30, name: 'Halte-du-Givre' },
+  lake: { x: -302, z: -1014, radius: 79, level: 32.5, name: 'Lac de Cristal' },
+  peak: { x: 72, z: -1267, radius: 202, peak: 130, summitRadius: 20, summitHeight: 140, name: 'Mont Givrecroc' },
+  sanctuary: { x: 237, z: -970, radius: 42, height: 40, name: 'Sanctuaire Gelé' },
   features: [
-    { type: 'plateau', x: -46, z: -545, radius: 24, height: 36 },
-    { type: 'basin', x: -150, z: -660, radius: 36, level: 32.5 },
-    { type: 'peak', x: 20, z: -775, radius: 92, height: 100, summitRadius: 20, summitHeight: 108 },
-    { type: 'plateau', x: 95, z: -640, radius: 30, height: 40 },
-    { type: 'peak', x: -130, z: -770, radius: 50, height: 40 },
-    { type: 'peak', x: 120, z: -560, radius: 40, height: 24 },
+    { type: 'plateau', x: -73, z: -761, radius: 30, height: 36 },
+    { type: 'basin', x: -302, z: -1014, radius: 79, level: 32.5 },
+    { type: 'peak', x: 72, z: -1267, radius: 202, height: 130, summitRadius: 20, summitHeight: 140 },
+    { type: 'plateau', x: 237, z: -970, radius: 42, height: 40 },
+    { type: 'peak', x: -258, z: -1256, radius: 110, height: 52 },
+    { type: 'peak', x: 300, z: -800, radius: 80, height: 31 },
   ],
 };
 export const AMBRE = {
-  id: 'ambre', name: 'Les Terres d’Ambre', biome: 'amber', x: 700, z: 40, radius: 185, coastNoise: 24, seed: 83, depth: 150, baseY: 18,
-  camp: { x: 560, z: 52, radius: 24, name: 'Comptoir d’Ambre' },
-  mine: { x: 640, z: 180, name: 'Mine de Kessa' },
-  cirque: { x: 810, z: 40, radius: 30, height: 16, name: 'Cirque d’Ambre' },
+  id: 'ambre', name: 'Les Terres d’Ambre', biome: 'amber', x: 1080, z: 40, radius: 500, seed: 83, baseY: 18,
+  camp: { x: 772, z: 66, radius: 30, name: 'Comptoir d’Ambre' },
+  mine: { x: 948, z: 348, name: 'Mine de Kessa' },
+  cirque: { x: 1322, z: 40, radius: 45, height: 16, name: 'Cirque d’Ambre' },
   features: [
-    { type: 'plateau', x: 560, z: 52, radius: 24, height: 20 },
-    { type: 'mesa', x: 690, z: -50, radius: 40, height: 36, rampAngle: 1.7 },
-    { type: 'mesa', x: 770, z: 130, radius: 30, height: 30, rampAngle: -2.2 },
-    { type: 'mesa', x: 620, z: -110, radius: 22, height: 28, rampAngle: 0.6 },
-    { type: 'basin', x: 810, z: 40, radius: 30, level: 16, wall: 16 },
-    { type: 'canyon', pts: [[600, 150], [660, 110], [720, 120], [770, 60]], width: 14, depth: 12 },
-    { type: 'plateau', x: 640, z: 180, radius: 18, height: 19 },
+    { type: 'plateau', x: 772, z: 66, radius: 30, height: 20 },
+    { type: 'mesa', x: 1058, z: -158, radius: 70, height: 47, rampAngle: 1.7 },
+    { type: 'mesa', x: 1234, z: 238, radius: 53, height: 39, rampAngle: -2.2 },
+    { type: 'mesa', x: 904, z: -290, radius: 39, height: 36, rampAngle: 0.6 },
+    { type: 'basin', x: 1322, z: 40, radius: 45, level: 16, wall: 16 },
+    { type: 'canyon', pts: [[860, 282], [992, 194], [1124, 216], [1234, 84]], width: 25, depth: 17 },
+    { type: 'plateau', x: 948, z: 348, radius: 23, height: 19 },
   ],
 };
-// Landes Spectrales : cimetières, marais et crypte (ouest). Niveaux 21-27.
 export const HANTEE = {
-  id: 'hantee', name: 'Les Landes Spectrales', biome: 'haunted', x: -650, z: 170, radius: 175, coastNoise: 22, seed: 113, depth: 150, baseY: 22,
-  camp: { x: -505, z: 160, radius: 24, name: 'Veille-des-Morts' },
-  lake: { x: -600, z: 268, radius: 34, level: 21.5, name: 'Marais des Âmes' },
-  cemetery: { x: -640, z: 112, radius: 34, height: 25, name: 'Le Grand Cimetière' },
-  crypt: { x: -770, z: 205, radius: 24, height: 20, name: 'Crypte du Fossoyeur' },
-  peak: { x: -745, z: 55, radius: 56, peak: 44, name: 'Mont des Corbeaux' },
+  id: 'hantee', name: 'Les Landes Spectrales', biome: 'haunted', x: -1060, z: 260, radius: 500, seed: 113, baseY: 22,
+  camp: { x: -741, z: 238, radius: 30, name: 'Veille-des-Morts' },
+  lake: { x: -950, z: 476, radius: 75, level: 21.5, name: 'Marais des Âmes' },
+  cemetery: { x: -1038, z: 132, radius: 48, height: 25, name: 'Le Grand Cimetière' },
+  crypt: { x: -1324, z: 337, radius: 36, height: 20, name: 'Crypte du Fossoyeur' },
+  peak: { x: -1269, z: 7, radius: 123, peak: 57, name: 'Mont des Corbeaux' },
   features: [
-    { type: 'plateau', x: -505, z: 160, radius: 24, height: 24 },
-    { type: 'plateau', x: -640, z: 112, radius: 34, height: 25 },
-    { type: 'basin', x: -600, z: 268, radius: 34, level: 21.5 },
-    { type: 'basin', x: -770, z: 205, radius: 24, level: 20, wall: 14, gate: 0 },
-    { type: 'peak', x: -745, z: 55, radius: 56, height: 44 },
-    { type: 'peak', x: -560, z: 40, radius: 32, height: 18 },
-    { type: 'canyon', pts: [[-700, 300], [-665, 322], [-625, 330]], width: 12, depth: 9 },
+    { type: 'plateau', x: -741, z: 238, radius: 30, height: 24 },
+    { type: 'plateau', x: -1038, z: 132, radius: 48, height: 25 },
+    { type: 'basin', x: -950, z: 476, radius: 75, level: 21.5 },
+    { type: 'basin', x: -1324, z: 337, radius: 36, level: 20, wall: 14, gate: 0 },
+    { type: 'peak', x: -1269, z: 7, radius: 123, height: 57 },
+    { type: 'peak', x: -862, z: -26, radius: 70, height: 23 },
+    { type: 'canyon', pts: [[-1170, 546], [-1093, 594], [-1005, 612]], width: 22, depth: 13 },
   ],
 };
-// Canopée d'Émeraude : jungle, lac et temple englouti (sud). Niveaux 16-22.
 export const SYLVE = {
-  id: 'sylve', name: 'La Canopée d’Émeraude', biome: 'jungle', x: 100, z: 680, radius: 175, coastNoise: 22, seed: 127, depth: 160, baseY: 16,
-  camp: { x: 95, z: 540, radius: 24, name: 'Refuge des Lianes' },
-  lake: { x: 30, z: 700, radius: 38, level: 15.5, name: 'Lac Émeraude' },
-  temple: { x: 178, z: 640, radius: 26, height: 22, name: 'Temple Englouti' },
-  peak: { x: 150, z: 772, radius: 58, peak: 62, summitRadius: 18, summitHeight: 74, name: 'Mont Feuillu' },
+  id: 'sylve', name: 'La Canopée d’Émeraude', biome: 'jungle', x: 180, z: 1080, radius: 500, seed: 127, baseY: 16,
+  camp: { x: 169, z: 772, radius: 30, name: 'Refuge des Lianes' },
+  lake: { x: 26, z: 1124, radius: 84, level: 15.5, name: 'Lac Émeraude' },
+  temple: { x: 352, z: 992, radius: 36, height: 22, name: 'Temple Englouti' },
+  peak: { x: 290, z: 1282, radius: 128, peak: 81, summitRadius: 18, summitHeight: 96, name: 'Mont Feuillu' },
   features: [
-    { type: 'plateau', x: 95, z: 540, radius: 24, height: 18 },
-    { type: 'basin', x: 30, z: 700, radius: 38, level: 15.5 },
-    { type: 'plateau', x: 178, z: 640, radius: 26, height: 22 },
-    { type: 'peak', x: 150, z: 772, radius: 58, height: 62, summitRadius: 18, summitHeight: 74 },
-    { type: 'peak', x: 10, z: 600, radius: 34, height: 24 },
-    { type: 'peak', x: 225, z: 715, radius: 38, height: 30 },
+    { type: 'plateau', x: 169, z: 772, radius: 30, height: 18 },
+    { type: 'basin', x: 26, z: 1124, radius: 84, level: 15.5 },
+    { type: 'plateau', x: 352, z: 992, radius: 36, height: 22 },
+    { type: 'peak', x: 290, z: 1282, radius: 128, height: 81, summitRadius: 18, summitHeight: 96 },
+    { type: 'peak', x: -18, z: 904, radius: 75, height: 31 },
+    { type: 'peak', x: 455, z: 1157, radius: 84, height: 39 },
+  ],
+};
+// terres sauvages entre les zones
+export const PLATEAUX = {
+  id: 'plateaux', name: 'Les Hauts-Plateaux du Vent', biome: 'highland', x: 650, z: -700, radius: 400, seed: 131, baseY: 30,
+  table: { x: 700, z: -760, radius: 70, height: 58, name: 'La Table du Vent' },
+  features: [
+    { type: 'mesa', x: 700, z: -760, radius: 70, height: 58, rampAngle: 2.4 },
+    { type: 'peak', x: 520, z: -880, radius: 100, height: 45 },
+    { type: 'peak', x: 820, z: -560, radius: 70, height: 24 },
+  ],
+};
+export const RECIFS = {
+  id: 'recifs', name: 'La Côte des Récifs', biome: 'beach', x: 780, z: 720, radius: 380, seed: 137, baseY: 7,
+  lake: { x: 760, z: 800, radius: 52, level: 3.2, name: 'Lagune des Récifs' },
+  headland: { x: 920, z: 620, name: 'Pointe aux Coquillages' },
+  features: [
+    { type: 'basin', x: 760, z: 800, radius: 52, level: 3.2 },
+    { type: 'peak', x: 920, z: 620, radius: 70, height: 20 },
+  ],
+};
+export const SAULES = {
+  id: 'saules', name: 'Le Marais des Saules', biome: 'swamp', x: -640, z: 860, radius: 380, seed: 139, baseY: 6,
+  lake: { x: -620, z: 900, radius: 80, level: 4.2, name: 'Étang des Saules' },
+  features: [
+    { type: 'basin', x: -620, z: 900, radius: 80, level: 4.2 },
+    { type: 'peak', x: -760, z: 760, radius: 60, height: 12 },
+  ],
+};
+export const FALAISES = {
+  id: 'falaises', name: 'Les Falaises du Couchant', biome: 'cliffs', x: -700, z: -640, radius: 400, seed: 149, baseY: 34,
+  peak: { x: -780, z: -720, radius: 150, peak: 74, name: 'Mont du Couchant' },
+  belvedere: { x: -560, z: -560, radius: 40, height: 50, name: 'Le Belvédère' },
+  features: [
+    { type: 'peak', x: -780, z: -720, radius: 150, height: 74 },
+    { type: 'plateau', x: -560, z: -560, radius: 40, height: 50 },
+    { type: 'peak', x: -620, z: -820, radius: 80, height: 40 },
   ],
 };
 export const BIG_ISLANDS = [GIVRE, AMBRE, HANTEE, SYLVE];
+// col entre le Pic du Silence et les Cimes de Givre, jalonné de lanternes
+export const LANTERN_PASS = { x: -150, z: -680, name: 'Col des Lanternes' };
+export const REGIONS = [GIVRE, AMBRE, HANTEE, SYLVE, PLATEAUX, RECIFS, SAULES, FALAISES];
 
-// Colonnes de vent ascendantes : permettent de planer vers les îlots.
+// Colonnes de vent ascendantes, au pied des reliefs : on y monte pour planer.
+// lift : hauteur de la colonne au-dessus du sol.
 export const UPDRAFTS = [
-  { x: -206, z: -22, radius: 7, top: 96 },
-  { x: 205, z: -66, radius: 6, top: 74 },
-  { x: -126, z: -186, radius: 6, top: 118 },
-  { x: 168, z: 160, radius: 6, top: 48 },
-  { x: 60, z: -200, radius: 6, top: 64 },
-  { x: -20, z: -88, radius: 5, top: 96 },
-  { x: -10, z: -308, radius: 5, top: 88 },
-  { x: -60, z: -410, radius: 5, top: 96 },
-  { x: 296, z: 58, radius: 5, top: 70 },
-  { x: 418, z: 42, radius: 5, top: 76 },
-  { x: -10, z: -560, radius: 6, top: 120 },
-  { x: 600, z: -20, radius: 6, top: 84 },
-  { x: -300, z: 70, radius: 6, top: 80 },
-  { x: -560, z: 190, radius: 6, top: 96 },
-  { x: 70, z: 285, radius: 6, top: 70 },
-  { x: 120, z: 560, radius: 6, top: 120 },
-  { x: -180, z: 140, radius: 6, top: 90 },
+  { x: -110, z: -150, radius: 8, lift: 110 },
+  { x: -190, z: -420, radius: 8, lift: 130 },
+  { x: 100, z: -390, radius: 8, lift: 120 },
+  { x: -560, z: -560, radius: 8, lift: 110 },
+  { x: -830, z: -560, radius: 8, lift: 120 },
+  { x: 620, z: -640, radius: 8, lift: 110 },
+  { x: 770, z: -830, radius: 8, lift: 110 },
+  { x: -150, z: -850, radius: 8, lift: 130 },
+  { x: 60, z: -1120, radius: 8, lift: 140 },
+  { x: 1000, z: -60, radius: 8, lift: 100 },
+  { x: 1180, z: 200, radius: 8, lift: 100 },
+  { x: 230, z: 850, radius: 8, lift: 130 },
+  { x: 300, z: 1150, radius: 8, lift: 120 },
+  { x: -860, z: 120, radius: 8, lift: 110 },
+  { x: -1180, z: 280, radius: 8, lift: 110 },
+  { x: 880, z: 600, radius: 8, lift: 90 },
+  { x: -560, z: 780, radius: 8, lift: 90 },
 ];
 
-// Ponts de corde entre deux îles (ids ; 'main' = île principale). Les extrémités sont
-// calculées sur les côtes au chargement (Terrain.resolveBridges).
-export const BRIDGES = [
-  { a: 'main', b: 'suspendu' },
-  { a: 'main', b: 'passeur' },
-  { a: 'passeur', b: 'lanternes' },
-  { a: 'lanternes', b: 'givre' },
-  { a: 'main', b: 'relais' },
-  { a: 'relais', b: 'ventsec' },
-  { a: 'ventsec', b: 'ambre' },
-  { a: 'main', b: 'saules' },
-  { a: 'saules', b: 'fanal' },
-  { a: 'fanal', b: 'hantee' },
-  { a: 'main', b: 'fougeres' },
-  { a: 'fougeres', b: 'cascade' },
-  { a: 'cascade', b: 'sylve' },
-]
-
-// Les Phares : objectif partagé par tous les joueurs du monde.
+// Les Phares : objectif partagé par tous les joueurs du monde (ids et ordre conservés).
 export const BEACONS = [
-  { id: 'aube', name: "Phare de l'Aube", x: 66, z: -52, radius: 70, decayHours: 18, lore: "Le premier phare, celui qui veille sur Havrelumière." },
-  { id: 'murmures', name: 'Phare des Murmures', x: 140, z: 36, radius: 72, decayHours: 14, lore: 'Ses chants apaisent les arbres du Bois-Murmure.' },
-  { id: 'cendres', name: 'Phare des Cendres', x: 40, z: 146, radius: 72, decayHours: 12, lore: 'Dressé sur les ruines de la vieille cité.' },
-  { id: 'nuees', name: 'Phare des Nuées', x: -286, z: -50, radius: 60, decayHours: 12, islet: 'nuees', lore: "Perché au-dessus de la mer de nuages, seul le vent y mène." },
-  { id: 'silence', name: 'Phare du Silence', x: -12, z: -146, radius: 90, decayHours: 10, lore: 'Au sommet du pic, gardé par le Roi Sans Lumière.' },
-  { id: 'givre', name: 'Phare du Givre', x: -112, z: -590, radius: 80, decayHours: 12, lore: 'Sa flamme bleue fait fondre la glace des Cimes.' },
-  { id: 'ambre', name: 'Phare d’Ambre', x: 700, z: 66, radius: 85, decayHours: 12, lore: 'Dressé au milieu des mesas, il brille comme du miel.' },
-  { id: 'ames', name: 'Phare des Âmes', x: -612, z: 150, radius: 80, decayHours: 10, lore: 'Sa lueur pâle guide les morts égarés hors des Landes.' },
-  { id: 'emeraude', name: 'Phare d’Émeraude', x: 128, z: 598, radius: 80, decayHours: 12, lore: 'Les lianes de la Canopée s’enroulent autour de sa flamme verte.' },
+  { id: 'aube', name: "Phare de l'Aube", x: 150, z: -120, radius: 150, decayHours: 18, lore: "Le premier phare, celui qui veille sur Havrelumière." },
+  { id: 'murmures', name: 'Phare des Murmures', x: 480, z: 70, radius: 160, decayHours: 14, lore: 'Ses chants apaisent les arbres du Bois-Murmure.' },
+  { id: 'cendres', name: 'Phare des Cendres', x: 100, z: 505, radius: 160, decayHours: 12, lore: 'Dressé sur les ruines de la vieille cité.' },
+  { id: 'nuees', name: 'Phare du Couchant', x: -560, z: -545, radius: 170, decayHours: 12, lore: "Perché sur le Belvédère, il veille sur les Falaises du Couchant." },
+  { id: 'silence', name: 'Phare du Silence', x: -30, z: -493, radius: 200, decayHours: 10, lore: 'Au sommet du pic, gardé par le Roi Sans Lumière.' },
+  { id: 'givre', name: 'Phare du Givre', x: -218, z: -860, radius: 176, decayHours: 12, lore: 'Sa flamme bleue fait fondre la glace des Cimes.' },
+  { id: 'ambre', name: 'Phare d’Ambre', x: 1080, z: 97, radius: 187, decayHours: 12, lore: 'Dressé au milieu des mesas, il brille comme du miel.' },
+  { id: 'ames', name: 'Phare des Âmes', x: -976, z: 216, radius: 176, decayHours: 10, lore: 'Sa lueur pâle guide les morts égarés hors des Landes.' },
+  { id: 'emeraude', name: 'Phare d’Émeraude', x: 228, z: 924, radius: 176, decayHours: 12, lore: 'Les lianes de la Canopée s’enroulent autour de sa flamme verte.' },
 ];
 
-// Chemins de terre (polylignes XZ).
+// Routes (polylignes XZ) : le relief s'y aplanit et la terre y est battue.
 export const PATHS = [
-  [[0, 0], [40, -10], [80, 4], [118, 14], [140, 36]],
-  [[0, 0], [10, 50], [24, 96], [34, 132], [40, 146]],
-  [[0, 0], [-46, 12], [-88, 24], [-100, 30]],
-  [[0, 0], [8, -46], [30, -50], [66, -52]],
-  [[0, 0], [-8, -50], [-6, -80], [10, -100], [-30, -112], [6, -128], [-12, -146]],
-  [[-88, 24], [-120, 70], [-95, 120]],
-  [[118, 14], [150, 90], [176, 158]],
-  [[-100, 30], [-170, 0], [-206, -22]],
-  [[-12, -146], [-10, -180], [-14, -206]],
-  [[-50, -506], [-46, -545], [-80, -570], [-112, -590]],
-  [[-46, -545], [-10, -580], [20, -640], [95, -640]],
-  [[-46, -545], [-120, -620], [-150, -660]],
-  [[95, -640], [60, -700], [30, -740], [20, -775]],
-  [[528, 46], [560, 52], [640, 60], [700, 66]],
-  [[640, 60], [650, 120], [640, 180]],
-  [[700, 66], [760, 50], [810, 40]],
-  [[700, 66], [690, 10], [700, -10]],
-  // vers les Prés-Bas
-  [[30, -50], [80, -70], [120, -95], [140, -105]],
-  // vers les ponts de l'ouest et du sud
-  [[-88, 24], [-150, 60], [-205, 70]],
-  [[24, 96], [30, 160], [42, 205]],
-  // Landes Spectrales
-  [[-478, 150], [-505, 160], [-560, 140], [-612, 150], [-640, 112]],
-  [[-612, 150], [-615, 215], [-600, 240]],
-  [[-640, 112], [-700, 150], [-745, 195]],
-  [[-640, 112], [-690, 80], [-730, 70]],
-  // Canopée d'Émeraude
-  [[95, 508], [95, 540], [128, 598], [178, 640]],
-  [[95, 540], [50, 590], [30, 655]],
-  [[178, 640], [175, 700], [158, 750]],
+  // vers l'est : Bois-Murmure, Comptoir d'Ambre, Cirque, Mine
+  [[0, 0], [90, -20], [200, 10], [330, 30], [480, 60], [620, 66], [772, 66]],
+  [[772, 66], [900, 80], [1080, 97], [1200, 60], [1290, 40]],
+  [[1080, 97], [1040, 200], [948, 330]],
+  // vers les Prés-Bas et les Hauts-Plateaux
+  [[0, 0], [60, -60], [150, -120], [230, -180], [300, -240]],
+  [[300, -240], [420, -380], [560, -560], [640, -660]],
+  // vers le sud : les Cendres, la Canopée
+  [[0, 0], [20, 120], [50, 260], [80, 400], [90, 480]],
+  [[90, 480], [120, 620], [169, 772]],
+  [[169, 772], [260, 880], [352, 992]],
+  [[169, 772], [90, 950], [60, 1040]],
+  [[352, 992], [330, 1120], [300, 1250]],
+  [[90, 480], [300, 560], [520, 640], [760, 700]],
+  // vers l'ouest : Lac Miroir, Landes Spectrales, Marais des Saules
+  [[0, 0], [-90, 30], [-200, 60], [-250, 80]],
+  [[-250, 80], [-420, 150], [-600, 220], [-741, 238]],
+  [[-741, 238], [-880, 190], [-1000, 150], [-1038, 132]],
+  [[-1038, 132], [-1180, 250], [-1290, 330]],
+  [[-741, 238], [-850, 380], [-910, 450]],
+  [[-741, 238], [-700, 500], [-660, 700], [-640, 830]],
+  // vers le nord : contournement du Pic, Cimes de Givre
+  [[0, 0], [-30, -90], [-110, -200], [-200, -300], [-250, -420]],
+  [[-250, -420], [-230, -560], [-150, -680], [-73, -761]],
+  [[-73, -761], [60, -860], [200, -950], [237, -970]],
+  [[-73, -761], [-200, -900], [-260, -980]],
+  [[237, -970], [160, -1100], [100, -1230]],
+  // sentier du sommet du Pic
+  [[-110, -200], [-60, -280], [-95, -340], [-25, -385], [-65, -435], [-30, -470]],
+  // vers les Falaises du Couchant
+  [[-250, -420], [-420, -500], [-560, -560], [-680, -620]],
 ];
 
-// Zones d'apparition des squelettes.
+// Zones d'apparition des monstres.
 export const SPAWN_ZONES = [
-  { id: 'collines', x: -95, z: 120, radius: 52, level: [1, 3], types: ['minion', 'slime', 'slime'], max: 7 },
-  { id: 'aube', x: 78, z: -70, radius: 34, level: [1, 3], types: ['minion', 'minion', 'rogue', 'slime'], max: 6 },
-  { id: 'foret', x: 125, z: 24, radius: 58, level: [3, 6], types: ['minion', 'rogue', 'warrior', 'spider', 'wolf'], max: 9 },
-  { id: 'cendres', x: 38, z: 136, radius: 44, level: [5, 9], types: ['warrior', 'mage', 'minion', 'rogue', 'spider', 'golem'], max: 10 },
-  { id: 'montagne', x: -10, z: -112, radius: 40, level: [8, 12], types: ['warrior', 'rogue', 'mage', 'wolf', 'golem'], max: 8 },
-  { id: 'nuees', x: -282, z: -46, radius: 26, level: [7, 10], types: ['mage', 'rogue', 'wisp'], max: 5 },
-  { id: 'lac', x: -150, z: 70, radius: 30, level: [2, 4], types: ['minion', 'rogue', 'slime', 'wisp'], max: 5 },
-  { id: 'ambre_plaines', x: 625, z: 70, radius: 50, level: [9, 12], types: ['amberminion', 'amberminion', 'amberrogue', 'spider_ambre'], max: 8 },
-  { id: 'ambre_gorge', x: 700, z: 125, radius: 42, level: [11, 14], types: ['amberwarrior', 'amberrogue', 'ambermage', 'spider_ambre', 'golem_ambre'], max: 8 },
-  { id: 'ambre_mesas', x: 680, z: -40, radius: 45, level: [12, 15], types: ['amberwarrior', 'ambermage', 'amberrogue', 'golem_ambre'], max: 7 },
-  { id: 'givre_bas', x: -20, z: -620, radius: 50, level: [13, 16], types: ['frostling', 'frostling', 'frostarcher', 'wolf_givre'], max: 8 },
-  { id: 'givre_lac', x: -150, z: -660, radius: 36, level: [14, 17], types: ['frostling', 'frostmage', 'frostarcher', 'wolf_givre', 'wisp'], max: 7 },
-  { id: 'givre_sanct', x: 95, z: -640, radius: 36, level: [15, 18], types: ['frostguard', 'frostmage', 'frostling', 'golem_cristal'], max: 8 },
-  { id: 'givre_mont', x: 15, z: -715, radius: 40, level: [16, 19], types: ['frostguard', 'frostarcher', 'frostmage', 'golem_cristal', 'wolf_givre'], max: 7 },
-  // île principale agrandie
-  { id: 'sud', x: 40, z: 190, radius: 36, level: [4, 7], types: ['wolf', 'spider', 'minion', 'rogue'], max: 6 },
-  { id: 'pres', x: 178, z: -150, radius: 34, level: [3, 6], types: ['wolf', 'slime', 'spider', 'minion'], max: 6 },
-  { id: 'falaises', x: -175, z: -120, radius: 40, level: [6, 9], types: ['golem', 'wolf', 'warrior', 'rogue'], max: 6 },
-  // Canopée d'Émeraude
-  { id: 'sylve_lisiere', x: 95, z: 585, radius: 42, level: [16, 18], types: ['sylvain', 'sylvain', 'mygale', 'slime_vert', 'luciole'], max: 8 },
-  { id: 'sylve_lac', x: 40, z: 690, radius: 40, level: [17, 19], types: ['slime_vert', 'luciole', 'liane', 'mygale'], max: 7 },
-  { id: 'sylve_temple', x: 178, z: 645, radius: 38, level: [18, 21], types: ['druide', 'liane', 'sylvain', 'golem_mousse'], max: 8 },
-  { id: 'sylve_jungle', x: 190, z: 735, radius: 40, level: [19, 22], types: ['panthere', 'golem_mousse', 'druide', 'mygale'], max: 7 },
-  // Landes Spectrales
-  { id: 'hantee_lande', x: -545, z: 100, radius: 44, level: [21, 23], types: ['ghoul', 'ghoul', 'wraith', 'spider_tomb'], max: 8 },
-  { id: 'hantee_cimetiere', x: -640, z: 118, radius: 40, level: [22, 25], types: ['revenant', 'gravearcher', 'ghoul', 'banshee'], max: 9 },
-  { id: 'hantee_marais', x: -605, z: 262, radius: 38, level: [23, 26], types: ['wraith', 'werewolf', 'ghoul', 'spider_tomb'], max: 7 },
-  { id: 'hantee_corbeaux', x: -730, z: 85, radius: 42, level: [24, 27], types: ['revenant', 'banshee', 'werewolf', 'golem_os'], max: 7 },
+  // 1 · Prés d'Havrelumière
+  { id: 'collines', x: -280, z: 300, radius: 110, level: [1, 3], types: ['minion', 'slime', 'slime'], max: 11 },
+  { id: 'aube', x: 175, z: -160, radius: 70, level: [1, 3], types: ['minion', 'minion', 'rogue', 'slime'], max: 9 },
+  { id: 'lac', x: -340, z: 170, radius: 66, level: [2, 4], types: ['minion', 'rogue', 'slime', 'wisp'], max: 8 },
+  { id: 'pres', x: 390, z: -330, radius: 60, level: [3, 5], types: ['wolf', 'slime', 'spider', 'minion'], max: 8 },
+  { id: 'sud', x: 120, z: 300, radius: 70, level: [3, 5], types: ['wolf', 'spider', 'minion', 'rogue'], max: 8 },
+  // 2 · Bois-Murmure
+  { id: 'foret', x: 450, z: 40, radius: 170, level: [4, 7], types: ['minion', 'rogue', 'warrior', 'spider', 'wolf'], max: 16 },
+  { id: 'foret_est', x: 620, z: -60, radius: 90, level: [6, 8], types: ['wolf', 'spider', 'warrior'], max: 8 },
+  // 3 · Les Cendres
+  { id: 'cendres', x: 90, z: 480, radius: 100, level: [7, 10], types: ['warrior', 'mage', 'minion', 'rogue', 'spider', 'golem'], max: 15 },
+  { id: 'ruines_sud', x: 220, z: 580, radius: 80, level: [9, 11], types: ['warrior', 'mage', 'golem', 'wisp'], max: 9 },
+  // 4 · Pic du Silence
+  { id: 'montagne', x: -30, z: -380, radius: 110, level: [10, 13], types: ['warrior', 'rogue', 'mage', 'wolf', 'golem'], max: 12 },
+  { id: 'pic_haut', x: -60, z: -540, radius: 90, level: [12, 15], types: ['warrior', 'mage', 'golem', 'wisp'], max: 9 },
+  // terres sauvages
+  { id: 'falaises', x: -700, z: -640, radius: 150, level: [11, 15], types: ['golem', 'wolf', 'warrior', 'rogue'], max: 12 },
+  { id: 'nuees', x: -560, z: -540, radius: 60, level: [12, 15], types: ['mage', 'rogue', 'wisp'], max: 7 },
+  { id: 'plateaux', x: 650, z: -700, radius: 150, level: [10, 14], types: ['wolf', 'golem', 'spider', 'wisp'], max: 12 },
+  { id: 'recifs', x: 800, z: 720, radius: 150, level: [16, 19], types: ['mygale', 'slime_vert', 'luciole', 'spider'], max: 12 },
+  { id: 'saules', x: -640, z: 860, radius: 150, level: [21, 24], types: ['slime_vert', 'wraith', 'spider_tomb', 'werewolf'], max: 12 },
+  // 5 · Terres d'Ambre
+  { id: 'ambre_plaines', x: 915, z: 106, radius: 110, level: [12, 14], types: ['amberminion', 'amberminion', 'amberrogue', 'spider_ambre'], max: 12 },
+  { id: 'ambre_gorge', x: 1080, z: 227, radius: 92, level: [14, 16], types: ['amberwarrior', 'amberrogue', 'ambermage', 'spider_ambre', 'golem_ambre'], max: 12 },
+  { id: 'ambre_mesas', x: 1036, z: -136, radius: 99, level: [15, 17], types: ['amberwarrior', 'ambermage', 'amberrogue', 'golem_ambre'], max: 11 },
+  // 6 · Cimes de Givre
+  { id: 'givre_bas', x: -16, z: -926, radius: 110, level: [15, 17], types: ['frostling', 'frostling', 'frostarcher', 'wolf_givre'], max: 12 },
+  { id: 'givre_lac', x: -302, z: -1014, radius: 79, level: [16, 18], types: ['frostling', 'frostmage', 'frostarcher', 'wolf_givre', 'wisp'], max: 11 },
+  { id: 'givre_sanct', x: 237, z: -970, radius: 79, level: [17, 19], types: ['frostguard', 'frostmage', 'frostling', 'golem_cristal'], max: 12 },
+  { id: 'givre_mont', x: 61, z: -1135, radius: 88, level: [18, 20], types: ['frostguard', 'frostarcher', 'frostmage', 'golem_cristal', 'wolf_givre'], max: 11 },
+  // 7 · Canopée d'Émeraude
+  { id: 'sylve_lisiere', x: 169, z: 871, radius: 92, level: [18, 20], types: ['sylvain', 'sylvain', 'mygale', 'slime_vert', 'luciole'], max: 12 },
+  { id: 'sylve_lac', x: 48, z: 1102, radius: 88, level: [19, 21], types: ['slime_vert', 'luciole', 'liane', 'mygale'], max: 11 },
+  { id: 'sylve_temple', x: 352, z: 1003, radius: 84, level: [20, 22], types: ['druide', 'liane', 'sylvain', 'golem_mousse'], max: 12 },
+  { id: 'sylve_jungle', x: 378, z: 1201, radius: 88, level: [21, 23], types: ['panthere', 'golem_mousse', 'druide', 'mygale'], max: 11 },
+  // 8 · Landes Spectrales
+  { id: 'hantee_lande', x: -829, z: 106, radius: 97, level: [22, 24], types: ['ghoul', 'ghoul', 'wraith', 'spider_tomb'], max: 12 },
+  { id: 'hantee_cimetiere', x: -1038, z: 146, radius: 88, level: [23, 26], types: ['revenant', 'gravearcher', 'ghoul', 'banshee'], max: 14 },
+  { id: 'hantee_marais', x: -961, z: 462, radius: 84, level: [24, 27], types: ['wraith', 'werewolf', 'ghoul', 'spider_tomb'], max: 11 },
+  { id: 'hantee_corbeaux', x: -1236, z: 73, radius: 92, level: [25, 28], types: ['revenant', 'banshee', 'werewolf', 'golem_os'], max: 11 },
 ];
 
 // Pierres de passage : voyage instantané entre celles que l'on a éveillées.
 export const WAYSTONES = [
   { id: 'havre', name: 'Havrelumière', x: -9, z: 24 },
-  { id: 'cendres', name: 'Les Cendres', x: 14, z: 118 },
-  { id: 'pic', name: 'Pied du Pic', x: -36, z: -96 },
-  { id: 'givre', name: 'Halte-du-Givre', x: -34, z: -532 },
-  { id: 'sanct', name: 'Sanctuaire Gelé', x: 70, z: -628 },
-  { id: 'ambre', name: 'Comptoir d’Ambre', x: 572, z: 66 },
-  { id: 'gorge', name: 'Gorge Rouge', x: 676, z: 92 },
-  { id: 'pres', name: 'Les Prés-Bas', x: 132, z: -96 },
-  { id: 'veille', name: 'Veille-des-Morts', x: -497, z: 172 },
-  { id: 'cimetiere', name: 'Le Grand Cimetière', x: -612, z: 132 },
-  { id: 'lianes', name: 'Refuge des Lianes', x: 106, z: 548 },
-  { id: 'temple', name: 'Temple Englouti', x: 158, z: 626 },
+  { id: 'pres', name: 'Les Prés-Bas', x: 290, z: -226 },
+  { id: 'cendres', name: 'Les Cendres', x: 60, z: 450 },
+  { id: 'pic', name: 'Pied du Pic', x: -110, z: -260 },
+  { id: 'givre', name: 'Halte-du-Givre', x: -47, z: -732 },
+  { id: 'sanct', name: 'Sanctuaire Gelé', x: 182, z: -944 },
+  { id: 'ambre', name: 'Comptoir d’Ambre', x: 798, z: 97 },
+  { id: 'gorge', name: 'Gorge Rouge', x: 1027, z: 154 },
+  { id: 'veille', name: 'Veille-des-Morts', x: -723, z: 264 },
+  { id: 'cimetiere', name: 'Le Grand Cimetière', x: -976, z: 176 },
+  { id: 'lianes', name: 'Refuge des Lianes', x: 193, z: 790 },
+  { id: 'temple', name: 'Temple Englouti', x: 308, z: 961 },
+  { id: 'plateaux', name: 'Hauts-Plateaux du Vent', x: 643, z: -616 },
+  { id: 'recifs', name: 'Côte des Récifs', x: 740, z: 690 },
+  { id: 'saules', name: 'Marais des Saules', x: -660, z: 820 },
+  { id: 'falaises', name: 'Falaises du Couchant', x: -560, z: -580 },
 ];
 
-export const BOSS = { id: 'roi', name: 'Le Roi Sans Lumière', x: -12, z: -136, level: 15, respawnMinutes: 8 };
+export const BOSS = { id: 'roi', name: 'Le Roi Sans Lumière', x: -30, z: -480, level: 15, respawnMinutes: 8 };
 
 // Boss du monde (un par région) : apparaissent quand des héros approchent de leur arène.
 export const WORLD_BOSSES = [
-  { id: 'roi', type: 'boss', x: -12, z: -136, minY: 45, level: 15, respawnMinutes: 8, region: 'Pic du Silence' },
-  { id: 'colosse', type: 'boss_colosse', x: 810, z: 40, minY: 10, level: 17, respawnMinutes: 8, region: 'Cirque d’Ambre' },
-  { id: 'reine', type: 'boss_reine', x: 20, z: -778, minY: 95, level: 20, respawnMinutes: 8, region: 'Mont Givrecroc' },
-  { id: 'gardien', type: 'boss_gardien', x: 150, z: 774, minY: 75, level: 23, respawnMinutes: 8, region: 'Mont Feuillu' },
-  { id: 'fossoyeur', type: 'boss_fossoyeur', x: -770, z: 205, minY: 10, level: 28, respawnMinutes: 8, region: 'Crypte du Fossoyeur' },
+  { id: 'roi', type: 'boss', x: -30, z: -478, minY: 85, level: 15, respawnMinutes: 8, region: 'Pic du Silence' },
+  { id: 'colosse', type: 'boss_colosse', x: 1322, z: 40, minY: 10, level: 17, respawnMinutes: 8, region: 'Cirque d’Ambre' },
+  { id: 'reine', type: 'boss_reine', x: 72, z: -1274, minY: 128, level: 20, respawnMinutes: 8, region: 'Mont Givrecroc' },
+  { id: 'gardien', type: 'boss_gardien', x: 290, z: 1287, minY: 88, level: 23, respawnMinutes: 8, region: 'Mont Feuillu' },
+  { id: 'fossoyeur', type: 'boss_fossoyeur', x: -1324, z: 337, minY: 10, level: 28, respawnMinutes: 8, region: 'Crypte du Fossoyeur' },
 ];
 
 // Cycle jour/nuit partagé : synchronisé sur l'horloge réelle.
@@ -362,60 +413,11 @@ export const ENEMIES = {
 export function xpForLevel(l) { return Math.round(60 * Math.pow(l, 1.55) + 40 * l); }
 export const MAX_LEVEL = 30;
 
-// Plans d'eau où l'on nage (lac Miroir, lac Émeraude, marais des Âmes) ; remplis par grow().
-export const WATERS = [];
-
-// Emprise de tout l'archipel (carte du monde, Brume) : carré centré sur (cx, cz).
-export const WORLD_BOUNDS = { cx: 0, cz: 0, half: 1000 };
-
-// ------------------------------------------------------------------ agrandissement
-// Toutes les positions ci-dessus sont sur le plan ; on les porte à l'échelle du monde.
-function grow() {
-  const S = WORLD_SCALE;
-  const xz = (o) => { if (o) { o.x = W(o.x); o.z = W(o.z); } return o; };
-  const r = (v, k) => Math.round(v * k);
-  MAIN_ISLAND.radius = W(MAIN_ISLAND.radius); MAIN_ISLAND.coastNoise = W(MAIN_ISLAND.coastNoise);
-  xz(LAKE); LAKE.radius = r(LAKE.radius, 1.8);
-  xz(MOUNTAIN); MOUNTAIN.radius = W(MOUNTAIN.radius); MOUNTAIN.peak = r(MOUNTAIN.peak, 1.35); MOUNTAIN.summitHeight = r(MOUNTAIN.summitHeight, 1.35);
-  for (const o of [FOREST, HILLS]) { xz(o); o.radius = W(o.radius); }
-  xz(HAMLET);
-  xz(RUINS); RUINS.radius = r(RUINS.radius, 1.6);
-  for (const i of ISLETS) { xz(i); i.radius = r(i.radius, ISLET_SCALE); i.relief = Math.round(i.relief * 18) / 10; }
-  for (const b of BIG_ISLANDS) {
-    xz(b); b.radius = W(b.radius); b.coastNoise = W(b.coastNoise); b.depth = r(b.depth, 1.6);
-    for (const k of ['camp', 'lake', 'peak', 'sanctuary', 'mine', 'cirque', 'cemetery', 'crypt', 'temple']) xz(b[k]);
-    if (b.camp) b.camp.radius = r(b.camp.radius, 1.25);
-    if (b.lake) b.lake.radius = W(b.lake.radius);
-    if (b.peak) { b.peak.radius = W(b.peak.radius); if (b.peak.peak) b.peak.peak = r(b.peak.peak, PEAK_SCALE); if (b.peak.summitHeight) b.peak.summitHeight = r(b.peak.summitHeight, PEAK_SCALE); }
-    for (const k of ['sanctuary', 'cemetery', 'temple']) if (b[k]) b[k].radius = r(b[k].radius, 1.4);
-    if (b.cirque) b.cirque.radius = r(b.cirque.radius, 1.5);
-    if (b.crypt) b.crypt.radius = r(b.crypt.radius, 1.5);
-    for (const f of b.features) {
-      if (f.type === 'canyon') { f.pts = f.pts.map(([x, z]) => [W(x), W(z)]); f.width = r(f.width, 1.8); f.depth = r(f.depth, 1.4); continue; }
-      xz(f);
-      if (f.type === 'plateau') f.radius = r(f.radius, f.radius >= 26 ? 1.4 : 1.25);
-      else if (f.type === 'peak') { f.radius = W(f.radius); f.height = r(f.height, PEAK_SCALE); if (f.summitHeight) f.summitHeight = r(f.summitHeight, PEAK_SCALE); }
-      else if (f.type === 'basin') f.radius = f.wall ? r(f.radius, 1.5) : W(f.radius);
-      else if (f.type === 'mesa') { f.radius = r(f.radius, S * 0.8); f.height = r(f.height, 1.3); }
-    }
-  }
-  for (const u of UPDRAFTS) { xz(u); u.radius = r(u.radius, 1.3); u.top = r(u.top, 1.3); }
-  for (const b of BEACONS) { xz(b); b.radius = W(b.radius); }
-  for (const p of PATHS) for (const pt of p) { pt[0] = W(pt[0]); pt[1] = W(pt[1]); }
-  for (const z of SPAWN_ZONES) { xz(z); z.radius = W(z.radius); z.max = Math.round(z.max * 1.5); }
-  for (const w of WAYSTONES) if (w.id !== 'havre') xz(w);
-  for (const b of WORLD_BOSSES) xz(b);
-  xz(BOSS);
-  // altitudes des arènes après le relèvement des sommets
-  const minY = { roi: 66, reine: 128, gardien: 88 };
-  for (const b of WORLD_BOSSES) if (minY[b.id]) b.minY = minY[b.id];
-  WATERS.push({ ...LAKE, kind: 'clear' }, { ...SYLVE.lake, kind: 'jungle' }, { ...HANTEE.lake, kind: 'marsh' });
-  // emprise du monde
-  const all = [{ x: MAIN_ISLAND.x, z: MAIN_ISLAND.z, r: MAIN_ISLAND.radius + MAIN_ISLAND.coastNoise }, ...ISLETS.map((i) => ({ x: i.x, z: i.z, r: i.radius * 1.25 })), ...BIG_ISLANDS.map((b) => ({ x: b.x, z: b.z, r: b.radius + b.coastNoise }))];
-  const x0 = Math.min(...all.map((o) => o.x - o.r)), x1 = Math.max(...all.map((o) => o.x + o.r));
-  const z0 = Math.min(...all.map((o) => o.z - o.r)), z1 = Math.max(...all.map((o) => o.z + o.r));
-  WORLD_BOUNDS.cx = Math.round((x0 + x1) / 2); WORLD_BOUNDS.cz = Math.round((z0 + z1) / 2);
-  WORLD_BOUNDS.half = Math.round(Math.max(x1 - x0, z1 - z0) / 2 + 60);
-}
-grow();
-
+// Plans d'eau où l'on nage : l'océan tout autour, et les lacs (niveau fixe).
+export const WATERS = [
+  { ...LAKE, kind: 'clear' },
+  { ...SYLVE.lake, kind: 'jungle' },
+  { ...HANTEE.lake, kind: 'marsh' },
+  { ...RECIFS.lake, kind: 'lagoon' },
+  { ...SAULES.lake, kind: 'marsh' },
+];

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { mulberry32 } from '../engine/math.js';
-import { VILLAGE, LAKE, FOREST, HILLS, ISLETS, GIVRE, AMBRE, HANTEE, SYLVE, UPDRAFTS, W } from '../config.js';
+import { VILLAGE, LAKE, FOREST, HILLS, GIVRE, AMBRE, HANTEE, SYLVE, UPDRAFTS } from '../config.js';
 import { pathDistance } from '../world/Terrain.js';
 
 // Ressources à récolter (on les ramasse en passant dessus) et anneaux de vent (défis de vol).
@@ -19,9 +19,9 @@ export const ITEMS_GATHER = {
 // (≈ 1 m perdu pour 4,8 m parcourus) depuis le sommet de la colonne de vent de départ :
 // il suffit de suivre la ligne en planant.
 const RING_PLAN = {
-  village: { name: 'au-dessus du village', start: { x: W(-20), z: W(-88) }, rings: [[-16, -62], [-8, -36], [2, -10], [12, 16], [22, 42]] },
-  ambre: { name: 'entre les îlots de l’est', start: { x: W(296), z: W(58) }, rings: [[322, 52], [344, 49], [366, 46], [388, 43], [410, 40]] },
-  sylve: { name: 'au-dessus de la Canopée', start: { x: W(120), z: W(560) }, rings: [[132, 590], [146, 620], [160, 650], [172, 680], [182, 710]] },
+  village: { name: 'au-dessus du village', start: { x: -110, z: -150 }, rings: [[-80, -118], [-56, -88], [-34, -58], [-14, -28], [6, 4]] },
+  ambre: { name: 'au-dessus des Terres d’Ambre', start: { x: 1000, z: -60 }, rings: [[1028, -24], [1056, 12], [1084, 48], [1112, 84], [1140, 120]] },
+  sylve: { name: 'au-dessus de la Canopée', start: { x: 230, z: 850 }, rings: [[244, 884], [258, 918], [272, 952], [286, 986], [300, 1020]] },
 };
 export const RING_SETS = {};
 function planRings() {
@@ -31,7 +31,7 @@ function planRings() {
     for (const u of UPDRAFTS) { const d = Math.hypot(u.x - def.start.x, u.z - def.start.z); if (d < bd) { bd = d; up = u; } }
     let px = up.x, pz = up.z, y = up.top - 10;
     const rings = def.rings.map(([rx, rz]) => {
-      const x = W(rx), z = W(rz), d = Math.hypot(x - px, z - pz);
+      const x = rx, z = rz, d = Math.hypot(x - px, z - pz);
       y -= d / 4.8;
       const yaw = Math.atan2(x - px, z - pz);
       px = x; pz = z;
@@ -68,8 +68,8 @@ export class Gathering {
     const rng = mulberry32(31337);
     this.nodes = [];
     const ok = (x, z, opts = {}) => {
+      if (!terrain.isLand(x, z)) return null;
       const h = terrain.heightAt(x, z);
-      if (h === null) return null;
       if (terrain.slopeAt(x, z) > 0.5) return null;
       if (!opts.paths && pathDistance(x, z) < 3) return null;
       for (const c of g.world.colliders.grid.get(g.world.colliders.key(Math.floor(x / 8), Math.floor(z / 8))) || []) if (c.tag !== 'npc' && g.world.colliders.contains(c, x, z, 1)) return null;
@@ -92,12 +92,12 @@ export class Gathering {
     // mousse d'argent : rives du lac et sous-bois
     scatter('mousse', 16, disc(LAKE.x, LAKE.z, LAKE.radius * 1.15, LAKE.radius * 2.4));
     scatter('mousse', 16, disc(FOREST.x, FOREST.z, 0, FOREST.radius));
-    // plumes : sur les îlots flottants
-    for (const isl of ISLETS) scatter('plume', 4, disc(isl.x, isl.z, 0, isl.radius * 0.7));
+    // plumes : au pied des colonnes de vent
+    for (const u of UPDRAFTS) scatter('plume', 3, disc(u.x, u.z, u.radius + 6, u.radius + 40));
     // ambre : mesas, mine, gorge
-    scatter('ambre', 16, disc(W(690), W(-50), 0, 150), { paths: true });
+    scatter('ambre', 16, disc(1058, -158, 0, 150), { paths: true });
     scatter('ambre', 10, disc(AMBRE.mine.x, AMBRE.mine.z, 8, 80), { paths: true });
-    scatter('ambre', 12, disc(W(700), W(120), 0, 110), { paths: true });
+    scatter('ambre', 12, disc(992, 200, 0, 110), { paths: true });
     // givre : lac de cristal, sanctuaire
     scatter('givre', 18, disc(GIVRE.lake.x, GIVRE.lake.z, GIVRE.lake.radius * 0.9, GIVRE.lake.radius * 2), { paths: true });
     scatter('givre', 14, disc(GIVRE.sanctuary.x, GIVRE.sanctuary.z, 10, 110), { paths: true });

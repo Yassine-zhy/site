@@ -60,6 +60,15 @@ export class CameraRig {
         if (this.colliders.insideSolid(this.smoothFocus.x + dir.x * k, this.smoothFocus.z + dir.z * k, this.smoothFocus.y + dir.y * k)) { d = Math.max(1.2, k - 0.7); break; }
       }
     }
+    // le relief du continent entre le héros et la caméra : on rapproche la caméra
+    if (this.terrain.continentHeight) {
+      const steps = Math.ceil(d / 0.8);
+      for (let s = 1; s <= steps; s++) {
+        const k = (s / steps) * d;
+        const x = this.smoothFocus.x + dir.x * k, y = this.smoothFocus.y + dir.y * k, z = this.smoothFocus.z + dir.z * k;
+        if (y < this.terrain.continentHeight(x, z) + 0.5) { d = Math.max(1.4, k - 0.6); break; }
+      }
+    }
     this.solidD = this.solidD === undefined ? d : (d < this.solidD ? d : this.solidD + (d - this.solidD) * Math.min(1, dt * 3));
     d = this.solidD;
     // caméra très proche : on estompe le héros pour ne pas voir l'intérieur de son casque
@@ -86,6 +95,12 @@ export class CameraRig {
       if (gh !== null && gh > gMax) gMax = gh;
     }
     if (gMax > -Infinity && this.smoothFocus.y > gMax - 2 && pos.y < gMax + 0.55) pos.y = gMax + 0.55;
+    // jamais sous le continent (les îles flottantes seules autorisent la caméra en dessous)
+    if (this.terrain.continentHeight) {
+      let gc = -Infinity;
+      for (const [ox, oz] of CLEAR_PROBES) gc = Math.max(gc, this.terrain.continentHeight(pos.x + ox, pos.z + oz));
+      if (pos.y < gc + 0.55) pos.y = gc + 0.55;
+    }
     this.camera.lookAt(look);
     const aspect = this.camera.aspect;
     const portrait = aspect < 1 ? Math.min(18, (1 - aspect) * 30) : 0; // téléphone en portrait : champ plus large

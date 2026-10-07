@@ -1,18 +1,14 @@
 import { h } from './dom.js';
-import { BEACONS, ISLETS, WAYSTONES, GIVRE, AMBRE, HANTEE, SYLVE, WORLD_BOSSES } from '../config.js';
+import { BEACONS, WAYSTONES, WORLD_BOSSES, ZONES } from '../config.js';
 import { MAP_CX, MAP_CZ, MAP_RANGE } from './MapRender.js';
 import { EXP_PORTAL } from '../game/Expedition.js';
 import { BOSS_KITS } from '../game/Boss.js';
 
 // Carte du monde interactive : molette / pincement pour zoomer, glisser pour se déplacer.
 // Les noms s'affichent selon le zoom et ne se chevauchent pas (les plus importants d'abord).
-const REGIONS = [
-  { name: 'Aetheria', x: 0, z: 20, color: '#fff3d6' },
-  { name: 'Cimes de Givre', x: GIVRE.x, z: GIVRE.z - 40, color: '#e6f6ff' },
-  { name: 'Terres d’Ambre', x: AMBRE.x, z: AMBRE.z - 60, color: '#ffe0b0' },
-  { name: 'Landes Spectrales', x: HANTEE.x, z: HANTEE.z - 60, color: '#e2d6ff' },
-  { name: 'Canopée d’Émeraude', x: SYLVE.x, z: SYLVE.z - 40, color: '#c8ffc8' },
-];
+// étiquettes des zones : numéro, nom et niveaux (les terres sauvages n'ont pas de numéro)
+const ZCOL = { temperate: '#fff3d6', snow: '#e6f6ff', amber: '#ffe0b0', haunted: '#e2d6ff', jungle: '#c8ffc8', cliffs: '#f2ead8', highland: '#f0f0c0', beach: '#fff0c8', swamp: '#d8e8c0' };
+const REGIONS = ZONES.map((zn) => ({ name: (zn.n ? zn.n + ' · ' : '') + zn.name.replace(/^(Les |Le |La )/, ''), sub: `niv. ${zn.level[0]}–${zn.level[1]}`, x: zn.x, z: zn.z - 30, color: ZCOL[zn.biome] || '#fff3d6' }));
 
 export class MapView {
   constructor(game) {
@@ -158,12 +154,11 @@ export class MapView {
     for (const m of quest) star(m.x, m.z, 9, m.color);
     // étiquettes par ordre d'importance
     for (const m of quest) if (m.label) label(m.label, m.x, m.z, m.color, -12, { size: fontPx + 1 });
-    for (const r of REGIONS) if (z < 2.4) label(r.name, r.x, r.z, r.color, 0, { size: fontPx + 6, weight: 700 });
+    for (const r of REGIONS) if (z < 2.4) { label(r.name, r.x, r.z, r.color, 0, { size: fontPx + 5, weight: 700 }); label(r.sub, r.x, r.z, r.color, 15, { size: fontPx - 1, weight: 500 }); }
     BEACONS.forEach((b, i) => { const lv = g.worldState?.levels[i] || 0; label(`${b.name} · ${Math.round(lv * 100)} %`, b.x, b.z, lv >= 0.999 ? '#ffe3a3' : '#d9ccff', -11); });
     if (z >= 1.3) label('Portail des Expéditions', EXP_PORTAL.x, EXP_PORTAL.z, '#e2ccff', 18, { size: fontPx - 1 });
     for (const b of WORLD_BOSSES) if (z >= 1.3) label(BOSS_KITS[b.id]?.name || 'Boss', b.x, b.z, '#ffb3a8', 18, { size: fontPx - 1 });
     if (z >= 1.6) for (const w of WAYSTONES) label(w.name, w.x, w.z, g.waystones?.known(w.id) ? '#bff0ff' : '#8aa0b4', 16, { size: fontPx - 1 });
-    if (z >= 1.4) for (const isl of ISLETS) label(isl.name, isl.x, isl.z + isl.radius, '#cfe6ff', 14, { size: fontPx - 1 });
     if (z >= 2.2) for (const m of npcs) if (m.label) label(m.label, m.x, m.z, m.color, -8, { size: fontPx - 2, weight: 500 });
     // le joueur
     ctx.save(); ctx.translate(ppx, ppy); ctx.rotate(Math.PI - p.facing);

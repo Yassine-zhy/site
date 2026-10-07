@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { STEP_UP } from '../world/Colliders.js';
 import { Character } from './Character.js';
 import { createGlider } from './Glider.js';
-import { clamp, damp, dampAngle, angleDiff } from '../engine/math.js';
-import { CLASSES, UPDRAFTS, WATERS } from '../config.js';
+import { clamp, damp, dampAngle, angleDiff, smoothstep } from '../engine/math.js';
+import { CLASSES, UPDRAFTS, WATERS, SEA_LEVEL, WORLD_HALF } from '../config.js';
 
 const GRAVITY = 28;
 const WALK = 2.9, RUN = 7.2, SPRINT = 10.6;
@@ -216,9 +216,24 @@ export class Player {
     this.inWater = false;
     let floor = ground;
     const lake = ground !== null && WATERS.find((w) => Math.hypot(pos.x - w.x, pos.z - w.z) < w.radius * 1.8 && ground < w.level - 0.9);
+    // la mer : on nage à la surface ; au large, le courant ramène vers le rivage
+    const sea = !lake && ground !== null && ground < SEA_LEVEL - 0.9 && pos.x < 3000;
+    this.atSea = false;
     if (lake) {
       floor = Math.max(ground, lake.level - 1.5); this.inWater = true;
+    } else if (sea) {
+      floor = Math.max(ground, SEA_LEVEL - 1.5); this.inWater = true;
+      const depth = SEA_LEVEL - ground;
+      if (depth > 12 && pos.y < SEA_LEVEL + 2) {
+        this.atSea = true;
+        const e = 8, ch = (x, z) => terrain.continentHeight(x, z);
+        let gx = ch(pos.x + e, pos.z) - ch(pos.x - e, pos.z), gz = ch(pos.x, pos.z + e) - ch(pos.x, pos.z - e);
+        if (Math.hypot(gx, gz) < 0.05) { gx = -pos.x; gz = -pos.z; }
+        const L = Math.hypot(gx, gz) || 1, k = smoothstep(12, 32, depth) * 9;
+        pos.x += gx / L * k * dt; pos.z += gz / L * k * dt;
+      }
     }
+    if (pos.x < 3000) { const lim = WORLD_HALF - 15; pos.x = clamp(pos.x, -lim, lim); pos.z = clamp(pos.z, -lim, lim); }
     const wasGround = this.onGround;
     this.char.groundOffset = floor === null ? 99 : Math.max(0, pos.y - floor);
     if (floor !== null && pos.y <= floor + 0.02 && vel.y <= 0.5) {

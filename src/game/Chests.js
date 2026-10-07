@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { h } from '../ui/dom.js';
-import { ISLETS, LAKE, FOREST, RUINS, HILLS, MOUNTAIN, GIVRE, AMBRE, HANTEE, SYLVE, HAMLET, W } from '../config.js';
+import { LAKE, FOREST, RUINS, HILLS, MOUNTAIN, GIVRE, AMBRE, HANTEE, SYLVE, HAMLET, PLATEAUX, RECIFS, SAULES, FALAISES, LANTERN_PASS } from '../config.js';
 import { RARITY, generateItem, rollFromTable, STAT_LABELS, levelFactor } from './Items.js';
 
 // Coffres : quatre qualités, chacune avec sa table de probabilités par rareté
@@ -23,30 +23,30 @@ export const TREASURE_SPOTS = [
   { id: 'lac', name: 'la rive du Lac Miroir', x: LAKE.x - 34, z: LAKE.z - 22, tier: 'bois' },
   { id: 'collines', name: 'les Collines Ambrées', x: HILLS.x - 34, z: HILLS.z + 24, tier: 'bois' },
   { id: 'pic', name: 'une corniche du Pic du Silence', x: MOUNTAIN.x + 30, z: MOUNTAIN.z - 18, tier: 'or' },
-  { id: 'tresor', name: 'l’Îlot du Trésor', islet: 'tresor', dx: 2, dz: -3, tier: 'or' },
-  { id: 'suspendu', name: 'l’Îlot Suspendu', islet: 'suspendu', dx: -3, dz: 2, tier: 'bois' },
-  { id: 'pelerin', name: 'l’Îlot du Pèlerin', islet: 'pelerin', dx: 1, dz: 3, tier: 'fer' },
-  { id: 'eclat', name: 'l’Éclat Errant', islet: 'eclat', dx: 0, dz: 0, tier: 'fer' },
-  { id: 'nuees', name: 'l’Îlot des Nuées', islet: 'nuees', dx: -14, dz: 12, tier: 'fer' },
-  { id: 'passeur', name: 'le Rocher du Passeur', islet: 'passeur', dx: 4, dz: -5, tier: 'bois' },
-  { id: 'lanternes', name: 'l’Îlot des Lanternes', islet: 'lanternes', dx: -5, dz: 4, tier: 'fer' },
-  { id: 'relais', name: 'l’Îlot du Relais', islet: 'relais', dx: -6, dz: -4, tier: 'bois' },
-  { id: 'ventsec', name: 'l’Îlot du Vent Sec', islet: 'ventsec', dx: 5, dz: 4, tier: 'fer' },
+  { id: 'tresor', name: 'la Pointe aux Coquillages', x: RECIFS.headland.x + 6, z: RECIFS.headland.z - 8, tier: 'or' },
+  { id: 'suspendu', name: 'la Butte aux Vents', x: -96, z: -168, tier: 'bois' },
+  { id: 'pelerin', name: 'la Croisée du Pèlerin', x: -262, z: 98, tier: 'fer' },
+  { id: 'eclat', name: 'la Table du Vent', x: PLATEAUX.table.x + 10, z: PLATEAUX.table.z + 8, tier: 'fer', minY: 48 },
+  { id: 'nuees', name: 'le Belvédère du Couchant', x: FALAISES.belvedere.x - 14, z: FALAISES.belvedere.z + 12, tier: 'fer' },
+  { id: 'passeur', name: 'le Gué du Passeur', x: 548, z: -548, tier: 'bois' },
+  { id: 'lanternes', name: 'le Col des Lanternes', x: LANTERN_PASS.x - 8, z: LANTERN_PASS.z + 14, tier: 'fer' },
+  { id: 'relais', name: 'le Relais des Plateaux', x: 618, z: -642, tier: 'bois' },
+  { id: 'ventsec', name: 'le Tertre du Vent Sec', x: 826, z: -552, tier: 'fer' },
   { id: 'mine', name: 'la Mine de Kessa', x: AMBRE.mine.x + 14, z: AMBRE.mine.z - 10, tier: 'fer' },
-  { id: 'gorge', name: 'le fond de la Gorge Rouge', x: W(712), z: W(128), tier: 'fer' },
-  { id: 'mesa', name: 'le sommet de la Grande Mesa', x: W(690), z: W(-50), tier: 'or', minY: 42 },
+  { id: 'gorge', name: 'le fond de la Gorge Rouge', x: 992, z: 200, tier: 'fer' },
+  { id: 'mesa', name: 'le sommet de la Grande Mesa', x: 1058, z: -158, tier: 'or', minY: 42 },
   { id: 'cirque', name: 'le Cirque d’Ambre', x: AMBRE.cirque.x + 34, z: AMBRE.cirque.z + 12, tier: 'or' },
   { id: 'cristal', name: 'le Lac de Cristal', x: GIVRE.lake.x + 30, z: GIVRE.lake.z + 26, tier: 'fer' },
   { id: 'sanctuaire', name: 'le Sanctuaire Gelé', x: GIVRE.sanctuary.x + 16, z: GIVRE.sanctuary.z + 12, tier: 'or' },
   { id: 'cime', name: 'la cime du Mont Givrecroc', x: GIVRE.peak.x - 6, z: GIVRE.peak.z + 8, tier: 'mythique', minY: 120 },
   // nouvelles îles et îles agrandies
-  { id: 'saules', name: 'l’Îlot des Saules', islet: 'saules', dx: 12, dz: -9, tier: 'bois' },
-  { id: 'fanal', name: 'l’Îlot du Fanal', islet: 'fanal', dx: -8, dz: 10, tier: 'fer' },
-  { id: 'fougeres', name: 'l’Îlot des Fougères', islet: 'fougeres', dx: 10, dz: 6, tier: 'bois' },
-  { id: 'cascade', name: 'l’Îlot de la Cascade', islet: 'cascade', dx: -12, dz: -6, tier: 'fer' },
+  { id: 'saules', name: 'l’Étang des Saules', x: SAULES.lake.x + 96, z: SAULES.lake.z - 24, tier: 'bois' },
+  { id: 'fanal', name: 'le camp des Récifs', x: 754, z: 659, tier: 'fer' },
+  { id: 'fougeres', name: 'la Lisière des Fougères', x: 160, z: 706, tier: 'bois' },
+  { id: 'cascade', name: 'le pied du Mont du Couchant', x: -820, z: -600, tier: 'fer' },
   { id: 'pres', name: 'les champs des Prés-Bas', x: HAMLET.x + 34, z: HAMLET.z + 30, tier: 'bois' },
-  { id: 'falaises', name: 'les Falaises du Couchant', x: W(-205), z: W(-118), tier: 'fer' },
-  { id: 'prairie', name: 'la Prairie du Sud', x: W(70), z: W(185), tier: 'bois' },
+  { id: 'falaises', name: 'les Falaises du Couchant', x: -650, z: -700, tier: 'fer' },
+  { id: 'prairie', name: 'la Prairie du Sud', x: 130, z: 290, tier: 'bois' },
   { id: 'emeraude', name: 'la rive du Lac Émeraude', x: SYLVE.lake.x + 30, z: SYLVE.lake.z - 82, tier: 'fer' },
   { id: 'temple', name: 'l’autel du Temple Englouti', x: SYLVE.temple.x, z: SYLVE.temple.z + 19, tier: 'or' },
   { id: 'feuillu', name: 'la cime du Mont Feuillu', x: SYLVE.peak.x + 8, z: SYLVE.peak.z - 6, tier: 'mythique', minY: 88 },
@@ -67,14 +67,13 @@ export class Chests {
     this.spots = [];
     for (const def of TREASURE_SPOTS) {
       let x = def.x, z = def.z;
-      if (def.islet) { const isl = ISLETS.find((i) => i.id === def.islet); if (!isl) continue; x = isl.x + def.dx; z = isl.z + def.dz; }
       // cherche un sol libre et plat près de l'endroit voulu
       let spot = null;
       for (let k = 0; k < 40 && !spot; k++) {
         const a = k * 2.4, r = k * 0.9;
         const px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r;
         const y = terrain.heightAt(px, pz);
-        if (y === null || terrain.slopeAt(px, pz) > 0.45 || (def.minY && y < def.minY)) continue;
+        if (!terrain.isLand(px, pz) || terrain.slopeAt(px, pz) > 0.45 || (def.minY && y < def.minY)) continue;
         let blocked = false;
         for (const c of cols.grid.get(cols.key(Math.floor(px / 8), Math.floor(pz / 8))) || []) if (cols.contains(c, px, pz, 1.4)) { blocked = true; break; }
         if (!blocked) spot = { x: px, y, z: pz };

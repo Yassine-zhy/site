@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { h } from '../ui/dom.js';
-import { SPAWN_ZONES, VILLAGE, HAMLET, BIG_ISLANDS, ENEMIES } from '../config.js';
+import { SPAWN_ZONES, VILLAGE, HAMLET, REGIONS, ENEMIES } from '../config.js';
 
 // Vagues de la Brume : de temps en temps, une faille s'ouvre près d'un héros et lâche trois
 // vagues de monstres de la région. L'hôte décide et fait apparaître les monstres ; tout le
@@ -32,7 +32,7 @@ export class Waves {
   inSafeZone(x, z) {
     if (Math.hypot(x - VILLAGE.x, z - VILLAGE.z) < VILLAGE.radius + 45) return true;
     if (Math.hypot(x - HAMLET.x, z - HAMLET.z) < HAMLET.radius + 40) return true;
-    for (const b of BIG_ISLANDS) if (b.camp && Math.hypot(x - b.camp.x, z - b.camp.z) < (b.camp.radius || 20) + 30) return true;
+    for (const b of REGIONS) if (b.camp && Math.hypot(x - b.camp.x, z - b.camp.z) < (b.camp.radius || 20) + 30) return true;
     return false;
   }
 
@@ -69,7 +69,7 @@ export class Waves {
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2 + Math.random() * 0.4, r = 2.5 + Math.random() * 3.5;
       const x = c.x + Math.cos(a) * r, z = c.z + Math.sin(a) * r;
-      if (g.world.terrain.heightAt(x, z) === null) continue;
+      if (!g.world.terrain.isLand(x, z)) continue;
       let type = c.types[Math.floor(Math.random() * c.types.length)];
       if (ENEMIES[type]?.boss) type = 'minion';
       const elite = c.n === WAVES && i === 0;

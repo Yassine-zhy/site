@@ -6,3 +6,5 @@ artifact
 android/build
 android/.tools
 public/assets/terrain.bin
+public/assets/terrain-h.bin
+public/assets/terrain-c.bin

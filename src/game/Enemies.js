@@ -13,7 +13,7 @@ export class Enemies {
     this.map = new Map();
     this.isHost = true;
     this.nextId = 1;
-    this.zones = SPAWN_ZONES.map((z) => ({ ...z, timer: rand(1, 4), ids: new Set(), idle: 0 }));
+    this.zones = SPAWN_ZONES.map((z) => ({ ...z, timer: rand(1, 4), ids: new Set(), idle: 1 }));
     this.idPrefix = Math.random().toString(36).slice(2, 6);
     this.pendingHits = [];
     this.killEvents = [];
@@ -62,6 +62,8 @@ export class Enemies {
         if (z.idle > 25) for (const id of [...z.ids]) { const e = this.map.get(id); if (e && !e.target) this.remove(id); }
         continue;
       }
+      // zone qui s'éveille (héros qui arrive) : une bonne partie des monstres apparaît d'un coup
+      const waking = z.idle !== 0;
       z.idle = 0;
       const cor = g.world.maps.corruptionAt(z.x, z.z);
       const density = (0.25 + 0.75 * cor) * (1 + night * 0.4);
@@ -70,34 +72,37 @@ export class Enemies {
       const alive = [...z.ids].filter((id) => this.map.get(id)?.alive).length;
       if (alive >= desired) continue;
       z.timer -= dt;
-      if (z.timer > 0) continue;
+      if (z.timer > 0 && !waking) continue;
       z.timer = rand(5, 10) / (1 + night * 0.5);
-      // position : parfois en embuscade près d'un joueur
-      let x, zz, ok = false;
-      for (let k = 0; k < 12 && !ok; k++) {
-        const ambush = Math.random() < 0.3 && nearest < z.radius + 10;
-        if (ambush) {
-          const p = players.reduce((a, b) => (Math.hypot(a.position.x - z.x, a.position.z - z.z) < Math.hypot(b.position.x - z.x, b.position.z - z.z) ? a : b));
-          const a = Math.random() * Math.PI * 2, r = rand(9, 16);
-          x = p.position.x + Math.cos(a) * r; zz = p.position.z + Math.sin(a) * r;
-          if (Math.hypot(x - z.x, zz - z.z) > z.radius * 1.2) continue;
-        } else {
-          const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * z.radius;
-          x = z.x + Math.cos(a) * r; zz = z.z + Math.sin(a) * r;
+      const burst = waking ? Math.max(1, Math.min(desired - alive, Math.ceil(desired * 0.6))) : 1;
+      for (let b = 0; b < burst; b++) {
+        // position : parfois en embuscade près d'un joueur
+        let x, zz, ok = false;
+        for (let k = 0; k < 12 && !ok; k++) {
+          const ambush = Math.random() < 0.3 && nearest < z.radius + 10;
+          if (ambush) {
+            const p = players.reduce((a, b) => (Math.hypot(a.position.x - z.x, a.position.z - z.z) < Math.hypot(b.position.x - z.x, b.position.z - z.z) ? a : b));
+            const a = Math.random() * Math.PI * 2, r = rand(9, 16);
+            x = p.position.x + Math.cos(a) * r; zz = p.position.z + Math.sin(a) * r;
+            if (Math.hypot(x - z.x, zz - z.z) > z.radius * 1.2) continue;
+          } else {
+            const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * z.radius;
+            x = z.x + Math.cos(a) * r; zz = z.z + Math.sin(a) * r;
+          }
+          if (!g.world.terrain.isLand(x, zz)) continue;
+          if (g.world.terrain.slopeAt(x, zz) > 0.7) continue;
+          if (players.some((p) => Math.hypot(p.position.x - x, p.position.z - zz) < 7)) continue;
+          if (Math.hypot(x, zz) < 62) continue; // jamais dans le village
+          ok = true;
         }
-        if (g.world.terrain.heightAt(x, zz) === null) continue;
-        if (g.world.terrain.slopeAt(x, zz) > 0.7) continue;
-        if (players.some((p) => Math.hypot(p.position.x - x, p.position.z - zz) < 7)) continue;
-        if (Math.hypot(x, zz) < 62) continue; // jamais dans le village
-        ok = true;
+        if (!ok) break;
+        const type = z.types[Math.floor(Math.random() * z.types.length)];
+        const lvl = Math.floor(rand(z.level[0], z.level[1] + 0.99)) + (night > 0.5 ? 1 : 0);
+        const elite = Math.random() < 0.05 + night * 0.06;
+        const e = this.spawn(type, lvl, x, zz, { elite, home: { x: z.x, z: z.z } });
+        e.zone = z.id;
+        z.ids.add(e.id);
       }
-      if (!ok) continue;
-      const type = z.types[Math.floor(Math.random() * z.types.length)];
-      const lvl = Math.floor(rand(z.level[0], z.level[1] + 0.99)) + (night > 0.5 ? 1 : 0);
-      const elite = Math.random() < 0.05 + night * 0.06;
-      const e = this.spawn(type, lvl, x, zz, { elite, home: { x: z.x, z: z.z } });
-      e.zone = z.id;
-      z.ids.add(e.id);
     }
   }
 
@@ -271,7 +276,7 @@ export class Enemies {
       for (let i = 0; i < 2; i++) {
         const a = e.rot + (i ? 1.2 : -1.2);
         const x = e.position.x + Math.sin(a) * 3, z = e.position.z + Math.cos(a) * 3;
-        if (g.world.terrain.heightAt(x, z) === null) continue;
+        if (!g.world.terrain.isLand(x, z)) continue;
         const m = this.spawn(e.def.summons || 'minion', Math.max(1, e.level - 2), x, z, { home: e.home });
         if (e.zone) { m.zone = e.zone; this.zones.find((zz) => zz.id === e.zone)?.ids.add(m.id); }
       }
@@ -336,7 +341,7 @@ export class Enemies {
     if (opts.knock && !e.def.boss) {
       const a = Math.atan2(e.position.x - opts.knock.x, e.position.z - opts.knock.z);
       const nx = e.position.x + Math.sin(a) * (opts.knock.d || 2.5), nz = e.position.z + Math.cos(a) * (opts.knock.d || 2.5);
-      if (this.game.world.terrain.heightAt(nx, nz) !== null) { e.position.x = nx; e.position.z = nz; }
+      if (this.game.world.terrain.isLand(nx, nz)) { e.position.x = nx; e.position.z = nz; }
     }
     e.char.hitFlash('#ffffff', 1);
     if (e.state === 'spawn') { e.char.stopAction(0.2); e.setState('idle'); }
@@ -356,7 +361,7 @@ export class Enemies {
     if (e.def.splits && this.isHost) {
       for (const s of [-1, 1]) {
         const x = e.position.x + Math.cos(e.rot + s * 1.3) * 1.4, z = e.position.z + Math.sin(e.rot + s * 1.3) * 1.4;
-        if (this.game.world.terrain.heightAt(x, z) === null) continue;
+        if (!this.game.world.terrain.isLand(x, z)) continue;
         const m = this.spawn(e.def.splits, Math.max(1, e.level - 1), x, z, { home: e.home, silent: true });
         m.char.stopAction(0); m.setState('chase'); m.target = e.target;
         if (e.wave) m.wave = e.wave;

@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import { Terrain, parseBakedTerrain } from './Terrain.js';
+import { Terrain } from './Terrain.js';
+import { TerrainRenderer, makeTerrainTextures } from './TerrainRenderer.js';
+import { Ocean } from './Ocean.js';
 import { Sky } from './Sky.js';
 import { Clouds } from './Clouds.js';
 import { Water } from './Water.js';
@@ -35,22 +37,23 @@ export class World {
       onStep?.(s); await yieldFrame();
     };
     this.perfDone = () => { if (perf) console.log(`[perf] ${sPrev} : ${Math.round(performance.now() - tPrev)} ms`); };
-    await step('Façonnage des îles flottantes…');
-    const baked = assets.bakedTerrain ? parseBakedTerrain(assets.bakedTerrain) : null;
-    this.terrain = new Terrain(baked);
+    await step('Façonnage du continent…');
+    this.terrain = new Terrain(assets.bakedTerrain);
     assets.bakedTerrain = null;
     for (const u of UPDRAFTS) Updrafts.anchor(u, this.terrain); // avant la végétation et les quêtes
     this.colliders = new Colliders();
     await step('Cartographie de la Brume…');
-    this.maps = new Maps(this.terrain, quality.grass > 20000 ? 384 : quality.grass > 10000 ? 256 : 192);
+    this.maps = new Maps();
 
-    await step('Élévation de l’archipel…');
+    await step('Les montagnes se dressent…');
+    this.terrainTex = makeTerrainTextures(this.terrain, renderer.qualityName);
+    this.terrainRenderer = new TerrainRenderer(this.scene, this.terrain, this.terrainTex, this.maps, { quality: renderer.qualityName, detail: quality.terrainDetail ?? 1 });
+    // îles flottantes ajoutées ensuite (Citadelle) : maillages classiques
     this.terrainMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: false, roughness: 0.95, metalness: 0 });
     applyCorruption(this.terrainMat, this.maps, 1);
     this.underMat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1, metalness: 0 });
     this.islandMeshes = [];
     this.farCull = [];
-    for (const isl of this.terrain.islands) this.addIslandMeshes(isl);
 
     await step('Le ciel s’éveille…');
     this.sky = new Sky(this.scene);
@@ -63,10 +66,11 @@ export class World {
     updateRim(this.sky);
     this.clouds = new Clouds(this.scene, assets, renderer.qualityName);
     this.water = new Water(this.scene, this.terrain);
+    this.ocean = new Ocean(this.scene, this.terrainTex);
     this.ambient = new Ambient(this.scene, 900);
     this.ambient.setCount(quality.particles ?? 600);
     await step('Les herbes poussent…');
-    this.grass = new Grass(this.scene, this.maps, quality.grass, quality.grassRadius);
+    this.grass = new Grass(this.scene, this.maps, this.terrainTex, quality.grass, quality.grassRadius);
     await step('Les forêts murmurent…');
     this.vegetation = new Vegetation(this.scene, assets, this.terrain, this.colliders, this.maps, quality.trees);
     this.vegetation.setViewDistance(quality.vegView);
@@ -163,6 +167,7 @@ export class World {
     const e = this.elapsed;
     this.lodT = (this.lodT || 0) - dt;
     if (camera && this.lodT <= 0) { this.lodT = 0.25; this.updateLod(camera); }
+    if (camera) this.terrainRenderer.update(camera);
     if (focus) {
       // ambiance régionale (brume des Landes, moiteur de la Canopée)
       const near = (d) => (d ? 1 - smoothstep(d.radius * 0.9, d.radius * 1.3, Math.hypot(focus.x - d.x, focus.z - d.z)) : 0);
@@ -173,6 +178,7 @@ export class World {
     updateRim(this.sky);
     this.clouds.update(dt, e, this.sky, camera);
     this.water.update(dt, e, this.sky);
+    this.ocean.update(dt, e, this.sky, camera);
     this.grass.update(dt, e, focus, pushers, this.sky);
     this.vegetation.update(dt, e, this.playerFocus || focus, camera);
     this.village.update(dt, e, st.night);
