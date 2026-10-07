@@ -85,7 +85,7 @@ export class Projectiles {
         p.onEnd?.(pos.clone());
         fx.burst(pos, p.color, { count: 8, speed: 4, size: 0.3, life: 0.3 });
         g.scene.remove(p.mesh);
-        p.mesh.traverse((o) => o.material?.dispose());
+        // (matériaux non détruits : leur shader resterait à recompiler au prochain tir)
         this.list.splice(i, 1);
       }
     }

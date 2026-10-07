@@ -34,6 +34,9 @@ function runeCircleTexture() {
 }
 
 // Bibliothèque d'effets visuels (sorts, impacts, auras).
+const TRAIL_N = 18, _tb = new THREE.Vector3(), _tt = new THREE.Vector3();
+const _spikeGeo = new THREE.ConeGeometry(1, 1, 5, 1).translate(0, 0.5, 0);
+
 export class Effects {
   constructor(scene) {
     this.scene = scene;
@@ -212,40 +215,58 @@ export class Effects {
     this.burst(b, color, { count: 10, speed: 5, size: 0.3, life: 0.3, gravity: 2 });
   }
 
-  // Traînée lumineuse qui suit la lame pendant un coup (ruban entre talon et pointe de l'arme)
-  weaponTrail(char, color, { duration = 0.45, delay = 0, intensity = 2.2 } = {}) {
-    const N = 18, b = new THREE.Vector3(), t = new THREE.Vector3();
-    if (!char?.weaponPoints?.(b, t)) return;
-    const pos = new Float32Array(N * 2 * 3), age = new Float32Array(N * 2);
-    for (let i = 0; i < N; i++) { pos.set([b.x, b.y, b.z, t.x, t.y, t.z], i * 6); age[i * 2] = age[i * 2 + 1] = i / (N - 1); }
+  // Traînée lumineuse qui suit la lame pendant un coup (ruban entre talon et pointe de l'arme).
+  // Les rubans sont pris dans une réserve et réutilisés : aucune création de buffer ni de
+  // shader pendant le combat (l'attaque de base en lance un à chaque coup).
+  makeTrail() {
+    const N = TRAIL_N, pos = new Float32Array(N * 2 * 3), age = new Float32Array(N * 2), side = new Float32Array(N * 2);
+    for (let i = 0; i < N; i++) { age[i * 2] = age[i * 2 + 1] = i / (N - 1); side[i * 2 + 1] = 1; }
     const idx = [];
     for (let i = 0; i < N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     const geo = new THREE.BufferGeometry();
     const pa = new THREE.BufferAttribute(pos, 3); pa.setUsage(THREE.DynamicDrawUsage);
     geo.setAttribute('position', pa);
-    const side = new Float32Array(N * 2); for (let i = 0; i < N; i++) side[i * 2 + 1] = 1;
     geo.setAttribute('aAge', new THREE.BufferAttribute(age, 1));
     geo.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
     geo.setIndex(idx);
     const mat = new THREE.ShaderMaterial({
-      uniforms: { uColor: { value: new THREE.Color(color).multiplyScalar(intensity) }, uAlpha: { value: 0 } },
+      uniforms: { uColor: { value: new THREE.Color() }, uAlpha: { value: 0 } },
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
       vertexShader: `attribute float aAge; attribute float aSide; varying float vA; varying float vS; void main(){ vA = aAge; vS = aSide; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
       fragmentShader: `uniform vec3 uColor; uniform float uAlpha; varying float vA; varying float vS;
-        void main(){ float a = pow(1.0 - vA, 1.6) * smoothstep(0.0, 0.5, vS) * uAlpha; gl_FragColor = vec4(mix(vec3(1.0), uColor, 0.35 + vA * 0.65) * a, a); }`,
+        void main(){ float a = pow(clamp(1.0 - vA, 0.0, 1.0), 1.6) * smoothstep(0.0, 0.5, vS) * uAlpha; gl_FragColor = vec4(mix(vec3(1.0), uColor, 0.35 + clamp(vA, 0.0, 1.0) * 0.65) * a, a); }`,
     });
     const m = new THREE.Mesh(geo, mat);
     m.frustumCulled = false;
+    m.userData.pooled = true;
+    return { m, pos, pa, mat, busy: false };
+  }
+
+  weaponTrail(char, color, { duration = 0.45, delay = 0, intensity = 2.2 } = {}) {
+    const N = TRAIL_N, b = _tb, t = _tt;
+    if (!char?.weaponPoints?.(b, t)) return;
+    if (![b.x, b.y, b.z, t.x, t.y, t.z].every(Number.isFinite)) return;
+    this.trails = this.trails || [];
+    let tr = this.trails.find((x) => !x.busy);
+    if (!tr) { if (this.trails.length >= 10) return; tr = this.makeTrail(); this.trails.push(tr); }
+    tr.busy = true;
+    const { pos, pa, mat } = tr;
+    for (let i = 0; i < N; i++) pos.set([b.x, b.y, b.z, t.x, t.y, t.z], i * 6);
+    pa.needsUpdate = true;
+    mat.uniforms.uColor.value.set(color).multiplyScalar(intensity);
+    mat.uniforms.uAlpha.value = 0;
     const life = duration + delay + 0.25;
-    this.spawnMesh(m, life, (e, k) => {
+    const e = this.spawnMesh(tr.m, life, (e, k) => {
       const tt = k * life;
-      if (!char.weaponPoints(b, t)) return;
+      if (!char.weaponPoints(b, t) || !Number.isFinite(b.x + b.y + b.z + t.x + t.y + t.z)) return;
       // nouveaux points en tête, les anciens glissent vers la queue
       pos.copyWithin(6, 0, (N - 1) * 6);
       pos[0] = b.x; pos[1] = b.y; pos[2] = b.z; pos[3] = t.x; pos[4] = t.y; pos[5] = t.z;
       pa.needsUpdate = true;
       mat.uniforms.uAlpha.value = tt < delay ? 0 : tt < delay + duration ? Math.min(1, (tt - delay) * 12) : Math.max(0, 1 - (tt - delay - duration) / 0.25);
-    }).dispose = () => geo.dispose();
+    });
+    e.keep = true;
+    e.onEnd = () => { tr.busy = false; mat.uniforms.uAlpha.value = 0; };
   }
 
   // tourbillon qui aspire les particules vers un point (singularité, vortex)
@@ -267,22 +288,21 @@ export class Effects {
 
   // pics qui jaillissent du sol (glace, terre, lumière) puis se rétractent
   spikes(points, color, { height = 2.2, life = 1.1, radius = 0.45 } = {}) {
-    const geo = new THREE.ConeGeometry(radius, 1, 5, 1);
-    geo.translate(0, 0.5, 0);
+    const geo = _spikeGeo;
     const mat = new THREE.MeshStandardMaterial({ color: _c.set(color).clone(), emissive: _c.clone().multiplyScalar(0.5), roughness: 0.3, metalness: 0.1, flatShading: true, transparent: true });
-    const m = new THREE.InstancedMesh(geo, mat, points.length);
+    const m = new THREE.InstancedMesh(geo, mat, Math.max(1, points.length));
     const M = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), v = new THREE.Vector3(), eu = new THREE.Euler();
     const rot = points.map(() => [(Math.random() - 0.5) * 0.5, Math.random() * 6, (Math.random() - 0.5) * 0.5, 0.7 + Math.random() * 0.6]);
     this.spawnMesh(m, life, (e, t) => {
       const k = t < 0.12 ? t / 0.12 : t > 0.7 ? 1 - (t - 0.7) / 0.3 : 1;
       points.forEach((p, i) => {
         const [rx, ry, rz, hs] = rot[i];
-        q.setFromEuler(eu.set(rx, ry, rz)); s.set(1, Math.max(0.001, height * hs * k), 1);
+        q.setFromEuler(eu.set(rx, ry, rz)); s.set(radius, Math.max(0.001, height * hs * k), radius);
         M.compose(v.set(p.x, p.y - 0.2, p.z), q, s); m.setMatrixAt(i, M);
       });
       m.instanceMatrix.needsUpdate = true;
       mat.opacity = Math.min(1, (1 - t) * 4);
-    }).dispose = () => geo.dispose();
+    }).dispose = () => m.dispose(); // (la géométrie est partagée)
     for (const p of points) this.burst({ x: p.x, y: p.y + 0.3, z: p.z }, color, { count: 5, speed: 4, size: 0.3, life: 0.4, gravity: 8, up: 3 });
   }
 
@@ -373,16 +393,23 @@ export class Effects {
     this.bubble(dummy, '#ffffff');
     this.telegraph(o, 2, 1);
     this.meteor(o, '#ffffff', 1);
+    this.spikes([{ x: 0, y: -9000, z: 0 }], '#ffffff');
+    this.vortex(o, '#ffffff', { duration: 0.5, rate: 0 });
+    const tr = this.makeTrail(); tr.m.position.y = 0; this.warmTrail = tr.m;
     const made = this.live.splice(before);
     this.warm = new THREE.Group();
     this.warm.visible = false;
     for (const e of made) { this.scene.remove(e.mesh); this.warm.add(e.mesh); }
+    this.warm.add(this.warmTrail);
     for (const o of extra) { o.position.y = -9000; this.warm.add(o); }
     this.scene.add(this.warm);
     const r = renderer.renderer, prev = r.getRenderTarget();
     // même cible que le rendu du jeu (le composeur) pour obtenir exactement les mêmes programmes
     r.setRenderTarget(renderer.composer?.readBuffer ?? null);
+    // compile() ne parcourt que les objets visibles : on montre la réserve le temps de compiler
+    this.warm.visible = true;
     try { r.compile(this.scene, renderer.camera); } catch (err) { console.warn('préchauffage', err); }
+    this.warm.visible = false;
     r.setRenderTarget(prev);
   }
 
@@ -395,8 +422,9 @@ export class Effects {
       if (e.t >= e.life) {
         e.onEnd?.();
         this.scene.remove(e.mesh);
-        if (e.mesh.material && e.mesh.material !== this.beamMat) e.mesh.material.dispose?.();
-        e.dispose?.();
+        // pas de material.dispose() : le programme du shader serait détruit puis recompilé au
+        // coup suivant (saccade, voire perte du contexte graphique sur certains appareils)
+        if (!e.keep) e.dispose?.();
         this.live.splice(i, 1);
       }
     }

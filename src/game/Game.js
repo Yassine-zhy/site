@@ -37,6 +37,7 @@ export class Game {
     this.classDefs = CLASSES;
     this.remotePlayers = new Map();
     this.settings = { autoEquip: false, sensitivity: 1, volume: 0.8, music: 0.6, quality: renderer.qualityName, showHelp: true };
+    this.watchContext();
     this.paused = false;
     this.hurtFlash = 0;
     this.fps = 60; this.fpsAcc = 0; this.fpsN = 0;
@@ -179,6 +180,31 @@ export class Game {
   }
 
   schedule(delay, fn) { this.timers.push({ t: delay, fn }); }
+  // Perte du contexte graphique (pilote qui redémarre, mémoire vidéo saturée) : au lieu d'un
+  // écran vide, un message, puis tout est reconstruit au retour du contexte. Si cela se répète,
+  // la qualité baisse d'un cran pour soulager la carte graphique.
+  watchContext() {
+    const canvas = this.renderer.renderer.domElement;
+    this.glLosses = 0;
+    canvas.addEventListener('webglcontextlost', () => {
+      this.glLosses++;
+      if (!this.glVeil) { this.glVeil = document.createElement('div'); this.glVeil.className = 'gl-veil'; this.glVeil.textContent = 'Rétablissement de l’affichage…'; this.ui.root.appendChild(this.glVeil); }
+      this.glVeil.hidden = false;
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      const r = this.renderer;
+      const order = ['low', 'medium', 'high', 'ultra'];
+      const i = order.indexOf(r.qualityName);
+      if (this.glLosses >= 2 && i > 0) {
+        r.setQuality(order[i - 1]); this.world?.setQuality(r.quality); this.settings.quality = order[i - 1];
+        this.ui.toast(`Qualité graphique abaissée (${r.quality.label}) pour éviter les coupures d’affichage.`, { time: 5 });
+      } else { r.buildComposer(); r.resize(); }
+      r.renderer.shadowMap.needsUpdate = true;
+      try { this.prewarm(); } catch (e) { console.warn(e); }
+      if (this.glVeil) this.glVeil.hidden = true;
+    });
+  }
+
   hitStop(d) { this.hitStopT = Math.max(this.hitStopT, d); }
   // ralenti (victoire, esquive parfaite) : le monde passe à k × la vitesse normale
   slowMo(d, k = 0.35) { this.slowT = Math.max(this.slowT || 0, d); this.slowK = k; }

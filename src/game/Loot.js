@@ -138,7 +138,6 @@ export class Loot {
       if ((d < 1.2 && L.t > 0.6) || L.t > 180) {
         if (L.t <= 180 && !this.collect(L)) { L.t = Math.min(L.t, 170); continue; }
         g.scene.remove(L.group);
-        L.group.traverse((o) => { if (o.material && (o === L.glow || o === L.ring || o === L.beam)) o.material.dispose?.(); });
         this.list.splice(i, 1);
       }
     }

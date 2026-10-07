@@ -693,3 +693,6 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
 @keyframes acin { from { opacity: 0; letter-spacing: 0.5em; filter: blur(6px); } to { opacity: 1; letter-spacing: 0.04em; filter: none; } }
 @keyframes acline { from { width: 0; opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .arena-card.show .ac-title, .arena-card.show .ac-line { animation: none; } }
+/* contexte graphique perdu : message au lieu d'un écran vide */
+.gl-veil { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, #1a1433, #0b0916); color: var(--gold-hi); font-family: var(--font-display); font-size: 22px; letter-spacing: 0.04em; pointer-events: none; }
+.gl-veil[hidden] { display: none; }
