@@ -7,6 +7,8 @@ import { VILLAGE, FOREST, MOUNTAIN, RUINS, HILLS, HAMLET, BEACONS, UPDRAFTS, WAY
 const TILE = 600;
 import { applyCorruption, CORR_UV_GLSL } from './Maps.js';
 import { registerJungleTrees } from './JungleTrees.js';
+import { registerProcTrees } from './ProcTrees.js';
+import { bindShared, rockGLSL, FOLIAGE_GLSL } from './SurfaceDetail.js';
 
 // Arbres et rochers instanciés (modèles KayKit), avec balancement au vent.
 export class Vegetation {
@@ -14,6 +16,7 @@ export class Vegetation {
     this.scene = scene; this.assets = assets; this.terrain = terrain; this.colliders = colliders;
     this.meshes = [];
     registerJungleTrees(assets);
+    registerProcTrees(assets);
     const rng = mulberry32(2024);
     const buckets = new Map();
     const add = (name, x, z, scale, rotY, opts = {}) => {
@@ -58,6 +61,21 @@ export class Vegetation {
     const nz = new Simplex(777);
     const R = () => rng() * Math.PI * 2;
     const tree = (name, x, z, s, look) => add(name, x, z, s, R(), { col: 'tree', look });
+    const pt = (name, x, z, s) => add(name, x, z, s, R(), { col: 'tree', look: 'pt' });
+    const bushAt = (x, z, kinds = ['pt_bush', 'pt_bush_rose', 'pt_bush_yellow']) => add(rng.pick(kinds), x, z, 4 + rng() * 3, R(), { look: 'pt', sink: 0.1 });
+    // feuillus et conifères modélisés en code, mêlés aux arbres KayKit
+    const deciduous = (x, z, k = 1) => {
+      const r = rng();
+      if (r < 0.42) return pt(rng() < 0.5 ? 'pt_oak_A' : 'pt_oak_B', x, z, (8 + rng() * 3.5) * k);
+      if (r < 0.58) return pt(rng() < 0.5 ? 'pt_birch_A' : 'pt_birch_B', x, z, (8.5 + rng() * 3) * k);
+      const cl = rng() < 0.4;
+      return tree(cl ? rng.pick(clusters) : rng.pick(singles), x, z, cl ? 6 + rng() * 2.5 : 6.5 + rng() * 3.5, 'base');
+    };
+    const conifer = (x, z, snow = false) => {
+      if (rng() < 0.6) return pt(snow ? (rng() < 0.5 ? 'pt_pine_snow_A' : 'pt_pine_snow_B') : (rng() < 0.5 ? 'pt_pine_A' : 'pt_pine_B'), x, z, 9 + rng() * 4.5);
+      const cl = rng() < 0.3;
+      return tree(cl ? rng.pick(clustersA) : 'tree_single_A', x, z, cl ? 5.5 + rng() * 2.5 : 6 + rng() * 3.5, snow ? 'snow' : 'base');
+    };
     const rock = (x, z, big, look, tall = 0.8) => {
       const s = big ? 14 + rng() * 18 : 6 + rng() * 8;
       add(rng.pick(rocks), x, z, s, R(), { col: 'rock', sink: s * 0.03, sy: 0.8 + rng() * tall, look });
@@ -71,25 +89,22 @@ export class Vegetation {
         const clearing = Math.sin(x * 0.031) * Math.cos(z * 0.027) > 0.55 ? 0.15 : 1;
         if (h < 85 && sl < 0.7) {
           const p = (ft * 0.4 * clearing + grove * 0.16 * hills + (mt ? 0.06 : 0.008)) * density;
-          if (rng() < p) {
-            const cl = rng() < 0.28;
-            return tree(cl ? rng.pick(mt ? clustersA : clusters) : mt ? 'tree_single_A' : rng.pick(singles), x, z, cl ? 6 + rng() * 2.5 : 6.5 + rng() * 3.5, 'base');
-          }
+          if (rng() < p) return mt || h > 40 ? conifer(x, z) : deciduous(x, z);
         }
+        if (sl < 0.4 && h < 60 && rng() < (0.012 + grove * 0.02) * density) return bushAt(x, z);
         if (rng() < (mt ? 0.05 : 0.011) * density) rock(x, z, rng() < (mt ? 0.5 : 0.15), 'base');
       },
       snow(x, z, h, sl, grove) {
-        if (h < 125 && sl < 0.62 && rng() < (0.04 + grove * 0.3) * density) {
-          const cl = rng() < 0.3;
-          return tree(cl ? rng.pick(clustersA) : 'tree_single_A', x, z, cl ? 5.5 + rng() * 2.5 : 6 + rng() * 3.5, 'snow');
-        }
+        if (h < 125 && sl < 0.62 && rng() < (0.04 + grove * 0.3) * density) return conifer(x, z, true);
         if (rng() < 0.026 * density) rock(x, z, rng() < 0.3, 'snow', 0.6);
       },
       amber(x, z, h, sl, grove) {
         const r = rng();
-        if (sl < 0.6 && r < (0.012 + grove * 0.04) * density) {
-          const cl = rng() < 0.12;
-          return tree(cl ? rng.pick(['trees_B_medium', 'trees_B_small']) : 'tree_single_B', x, z, cl ? 5.5 + rng() * 2.5 : 6 + rng() * 3.5, 'autumn');
+        if (sl < 0.6 && r < (0.014 + grove * 0.045) * density) {
+          const r2 = rng();
+          if (r2 < 0.5) return pt(rng() < 0.5 ? 'pt_acacia_A' : 'pt_acacia_B', x, z, 9 + rng() * 4);
+          if (r2 < 0.8) return pt(rng() < 0.5 ? 'pt_oak_autumn' : 'pt_oak_gold', x, z, 7.5 + rng() * 3);
+          return tree('tree_single_B', x, z, 6 + rng() * 3.5, 'autumn');
         }
         if (sl < 0.45 && r < 0.05 * density) {
           const big = rng() < 0.55;
@@ -124,10 +139,8 @@ export class Vegetation {
       },
       highland(x, z, h, sl, grove) {
         const r = rng();
-        if (sl < 0.55 && r < (0.006 + grove * 0.035) * density) {
-          const cl = rng() < 0.4;
-          return tree(cl ? rng.pick(['trees_B_small', 'trees_A_small']) : rng.pick(singles), x, z, cl ? 5 + rng() * 2 : 5.5 + rng() * 3, 'base');
-        }
+        if (sl < 0.55 && r < (0.006 + grove * 0.035) * density) return rng() < 0.6 ? conifer(x, z) : pt('pt_oak_gold', x, z, 6.5 + rng() * 2.5);
+        if (sl < 0.45 && r < 0.03 * density) return bushAt(x, z, ['pt_bush', 'pt_bush_yellow']);
         if (r < 0.06 * density) rock(x, z, rng() < 0.45, 'base', 1.4);
       },
       beach(x, z, h, sl, grove) {
@@ -136,13 +149,14 @@ export class Vegetation {
           if (rng() < 0.82) return tree(rng() < 0.5 ? 'proc_palm_A' : 'proc_palm_B', x, z, 7 + rng() * 3.5, 'jungle');
           return tree('proc_kapok', x, z, 5.5 + rng() * 3, 'jungle');
         }
-        if (h > 3 && sl < 0.5 && r < 0.12 * density && rng() < 0.3) return add('proc_fern', x, z, 4 + rng() * 3, R(), { look: 'jungle', sink: 0.05 });
+        if (h > 3 && sl < 0.5 && r < 0.12 * density && rng() < 0.3) return rng() < 0.5 ? add('proc_fern', x, z, 4 + rng() * 3, R(), { look: 'jungle', sink: 0.05 }) : bushAt(x, z, ['pt_bush_rose', 'pt_bush']);
         if (r < 0.14 * density && rng() < 0.05) rock(x, z, rng() < 0.3, 'base', 0.6);
       },
       swamp(x, z, h, sl, grove) {
         const r = rng();
         if (sl < 0.55 && r < (0.05 + grove * 0.12) * density) {
-          if (rng() < 0.45) return add(rng.pick(['hw_tree_dead_large', 'hw_tree_dead_medium', 'hw_tree_dead_small']), x, z, 2 + rng() * 0.9, R(), { col: 'tree', look: 'hw' });
+          if (rng() < 0.35) return add(rng.pick(['hw_tree_dead_large', 'hw_tree_dead_medium', 'hw_tree_dead_small']), x, z, 2 + rng() * 0.9, R(), { col: 'tree', look: 'hw' });
+          if (rng() < 0.6) return pt('pt_willow', x, z, 9 + rng() * 4);
           const cl = rng() < 0.3;
           return tree(cl ? rng.pick(['trees_B_medium', 'trees_B_small']) : 'tree_single_B', x, z, cl ? 5.5 + rng() * 2 : 6 + rng() * 3, 'swamp');
         }
@@ -150,10 +164,7 @@ export class Vegetation {
       },
       cliffs(x, z, h, sl, grove) {
         const r = rng();
-        if (sl < 0.58 && r < (0.015 + grove * 0.1) * density) {
-          const cl = rng() < 0.25;
-          return tree(cl ? rng.pick(clustersA) : 'tree_single_A', x, z, cl ? 5.5 + rng() * 2.5 : 6 + rng() * 3.5, 'base');
-        }
+        if (sl < 0.58 && r < (0.015 + grove * 0.1) * density) return conifer(x, z);
         if (r < 0.07 * density) rock(x, z, rng() < 0.5, 'base', 1.6);
       },
     };
@@ -215,6 +226,7 @@ export class Vegetation {
       mat.onBeforeCompile = (shader) => {
         shader.uniforms.uTime = tu.uTime; shader.uniforms.uWind = tu.uWind; shader.uniforms.uPlayerPos = tu.uPlayerPos;
         shader.uniforms.uCorruption = { value: maps.corruptionTex };
+        bindShared(shader);
         shader.vertexShader = shader.vertexShader
           .replace('#include <common>', '#include <common>\nuniform float uTime; uniform float uWind; varying vec3 vWorldPosC; varying float vInstR;')
           .replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -231,7 +243,7 @@ export class Vegetation {
             vWorldPosC = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;`);
         shader.fragmentShader = shader.fragmentShader
           .replace('#include <common>', `#include <common>
-            varying vec3 vWorldPosC; varying float vInstR; uniform sampler2D uCorruption; uniform vec3 uPlayerPos;
+            varying vec3 vWorldPosC; varying float vInstR; uniform sampler2D uCorruption; uniform vec3 uPlayerPos; uniform sampler2D uDetail; uniform sampler2D uNoise;
             float bayer4(vec2 p) { vec2 q = mod(floor(p), 4.0); int i = int(q.x) + int(q.y) * 4;
               int m[16] = int[16](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5); return (float(m[i]) + 0.5) / 16.0; }`)
           .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
@@ -248,6 +260,7 @@ export class Vegetation {
               if (fade * 0.85 > bayer4(gl_FragCoord.xy)) discard;
             }`)
           .replace('#include <color_fragment>', `#include <color_fragment>
+            ${FOLIAGE_GLSL}
             ${mode === 'snow' ? SNOW_GLSL : mode === 'autumn' ? AUTUMN_GLSL : mode === 'jungle' ? JUNGLE_GLSL : mode === 'swamp' ? SWAMP_GLSL : ''}
             {
               vec2 cuv = ${CORR_UV_GLSL.replace(/WP/g, 'vWorldPosC.xz')};
@@ -256,7 +269,7 @@ export class Vegetation {
               diffuseColor.rgb = mix(diffuseColor.rgb, mix(diffuseColor.rgb, vec3(lum), 0.6) * vec3(0.8, 0.7, 0.95), cor * 0.58);
             }`);
       };
-      mat.customProgramCacheKey = () => 'treewind-' + mode;
+      mat.customProgramCacheKey = () => 'treewind2-' + mode;
       return mat;
     };
     const makeStaticMat = (mode, base = baseMat) => {
@@ -272,11 +285,28 @@ export class Vegetation {
     const extraMats = new Map();
     const matFor = (name, isTree, look) => {
       const src = assets.propGeometry(name).material;
-      if (src === baseMat || src.map === baseMat.map) return isTree ? (this.treeMats[look] || this.treeMats.base) : (this.staticMats[look] || this.staticMats.base);
+      if (src === baseMat || src.map === baseMat.map) {
+        if (isTree) return this.treeMats[look] || this.treeMats.base;
+        if (/rock/.test(name)) return this.rockMats[look] || this.rockMats.base;
+        return this.staticMats[look] || this.staticMats.base;
+      }
       const key = src.uuid + (isTree ? '|t' : '|s');
       if (!extraMats.has(key)) extraMats.set(key, isTree ? makeTreeMat('base', src) : makeStaticMat('base', src));
       return extraMats.get(key);
     };
+    // rochers : fissures et dessus moussu, enneigé, ensablé… selon le biome
+    const C = (h) => new THREE.Color(h);
+    const ROCK_TOP = { base: [C('#4f7a34'), 0.75], snow: [C('#f2f6fb'), 0.95], red: [C('#d8a466'), 0.45], dark: [C('#4a4a3a'), 0.5], moss: [C('#3f7f35'), 0.9] };
+    const makeRockMat = (mode) => {
+      const mat = baseMat.clone();
+      if (mode === 'red') mat.color.set('#ffab80');
+      if (mode === 'dark') mat.color.set('#a59cbb');
+      if (mode === 'moss') mat.color.set('#c4dcb8');
+      const [top, amount] = ROCK_TOP[mode] || ROCK_TOP.base;
+      applyCorruption(mat, maps, 0.8, '', rockGLSL(top, amount));
+      return mat;
+    };
+    this.rockMats = { base: makeRockMat('base'), snow: makeRockMat('snow'), red: makeRockMat('red'), dark: makeRockMat('dark'), moss: makeRockMat('moss') };
     this.staticMats = { base: makeStaticMat('base'), snow: makeStaticMat('snow'), red: makeStaticMat('red'), autumn: makeStaticMat('base'), dark: makeStaticMat('dark'), moss: makeStaticMat('moss'), jungle: makeStaticMat('base'), swamp: makeStaticMat('moss') };
     this.treeMat = this.treeMats.base; this.staticMat = this.staticMats.base;
 
@@ -286,7 +316,7 @@ export class Vegetation {
       const [look, name] = key.split('|');
       const g = assets.propGeometry(name);
       if (!g) continue;
-      const isTree = /tree/.test(name);
+      const isTree = TREE_RE.test(name);
       const mat = matFor(name, isTree, look);
       const mesh = new THREE.InstancedMesh(g.geometry, mat, list.length);
       const n = list.length;
@@ -307,14 +337,14 @@ export class Vegetation {
       mesh.computeBoundingSphere();
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       // petits objets (fougères, plantes, tombes, cactus nains) : seulement à courte distance
-      const small = /fern|waterplant|waterlily|cactus_small|hw_(?!tree)|rock_single_[CDE]/.test(name);
+      const small = /fern|bush|waterplant|waterlily|cactus_small|hw_(?!tree)|rock_single_[CDE]/.test(name);
       mesh.userData = { mats, sph, n, near: n, small };
       mesh.onBeforeShadow = shadowBefore; mesh.onAfterShadow = shadowAfter;
       scene.add(mesh);
       this.meshes.push(mesh);
     }
     this.treePositions = [];
-    for (const [key, list] of buckets) if (/tree/.test(key)) for (const it of list) this.treePositions.push(it);
+    for (const [key, list] of buckets) if (TREE_RE.test(key.split('|')[1])) for (const it of list) this.treePositions.push(it);
   }
 
   update(dt, elapsed, focus, camera) {
@@ -373,6 +403,8 @@ export class Vegetation {
 }
 
 const SHADOW_RADIUS = 85;
+// modèles qui se balancent au vent (et que l'on rend translucides devant la caméra)
+const TREE_RE = /tree|^proc_(palm|kapok)|^pt_(?!bush)/;
 function shadowBefore() { this.userData.cnt = this.count; this.count = this.userData.near; }
 function shadowAfter() { this.count = this.userData.cnt; }
 

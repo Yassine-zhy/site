@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { VILLAGE, HAMLET, BEACONS, REGIONS, WORLD_BOUNDS } from '../config.js';
 import { smoothstep, clamp, Simplex } from '../engine/math.js';
+import { bindShared } from './SurfaceDetail.js';
 
 // La Brume couvre tout le continent.
 export const CORR = { cx: WORLD_BOUNDS.cx, cz: WORLD_BOUNDS.cz, half: WORLD_BOUNDS.half };
@@ -58,8 +59,9 @@ export class Maps {
 export const CORR_UV_GLSL = `((WP - vec2(${CORR.cx.toFixed(1)}, ${CORR.cz.toFixed(1)}) + ${CORR.half.toFixed(1)}) / ${(CORR.half * 2).toFixed(1)})`;
 
 // Injecte la teinte de Brume dans un matériau standard (terrain, arbres...).
-export function applyCorruption(material, maps, strength = 1, extra = '') {
+export function applyCorruption(material, maps, strength = 1, extra = '', before = '') {
   material.onBeforeCompile = (shader) => {
+    bindShared(shader);
     shader.uniforms.uCorruption = { value: maps.corruptionTex };
     shader.uniforms.uCorruptStrength = { value: strength };
     shader.vertexShader = shader.vertexShader
@@ -72,8 +74,9 @@ export function applyCorruption(material, maps, strength = 1, extra = '') {
         vWorldPosC = (modelMatrix * wpc).xyz;`);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
-        varying vec3 vWorldPosC; uniform sampler2D uCorruption; uniform float uCorruptStrength;`)
+        varying vec3 vWorldPosC; uniform sampler2D uCorruption; uniform float uCorruptStrength; uniform sampler2D uDetail; uniform sampler2D uNoise;`)
       .replace('#include <color_fragment>', `#include <color_fragment>
+        ${before}
         {
           vec2 cuv = ${CORR_UV_GLSL.replace(/WP/g, 'vWorldPosC.xz')};
           float cor = texture2D(uCorruption, cuv).r * uCorruptStrength;
@@ -83,6 +86,6 @@ export function applyCorruption(material, maps, strength = 1, extra = '') {
         }
         ${extra}`);
   };
-  material.customProgramCacheKey = () => 'corrupt' + strength + extra.length;
+  material.customProgramCacheKey = () => 'corrupt' + strength + extra.length + '-' + before.length;
   material.needsUpdate = true;
 }

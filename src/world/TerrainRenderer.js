@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { WORLD_HALF } from '../config.js';
 import { RES, CRES } from './Continent.js';
-import { makeDetailTexture } from './TerrainTextures.js';
+import { makeDetailTexture, makeNoiseTexture } from './TerrainTextures.js';
 import { CORR_UV_GLSL } from './Maps.js';
+import { SHARED } from './SurfaceDetail.js';
 
 // Rendu du continent : une seule grille instanciée, posée sur un quadtree (niveaux de détail
 // continus façon CDLOD). Le relief est lu dans la carte de hauteur sur le GPU ; les sommets
@@ -67,7 +68,7 @@ export function makeTerrainTextures(terrain, quality) {
   const matTex = new THREE.DataTexture(terrain.mats, CRES, CRES, THREE.RGBAFormat, THREE.UnsignedByteType);
   matTex.magFilter = THREE.LinearFilter; matTex.minFilter = THREE.LinearMipmapLinearFilter; matTex.generateMipmaps = true;
   matTex.needsUpdate = true;
-  return { heightTex, normalTex, colorTex, matTex, uTerr: new THREE.Vector3(-WORLD_HALF, T, RES) };
+  return { heightTex, normalTex, colorTex, matTex, noiseTex: makeNoiseTexture(), uTerr: new THREE.Vector3(-WORLD_HALF, T, RES) };
 }
 
 function gridGeometry(n, max) {
@@ -113,10 +114,12 @@ export class TerrainRenderer {
     this.half = gridGeometry(G / 2, MAX);
     this.uniforms = {
       uHeightMap: { value: textures.heightTex }, uNormalMap: { value: textures.normalTex }, uColorMap: { value: textures.colorTex },
-      uMatMap: { value: textures.matTex }, uDetail: { value: makeDetailTexture(quality === 'low' ? 256 : 512) },
+      uMatMap: { value: textures.matTex }, uDetail: { value: makeDetailTexture(quality === 'low' ? 256 : 512) }, uNoise: { value: textures.noiseTex },
       uTerr: { value: textures.uTerr }, uTerrHalf: { value: WORLD_HALF }, uCamPos: { value: new THREE.Vector3() },
       uMorph: { value: this.morph }, uCorruption: { value: maps.corruptionTex },
     };
+    SHARED.uDetail.value = this.uniforms.uDetail.value; SHARED.uNoise.value = textures.noiseTex;
+    SHARED.uHeightMap.value = textures.heightTex; SHARED.uTerr.value = textures.uTerr;
     this.mats = [G, G / 2].map((n) => this.makeMaterial(n, quality));
     this.meshes = [this.full, this.half].map((g, k) => {
       const m = new THREE.Mesh(g, this.mats[k]);
@@ -183,7 +186,7 @@ export class TerrainRenderer {
           vTerrWorld = transformed;`);
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <common>', `#include <common>
-          uniform sampler2D uNormalMap; uniform sampler2D uColorMap; uniform sampler2D uMatMap; uniform sampler2D uDetail; uniform sampler2D uCorruption;
+          uniform sampler2D uNormalMap; uniform sampler2D uColorMap; uniform sampler2D uMatMap; uniform sampler2D uDetail; uniform sampler2D uCorruption; uniform sampler2D uNoise;
           uniform float uTerrHalf;
           varying vec3 vTerrWorld;
           vec3 perturbTerr(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy) {
@@ -226,6 +229,18 @@ export class TerrainRenderer {
           tint = mix(tint, mix(vec3(0.82, 0.9, 0.78), vec3(1.12, 1.1, 0.92), dd.r), bl.x / bs);
           tint = mix(tint, mix(vec3(0.86, 0.88, 0.95), vec3(1.08, 1.04, 1.0), rk), bl.z / bs);
           diffuseColor.rgb = macro * mix(vec3(1.0), tint * (1.0 + (det - 0.5) * 0.95), fade);
+          // variations lentes : prairies plus jaunes ou plus vertes, plaques plus sombres
+          vec4 nz = texture2D(uNoise, vTerrWorld.xz * 0.0045);
+          vec4 nz2 = texture2D(uNoise, vTerrWorld.xz * 0.019 + vec2(0.31, 0.77));
+          diffuseColor.rgb *= 0.88 + nz.r * 0.18 + (nz2.g - 0.5) * 0.1;
+          diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.12, 1.04, 0.74), smoothstep(0.45, 0.85, nz.b) * 0.55 * bl.x / bs);
+          diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.84, 1.0, 0.86), smoothstep(0.5, 0.9, nz2.a) * 0.4 * bl.x / bs);
+          // sable mouillé au ras de l'eau
+          float wet = (1.0 - smoothstep(0.12, 1.0, vTerrWorld.y)) * step(-0.6, vTerrWorld.y);
+          diffuseColor.rgb *= 1.0 - wet * 0.3;
+          // neige qui scintille quand on se déplace
+          float spk = step(0.972, fract(sin(dot(floor(vTerrWorld.xz * 7.0) + floor(cameraPosition.xz * 0.5), vec2(12.9898, 78.233))) * 43758.5453));
+          diffuseColor.rgb += spk * (wn / bs) * 0.55 * (1.0 - smoothstep(10.0, 45.0, camD));
           {
             vec2 cuv = ${CORR_UV_GLSL.replace(/WP/g, 'vTerrWorld.xz')};
             float cor = texture2D(uCorruption, cuv).r;
@@ -235,7 +250,7 @@ export class TerrainRenderer {
           }`)
         .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
           roughnessFactor = mix(roughnessFactor, 0.62, wn / bs * 0.8);
-          roughnessFactor = mix(roughnessFactor, 0.5, (1.0 - smoothstep(0.1, 0.9, vTerrWorld.y)) * step(-0.3, vTerrWorld.y) * bl.w / bs);`)
+          roughnessFactor = mix(roughnessFactor, 0.38, wet);`)
         .replace('#include <normal_fragment_begin>', `
           float faceDirection = gl_FrontFacing ? 1.0 : - 1.0;
           vec3 normal = normalize((viewMatrix * vec4(wN, 0.0)).xyz);

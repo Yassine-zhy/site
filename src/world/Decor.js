@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { VirtualLight } from './Lights.js';
+import { decorMaterial } from './SurfaceDetail.js';
 
 const BSCALE = 7;
 
@@ -59,7 +60,7 @@ export class Decor {
       const merged = mergeGeometries(list, false);
       if (!merged) continue;
       merged.computeBoundingSphere();
-      const m = new THREE.Mesh(merged, mat);
+      const m = new THREE.Mesh(merged, decorMaterial(mat));
       m.castShadow = true; m.receiveShadow = true;
       this.scene.add(m);
       // liste partagée : le monde masque les décors trop lointains

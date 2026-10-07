@@ -118,14 +118,16 @@ export function makeDetailTexture(S = 512) {
   }
   normalize(G);
 
-  // --- roche : dalles de Voronoï aux joints sombres + strates et grain
-  const vo = voronoi(rng, S, 7), vo2 = voronoi(rng, S, 19), rn = fbm(rng, S, 4, 5), vv = [0, 0, 0], vw = [0, 0, 0];
+  // --- roche : blocs irréguliers (Voronoï déformé), fissures fines, strates et grain
+  const vo = voronoi(rng, S, 5), rn = fbm(rng, S, 4, 5), warp = fbm(rng, S, 3, 3), crk = fbm(rng, S, 16, 3), vv = [0, 0, 0];
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    vo(x, y, vv); vo2(x, y, vw);
-    const edge = Math.min(1, (vv[1] - vv[0]) * 4.5), edge2 = Math.min(1, (vw[1] - vw[0]) * 5);
-    const slab = ((vv[2] * 0.6180339) % 1) * 0.35;
-    const strata = Math.sin((y / S) * Math.PI * 2 * 9 + rn(x, y) * 6) * 0.08;
-    B[y * S + x] = 0.25 + slab + rn(x, y) * 0.45 + strata - (1 - edge) * 0.55 - (1 - edge2) * 0.18;
+    const wx = x + (warp(x, y) - 0.5) * S * 0.12, wy = y + (warp(y + 71, x + 13) - 0.5) * S * 0.12;
+    vo(((wx % S) + S) % S, ((wy % S) + S) % S, vv);
+    const joint = Math.min(1, (vv[1] - vv[0]) * 6); // 0 sur les joints
+    const facet = ((vv[2] * 0.6180339) % 1) * 0.22 + (1 - vv[0]) * 0.12;
+    const c = crk(x, y), crack = Math.max(0, 1 - Math.abs(c - 0.5) * 22); // fissures fines et sinueuses
+    const strata = Math.sin((y / S) * Math.PI * 2 * 6 + rn(x, y) * 7) * 0.07;
+    B[y * S + x] = 0.3 + facet + rn(x, y) * 0.5 + strata - Math.pow(1 - joint, 2) * 0.42 - crack * 0.22;
   }
   normalize(B);
 
@@ -146,6 +148,23 @@ export function makeDetailTexture(S = 512) {
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.magFilter = THREE.LinearFilter; tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.generateMipmaps = true; tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+// Bruit doux (4 canaux indépendants, sans couture) : variations de teinte à grande échelle,
+// écume de l'océan, nuages au sol…
+export function makeNoiseTexture(S = 256) {
+  const rng = mulberry32(99);
+  const data = new Uint8Array(S * S * 4);
+  const chans = [fbm(rng, S, 4, 4), fbm(rng, S, 6, 4), fbm(rng, S, 3, 5), fbm(rng, S, 8, 3)];
+  const tmp = chans.map(() => new Float32Array(S * S));
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) for (let c = 0; c < 4; c++) tmp[c][y * S + x] = chans[c](x, y);
+  tmp.forEach((a) => normalize(a, 0.02, 0.98));
+  for (let i = 0; i < S * S; i++) for (let c = 0; c < 4; c++) data[i * 4 + c] = tmp[c][i] * 255;
+  const tex = new THREE.DataTexture(data, S, S, THREE.RGBAFormat, THREE.UnsignedByteType);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.magFilter = THREE.LinearFilter; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.generateMipmaps = true;
   tex.needsUpdate = true;
   return tex;
 }

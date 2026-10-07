@@ -9,10 +9,10 @@ export class Ocean {
     const geo = new THREE.PlaneGeometry(1, 1, 1, 1);
     geo.rotateX(-Math.PI / 2);
     this.uniforms = {
-      uColorMap: { value: textures.colorTex }, uHalf: { value: WORLD_HALF }, uTime: { value: 0 },
+      uColorMap: { value: textures.colorTex }, uNoise: { value: textures.noiseTex }, uHalf: { value: WORLD_HALF }, uTime: { value: 0 },
       uSky: { value: new THREE.Color() }, uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunColor: { value: new THREE.Color() },
       uNight: { value: 0 }, uLight: { value: 1 },
-      uShallow: { value: new THREE.Color('#46d6c4') }, uMid: { value: new THREE.Color('#1f8fb4') }, uDeep: { value: new THREE.Color('#123f73') },
+      uShallow: { value: new THREE.Color('#3fe0cc') }, uMid: { value: new THREE.Color('#1689b8') }, uDeep: { value: new THREE.Color('#0d3668') },
       fogColor: { value: new THREE.Color() }, fogNear: { value: 1 }, fogFar: { value: 1000 },
     };
     const mat = new THREE.ShaderMaterial({
@@ -29,7 +29,7 @@ export class Ocean {
           #include <fog_vertex>
         }`,
       fragmentShader: /* glsl */`
-        uniform sampler2D uColorMap; uniform float uHalf; uniform float uTime;
+        uniform sampler2D uColorMap; uniform sampler2D uNoise; uniform float uHalf; uniform float uTime;
         uniform vec3 uSky; uniform vec3 uSunDir; uniform vec3 uSunColor; uniform float uNight; uniform float uLight;
         uniform vec3 uShallow; uniform vec3 uMid; uniform vec3 uDeep;
         varying vec3 vWorld; varying vec3 vView;
@@ -58,8 +58,14 @@ export class Ocean {
           bool inMap = all(greaterThan(tuv, vec2(0.0))) && all(lessThan(tuv, vec2(1.0)));
           float depth = inMap ? texture2D(uColorMap, tuv).a * 24.0 : 24.0;
           vec2 p = vWorld.xz;
-          float n1 = vnoise(p * 0.22 + vec2(uTime * 0.3, uTime * 0.17)), n2 = vnoise(p * 0.51 - vec2(uTime * 0.21, -uTime * 0.33));
-          vec2 g = swell(p, uTime) * smoothstep(0.0, 4.0, depth) + vec2(n1 - 0.5, n2 - 0.5) * 0.35;
+          // vaguelettes : deux couches de bruit qui dérivent, pente par différences finies
+          vec2 uv1 = p * 0.045 + vec2(uTime * 0.012, uTime * 0.007), uv2 = p * 0.13 + vec2(-uTime * 0.02, uTime * 0.017);
+          const float e = 0.006;
+          float a1 = texture2D(uNoise, uv1).r, a2 = texture2D(uNoise, uv2).g;
+          vec2 g1 = vec2(texture2D(uNoise, uv1 + vec2(e, 0.0)).r - a1, texture2D(uNoise, uv1 + vec2(0.0, e)).r - a1);
+          vec2 g2 = vec2(texture2D(uNoise, uv2 + vec2(e, 0.0)).g - a2, texture2D(uNoise, uv2 + vec2(0.0, e)).g - a2);
+          float viewD = length(vView);
+          vec2 g = swell(p, uTime) * smoothstep(0.0, 4.0, depth) + (g1 * 9.0 + g2 * 6.0) * (1.0 - smoothstep(60.0, 600.0, viewD) * 0.7);
           vec3 nrm = normalize(vec3(-g.x * 0.5, 1.0, -g.y * 0.5));
           vec3 V = normalize(vView);
           float fres = pow(1.0 - max(dot(nrm, V), 0.0), 4.0);
@@ -71,10 +77,12 @@ export class Ocean {
           float spec = pow(max(dot(R, normalize(uSunDir)), 0.0), 220.0) * 2.4 + pow(max(dot(R, normalize(uSunDir)), 0.0), 18.0) * 0.12;
           col += uSunColor * spec * (1.0 - uNight);
           // écume : bord de plage + rouleaux qui avancent vers le rivage
-          float fn = vnoise(p * 0.9 + uTime * 0.4) * 0.6 + vnoise(p * 2.7 - uTime * 0.3) * 0.4;
+          float fn = texture2D(uNoise, p * 0.09 + vec2(uTime * 0.02, 0.0)).b * 0.6 + texture2D(uNoise, p * 0.27 - vec2(0.0, uTime * 0.03)).a * 0.4;
           float edge = 1.0 - smoothstep(0.05, 0.55 + fn * 0.4, depth);
           float roll = smoothstep(0.72, 0.95, sin(depth * 2.4 - uTime * 1.5 + fn * 2.0) * 0.5 + 0.5) * (1.0 - smoothstep(0.4, 3.2, depth)) * step(0.45, fn);
           float foam = clamp(edge * 0.9 + roll * 0.75, 0.0, 1.0);
+          // crêtes plus claires et turquoise translucide sur les hauts-fonds
+          col += vec3(0.05, 0.12, 0.11) * smoothstep(0.55, 0.8, a1) * (1.0 - smoothstep(2.0, 14.0, depth));
           col = mix(col, vec3(0.96, 0.98, 1.0), foam);
           col *= mix(1.0, 0.42, uNight) * uLight;
           float alpha = mix(0.42, 0.97, smoothstep(0.15, 6.5, depth));

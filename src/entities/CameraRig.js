@@ -37,6 +37,16 @@ export class CameraRig {
     return out.set(-Math.sin(this.yaw) * Math.cos(this.pitch), -Math.sin(this.pitch) + 0.18, -Math.cos(this.yaw) * Math.cos(this.pitch)).normalize();
   }
 
+  // le relief du continent coupe-t-il la ligne héros → caméra ?
+  occluded(pitch, d) {
+    const cp = Math.cos(pitch), sp = Math.sin(pitch), f = this.smoothFocus;
+    for (let k = 1.5; k <= d; k += Math.max(0.8, d / 14)) {
+      const x = f.x + Math.sin(this.yaw) * cp * k, y = f.y + sp * k, z = f.z + Math.cos(this.yaw) * cp * k;
+      if (y < this.terrain.continentHeight(x, z) + 0.5) return true;
+    }
+    return false;
+  }
+
   update(dt, target, speedFactor = 0) {
     this.focus.set(target.x, target.y + 2.0, target.z);
     if (!this.initialized) { this.smoothFocus.copy(this.focus); this.initialized = true; }
@@ -44,7 +54,17 @@ export class CameraRig {
     this.smoothFocus.y = damp(this.smoothFocus.y, this.focus.y, 9, dt);
     this.smoothFocus.z = damp(this.smoothFocus.z, this.focus.z, 14, dt);
     this.distance = damp(this.distance, this.targetDistance, 8, dt);
-    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    // une colline derrière le héros : la caméra s'élève un peu au lieu de foncer sur lui
+    if (this.terrain.continentHeight) {
+      let lift = 0;
+      for (const add of [0, 0.12, 0.24, 0.36, 0.5]) {
+        lift = add;
+        if (!this.occluded(this.pitch + add, this.distance)) break;
+      }
+      this.pitchLift = damp(this.pitchLift || 0, lift, 3, dt);
+    }
+    const pitch = Math.min(1.35, this.pitch + (this.pitchLift || 0));
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
     const dir = this.tmp.set(Math.sin(this.yaw) * cp, sp, Math.cos(this.yaw) * cp);
     let d = this.distance;
     // évite de traverser le relief et les bâtiments
