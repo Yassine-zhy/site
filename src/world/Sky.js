@@ -51,7 +51,7 @@ void main() {
     float band = noise(vec3(d.x * 3.0 + uTime * 0.03, d.z * 3.0, uTime * 0.05)) * noise(vec3(d.x * 9.0, d.z * 9.0 - uTime * 0.04, 2.0));
     float ay = smoothstep(0.12, 0.35, h) * smoothstep(0.85, 0.4, h);
     vec3 aur = mix(vec3(0.2, 1.0, 0.65), vec3(0.55, 0.35, 1.0), noise(vec3(d.xz * 4.0, uTime * 0.02)));
-    col += aur * pow(band, 2.0) * ay * uNight * uAurora * 0.9;
+    col += aur * band * band * ay * uNight * uAurora * 0.9;
   }
   gl_FragColor = vec4(col, 1.0);
   #include <colorspace_fragment>

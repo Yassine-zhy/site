@@ -54,7 +54,7 @@ export class Beacons {
         transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
         vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
         fragmentShader: `uniform vec3 uColor; uniform float uAlpha; uniform float uTime; varying vec2 vUv;
-          void main(){ float f = pow(1.0 - vUv.y, 1.6) * (0.75 + 0.25 * sin(vUv.x * 30.0 + uTime * 2.0 - vUv.y * 20.0)); gl_FragColor = vec4(uColor * 1.4 * f, uAlpha * f); }`,
+          void main(){ float f = pow(clamp(1.0 - vUv.y, 0.0, 1.0), 1.6) * (0.75 + 0.25 * sin(vUv.x * 30.0 + uTime * 2.0 - vUv.y * 20.0)); gl_FragColor = vec4(uColor * 1.4 * f, uAlpha * f); }`,
       });
       const beam = new THREE.Mesh(beamGeo, beamMat);
       beam.scale.set(1.1, 260, 1.1); beam.position.y = 6;

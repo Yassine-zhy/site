@@ -189,12 +189,16 @@ export class TerrainRenderer {
           uniform sampler2D uNormalMap; uniform sampler2D uColorMap; uniform sampler2D uMatMap; uniform sampler2D uDetail; uniform sampler2D uCorruption; uniform sampler2D uNoise;
           uniform float uTerrHalf;
           varying vec3 vTerrWorld;
+          // (normalize d'un vecteur nul = NaN : un seul pixel NaN, étalé par le halo, effacerait l'écran)
+          vec3 safeNorm(vec3 v, vec3 fb) { float l = length(v); return l > 1e-10 ? v / l : fb; }
           vec3 perturbTerr(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy) {
-            vec3 vSigmaX = normalize(dFdx(surf_pos)), vSigmaY = normalize(dFdy(surf_pos));
+            vec3 dx = dFdx(surf_pos), dy = dFdy(surf_pos);
+            if (dot(dx, dx) < 1e-14 || dot(dy, dy) < 1e-14) return surf_norm;
+            vec3 vSigmaX = normalize(dx), vSigmaY = normalize(dy);
             vec3 R1 = cross(vSigmaY, surf_norm), R2 = cross(surf_norm, vSigmaX);
             float fDet = dot(vSigmaX, R1);
             vec3 vGrad = sign(fDet) * (dHdxy.x * R1 + dHdxy.y * R2);
-            return normalize(abs(fDet) * surf_norm - vGrad);
+            return safeNorm(abs(fDet) * surf_norm - vGrad, surf_norm);
           }`)
         .replace('#include <color_fragment>', `
           vec2 tuv = (vTerrWorld.xz + uTerrHalf) / (2.0 * uTerrHalf);
@@ -209,7 +213,7 @@ export class TerrainRenderer {
           // roche en projection triplanaire sur les pentes
           float rk = dd.b;
           ${hi ? `{
-            vec3 bw = abs(wN); bw = pow(bw, vec3(4.0)); bw /= (bw.x + bw.y + bw.z);
+            vec3 bw = abs(wN); bw = pow(bw, vec3(4.0)); bw /= max(bw.x + bw.y + bw.z, 1e-5);
             float rx = texture2D(uDetail, vTerrWorld.zy * 0.12).b, rz = texture2D(uDetail, vTerrWorld.xy * 0.12).b;
             rk = rx * bw.x + dd.b * bw.y + rz * bw.z;
           }` : ''}

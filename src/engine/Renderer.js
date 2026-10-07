@@ -40,7 +40,24 @@ const GradeShader = {
       c.rgb *= mix(1.0 - uVignette, 1.0, v);
       c.rgb = mix(c.rgb, c.rgb * vec3(1.25, 0.45, 0.4), uHurt * (1.0 - v) * 0.9);
       c.rgb += (hash(vUv * 731.0 + uTime) - 0.5) * 0.012;
-      gl_FragColor = c;
+      // jamais de pixel invalide ni transparent à l'écran
+      bool bad = isnan(c.r) || isnan(c.g) || isnan(c.b);
+      gl_FragColor = vec4(bad ? vec3(0.0) : clamp(c.rgb, 0.0, 1.0), 1.0);
+    }`,
+};
+
+// Garde-fou : un pixel invalide (NaN ou infini, venu d'un shader au cas limite) serait étalé
+// par le halo lumineux sur tout l'écran, qui deviendrait transparent (on verrait le fond bleu
+// nuit de la page). Ces pixels sont remplacés avant le halo, et l'image finale est opaque.
+const SanitizeShader = {
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; varying vec2 vUv;
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      bool bad = isnan(c.r) || isnan(c.g) || isnan(c.b) || isinf(c.r) || isinf(c.g) || isinf(c.b);
+      gl_FragColor = bad ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(clamp(c.rgb, 0.0, 64.0), 1.0);
     }`,
 };
 
@@ -87,6 +104,7 @@ export class Renderer {
     const rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: q.pixelRatio >= 1 ? 4 : 0 });
     this.composer = new EffectComposer(this.renderer, rt);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
+    if (q.bloom) this.composer.addPass(new ShaderPass(SanitizeShader));
     if (q.bloom) {
       this.bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0.6, 0.5, 1.02);
       this.composer.addPass(this.bloom);

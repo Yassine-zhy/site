@@ -18,8 +18,9 @@ export function bindShared(shader) {
 
 // normale « à facettes » et poids triplanaires depuis la position monde (marche pour tout matériau)
 const TRI = (P) => `
-  vec3 wnS = normalize(cross(dFdx(${P}), dFdy(${P})));
-  vec3 bwS = pow(abs(wnS), vec3(4.0)); bwS /= dot(bwS, vec3(1.0));`;
+  vec3 crS = cross(dFdx(${P}), dFdy(${P})); float lcS = length(crS);
+  vec3 wnS = lcS > 1e-12 ? crS / lcS : vec3(0.0, 1.0, 0.0);
+  vec3 bwS = pow(abs(wnS), vec3(4.0)); bwS /= max(dot(bwS, vec3(1.0)), 1e-5);`;
 
 // rochers : fissures en projection triplanaire, mousse (ou neige, sable…) sur le dessus
 export function rockGLSL(top = null, amount = 0) {

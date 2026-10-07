@@ -184,7 +184,7 @@ export class Effects {
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
       vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
       fragmentShader: `uniform vec3 uColor; uniform float uT; varying vec2 vUv;
-        void main(){ float head = smoothstep(uT - 0.6, uT, vUv.x) * step(vUv.x, uT + 0.02); float a = head * pow(vUv.y, 1.5) * (1.0 - uT * 0.6); gl_FragColor = vec4(uColor * 2.4 * a, a); }`,
+        void main(){ float head = smoothstep(uT - 0.6, uT, vUv.x) * step(vUv.x, uT + 0.02); float a = head * pow(clamp(vUv.y, 0.0, 1.0), 1.5) * (1.0 - uT * 0.6); gl_FragColor = vec4(uColor * 2.4 * a, a); }`,
     });
     const m = new THREE.Mesh(geo, mat);
     m.position.set(origin.x, origin.y + y, origin.z);
@@ -313,7 +313,7 @@ export class Effects {
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
       vertexShader: `varying vec3 vN; varying vec3 vV; varying vec3 vP; void main(){ vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position,1.0); vV = normalize(-mv.xyz); vP = position; gl_Position = projectionMatrix * mv; }`,
       fragmentShader: `uniform vec3 uColor; uniform float uAlpha; uniform float uTime; varying vec3 vN; varying vec3 vV; varying vec3 vP;
-        void main(){ float f = pow(1.0 - abs(dot(vN, vV)), 2.5); float hex = 0.5 + 0.5 * sin(vP.x * 9.0 + uTime * 2.0) * sin(vP.y * 9.0 - uTime) * sin(vP.z * 9.0); float a = (f * 0.9 + hex * 0.08) * uAlpha; gl_FragColor = vec4(uColor * 2.0 * a, a); }`,
+        void main(){ float f = pow(clamp(1.0 - abs(dot(vN, vV)), 0.0, 1.0), 2.5); float hex = 0.5 + 0.5 * sin(vP.x * 9.0 + uTime * 2.0) * sin(vP.y * 9.0 - uTime) * sin(vP.z * 9.0); float a = (f * 0.9 + hex * 0.08) * uAlpha; gl_FragColor = vec4(uColor * 2.0 * a, a); }`,
     });
     const m = new THREE.Mesh(this.geo.sphere, mat);
     m.scale.setScalar(radius);
