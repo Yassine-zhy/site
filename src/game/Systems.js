@@ -71,7 +71,7 @@ export async function boot(game) {
       return;
     }
     if (game.dialogueOpen || game.chatOpen) return;
-    const map = { KeyM: 'map', KeyI: 'inventory', KeyB: 'inventory', KeyJ: 'quests', KeyL: 'quests', KeyK: 'leaderboard', KeyH: 'help', F1: 'help', KeyP: 'party' };
+    const map = { KeyM: 'map', KeyI: 'inventory', KeyB: 'inventory', KeyJ: 'quests', KeyL: 'quests', KeyO: 'leaderboard', KeyK: 'grimoire', KeyH: 'help', F1: 'help', KeyP: 'party' };
     if (map[code]) game.windows.toggle(map[code]);
     else if (code === 'KeyT' && !game.windowOpen) game.echoes.composeWindow();
     else if (code === 'KeyG' && !game.windowOpen) game.emote('wave');

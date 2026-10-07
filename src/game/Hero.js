@@ -1,4 +1,7 @@
 import { CLASSES, xpForLevel, MAX_LEVEL } from '../config.js';
+import { ABILITIES } from './Abilities.js';
+
+export const BAR_SLOTS = 6;
 import { generateItem, potion, itemPower, levelFactor } from './Items.js';
 
 // Données persistantes du héros : niveau, statistiques, inventaire, équipement.
@@ -23,13 +26,34 @@ export class Hero {
     this.discovered = {};
     this.created = Date.now();
     this.playTime = 0;
+    this.bar = null; // compétences placées dans la barre (6 emplacements), voir fillBar()
     // équipement de départ
     this.equip.weapon = generateItem(classId, 1, { rarity: 0, slot: 'weapon' });
     this.recompute();
     this.hp = this.stats.hp; this.mp = this.stats.mp;
+    this.fillBar();
   }
 
   get cls() { return CLASSES[this.classId]; }
+
+  // compétences débloquées à ce niveau
+  unlocked() { return this.cls.abilities.filter((id) => ABILITIES[id] && ABILITIES[id].level <= this.level); }
+
+  // range les compétences débloquées dans les emplacements libres ; renvoie celles ajoutées
+  fillBar() {
+    if (!Array.isArray(this.bar)) this.bar = [];
+    while (this.bar.length < BAR_SLOTS) this.bar.push(null);
+    const ids = new Set(this.cls.abilities);
+    this.bar = this.bar.slice(0, BAR_SLOTS).map((id) => (id && ids.has(id) && ABILITIES[id].level <= this.level ? id : null));
+    const added = [];
+    for (const id of this.unlocked()) {
+      if (this.bar.includes(id)) continue;
+      const free = this.bar.indexOf(null);
+      if (free < 0) break;
+      this.bar[free] = id; added.push(id);
+    }
+    return added;
+  }
 
   recompute() {
     const c = this.cls, L = this.level - 1;
@@ -136,7 +160,7 @@ export class Hero {
       v: 1, classId: this.classId, name: this.name, level: this.level, xp: this.xp, gold: this.gold,
       inventory: this.inventory, equip: this.equip, potions: this.potions, kills: this.kills, deaths: this.deaths,
       light: this.light, runesCast: this.runesCast, bestRune: this.bestRune, title: this.title, discovered: this.discovered,
-      hp: this.hp, mp: this.mp, created: this.created, playTime: this.playTime, chests: this.chests, pity: this.pity || 0,
+      hp: this.hp, mp: this.mp, created: this.created, playTime: this.playTime, chests: this.chests, pity: this.pity || 0, bar: this.bar,
     };
   }
 
@@ -146,9 +170,10 @@ export class Hero {
       level: d.level || 1, xp: d.xp || 0, gold: d.gold ?? 25, inventory: d.inventory || [], equip: d.equip || h.equip,
       potions: d.potions || h.potions, kills: d.kills || 0, deaths: d.deaths || 0, light: d.light || 0, runesCast: d.runesCast || 0,
       bestRune: d.bestRune || 0, title: d.title || '', discovered: d.discovered || {}, created: d.created || Date.now(), playTime: d.playTime || 0,
-      chests: d.chests || {}, pity: d.pity || 0,
+      chests: d.chests || {}, pity: d.pity || 0, bar: Array.isArray(d.bar) ? d.bar : null,
     });
     h.buffs = [];
+    h.fillBar();
     h.recompute();
     h.hp = Math.min(d.hp ?? h.stats.hp, h.stats.hp) || h.stats.hp;
     h.mp = Math.min(d.mp ?? h.stats.mp, h.stats.mp) || h.stats.mp;

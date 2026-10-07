@@ -305,7 +305,7 @@ export class Game {
       this.basicAttack();
     }
     const cls = this.classDef;
-    for (let i = 0; i < 4; i++) if (input.pressed('ability' + (i + 1))) this.useAbility(i);
+    for (let i = 0; i < 6; i++) if (input.pressed('ability' + (i + 1))) this.useAbility(i);
     if (input.pressed('potion')) this.usePotion();
     void cls; void hero;
   }
@@ -351,8 +351,17 @@ export class Game {
     if (this.hero.hasBuff('stealth')) this.breakStealth();
   }
 
+  // compétence de l'emplacement i de la barre
   useAbility(i) {
-    const id = this.classDef.abilities[i];
+    const id = this.hero.bar?.[i];
+    if (!id) { this.ui.toast(`Emplacement ${i + 1} vide : choisissez une compétence dans le grimoire (${this.input.isTouch ? 'menu' : 'touche K'}).`, { time: 2.5 }); return; }
+    this.castAbility(id);
+  }
+
+  // la barre a changé (déblocage, grimoire) : barre d'action et boutons tactiles reconstruits
+  onBarChanged() { this.hud?.buildBar?.(); this.touch?.buildAbilities?.(); this.save?.soon(1); }
+
+  castAbility(id) {
     const ab = ABILITIES[id];
     const hero = this.hero, p = this.player;
     if (!ab || p.dead) return;
@@ -360,7 +369,7 @@ export class Game {
     if (hero.level < ab.level) { this.ui.toast(`<b>${ab.name}</b> se débloque au niveau ${ab.level}.`); return; }
     if ((this.cooldowns[id] || 0) > 0) return;
     if (hero.mp < ab.mana) { this.ui.toast('Pas assez d’éther.', { color: '#8ef0f6', time: 1.5 }); this.audio?.play('error'); return; }
-    if (!['blink', 'roll', 'shieldwall', 'rally', 'rage', 'smoke', 'frostnova', 'whirlwind'].includes(id)) this.aimFacing();
+    if (!SELF_CAST.has(id)) this.aimFacing();
     hero.mp -= ab.mana;
     this.cooldowns[id] = ab.cd * this.cdMult();
     const c = this.ctx();
@@ -549,6 +558,8 @@ export class Game {
       this.fx.hit(p.position.clone().setY(p.position.y + 1.4), '#ffd36b', 0.6);
       this.audio?.play('block', p.position);
     }
+    // autres protections (Égide divine, Bouclier d'éther, Cri de guerre…)
+    for (const b of hero.buffs) if (b.reduce && b.id !== 'shieldwall') dmg *= 1 - b.reduce;
     const shield = hero.hasBuff('aegis');
     if (shield && shield.absorb > 0) {
       const ab = Math.min(shield.absorb, dmg);
@@ -580,7 +591,8 @@ export class Game {
     const leech = this.hero?.stats.leech || 0;
     if (leech > 0 && !this.player.dead) this.healSelf(Math.max(1, Math.round(r.amount * leech / 100)), false);
     this.ui.floatText(pos, String(r.amount), r.crit ? 'crit' : 'dmg', { scale: r.crit ? 1.1 : 1 });
-    const ls = this.hero.hasBuff('rage')?.lifesteal;
+    let ls = 0;
+    for (const b of this.hero.buffs) if (b.lifesteal > ls) ls = b.lifesteal;
     if (ls) this.healSelf(r.amount * ls, false);
     this.lastCombat = this.elapsed;
     if (opts.kind === 'melee' || opts.kind === undefined) { this.fx.hit(e.position.clone().setY(e.position.y + 1.3), r.crit ? '#ffe3a3' : '#fff4d0', r.crit ? 1.3 : 0.8); this.audio?.play(r.crit ? 'crit' : 'hit', e.position); }
@@ -623,10 +635,20 @@ export class Game {
 
   gainXp(xp) {
     const hero = this.hero;
+    const before = new Set(hero.unlocked());
     const lv = hero.addXp(xp);
     if (lv) {
+      const fresh = hero.unlocked().filter((id) => !before.has(id));
+      const added = hero.fillBar();
       this.fx.levelUp(this.player);
-      this.ui.announce('Niveau ' + hero.level, this.levelUnlockText(), 3.2);
+      this.ui.announce('Niveau ' + hero.level, fresh.length ? 'Nouvelle compétence : ' + fresh.map((id) => ABILITIES[id].name).join(', ') : 'Votre lumière grandit.', 3.2);
+      for (const id of fresh) {
+        const slot = hero.bar.indexOf(id);
+        this.ui.toast(slot >= 0
+          ? `<b>${ABILITIES[id].name}</b> rejoint votre barre${this.input.isTouch ? '' : ` (touche ${slot + 1})`}.`
+          : `<b>${ABILITIES[id].name}</b> est apprise : placez-la dans votre barre depuis le grimoire (${this.input.isTouch ? 'menu ☰' : 'touche K'}).`, { time: 5, color: '#ffe3a3' });
+      }
+      if (fresh.length || added.length) this.onBarChanged();
       this.audio?.play('levelup');
       this.net?.announce?.('levelup', { level: hero.level });
       this.quests?.onEvent('level', { level: hero.level });
@@ -634,10 +656,6 @@ export class Game {
     }
   }
 
-  levelUnlockText() {
-    const ab = this.classDef.abilities.map((a) => ABILITIES[a]).find((a) => a.level === this.hero.level);
-    return ab ? `Nouvelle compétence : ${ab.name}` : 'Votre lumière grandit.';
-  }
 
   die(source) {
     const p = this.player, hero = this.hero;
@@ -728,6 +746,9 @@ export class Game {
     return out;
   }
 }
+
+// compétences lancées sur soi (le héros ne se tourne pas vers sa cible)
+const SELF_CAST = new Set(['blink', 'roll', 'shieldwall', 'rally', 'rage', 'smoke', 'frostnova', 'whirlwind', 'warcry', 'bloodlust', 'divineshield', 'avatar', 'manashield', 'poison', 'consecrate', 'quake', 'fan', 'trap']);
 
 // lieux nommés du continent : [objet {name, x, z}, rayon, sous-titre (sinon zone et niveaux)]
 let PLACES = null;

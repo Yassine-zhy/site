@@ -37,7 +37,7 @@ export class Windows {
     this.current = name;
     this.game.windowOpen = true;
     this.game.input.exitLock();
-    const builders = { inventory: () => this.inventory(), map: () => this.map(), help: () => this.help(), settings: () => this.settings(), quests: () => this.game.quests?.window(this) || this.help(), leaderboard: () => this.game.worldState?.leaderboardWindow(this) || this.help(), tutorial: () => this.tutorial(), custom: () => this.frame(this.customContent?.title || '', this.customContent?.content || ''), party: () => this.game.expedition?.window(this) || this.help() };
+    const builders = { inventory: () => this.inventory(), map: () => this.map(), help: () => this.help(), settings: () => this.settings(), quests: () => this.game.quests?.window(this) || this.help(), leaderboard: () => this.game.worldState?.leaderboardWindow(this) || this.help(), tutorial: () => this.tutorial(), custom: () => this.frame(this.customContent?.title || '', this.customContent?.content || ''), party: () => this.game.expedition?.window(this) || this.help(), grimoire: () => this.grimoire() };
     const body = (builders[name] || builders.help)();
     this.el = body;
     this.ui.root.appendChild(body);
@@ -51,6 +51,53 @@ export class Windows {
   }
 
   refresh() { if (this.current) this.open(this.current); }
+
+  // ------------------------------------------------------------ grimoire des compétences
+  // Les 10 compétences de la classe (débloquées au fil des niveaux) ; on en place 6 dans la barre.
+  grimoire() {
+    const g = this.game, hero = g.hero, cls = hero.cls;
+    const touch = g.input.isTouch;
+    const bar = hero.bar;
+    const sel = this.grimSel && ABILITIES[this.grimSel] && ABILITIES[this.grimSel].level <= hero.level ? this.grimSel : null;
+    const changed = () => { g.onBarChanged(); this.refresh(); };
+    const place = (slot) => {
+      if (!sel) {
+        // emplacement occupé sans sélection : on le sélectionne pour le déplacer
+        if (bar[slot]) { this.grimSel = bar[slot]; this.refresh(); }
+        return;
+      }
+      const from = bar.indexOf(sel);
+      if (from >= 0) bar[from] = bar[slot]; // échange
+      bar[slot] = sel;
+      this.grimSel = null;
+      g.audio?.play('select');
+      changed();
+    };
+    const slots = h('div', { class: 'grim-bar' }, ...bar.map((id, i) => {
+      const ab = ABILITIES[id];
+      return h('button', { class: 'grim-slot' + (sel ? ' target' : '') + (id && id === sel ? ' on' : ''), title: ab ? ab.name : 'Emplacement libre', onclick: () => place(i) },
+        ab ? svgIcon(ABILITY_ICONS[ab.icon]) : h('span', { class: 'plus' }, '+'), h('span', { class: 'k' }, String(i + 1)),
+        ab ? h('span', { class: 'x', title: 'Retirer', onclick: (e) => { e.stopPropagation(); bar[i] = null; changed(); } }, '×') : null);
+    }));
+    const cards = cls.abilities.map((id) => {
+      const ab = ABILITIES[id];
+      const locked = ab.level > hero.level, slot = bar.indexOf(id);
+      return h('div', { class: 'grim-card' + (locked ? ' locked' : '') + (sel === id ? ' on' : ''), onclick: () => {
+        if (locked) { g.ui.toast(`<b>${ab.name}</b> se débloque au niveau ${ab.level}.`, { time: 2 }); return; }
+        this.grimSel = sel === id ? null : id; g.audio?.play('ui'); this.refresh();
+      } },
+        h('div', { class: 'ic' }, svgIcon(ABILITY_ICONS[ab.icon])),
+        h('div', { class: 'tx' },
+          h('div', { class: 'nm' }, ab.name, slot >= 0 ? h('span', { class: 'badge' }, 'barre ' + (slot + 1)) : null),
+          h('div', { class: 'meta' }, locked ? `🔒 niveau ${ab.level}` : `niv. ${ab.level} · ${ab.mana ? ab.mana + ' éther' : 'gratuit'} · ${ab.cd} s`),
+          h('div', { class: 'ds' }, ab.desc)));
+    });
+    const unlocked = hero.unlocked();
+    const best = h('button', { class: 'btn small ghost', onclick: () => { const last = unlocked.slice(-6); for (let i = 0; i < 6; i++) bar[i] = last[i] || null; changed(); } }, 'Les plus puissantes');
+    const hint = sel ? `« ${ABILITIES[sel].name} » sélectionnée : ${touch ? 'touchez' : 'cliquez'} un emplacement de la barre.`
+      : `${touch ? 'Touchez' : 'Cliquez'} une compétence, puis l’emplacement où la ranger. ${unlocked.length}/10 apprises.`;
+    return this.frame(`Grimoire — ${cls.name}`, h('div', { class: 'grim' }, slots, h('div', { class: 'grim-hint' }, hint, ' ', best), h('div', { class: 'grim-list' }, ...cards)));
+  }
 
   // fenêtre quelconque (contenu fourni par un autre système)
   custom(title, content) { this.customContent = { title, content }; this.open('custom'); }
@@ -237,7 +284,8 @@ export class Windows {
           h('div', { class: 'istats', style: { lineHeight: '1.5', marginBottom: '8px' } }, 'Maintenez le clic droit puis tracez la forme d’un seul geste. La précision du tracé décide de la puissance.'),
           ...(g.runes?.legend() || []),
           h('h4', { class: 'sc', style: { color: 'var(--gold)', margin: '12px 0 6px' } }, 'vos compétences'),
-          h('div', { class: 'abil-list' }, ...cls.abilities.map((a, i) => h('div', { class: 'abil' }, svgIcon(ABILITY_ICONS[ABILITIES[a].icon]), h('div', {}, h('b', {}, `${i + 1}. ${ABILITIES[a].name}`), ` (niv. ${ABILITIES[a].level}) — ${ABILITIES[a].desc}`)))),
+          h('p', { style: { color: 'var(--muted)', margin: '0 0 6px' } }, 'Dix compétences par classe, apprises aux niveaux 1, 2, 4, 6, 8, 10, 13, 16, 20 et 24. Six d’entre elles tiennent dans la barre (touches 1 à 6) : choisissez-les dans le grimoire (touche K).'),
+          h('button', { class: 'btn small', onclick: () => this.open('grimoire') }, 'Ouvrir le grimoire'),
         )));
     void KEY_LABELS;
   }

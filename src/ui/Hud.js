@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { h, svgIcon, fmtTime } from './dom.js';
 import { ABILITIES, ABILITY_ICONS } from '../game/Abilities.js';
-import { BEACONS, CLASSES } from '../config.js';
+import { BEACONS } from '../config.js';
 import { MAP_RANGE, worldToMap } from './MapRender.js';
 import { CITADEL } from '../world/Citadel.js';
 
@@ -63,29 +63,10 @@ export class Hud {
     this.stRing = h('div', { class: 'stamina-ring' });
     this.prompt = h('div', { class: 'prompt panel' }); this.prompt.hidden = true;
     root.append(this.cross, this.stRing, this.prompt);
-    // barre d'action
-    this.slots = {};
-    const bar = h('div', { class: 'actionbar panel ornate desktop' });
-    const mk = (id, key, icon, extra = '') => {
-      const cd = h('div', { class: 'cd' }), cdt = h('div', { class: 'cdt' }), cnt = h('div', { class: 'cnt' });
-      const el = h('div', { class: 'slot interactive ' + extra, title: '' }, svgIcon(icon), h('div', { class: 'key' }, key), cnt, cd, cdt);
-      this.slots[id] = { el, cd, cdt, cnt, cache: {} };
-      return el;
-    };
-    bar.append(mk('attack', 'Clic', ABILITY_ICONS.attack));
-    const cls = CLASSES[game.hero.classId];
-    cls.abilities.forEach((a, i) => {
-      const el = mk(a, String(i + 1), ABILITY_ICONS[ABILITIES[a].icon]);
-      el.title = `${ABILITIES[a].name} — ${ABILITIES[a].desc} (${ABILITIES[a].mana} éther, ${ABILITIES[a].cd} s)`;
-      el.dataset.lvl = 'niv. ' + ABILITIES[a].level;
-      el.addEventListener('click', () => game.useAbility(i));
-      bar.append(el);
-    });
-    bar.append(h('div', { class: 'sep' }));
-    const pot = mk('potion', 'R', ABILITY_ICONS.potion); pot.title = 'Élixir de vie (R)'; pot.addEventListener('click', () => game.usePotion());
-    const rune = mk('rune', 'X', ABILITY_ICONS.rune, 'rune'); rune.title = 'Tracer une rune (clic droit maintenu ou X)';
-    bar.append(pot, rune);
-    root.appendChild(bar);
+    // barre d'action (6 emplacements choisis dans le grimoire)
+    this.bar = h('div', { class: 'actionbar panel ornate desktop' });
+    root.appendChild(this.bar);
+    this.buildBar();
     this.xpFill = h('div');
     root.appendChild(h('div', { class: 'xpbar', title: 'Expérience' }, this.xpFill));
     // balise d'objectif : suit la quête en cours à l'écran, flèche au bord si hors champ
@@ -106,6 +87,32 @@ export class Hud {
   }
 
   dispose() { this.root.remove(); this.tframe.remove(); this.bossbar.remove(); }
+
+  buildBar() {
+    const game = this.game, bar = this.bar;
+    bar.innerHTML = '';
+    this.slots = {};
+    const mk = (id, key, icon, extra = '') => {
+      const cd = h('div', { class: 'cd' }), cdt = h('div', { class: 'cdt' }), cnt = h('div', { class: 'cnt' });
+      const el = h('div', { class: 'slot interactive ' + extra, title: '' }, icon ? svgIcon(icon) : h('div', { class: 'empty' }, '+'), h('div', { class: 'key' }, key), cnt, cd, cdt);
+      this.slots[id] = { el, cd, cdt, cnt, cache: {} };
+      return el;
+    };
+    bar.append(mk('attack', 'Clic', ABILITY_ICONS.attack));
+    (game.hero.bar || []).forEach((id, i) => {
+      const ab = ABILITIES[id];
+      const el = mk(id || 'empty' + i, String(i + 1), ab ? ABILITY_ICONS[ab.icon] : null, ab ? '' : 'emptyslot');
+      el.title = ab ? `${ab.name} — ${ab.desc} (${ab.mana} éther, ${ab.cd} s)` : 'Emplacement libre : ouvrez le grimoire (K)';
+      if (ab) el.dataset.lvl = 'niv. ' + ab.level;
+      el.addEventListener('click', () => (ab ? game.useAbility(i) : game.windows?.open('grimoire')));
+      bar.append(el);
+    });
+    bar.append(h('div', { class: 'sep' }));
+    const pot = mk('potion', 'R', ABILITY_ICONS.potion); pot.title = 'Élixir de vie (R)'; pot.addEventListener('click', () => game.usePotion());
+    const rune = mk('rune', 'X', ABILITY_ICONS.rune, 'rune'); rune.title = 'Tracer une rune (clic droit maintenu ou X)';
+    const book = mk('grimoire', 'K', ABILITY_ICONS.book, 'book'); book.title = 'Grimoire des compétences (K)'; book.addEventListener('click', () => game.windows?.toggle('grimoire'));
+    bar.append(pot, rune, book);
+  }
 
   set(key, val, fn) { if (this.cache[key] !== val) { this.cache[key] = val; fn(val); } }
 
@@ -135,7 +142,6 @@ export class Hud {
       }
     }
     // barre d'action : temps de recharge
-    const cls = CLASSES[hero.classId];
     const upd = (id, remain, total, opts = {}) => {
       const sl = this.slots[id];
       if (!sl) return;
@@ -148,10 +154,10 @@ export class Hud {
       if (opts.count !== undefined && sl.cache.c !== opts.count) { sl.cnt.textContent = opts.count; sl.cache.c = opts.count; }
     };
     upd('attack', g.cooldowns.attack || 0, g.basicCd);
-    cls.abilities.forEach((a) => {
+    for (const a of hero.bar || []) {
       const ab = ABILITIES[a];
-      upd(a, g.cooldowns[a] || 0, ab.cd * g.cdMult(), { locked: hero.level < ab.level, nomana: hero.mp < ab.mana });
-    });
+      if (ab) upd(a, g.cooldowns[a] || 0, ab.cd * g.cdMult(), { locked: hero.level < ab.level, nomana: hero.mp < ab.mana });
+    }
     upd('potion', g.cooldowns.potion || 0, 8, { count: hero.potions.hp || 0 });
     upd('rune', g.cooldowns.rune || 0, g.runeCd || 2.5);
     // cible

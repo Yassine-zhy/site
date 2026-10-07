@@ -321,7 +321,7 @@ export const CLASSES = {
     perLevel: { hp: 18, mp: 4, atk: 2.2, def: 1.6 },
     weapons: { show: ['1H_Sword', 'Round_Shield'], idle: 'Idle', combo: ['1H_Melee_Attack_Chop', '1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Slice_Horizontal'] },
     attackRange: 3.4, attackArc: 1.4, runeBonus: 1.0,
-    abilities: ['shieldwall', 'charge', 'rally', 'judgement'],
+    abilities: ['shieldwall', 'charge', 'rally', 'judgement', 'shieldbash', 'holyblade', 'consecrate', 'divineshield', 'lances', 'avatar'],
   },
   barbarian: {
     id: 'barbarian', name: 'Barbare', model: 'barbarian', title: 'Tempête de fer',
@@ -331,7 +331,7 @@ export const CLASSES = {
     perLevel: { hp: 15, mp: 3, atk: 2.8, def: 1.0 },
     weapons: { show: ['2H_Axe'], idle: '2H_Melee_Idle', combo: ['2H_Melee_Attack_Chop', '2H_Melee_Attack_Slice', '2H_Melee_Attack_Stab'] },
     attackRange: 3.8, attackArc: 1.8, runeBonus: 0.9,
-    abilities: ['whirlwind', 'leap', 'rage', 'shatter'],
+    abilities: ['whirlwind', 'leap', 'rage', 'shatter', 'warcry', 'cleave', 'quake', 'axethrow', 'bloodlust', 'titan'],
   },
   mage: {
     id: 'mage', name: 'Mage', model: 'mage', title: 'Tisseuse d’arcanes',
@@ -341,7 +341,7 @@ export const CLASSES = {
     perLevel: { hp: 10, mp: 12, atk: 2.6, def: 0.7 },
     weapons: { show: ['2H_Staff'], idle: 'Idle', combo: ['Spellcast_Shoot', 'Spellcast_Shoot'] },
     attackRange: 26, ranged: true, runeBonus: 1.35,
-    abilities: ['frostnova', 'blink', 'meteor', 'arcanestorm'],
+    abilities: ['frostnova', 'blink', 'meteor', 'arcanestorm', 'fireball', 'chain', 'icelances', 'singularity', 'manashield', 'cataclysm'],
   },
   rogue: {
     id: 'rogue', name: 'Rôdeuse', model: 'rogue_hooded', title: 'Ombre des nuées',
@@ -351,7 +351,7 @@ export const CLASSES = {
     perLevel: { hp: 12, mp: 5, atk: 2.5, def: 0.9 },
     weapons: { show: ['1H_Crossbow', 'Knife_Offhand'], idle: 'Idle', combo: ['1H_Ranged_Shoot', '1H_Ranged_Shoot'] },
     attackRange: 30, ranged: true, runeBonus: 1.05,
-    abilities: ['volley', 'roll', 'smoke', 'piercing'],
+    abilities: ['volley', 'roll', 'smoke', 'piercing', 'multishot', 'trap', 'shadowstep', 'poison', 'fan', 'arrowstorm'],
   },
 };
 

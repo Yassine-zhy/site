@@ -77,6 +77,30 @@ export class Character {
     });
   }
 
+  // Pointe et talon de l'arme tenue en main droite (pour les traînées lumineuses des coups)
+  weaponPoints(outBase, outTip) {
+    if (this._wpn === undefined) {
+      this._wpn = null;
+      this.model.traverse((o) => {
+        if (this._wpn || !o.isMesh || o.isSkinnedMesh || !o.visible || !/handslot\.?r/.test(o.parent?.name || '')) return;
+        o.geometry.computeBoundingBox();
+        const b = o.geometry.boundingBox, size = b.getSize(new THREE.Vector3());
+        const ax = size.x >= size.y && size.x >= size.z ? 'x' : size.y >= size.z ? 'y' : 'z';
+        // la poignée est près de l'origine : la pointe est l'extrémité la plus éloignée
+        const far = Math.abs(b.max[ax]) > Math.abs(b.min[ax]) ? b.max[ax] : b.min[ax];
+        const tip = b.getCenter(new THREE.Vector3()); tip[ax] = far;
+        const base = tip.clone(); base[ax] = far * 0.3;
+        this._wpn = { mesh: o, tip, base };
+      });
+    }
+    const w = this._wpn;
+    if (!w) return false;
+    w.mesh.updateWorldMatrix(true, false);
+    outBase.copy(w.base).applyMatrix4(w.mesh.matrixWorld);
+    outTip.copy(w.tip).applyMatrix4(w.mesh.matrixWorld);
+    return true;
+  }
+
   attach(propName, boneName, s = 1) {
     const bone = this.bones[boneName] || this.bones[boneName.replace(/\./g, '')];
     if (!bone) return null;

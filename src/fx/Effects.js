@@ -212,6 +212,80 @@ export class Effects {
     this.burst(b, color, { count: 10, speed: 5, size: 0.3, life: 0.3, gravity: 2 });
   }
 
+  // Traînée lumineuse qui suit la lame pendant un coup (ruban entre talon et pointe de l'arme)
+  weaponTrail(char, color, { duration = 0.45, delay = 0, intensity = 2.2 } = {}) {
+    const N = 18, b = new THREE.Vector3(), t = new THREE.Vector3();
+    if (!char?.weaponPoints?.(b, t)) return;
+    const pos = new Float32Array(N * 2 * 3), age = new Float32Array(N * 2);
+    for (let i = 0; i < N; i++) { pos.set([b.x, b.y, b.z, t.x, t.y, t.z], i * 6); age[i * 2] = age[i * 2 + 1] = i / (N - 1); }
+    const idx = [];
+    for (let i = 0; i < N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    const geo = new THREE.BufferGeometry();
+    const pa = new THREE.BufferAttribute(pos, 3); pa.setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('position', pa);
+    const side = new Float32Array(N * 2); for (let i = 0; i < N; i++) side[i * 2 + 1] = 1;
+    geo.setAttribute('aAge', new THREE.BufferAttribute(age, 1));
+    geo.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
+    geo.setIndex(idx);
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { uColor: { value: new THREE.Color(color).multiplyScalar(intensity) }, uAlpha: { value: 0 } },
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      vertexShader: `attribute float aAge; attribute float aSide; varying float vA; varying float vS; void main(){ vA = aAge; vS = aSide; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: `uniform vec3 uColor; uniform float uAlpha; varying float vA; varying float vS;
+        void main(){ float a = pow(1.0 - vA, 1.6) * smoothstep(0.0, 0.5, vS) * uAlpha; gl_FragColor = vec4(mix(vec3(1.0), uColor, 0.35 + vA * 0.65) * a, a); }`,
+    });
+    const m = new THREE.Mesh(geo, mat);
+    m.frustumCulled = false;
+    const life = duration + delay + 0.25;
+    this.spawnMesh(m, life, (e, k) => {
+      const tt = k * life;
+      if (!char.weaponPoints(b, t)) return;
+      // nouveaux points en tête, les anciens glissent vers la queue
+      pos.copyWithin(6, 0, (N - 1) * 6);
+      pos[0] = b.x; pos[1] = b.y; pos[2] = b.z; pos[3] = t.x; pos[4] = t.y; pos[5] = t.z;
+      pa.needsUpdate = true;
+      mat.uniforms.uAlpha.value = tt < delay ? 0 : tt < delay + duration ? Math.min(1, (tt - delay) * 12) : Math.max(0, 1 - (tt - delay - duration) / 0.25);
+    }).dispose = () => geo.dispose();
+  }
+
+  // tourbillon qui aspire les particules vers un point (singularité, vortex)
+  vortex(p, color, { radius = 6, duration = 3, rate = 70 } = {}) {
+    const holder = new THREE.Object3D();
+    let acc = 0;
+    this.runeCircle(p, color, { radius, life: duration, spin: 4 });
+    this.spawnMesh(holder, duration, (e, t, dt) => {
+      acc += dt * rate;
+      while (acc > 1) {
+        acc -= 1;
+        const a = Math.random() * Math.PI * 2, r = radius * (0.6 + Math.random() * 0.5);
+        const x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r;
+        const tx = (p.x - x), tz = (p.z - z);
+        this.add.emit({ x, y: p.y + 0.5 + Math.random() * 2.5, z, vx: tx * 1.6 - tz * 0.9, vy: 0.4, vz: tz * 1.6 + tx * 0.9, color: _c.set(color).clone(), size: 0.35, life: 0.7, gravity: 0, drag: 0.5, alpha: 0.9 });
+      }
+    });
+  }
+
+  // pics qui jaillissent du sol (glace, terre, lumière) puis se rétractent
+  spikes(points, color, { height = 2.2, life = 1.1, radius = 0.45 } = {}) {
+    const geo = new THREE.ConeGeometry(radius, 1, 5, 1);
+    geo.translate(0, 0.5, 0);
+    const mat = new THREE.MeshStandardMaterial({ color: _c.set(color).clone(), emissive: _c.clone().multiplyScalar(0.5), roughness: 0.3, metalness: 0.1, flatShading: true, transparent: true });
+    const m = new THREE.InstancedMesh(geo, mat, points.length);
+    const M = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), v = new THREE.Vector3(), eu = new THREE.Euler();
+    const rot = points.map(() => [(Math.random() - 0.5) * 0.5, Math.random() * 6, (Math.random() - 0.5) * 0.5, 0.7 + Math.random() * 0.6]);
+    this.spawnMesh(m, life, (e, t) => {
+      const k = t < 0.12 ? t / 0.12 : t > 0.7 ? 1 - (t - 0.7) / 0.3 : 1;
+      points.forEach((p, i) => {
+        const [rx, ry, rz, hs] = rot[i];
+        q.setFromEuler(eu.set(rx, ry, rz)); s.set(1, Math.max(0.001, height * hs * k), 1);
+        M.compose(v.set(p.x, p.y - 0.2, p.z), q, s); m.setMatrixAt(i, M);
+      });
+      m.instanceMatrix.needsUpdate = true;
+      mat.opacity = Math.min(1, (1 - t) * 4);
+    }).dispose = () => geo.dispose();
+    for (const p of points) this.burst({ x: p.x, y: p.y + 0.3, z: p.z }, color, { count: 5, speed: 4, size: 0.3, life: 0.4, gravity: 8, up: 3 });
+  }
+
   // bulle de protection qui suit une cible
   bubble(target, color, duration = 4, radius = 1.8) {
     const mat = new THREE.ShaderMaterial({

@@ -87,7 +87,6 @@ export class TouchControls {
     this.btns.addEventListener('touchstart', noGesture, { passive: false });
     this.joy.addEventListener('touchstart', noGesture, { passive: false });
     this.zone.addEventListener('touchstart', noGesture, { passive: false });
-    const cls = game.classDef;
     this.cdEls = {};
     const btn = (id, icon, x, y, big = false, onPress, onRelease, label) => {
       const cd = h('div', { class: 'cd' });
@@ -103,11 +102,13 @@ export class TouchControls {
     const C = 41, B = 27;
     const arc = (r, deg) => { const a = deg * Math.PI / 180; return [Math.round(C + r * Math.cos(a) - B), Math.round(C + r * Math.sin(a) - B)]; };
     btn('attack', ABILITY_ICONS.attack, 0, 0, true, () => input.touch.buttons.add('attack'), () => input.touch.buttons.delete('attack'));
-    cls.abilities.forEach((a, i) => { const [x, y] = arc(96, i * 30); btn(a, ABILITY_ICONS[ABILITIES[a].icon], x, y, false, () => game.useAbility(i)); });
+    // compétences 1 à 4 sur l'arc intérieur, 5 et 6 sur l'arc extérieur (entre esquive et élixir)
+    this.btn = btn; this.arc = arc;
+    this.buildAbilities();
     { const [x, y] = arc(160, 0); btn('jump', ICON.jump, x, y, false, () => { input.touch.pressed.add('jump'); input.touch.buttons.add('jump'); }, () => input.touch.buttons.delete('jump'), 'saut'); }
-    { const [x, y] = arc(160, 28); btn('dodge', ICON.dodge, x, y, false, () => input.touch.pressed.add('dodge'), null, 'esquive'); }
-    { const [x, y] = arc(160, 58); btn('rune', ABILITY_ICONS.rune, x, y, false, () => game.runes?.beginTouch(), null, 'rune'); }
-    { const [x, y] = arc(160, 79); btn('potion', ABILITY_ICONS.potion, x, y, false, () => game.usePotion(), null, 'élixir'); }
+    { const [x, y] = arc(160, 20); btn('dodge', ICON.dodge, x, y, false, () => input.touch.pressed.add('dodge'), null, 'esquive'); }
+    { const [x, y] = arc(160, 81); btn('potion', ABILITY_ICONS.potion, x, y, false, () => game.usePotion(), null, 'élixir'); }
+    { const [x, y] = arc(226, 70); btn('rune', ABILITY_ICONS.rune, x, y, false, () => game.runes?.beginTouch(), null, 'rune'); }
     // cible : appui = verrouiller / ennemi suivant, appui long = déverrouiller
     {
       let t0 = 0, held = null;
@@ -121,7 +122,7 @@ export class TouchControls {
     this.root.appendChild(this.interactBtn);
     // petits boutons de menu
     const top = h('div', { class: 'tmenu', style: { position: 'absolute', left: 'calc(14px + var(--safe-l))', top: 'calc(132px + var(--safe-t))', display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' } });
-    for (const [id, icon, fn] of [['map', ICON.map, () => game.toggleWindow('map')], ['bag', ICON.bag, () => game.toggleWindow('inventory')], ['quest', ICON.quest, () => game.toggleWindow('quests')], ['party', ICON.party, () => game.toggleWindow('party')], ['chat', ICON.chat, () => game.chat?.open()], ['mount', ICON.mount, () => game.mount?.toggle()], ['menu', ICON.menu, () => game.toggleWindow('settings')]]) {
+    for (const [id, icon, fn] of [['map', ICON.map, () => game.toggleWindow('map')], ['bag', ICON.bag, () => game.toggleWindow('inventory')], ['quest', ICON.quest, () => game.toggleWindow('quests')], ['party', ICON.party, () => game.toggleWindow('party')], ['chat', ICON.chat, () => game.chat?.open()], ['mount', ICON.mount, () => game.mount?.toggle()], ['grimoire', ABILITY_ICONS.book, () => game.toggleWindow('grimoire')], ['menu', ICON.menu, () => game.toggleWindow('settings')]]) {
       const b = h('button', { class: 'tb', style: { position: 'relative', width: '40px', height: '40px' }, 'aria-label': id }, svgIcon(icon));
       b.addEventListener('click', fn);
       top.appendChild(b);
@@ -130,6 +131,21 @@ export class TouchControls {
     game.ui.root.appendChild(this.root);
     // libère les appuis ponctuels
     this.joyHide = false;
+  }
+
+  // boutons des 6 emplacements de la barre (reconstruits quand le grimoire change la barre)
+  buildAbilities() {
+    const g = this.game;
+    for (const b of this.abBtns || []) b.remove();
+    this.abBtns = [];
+    const pos = [[96, 0], [96, 30], [96, 60], [96, 90], [160, 41], [160, 61]];
+    (g.hero.bar || []).forEach((id, i) => {
+      const [x, y] = this.arc(...pos[i]);
+      const ab = ABILITIES[id];
+      const b = this.btn(id || 'empty' + i, ab ? ABILITY_ICONS[ab.icon] : ABILITY_ICONS.book, x, y, false, () => (ab ? g.useAbility(i) : g.windows?.open('grimoire')));
+      if (!ab) b.classList.add('emptyslot');
+      this.abBtns.push(b);
+    });
   }
 
   // ennemi le plus proche d'un point de l'écran (tape pour verrouiller)
@@ -152,7 +168,7 @@ export class TouchControls {
     this.lockBtn?.classList.toggle('on', !!g.locked);
     const set = (id, remain, total) => { const el = this.cdEls[id]; if (el) el.style.setProperty('--p', (remain > 0 ? Math.round(remain / total * 100) : 0) + '%'); };
     set('attack', g.cooldowns.attack || 0, g.basicCd);
-    g.classDef.abilities.forEach((a) => set(a, g.cooldowns[a] || 0, ABILITIES[a].cd));
+    for (const a of g.hero.bar || []) if (a) set(a, g.cooldowns[a] || 0, ABILITIES[a].cd * g.cdMult());
     set('potion', g.cooldowns.potion || 0, 8);
     this.interactBtn.hidden = !g.promptText;
     if (g.promptText && this.interactBtn.dataset.t !== g.promptText) { this.interactBtn.dataset.t = g.promptText; this.interactBtn.textContent = '✋ ' + g.promptText; }

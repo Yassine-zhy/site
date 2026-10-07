@@ -82,6 +82,7 @@ export class Projectiles {
       }
       if (dead) {
         if (!p.hits.size) p.onExpire?.(pos.clone());
+        p.onEnd?.(pos.clone());
         fx.burst(pos, p.color, { count: 8, speed: 4, size: 0.3, life: 0.3 });
         g.scene.remove(p.mesh);
         p.mesh.traverse((o) => o.material?.dispose());
