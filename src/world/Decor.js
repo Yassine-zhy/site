@@ -85,6 +85,8 @@ export class Decor {
     this.group.add(obj);
     const box = this.assets.propBox(b.name);
     const s = b.s || BSCALE;
+    // registre des bâtiments (portes des intérieurs)
+    (this.scene.userData.buildings = this.scene.userData.buildings || []).push({ name: b.name, room: b.room, x: b.x, z: b.z, y, rot, front: box.max.z * s, where: this.where || '' });
     // contour réel des murs (tranche basse du modèle, sans les débords de toit)
     this.colliders.addFootprint(this.hulls(b.name, s, 0.02, 0.4, 3), b.x, b.z, rot, y - 2, y + box.max.y * s, 'building');
     if (b.name === 'building_windmill') {

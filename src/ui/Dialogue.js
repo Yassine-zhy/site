@@ -2,6 +2,7 @@ import { CHEST_TIERS, TIER_ORDER, chestPrice } from '../game/Chests.js';
 import { h } from './dom.js';
 import { FALLBACK_LINES } from '../ai/Mind.js';
 import { cleanText } from '../net/Net.js';
+import { MEALS } from '../game/Rooms.js';
 
 const GREET = {
   elder: ['Ah, vous voilà. La lumière vous a ramené jusqu’à moi.', 'Approchez, voyageur. Le vent m’a parlé de vous.'],
@@ -20,6 +21,10 @@ const GREET = {
   liora: ['Bienvenue sous la Canopée. Les arbres t’ont vu arriver.', 'Viens, la sève a besoin de toi.'],
   tiko: ['Salut ! Attention où tu marches, il y a des mygales partout !', 'Tu viens pour le temple ? Moi aussi ! Enfin, j’y vais demain. Peut-être.'],
   morwen: ['Soyez le bienvenu parmi les vivants, voyageur. Ils se font rares ici.', 'La lanterne brûle encore. Entrez.'],
+  innkeeper: ['Entre, entre ! Il reste une table près du feu.', 'Ah, un voyageur ! Tu as faim ? Soif ? Les deux ?'],
+  guildmaster: ['Bienvenue à la guilde, aventurier. Le tableau déborde de contrats.', 'Un héros de plus ? Parfait. La Brume ne chôme pas.'],
+  priestess: ['Que l’Aube vous garde, voyageur. Venez vous recueillir.', 'La lumière ne juge pas : elle réchauffe.'],
+  archmage: ['Hmm ? Ah, un visiteur. Ne touchez pas aux grimoires de gauche, ils mordent.', 'L’orbe vous a senti venir. Il aime les âmes curieuses.'],
   silas: ['Encore un héros ? Bien. Les tombes se rouvrent plus vite que je ne les ferme.', 'T’as l’air solide. Tant mieux.'],
 };
 
@@ -122,6 +127,10 @@ export class Dialogue {
     if (main && !q.active.some((x) => x.id === main.id)) this.option(`Quête : <b>« ${esc(main.title)} »</b>`, () => this.offer(main));
     for (const side of q.sidesFor(n.id)) this.option(`Quête : <b>« ${esc(side.title)} »</b>`, () => this.offer(side));
     if (n.id === 'smith') this.smithOptions();
+    if (n.id === 'innkeeper') this.innOptions();
+    if (n.id === 'guildmaster') this.option('Voir le <b>tableau des contrats</b>', () => { this.close(true); g.rooms?.guildWindow(); });
+    if (n.id === 'priestess') this.option('Recevoir la <b>bénédiction de l’Aube</b>', () => { g.rooms?.bless(); this.say('Que cette lumière vous suive sur les routes.'); });
+    if (n.id === 'archmage') this.option('Enchanter mon équipement (<b>orbe</b>)', () => { this.close(true); g.rooms?.enchantWindow(); });
     if (n.id === 'merchant') this.merchantOptions();
     if (n.id === 'oracle') this.option('Écouter l’Oracle — <b>recevoir une quête unique</b>', () => this.oracleQuest(), g.mind?.available() ? 'ai' : '');
     if (g.mind?.available()) this.option('Parler librement…', () => this.freeTalk(), 'ai');
@@ -172,6 +181,17 @@ export class Dialogue {
       this.menu();
     });
     this.option('Ouvrir mon sac (vendre au détail)', () => { this.close(true); g.windows.open('inventory'); });
+    this.option('Améliorer armure et relique à l’enclume', () => { this.close(true); g.rooms?.forgeWindow(); });
+  }
+
+  innOptions() {
+    const g = this.game, hero = g.hero;
+    for (const meal of MEALS) this.option(`Commander : <b>${meal.name}</b> — <span class="gold">${meal.price} or</span> <span style="color:var(--muted)">(${meal.desc}, ${meal.minutes} min)</span>`, () => {
+      if (!g.rooms?.eat(meal)) { this.say('Ta bourse sonne creux, l’ami. Reviens avec quelques pièces.'); return; }
+      this.say(['Et voilà, tout chaud ! Ça tient au corps.', 'Bon appétit ! Ma recette, ma fierté.', 'À ta santé, héros !'][Math.floor(Math.random() * 3)]);
+      this.menu();
+    });
+    this.option('Des nouvelles du continent ?', () => this.say(['On dit que la Reine de Givre chante toutes les nuits, là-haut sur le Givrecroc.', 'Un marchand jure avoir vu une pluie de météores au-dessus des Terres d’Ambre.', 'Les contrats de la guilde paient bien, en ce moment. Va voir Dame Ysolde, au château.', 'Les morts des Landes Spectrales ne dorment plus. N’y va pas sans être aguerri.'][Math.floor(Math.random() * 4)]));
   }
 
   merchantOptions() {

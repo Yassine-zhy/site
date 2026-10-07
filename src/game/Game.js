@@ -609,8 +609,12 @@ export class Game {
   rewardKill(k) {
     const hero = this.hero;
     const diff = k.level - hero.level;
-    const xp = Math.round(k.xp * (diff < -5 ? 0.3 : diff < -2 ? 0.7 : diff > 2 ? 1.25 : 1));
+    // bonus d'expérience (repas, repos…)
+    let xpB = 1;
+    for (const b of hero.buffs) if (b.xpBonus) xpB += b.xpBonus;
+    const xp = Math.round(k.xp * (diff < -5 ? 0.3 : diff < -2 ? 0.7 : diff > 2 ? 1.25 : 1) * xpB);
     hero.kills++;
+    this.rooms?.onKill(k);
     const pos = new THREE.Vector3(k.x, k.y + 2.6, k.z);
     this.ui.floatText(pos, `+${xp} xp`, 'xp', { rise: 2.2, life: 1.6 });
     this.gainXp(xp);

@@ -2,8 +2,10 @@ import * as THREE from 'three';
 import { Character } from '../entities/Character.js';
 import { NPC_SPOTS } from '../world/Village.js';
 import { OUTPOST_NPCS } from '../world/Outposts.js';
+import { INTERIOR_NPCS } from '../world/Interiors.js';
 
-const SPOTS = { ...NPC_SPOTS, ...OUTPOST_NPCS };
+// le forgeron travaille désormais dans sa forge ; nouveaux habitants des intérieurs
+const SPOTS = { ...NPC_SPOTS, ...OUTPOST_NPCS, ...INTERIOR_NPCS };
 import { dampAngle } from '../engine/math.js';
 
 const DEFS = [
@@ -23,6 +25,10 @@ const DEFS = [
   { id: 'liora', name: 'Liora', title: 'la druidesse', model: 'mage', tint: '#c8f5c4', show: ['2H_Staff'], idle: 'Idle', gestures: ['Spellcast_Raise', 'Interact'] },
   { id: 'tiko', name: 'Tiko', title: 'l’explorateur', model: 'rogue', tint: '#e2ffb8', show: ['Knife'], idle: 'Idle', gestures: ['Cheer', 'Interact', 'PickUp'] },
   { id: 'morwen', name: 'Morwen', title: 'la veilleuse des morts', model: 'mage', tint: '#d9ccff', show: ['2H_Staff'], idle: 'Idle', gestures: ['Spellcasting', 'Interact'] },
+  { id: 'innkeeper', name: 'Gaspard', title: 'l’aubergiste', model: 'barbarian', tint: '#ffe2c8', show: [], idle: 'Idle', gestures: ['Interact', 'Cheer', 'PickUp'] },
+  { id: 'guildmaster', name: 'Dame Ysolde', title: 'maîtresse de la guilde', model: 'knight', tint: '#f0d8ff', show: ['1H_Sword'], idle: 'Idle', gestures: ['Interact', 'Cheer'] },
+  { id: 'priestess', name: 'Sœur Aube', title: 'la prêtresse', model: 'mage', tint: '#fff2d0', show: ['2H_Staff'], idle: 'Idle', gestures: ['Spellcast_Raise', 'Interact'] },
+  { id: 'archmage', name: 'Archimage Elric', title: 'gardien de la tour', model: 'mage', tint: '#c8d0ff', show: ['2H_Staff'], idle: 'Idle', gestures: ['Spellcasting', 'Spellcast_Raise'] },
   { id: 'silas', name: 'Silas', title: 'le chasseur de spectres', model: 'rogue_hooded', tint: '#c4bcd8', show: ['1H_Crossbow'], idle: 'Idle', gestures: ['Interact', 'Cheer'] },
 ];
 
@@ -43,7 +49,7 @@ export class NPCs {
       game.scene.add(ch.object);
       game.world.cullFar(ch.object, 0.55);
       game.world.colliders.addCircle(spot.x, spot.z, 0.6, y - 1, y + 3, 'npc');
-      const npc = { ...d, char: ch, spot: { x: spot.x, y, z: spot.z }, baseFace: face, facing: face, gestureT: 3 + Math.random() * 6, position: ch.object.position };
+      const npc = { ...d, char: ch, spot: { x: spot.x, y, z: spot.z }, room: spot.room || null, baseFace: face, facing: face, gestureT: 3 + Math.random() * 6, position: ch.object.position };
       if (d.id === 'oracle') {
         // sanctuaire de l'Oracle : cercle runique permanent
         const ring = new THREE.Mesh(new THREE.RingGeometry(2.2, 2.35, 48), new THREE.MeshBasicMaterial({ color: new THREE.Color('#c9b6ff').multiplyScalar(2), transparent: true, opacity: 0.7, side: THREE.DoubleSide, toneMapped: false, depthWrite: false }));
@@ -79,10 +85,20 @@ export class NPCs {
     for (const n of this.list) ui.setPlate({ id: 'npc:' + n.id, position: n.position, height: 2.6, name: n.name, title: n.title, kind: 'npc', questMark: this.questMark(n), bubble: n.bubble || '' });
   }
 
+  // où guider le joueur pour rejoindre cet habitant (la porte du bâtiment s'il est à l'intérieur)
+  where(n) {
+    if (!n.room) return n.spot;
+    const p = this.game.player?.position;
+    if (p && Math.abs(p.x - n.spot.x) < 60 && Math.abs(p.z - n.spot.z) < 60) return n.spot;
+    const d = this.game.rooms?.homeDoor(n.room);
+    return d ? { x: d.x, z: d.z } : n.spot;
+  }
+
   markers(out) {
     for (const n of this.list) {
       const m = this.questMark(n);
-      out.push({ x: n.spot.x, z: n.spot.z, color: m === '?' || m === '!' ? '#ffe3a3' : '#d7c9a6', r: m ? 5 : 3.5, shape: m === '!' || m === '?' ? 'star' : 'dot', label: n.name });
+      const w = this.where(n);
+      out.push({ x: w.x, z: w.z, color: m === '?' || m === '!' ? '#ffe3a3' : '#d7c9a6', r: m ? 5 : 3.5, shape: m === '!' || m === '?' ? 'star' : 'dot', label: n.name });
     }
   }
 

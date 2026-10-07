@@ -19,7 +19,7 @@ export const BUILDINGS = [
   { name: 'building_home_B', x: 15, z: 39, s: 7 },
   { name: 'building_home_A', x: 42, z: 2, s: 7 },
   { name: 'building_home_B', x: -44, z: 4, s: 7 },
-  { name: 'building_tower_A', x: 49, z: -12, s: 6.5 },
+  { name: 'building_tower_A', x: 49, z: -12, s: 6.5, room: 'tower' },
   { name: 'building_tower_B', x: 8, z: 52, s: 6 },
   { name: 'building_barracks', x: -26, z: -48, s: 7 },
   { name: 'building_archeryrange', x: 30, z: -44, s: 6.5 },
@@ -45,6 +45,7 @@ export const NPC_SPOTS = {
 export class Village extends Decor {
   constructor(scene, assets, terrain, colliders, maps) {
     super(scene, assets, terrain, colliders, 'village');
+    this.where = 'Havrelumière';
     this.windmillBlades = null;
     const rng = mulberry32(555);
 
@@ -127,6 +128,7 @@ export class Village extends Decor {
 
   // Les Prés-Bas : fermes, moulin, champs clôturés et une cour avec un feu de camp.
   buildHamlet() {
+    this.where = 'Les Prés-Bas';
     const c = HAMLET;
     const B = (name, dx, dz, s) => this.placeBuilding({ name, x: c.x + dx, z: c.z + dz, s, cx: c.x, cz: c.z });
     B('building_windmill', -20, -16, 7.5);

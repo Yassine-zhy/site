@@ -8,6 +8,7 @@ import { BOSS_KITS } from '../game/Boss.js';
 // Les noms s'affichent selon le zoom et ne se chevauchent pas (les plus importants d'abord).
 // étiquettes des zones : numéro, nom et niveaux (les terres sauvages n'ont pas de numéro)
 const ZCOL = { temperate: '#fff3d6', snow: '#e6f6ff', amber: '#ffe0b0', haunted: '#e2d6ff', jungle: '#c8ffc8', cliffs: '#f2ead8', highland: '#f0f0c0', beach: '#fff0c8', swamp: '#d8e8c0' };
+const DOOR_NAMES = { tavern: 'Taverne', forge: 'Forge', guild: 'Guilde', chapel: 'Chapelle', tower: 'Tour de l’Archimage' };
 const REGIONS = ZONES.map((zn) => ({ name: (zn.n ? zn.n + ' · ' : '') + zn.name.replace(/^(Les |Le |La )/, ''), sub: `niv. ${zn.level[0]}–${zn.level[1]}`, x: zn.x, z: zn.z - 30, color: ZCOL[zn.biome] || '#fff3d6' }));
 
 export class MapView {
@@ -159,6 +160,8 @@ export class MapView {
     if (z >= 1.3) label('Portail des Expéditions', EXP_PORTAL.x, EXP_PORTAL.z, '#e2ccff', 18, { size: fontPx - 1 });
     for (const b of WORLD_BOSSES) if (z >= 1.3) label(BOSS_KITS[b.id]?.name || 'Boss', b.x, b.z, '#ffb3a8', 18, { size: fontPx - 1 });
     if (z >= 1.6) for (const w of WAYSTONES) label(w.name, w.x, w.z, g.waystones?.known(w.id) ? '#bff0ff' : '#8aa0b4', 16, { size: fontPx - 1 });
+    // bâtiments où l'on peut entrer (au zoom rapproché)
+    if (z >= 3) for (const d of g.rooms?.doors || []) if (d.room !== 'home') { dot(d.x, d.z, 3.5, '#ffd9a0'); label(DOOR_NAMES[d.room], d.x, d.z, '#ffe3c0', 14, { size: fontPx - 2, weight: 500 }); }
     if (z >= 2.2) for (const m of npcs) if (m.label) label(m.label, m.x, m.z, m.color, -8, { size: fontPx - 2, weight: 500 });
     // le joueur
     ctx.save(); ctx.translate(ppx, ppy); ctx.rotate(Math.PI - p.facing);

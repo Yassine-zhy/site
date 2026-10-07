@@ -61,6 +61,7 @@ export class Mount {
     if (p.gliding || !p.onGround) return 'Posez-vous d’abord.';
     if (p.inWater) return 'Pas dans l’eau !';
     if (g.elapsed - (g.lastCombat ?? -99) < 3) return 'Impossible en plein combat.';
+    if (g.rooms?.current()) return 'Pas de monture à l’intérieur !';
     return null;
   }
 

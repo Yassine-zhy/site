@@ -44,6 +44,7 @@ export class Outposts extends Decor {
   ring(cx, cz, r, n, fn) { for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; fn(cx + Math.cos(a) * r, cz + Math.sin(a) * r, a, i); } }
 
   buildGivreCamp() {
+    this.where = 'Halte-du-Givre';
     const c = GIVRE.camp;
     const B = (name, x, z, s) => this.placeBuilding({ name, x, z, s, cx: c.x, cz: c.z });
     B('building_tower_A', c.x + 16, c.z - 14, 6);
@@ -88,6 +89,7 @@ export class Outposts extends Decor {
   }
 
   buildAmbreCamp() {
+    this.where = 'Comptoir d’Ambre';
     const c = AMBRE.camp;
     const B = (name, x, z, s) => this.placeBuilding({ name, x, z, s, cx: c.x, cz: c.z });
     B('building_market', c.x + 17, c.z + 15, 6.5);
@@ -133,6 +135,7 @@ export class Outposts extends Decor {
   // terres sauvages : cercle de pierres sur la Table du Vent, camp de pêcheurs aux Récifs,
   // cabane du Marais des Saules, lanternes du Belvédère
   buildWildlands() {
+    this.where = 'Marais des Saules';
     const t = PLATEAUX.table;
     this.ring(t.x, t.z, 16, 8, (x, z, a, i) => {
       const o = this.assets.prop(i % 3 === 2 ? 'rubble_large' : 'pillar'), y = this.ground(x, z);
@@ -175,6 +178,7 @@ export class Outposts extends Decor {
   put(name, x, z, s, r, col = false, yoff = 0) { return this.placeProp(name, x, z, s, r, yoff, col); }
 
   buildHanteeCamp() {
+    this.where = 'Veille-des-Morts';
     const c = HANTEE.camp, rng = this.rng;
     const B = (name, x, z, s) => this.placeBuilding({ name, x, z, s, cx: c.x, cz: c.z });
     B('building_tower_A', c.x + 17, c.z - 15, 6);
@@ -266,6 +270,7 @@ export class Outposts extends Decor {
 
   // ------------------------------------------------------------------ Canopée d'Émeraude
   buildSylveCamp() {
+    this.where = 'Refuge des Lianes';
     const c = SYLVE.camp;
     const B = (name, x, z, s) => this.placeBuilding({ name, x, z, s, cx: c.x, cz: c.z });
     B('building_home_B', c.x + 18, c.z + 14, 6.5);

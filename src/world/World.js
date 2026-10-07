@@ -10,6 +10,7 @@ import { Maps, applyCorruption } from './Maps.js';
 import { Vegetation } from './Vegetation.js';
 import { Village } from './Village.js';
 import { Outposts } from './Outposts.js';
+import { Interiors } from './Interiors.js';
 import { Colliders } from './Colliders.js';
 import { EnvLight, updateRim } from '../engine/ModelLook.js';
 import { LightPool } from './Lights.js';
@@ -77,6 +78,8 @@ export class World {
     this.village = new Village(this.scene, assets, this.terrain, this.colliders, this.maps);
     await step('Les campements s’allument…');
     this.outposts = new Outposts(this.scene, assets, this.terrain, this.colliders);
+    await step('On allume les cheminées…');
+    this.interiors = new Interiors(this.scene, assets, this.terrain, this.colliders);
     // flammes, lumières et pales restés hors fusion : masqués au loin
     this.cullFar(this.village.group, 1, true);
     this.cullFar(this.outposts.group, 1, true);
@@ -185,6 +188,7 @@ export class World {
     this.vegetation.update(dt, e, this.playerFocus || focus, camera);
     this.village.update(dt, e, st.night);
     this.outposts?.update(dt, e, st.night);
+    this.interiors?.update(dt, e);
     if (focus) this.lightPool.update(focus);
     if (camera) this.ambient.update(dt, e, camera, this.playerFocus || focus, st.night, this.renderer.renderer.domElement.height);
     return st;

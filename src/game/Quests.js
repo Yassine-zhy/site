@@ -9,6 +9,8 @@ import { generateItem } from './Items.js';
 import { RUNE_SPELLS } from './Runes.js';
 import { hasTutorial } from '../ui/Tutorials.js';
 
+const ROOM_LABEL = { tavern: 'à la taverne', forge: 'dans sa forge', guild: 'à la guilde', chapel: 'à la chapelle', home: 'chez lui', tower: 'dans sa tour' };
+
 // Lieux à atteindre (les clés sont conservées pour les sauvegardes en cours)
 export const PLACES = {
   nuees: { name: 'le Belvédère du Couchant', x: FALAISES.belvedere.x, z: FALAISES.belvedere.z, r: 40 },
@@ -411,7 +413,7 @@ export class Quests {
       }
       case 'elite': return zoneTarget(nearest(SPAWN_ZONES, (z) => z.level[0] <= (g.hero?.level || 1) + 1 && z.level[1] >= (g.hero?.level || 1) - 3) || nearest(SPAWN_ZONES));
       case 'boss': { const b = BOSS_OF[o.boss || 'roi']; return b && { x: b.x, z: b.z, color: red, label: BOSS_KITS[b.id]?.name, y: b.minY }; }
-      case 'talk': case 'return': { const n = g.npcs?.byId(o.npc); return n && { x: n.spot.x, z: n.spot.z, color: gold, label: n.name, npc: true }; }
+      case 'talk': case 'return': { const n = g.npcs?.byId(o.npc); const w = n && g.npcs.where(n); return n && { x: w.x, z: w.z, color: gold, label: n.room ? `${n.name} (${ROOM_LABEL[n.room]})` : n.name, npc: true }; }
       case 'collect': { const n = g.gathering?.nearest(o.item, pos); return n && { x: n.x, z: n.z, color: ITEMS_GATHER[o.item].color, label: ITEMS_GATHER[o.item].name }; }
       case 'waystone': { const w = nearest(WAYSTONES, (w) => !g.waystones?.known(w.id)); return w && { x: w.x, z: w.z, color: '#9fe8ff', label: 'Pierre de passage' }; }
       case 'updraft': { const u = nearest(UPDRAFTS); return u && { x: u.x, z: u.z, color: '#bfe6ff', label: 'Colonne de vent' }; }
@@ -448,7 +450,7 @@ export class Quests {
 
   markers(out) {
     for (const q of this.active) {
-      if (q.state === 'ready') { const n = this.game.npcs?.byId(q.giver); if (n) out.push({ x: n.spot.x, z: n.spot.z, color: '#ffe3a3', shape: 'star', edge: true, label: q.title }); continue; }
+      if (q.state === 'ready') { const n = this.game.npcs?.byId(q.giver); if (n) { const w = this.game.npcs.where(n); out.push({ x: w.x, z: w.z, color: '#ffe3a3', shape: 'star', edge: true, label: q.title }); } continue; }
       for (const o of q.objectives) {
         if (o.done) continue;
         const t = this.objectiveTarget(q, o);

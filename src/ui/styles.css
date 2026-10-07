@@ -656,3 +656,18 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
 .slot.book svg { stroke: #ffe3a3; }
 .tb.emptyslot { opacity: 0.55; }
 @media (max-width: 560px) { .grim-list { grid-template-columns: 1fr; } .grim-slot { width: 48px; height: 48px; } }
+
+/* ---------------------------------------------------------------- forge, orbe, guilde */
+.forge { display: grid; gap: 8px; }
+.forge-intro { margin: 0 0 4px; color: var(--muted); font-style: italic; }
+.forge-row, .contract { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-soft); background: rgba(255, 255, 255, 0.03); }
+.forge-row .nm, .contract .nm { font-weight: 700; color: var(--parch); }
+.forge-row .st, .contract .st, .contract .rw { grid-column: 1; font-size: 12.5px; color: var(--muted); }
+.contract .rw { color: var(--gold); }
+.forge-row .btn, .contract .btn { grid-column: 2; grid-row: 1 / span 3; }
+.forge-row.empty { opacity: 0.5; }
+.contract.done { border-color: var(--gold); background: rgba(242, 196, 109, 0.08); }
+.guild-rank { padding: 8px 4px 10px; color: var(--parch); }
+.guild-rank small { display: block; color: var(--muted); margin-top: 4px; }
+.gbar { height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.4); margin-top: 6px; overflow: hidden; }
+.gbar > div { height: 100%; border-radius: 4px; }
