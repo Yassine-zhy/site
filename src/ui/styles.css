@@ -679,7 +679,7 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
 .cine-bars .cb-bot { bottom: 0; transform: translateY(100%); }
 .cine-bars.on .cb-top, .cine-bars.on .cb-bot { transform: none; }
 #hud, .touch { transition: opacity 0.4s; }
-.cine-on #hud, .cine-on .touch, .cine-on .topstack { opacity: 0; pointer-events: none; }
+.cine-on #hud, .cine-on .touch, .cine-on .topstack, .cine-on .chat, .cine-on .floats { opacity: 0; pointer-events: none; }
 .arena-card { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 31; pointer-events: none; text-align: center; width: calc(100% - 32px); opacity: 0; transition: opacity 0.7s; }
 .arena-card.show { opacity: 1; }
 .arena-card .ac-sub { font-family: var(--font-body); font-style: italic; letter-spacing: 0.08em; font-size: clamp(14px, 2vw, 20px); color: var(--parch); text-shadow: 0 2px 10px #000; }
