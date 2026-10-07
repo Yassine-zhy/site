@@ -1,15 +1,19 @@
 import * as THREE from 'three';
-import { GIVRE, AMBRE } from '../config.js';
+import { GIVRE, AMBRE, HANTEE, SYLVE } from '../config.js';
 
 // Particules d'ambiance autour de la caméra, animées entièrement par le GPU :
 // lucioles la nuit, pollen le jour, neige aux Cimes, poussière dorée en Ambre,
-// braises violettes dans la Citadelle. Les positions bouclent dans une boîte qui suit la caméra.
+// braises violettes dans la Citadelle, âmes errantes des Landes, spores de la Canopée. Les positions bouclent dans une boîte qui suit la caméra.
 const MODES = {
   pollen: { color: '#fff3c4', size: 0.09, box: [44, 14, 44], fall: -0.05, sway: 0.6, flicker: 0.2, alpha: 0.55, additive: true, share: 0.45 },
   fireflies: { color: '#d8ff7a', size: 0.16, box: [46, 9, 46], fall: 0, sway: 1.2, flicker: 1, alpha: 0.95, additive: true, share: 0.7 },
   snow: { color: '#ffffff', size: 0.12, box: [40, 22, 40], fall: 1.4, sway: 0.7, flicker: 0, alpha: 0.85, additive: false, share: 1 },
   dust: { color: '#ffc27a', size: 0.08, box: [48, 12, 48], fall: -0.02, sway: 1.6, flicker: 0.3, alpha: 0.5, additive: true, share: 0.6, wind: 1.2 },
   embers: { color: '#c78bff', size: 0.13, box: [40, 18, 40], fall: -0.9, sway: 0.8, flicker: 0.7, alpha: 0.9, additive: true, share: 0.8 },
+  // âmes errantes des Landes : lueurs pâles qui montent lentement
+  souls: { color: '#bfaaff', size: 0.17, box: [46, 16, 46], fall: -0.45, sway: 1.4, flicker: 0.9, alpha: 0.8, additive: true, share: 0.55 },
+  // spores et pollen de la Canopée, le jour
+  spores: { color: '#d6ffa8', size: 0.11, box: [42, 14, 42], fall: 0.12, sway: 1.0, flicker: 0.4, alpha: 0.7, additive: true, share: 0.75 },
 };
 
 const VERT = `
@@ -81,6 +85,8 @@ export class Ambient {
     if (pos.x > 3500) return 'embers';
     if (Math.hypot(pos.x - GIVRE.x, pos.z - GIVRE.z) < GIVRE.radius * 1.25) return 'snow';
     if (Math.hypot(pos.x - AMBRE.x, pos.z - AMBRE.z) < AMBRE.radius * 1.25) return night ? 'fireflies' : 'dust';
+    if (Math.hypot(pos.x - HANTEE.x, pos.z - HANTEE.z) < HANTEE.radius * 1.25) return 'souls';
+    if (Math.hypot(pos.x - SYLVE.x, pos.z - SYLVE.z) < SYLVE.radius * 1.25) return night ? 'fireflies' : 'spores';
     return night ? 'fireflies' : 'pollen';
   }
 

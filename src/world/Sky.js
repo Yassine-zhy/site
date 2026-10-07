@@ -3,6 +3,9 @@ import { DAY_LENGTH_MS } from '../config.js';
 import { clamp, smoothstep, damp } from '../engine/math.js';
 
 // ambiance de la Citadelle des Ombres (crépuscule violet permanent)
+// teintes régionales : landes hantées (brume violette, lumière blafarde), jungle (moiteur verte)
+const HAUNT = { fog: new THREE.Color('#4b4466'), hor: new THREE.Color('#7a6a96'), hemiS: new THREE.Color('#8f86b8'), hemiG: new THREE.Color('#2e2a38'), sun: new THREE.Color('#c8c0ff') };
+const JUNG = { fog: new THREE.Color('#a9d8b4'), hor: new THREE.Color('#bfe8c8'), hemiG: new THREE.Color('#3f6a34') };
 const MOOD = { zen: new THREE.Color('#1b0f33'), hor: new THREE.Color('#6a3080'), below: new THREE.Color('#2a1840'), fog: new THREE.Color('#3c2252'), hemiS: new THREE.Color('#9a7ad0'), hemiG: new THREE.Color('#2a1838'), sun: new THREE.Color('#d8a0ff') };
 
 const vert = /* glsl */`
@@ -98,6 +101,7 @@ export class Sky {
     this.state = { t: 0.5, night: 0, sunDir: new THREE.Vector3(), light: new THREE.Color(), sunI: 1 };
     this.override = null; // t forcé (écran titre)
     this.mood = 0; this.moodV = 0;
+    this.region = { haunted: 0, jungle: 0 }; this.regionV = { haunted: 0, jungle: 0 };
     this.tmp = new THREE.Vector3();
   }
 
@@ -173,6 +177,21 @@ export class Sky {
       this.hemi.color.lerp(MOOD.hemiS, mv); this.hemi.groundColor.lerp(MOOD.hemiG, mv);
       this.sun.color.lerp(MOOD.sun, mv * 0.7); this.sun.intensity *= 1 - mv * 0.35;
     }
+    const R = this.regionV, dtt = dt || 0.016;
+    R.haunted = damp(R.haunted, this.region.haunted, 0.8, dtt); R.jungle = damp(R.jungle, this.region.jungle, 0.8, dtt);
+    if (R.haunted > 0.002) {
+      const h = R.haunted;
+      this.fogColor.lerp(HAUNT.fog, h * 0.75); u.uHorizon.value.lerp(HAUNT.hor, h * 0.45);
+      this.hemi.color.lerp(HAUNT.hemiS, h * 0.5); this.hemi.groundColor.lerp(HAUNT.hemiG, h * 0.6);
+      this.sun.color.lerp(HAUNT.sun, h * 0.45); this.sun.intensity *= 1 - h * 0.3;
+    }
+    if (R.jungle > 0.002) {
+      const j = R.jungle;
+      this.fogColor.lerp(JUNG.fog, j * 0.4 * (1 - night)); u.uHorizon.value.lerp(JUNG.hor, j * 0.22 * (1 - night)); this.hemi.groundColor.lerp(JUNG.hemiG, j * 0.5);
+    }
+    // brume plus dense dans les Landes, air moite dans la Canopée
+    this.scene.fog.near = 260 - R.haunted * 190 - R.jungle * 90;
+    this.scene.fog.far = 2000 - R.haunted * 1150 - R.jungle * 500;
     this.scene.fog.color.copy(this.fogColor);
 
     if (focus) {

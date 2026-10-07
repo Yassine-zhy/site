@@ -19,11 +19,12 @@ export class Enemy {
     this.level = level;
     this.elite = elite;
     // le boss a déjà des valeurs de base élevées : sa progression par niveau est plus douce
-    const m = this.def.boss ? 1 + 0.15 * (level - 1) : 1 + 0.35 * (level - 1);
+    // progression par niveau : assez douce pour que le temps de combat reste constant en montant de niveau
+    const m = this.def.boss ? 1 + 0.15 * (level - 1) : 1 + 0.24 * (level - 1);
     this.maxHp = Math.round(this.def.hp * m * (elite ? 2.4 : 1));
     this.hp = this.maxHp;
     this.atk = this.def.atk * (1 + (this.def.boss ? 0.12 : 0.2) * (level - 1)) * (elite ? 1.35 : 1);
-    this.armor = this.def.def * (1 + 0.15 * (level - 1));
+    this.armor = this.def.def * (1 + 0.1 * (level - 1));
     this.xp = Math.round(this.def.xp * (1 + 0.28 * (level - 1)) * (elite ? 2.5 : 1));
     const scale = (this.def.scale || 1) * (elite ? 1.22 : 1);
     const attach = [];

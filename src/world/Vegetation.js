@@ -6,12 +6,14 @@ import { VILLAGE, LAKE, FOREST, MOUNTAIN, RUINS, HILLS, HAMLET, BEACONS, ISLETS,
 // taille des tuiles de végétation (une tuile hors de vue n'est pas parcourue)
 const TILE = 300;
 import { applyCorruption, CORR_UV_GLSL } from './Maps.js';
+import { registerJungleTrees } from './JungleTrees.js';
 
 // Arbres et rochers instanciés (modèles KayKit), avec balancement au vent.
 export class Vegetation {
   constructor(scene, assets, terrain, colliders, maps, density = 1) {
     this.scene = scene; this.assets = assets; this.terrain = terrain; this.colliders = colliders;
     this.meshes = [];
+    registerJungleTrees(assets);
     const rng = mulberry32(2024);
     const buckets = new Map();
     const add = (name, x, z, scale, rotY, opts = {}) => {
@@ -85,6 +87,7 @@ export class Vegetation {
         if (UPDRAFTS.some((u) => Math.hypot(x - u.x, z - u.z) < u.radius + 4)) continue;
         if (Math.hypot(x - def.x, z - def.z) < 9) continue;
         if (def.biome === 'dusk') { add(rng.pick(['hw_tree_dead_large', 'hw_tree_dead_medium', 'hw_tree_pine_orange_medium']), x, z, 1.7 + rng() * 0.8, rng() * Math.PI * 2, { col: 'tree', look: 'hw', region: def.id }); continue; }
+        if (def.biome === 'lush') { const p = rng() < 0.55; add(p ? rng.pick(['proc_palm_A', 'proc_palm_B']) : 'proc_kapok', x, z, p ? 7 + rng() * 2.5 : 8 + rng() * 3, rng() * Math.PI * 2, { col: 'tree', look: 'jungle', region: def.id }); continue; }
         const cl = rng() < 0.25;
         add(cl ? rng.pick(clusters) : rng.pick(singles), x, z, (cl ? 5.5 : 6) + rng() * 3, rng() * Math.PI * 2, { col: 'tree', look, region: def.id });
       }
@@ -157,13 +160,20 @@ export class Vegetation {
           if (add(name, x, z, (pine ? 1.5 : 2.0) + rng() * 0.9, rng() * Math.PI * 2, { col: 'tree', region, look: 'hw' })) i++;
           continue;
         }
-        const cl = rng() < (snow ? 0.3 : jungle ? 0.45 : 0.12);
-        let s = cl ? 5.5 + rng() * 2.5 : 6 + rng() * 3.5;
-        if (jungle) s *= 1.35 + rng() * 0.6; // arbres géants de la Canopée
+        if (jungle) {
+          // fromagers géants et palmiers (plus nombreux près de l'eau), quelques bosquets
+          const nearWater = def.lake && Math.hypot(x - def.lake.x, z - def.lake.z) < def.lake.radius * 2.4;
+          const r2 = rng();
+          const [name, s] = r2 < (nearWater ? 0.7 : 0.35) ? [rng() < 0.5 ? 'proc_palm_A' : 'proc_palm_B', 7.5 + rng() * 3]
+            : r2 < 0.85 ? ['proc_kapok', 9 + rng() * 4.5] : ['proc_kapok', 5.5 + rng() * 2.5]; // jeunes fromagers
+          if (add(name, x, z, s, rng() * Math.PI * 2, { col: 'tree', region, look: 'jungle' })) i++;
+          continue;
+        }
+        const cl = rng() < (snow ? 0.3 : 0.12);
+        const s = cl ? 5.5 + rng() * 2.5 : 6 + rng() * 3.5;
         const name = snow ? (cl ? rng.pick(['trees_A_large', 'trees_A_medium', 'trees_A_small']) : 'tree_single_A')
-          : jungle ? (cl ? rng.pick(['trees_B_large', 'trees_B_large', 'trees_B_medium', 'trees_A_large']) : rng.pick(['tree_single_B', 'tree_single_B', 'tree_single_A']))
-            : (cl ? rng.pick(['trees_B_medium', 'trees_B_small']) : 'tree_single_B');
-        if (add(name, x, z, s, rng() * Math.PI * 2, { col: 'tree', region, look: snow ? 'snow' : jungle ? 'jungle' : 'autumn' })) i++;
+          : (cl ? rng.pick(['trees_B_medium', 'trees_B_small']) : 'tree_single_B');
+        if (add(name, x, z, s, rng() * Math.PI * 2, { col: 'tree', region, look: snow ? 'snow' : 'autumn' })) i++;
       }
       const nR = Math.round((snow ? 650 : jungle ? 500 : haunted ? 600 : 900) * density);
       for (let i = 0, tries = 0; i < nR && tries < nR * 5; tries++) {
@@ -195,6 +205,17 @@ export class Vegetation {
           if (!isl.isInside(x, z) || avoid(x, z) || terrain.slopeAt(x, z) > 0.4) continue;
           const [name, sc] = rng.pick(props);
           add(name, x, z, sc * (0.9 + rng() * 0.3), rng() * Math.PI * 2, { col: /grave|stone/.test(name) ? 'rock' : null, region, look: 'hw', sink: 0.05 });
+          i++;
+        }
+      }
+      if (jungle) {
+        for (let i = 0, tries = 0; i < Math.round(900 * density) && tries < 6000; tries++) {
+          const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * def.radius;
+          const x = def.x + Math.cos(a) * r, z = def.z + Math.sin(a) * r;
+          if (!isl.isInside(x, z) || pathDistance(x, z) < 2.5 || terrain.slopeAt(x, z) > 0.5) continue;
+          if (def.camp && Math.hypot(x - def.camp.x, z - def.camp.z) < def.camp.radius) continue;
+          if (def.lake && Math.hypot(x - def.lake.x, z - def.lake.z) < def.lake.radius * 1.05) continue;
+          add('proc_fern', x, z, 5 + rng() * 4, rng() * Math.PI * 2, { region, look: 'jungle', sink: 0.05 });
           i++;
         }
       }
@@ -264,7 +285,7 @@ export class Vegetation {
               float tt = clamp(dot(cf, sd), 0.0, segL);
               float dseg = length(cameraPosition + sd * tt - vWorldPosC);
               float fade = (tt < segL - 0.8) ? 1.0 - smoothstep(1.2, 3.2, dseg) : 0.0;
-              fade = max(fade, 1.0 - smoothstep(1.5, 4.0, length(cf)));
+              fade = max(fade, 1.0 - smoothstep(2.5, 6.5, length(cf)));
               if (fade * 0.85 > bayer4(gl_FragCoord.xy)) discard;
             }`)
           .replace('#include <color_fragment>', `#include <color_fragment>

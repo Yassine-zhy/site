@@ -13,7 +13,8 @@ import { EnvLight, updateRim } from '../engine/ModelLook.js';
 import { LightPool } from './Lights.js';
 import { Ambient } from '../fx/Ambient.js';
 import { Updrafts } from './Updrafts.js';
-import { UPDRAFTS } from '../config.js';
+import { UPDRAFTS, HANTEE, SYLVE } from '../config.js';
+import { smoothstep } from '../engine/math.js';
 
 // Le monde d'Aetheria : îles, ciel, eau, végétation, village.
 export class World {
@@ -162,6 +163,11 @@ export class World {
     const e = this.elapsed;
     this.lodT = (this.lodT || 0) - dt;
     if (camera && this.lodT <= 0) { this.lodT = 0.25; this.updateLod(camera); }
+    if (focus) {
+      // ambiance régionale (brume des Landes, moiteur de la Canopée)
+      const near = (d) => (d ? 1 - smoothstep(d.radius * 0.9, d.radius * 1.3, Math.hypot(focus.x - d.x, focus.z - d.z)) : 0);
+      this.sky.region.haunted = near(HANTEE); this.sky.region.jungle = near(SYLVE);
+    }
     const st = this.sky.update(dt, focus, e);
     this.env.update(dt);
     updateRim(this.sky);
