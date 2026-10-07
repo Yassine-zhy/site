@@ -160,7 +160,7 @@ export class Hero {
       v: 1, classId: this.classId, name: this.name, level: this.level, xp: this.xp, gold: this.gold,
       inventory: this.inventory, equip: this.equip, potions: this.potions, kills: this.kills, deaths: this.deaths,
       light: this.light, runesCast: this.runesCast, bestRune: this.bestRune, title: this.title, discovered: this.discovered,
-      hp: this.hp, mp: this.mp, created: this.created, playTime: this.playTime, chests: this.chests, pity: this.pity || 0, bar: this.bar, guild: this.guild || null, blessedAt: this.blessedAt || 0,
+      hp: this.hp, mp: this.mp, created: this.created, playTime: this.playTime, chests: this.chests, pity: this.pity || 0, bar: this.bar, guild: this.guild || null, blessedAt: this.blessedAt || 0, rides: this.rides || 0,
     };
   }
 
@@ -170,7 +170,7 @@ export class Hero {
       level: d.level || 1, xp: d.xp || 0, gold: d.gold ?? 25, inventory: d.inventory || [], equip: d.equip || h.equip,
       potions: d.potions || h.potions, kills: d.kills || 0, deaths: d.deaths || 0, light: d.light || 0, runesCast: d.runesCast || 0,
       bestRune: d.bestRune || 0, title: d.title || '', discovered: d.discovered || {}, created: d.created || Date.now(), playTime: d.playTime || 0,
-      chests: d.chests || {}, pity: d.pity || 0, bar: Array.isArray(d.bar) ? d.bar : null, guild: d.guild || null, blessedAt: d.blessedAt || 0,
+      chests: d.chests || {}, pity: d.pity || 0, bar: Array.isArray(d.bar) ? d.bar : null, guild: d.guild || null, blessedAt: d.blessedAt || 0, rides: d.rides || 0,
     });
     h.buffs = [];
     h.fillBar();

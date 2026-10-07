@@ -97,7 +97,7 @@ const MAIN = [
   { id: 'm5', giver: 'elder', title: 'Murmures dans le bois', desc: "Le Bois-Murmure ne chante plus. Purgez la forêt et ravivez le Phare des Murmures.", objectives: [{ type: 'kill', zone: 'foret', count: 8 }, { type: 'light', beacon: 'murmures', count: 10 }], rewards: { xp: 520, gold: 60, item: 1 } },
   { id: 'm6', giver: 'elder', title: 'La cité des cendres', desc: "Au sud, les ruines de l'ancienne cité grouillent de guerriers et de nécromanciens.", objectives: [{ type: 'kill', zone: 'cendres', count: 10 }, { type: 'light', beacon: 'cendres', count: 10 }], rewards: { xp: 900, gold: 90, item: 2 } },
   { id: 'm7', giver: 'guard', title: 'Le phare des falaises', desc: "À l'ouest du Pic, les Falaises du Couchant tombent à pic dans la mer. Grimpez jusqu'au Belvédère et ravivez le Phare du Couchant.", objectives: [{ type: 'visit', place: 'nuees' }, { type: 'light', beacon: 'nuees', count: 10 }], rewards: { xp: 1300, gold: 120, item: 2 } },
-  { id: 'm8', giver: 'elder', title: 'Le Roi Sans Lumière', desc: "Au sommet du Pic du Silence, le Roi Sans Lumière garde le dernier phare. Allez-y à plusieurs si vous le pouvez.", objectives: [{ type: 'visit', place: 'sommet' }, { type: 'boss' }], rewards: { xp: 3000, gold: 400, item: 3 } },
+  { id: 'm8', giver: 'elder', title: 'Le Roi Sans Lumière', desc: "Au sommet du Pic du Silence, le Roi Sans Lumière garde le dernier phare. Allez-y à plusieurs si vous le pouvez.", objectives: [{ type: 'visit', place: 'sommet' }, { type: 'boss', boss: 'roi' }], rewards: { xp: 3000, gold: 400, item: 3 } },
   { id: 'm9', giver: 'pip', title: 'Vers les Terres d’Ambre', desc: "Pip a terminé sa grande carte : le continent est immense ! À l'est, au-delà du Bois-Murmure, s'étendent les Terres d'Ambre. Suivez la grand-route jusqu'au Comptoir d'Ambre et présentez-vous à Kessa.", objectives: [{ type: 'visit', place: 'comptoir' }, { type: 'talk', npc: 'kessa', npcName: 'Kessa' }], rewards: { xp: 1400, gold: 120 } },
   { id: 'm10', giver: 'kessa', title: 'Le Comptoir assiégé', desc: "Les pillards d'ambre rôdent autour du Comptoir. Chassez-les et offrez de la lumière au Phare d'Ambre, au milieu des mesas.", objectives: [{ type: 'kill', zone: 'ambre_plaines', count: 8 }, { type: 'light', beacon: 'ambre', count: 10 }], rewards: { xp: 1800, gold: 160, item: 2 } },
   { id: 'm11', giver: 'tarek', title: 'Le cœur du Colosse', desc: "Le Colosse d'Ambre, gardien déchu du Cirque, a perdu son cœur dans la Brume. Libérez-le de sa malédiction. N'y allez pas seuls si vous le pouvez.", objectives: [{ type: 'visit', place: 'cirque' }, { type: 'boss', boss: 'colosse' }], rewards: { xp: 3200, gold: 420, item: 3 } },
@@ -247,7 +247,7 @@ export class Quests {
 
   mainFor(npc) {
     const def = MAIN[this.mainIdx];
-    return def && def.giver === npc ? def : null;
+    return def && def.giver === npc && !this.done.has(def.id) ? def : null;
   }
 
   // quêtes secondaires proposées par un habitant (débloquées et pas en cours)
@@ -348,8 +348,10 @@ export class Quests {
     if (r.chest) { g.hero.chests[r.chest] = (g.hero.chests[r.chest] || 0) + 1; g.ui.toast(`Récompense : <b style="color:${CHEST_TIERS[r.chest].color}">${CHEST_TIERS[r.chest].name}</b> (à ouvrir dans le sac)`, { time: 4 }); }
     if (r.xp) g.gainXp(r.xp);
     if (q.id.startsWith('m')) {
-      const idx = MAIN.findIndex((m) => m.id === q.id);
-      if (idx >= this.mainIdx) this.mainIdx = idx + 1;
+      // première quête principale pas encore accomplie (comme au chargement)
+      this.done.add(q.id);
+      const idx = MAIN.findIndex((m) => !this.done.has(m.id));
+      this.mainIdx = idx < 0 ? MAIN.length : idx;
       // la suite est proposée par le prochain donneur
       const next = MAIN[this.mainIdx];
       if (next) g.ui.toast(`${this.npcName(next.giver)} a une nouvelle tâche pour vous.`, { time: 4 });

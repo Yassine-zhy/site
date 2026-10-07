@@ -47,14 +47,19 @@ export class Waves {
       const y = terrain.heightAt(x, z);
       if (y === null || terrain.slopeAt(x, z) > 0.4 || this.inSafeZone(x, z) || Math.abs(y - p.position.y) > 6) continue;
       // région : la zone de monstres la plus proche donne le niveau et les espèces
-      let zone = null, zd = Infinity;
-      for (const s of SPAWN_ZONES) { const d = Math.hypot(s.x - x, s.z - z); if (d < s.radius * 2.2 && d < zd) { zd = d; zone = s; } }
+      const zone = this.zoneNear(x, z);
       const heroLvl = p.isLocal ? g.hero.level : (g.remotePlayers.get(p.id)?.level || g.hero.level);
       const lvl = zone ? Math.round((zone.level[0] + zone.level[1]) / 2) : Math.max(1, heroLvl);
       const types = zone ? zone.types : ['minion', 'slime', 'wolf', 'spider'];
       return { x, y, z, lvl, types };
     }
     return null;
+  }
+
+  zoneNear(x, z) {
+    let zone = null, zd = Infinity;
+    for (const s of SPAWN_ZONES) { const d = Math.hypot(s.x - x, s.z - z); if (d < s.radius * 2.2 && d < zd) { zd = d; zone = s; } }
+    return zone;
   }
 
   start(s) {
@@ -95,6 +100,11 @@ export class Waves {
       return;
     }
     const c = this.cur;
+    // vague reprise d'un ancien hôte (migration) : la copie client n'a ni minuterie ni espèces
+    if (!Number.isFinite(c.t)) c.t = c.ph === 'done' ? 15 : 4;
+    if (!c.types) { const zone = this.zoneNear(c.x, c.z); c.types = zone ? zone.types : ['minion', 'slime', 'wolf', 'spider']; c.lvl = c.lvl || (zone ? Math.round((zone.level[0] + zone.level[1]) / 2) : 1); }
+    if (!Number.isFinite(c.n)) c.n = 0;
+    if (!Number.isFinite(c.away)) c.away = 0;
     c.t -= dt;
     for (const id of [...c.ids]) { const e = g.enemies.map.get(id); if (!e || !e.alive) c.ids.delete(id); }
     c.left = c.ids.size;

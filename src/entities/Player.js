@@ -4,11 +4,11 @@ import { Character } from './Character.js';
 import { createGlider } from './Glider.js';
 import { clamp, damp, dampAngle, angleDiff, smoothstep } from '../engine/math.js';
 import { CLASSES, UPDRAFTS, WATERS, SEA_LEVEL, WORLD_HALF } from '../config.js';
+import { RIDE } from '../game/Mount.js';
 
 const GRAVITY = 28;
 const WALK = 2.9, RUN = 7.2, SPRINT = 10.6;
 // pose en selle : jambes écartées et tombantes (corrige l'animation « assis sur une chaise »)
-const RIDE = { spread: 0.55, drop: 0.75, knee: -0.55 };
 
 // Héros contrôlé par le joueur : déplacements, saut, vol plané, esquive.
 export class Player {

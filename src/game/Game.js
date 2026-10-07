@@ -15,6 +15,7 @@ import { renderWorldMap } from '../ui/MapRender.js';
 import { Hud } from '../ui/Hud.js';
 import { Icons } from '../ui/Icons.js';
 import { platformAt } from '../world/Citadel.js';
+import { ROOMS } from '../world/Interiors.js';
 import { Updrafts } from '../world/Updrafts.js';
 import { cloneModelMaterial } from '../engine/ModelLook.js';
 import { Creature } from '../entities/Creature.js';
@@ -515,6 +516,7 @@ export class Game {
       ui.setPlate({ id: e.id, position: e.position, height: e.height + 0.2, name: (e.elite ? '★ ' : '') + e.def.name + ' · ' + e.level, kind: e.elite || e.def.boss ? 'elite' : 'enemy', hpPct: e.alive ? Math.max(0, e.hpPct) : 0, hidden: e.def.boss, focus: e === this.target });
     }
     this.npcs?.plates(ui);
+    this.villagers?.plates(ui);
     for (const rp of this.remotePlayers.values()) rp.plate(ui);
     this.echoes?.plates?.(ui);
   }
@@ -733,6 +735,8 @@ export class Game {
   currentZone() {
     const p = this.player.position;
     const t = this.world.terrain;
+    const room = this.rooms?.current();
+    if (room) return { name: ROOMS[room]?.name || 'Intérieur', sub: `${this.rooms.inside?.door?.where || 'Havrelumière'} · à l’abri` };
     if (p.x > 3500) { const P = platformAt(p.x, p.z); return { name: P?.name || 'La Citadelle des Ombres', sub: 'Citadelle des Ombres' }; }
     const zone = zoneAt(p.x, p.z);
     const lv = zone ? `niv. ${zone.level[0]}–${zone.level[1]}` : '';

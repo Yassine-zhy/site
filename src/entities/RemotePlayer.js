@@ -3,6 +3,7 @@ import { Character } from './Character.js';
 import { createGlider } from './Glider.js';
 import { CLASSES } from '../config.js';
 import { damp, dampAngle } from '../engine/math.js';
+import { buildStag, rideStag, RIDE } from '../game/Mount.js';
 
 // Un autre héros, piloté par le réseau : interpolation + animations déduites de l'état.
 export class RemotePlayer {
@@ -50,6 +51,14 @@ export class RemotePlayer {
     this.stealth = !!(s & 4);
     this.onGround = !!(s & 8);
     this.sprint = !!(s & 16);
+    const mounted = !!(s & 32);
+    if (mounted !== !!this.mounted && !this.first) {
+      // invocation / renvoi de la monture : éclat lumineux
+      const p = this.position.clone(); p.y += 1.3;
+      this.game.fx?.sparkle?.(p, '#bff4ff', 1.2, mounted ? 30 : 24, 0.4);
+      if (mounted) this.game.fx?.burst?.(p, '#9fe8ff', 24);
+    }
+    this.mounted = mounted;
     if (dead && !this.dead) { this.char.stopAction(0); this.char.playAction('Death_A', { full: true, hold: true }); }
     if (!dead && this.dead) { this.char.stopAction(0); this.game.fx.beam(this.position, '#ffe3a3', { height: 24, radius: 1.6, life: 1.2 }); }
     this.dead = dead;
@@ -77,7 +86,9 @@ export class RemotePlayer {
     const hs = Math.hypot(this.velocity.x, this.velocity.z);
     this.object.rotation.y = this.facing;
     this.object.visible = !this.stealth || Math.sin(now / 90) > 0.6;
-    if (!this.dead) {
+    this.updateMount(dt, hs);
+    if (!this.dead && this.mounted) this.char.setLocomotion('Sit_Chair_Idle', 1);
+    else if (!this.dead) {
       let loco;
       const cls = CLASSES[this.classId];
       if (this.gliding || (!this.onGround && hs > 0.1 && !this.onGroundRecently())) loco = 'Jump_Idle';
@@ -96,6 +107,23 @@ export class RemotePlayer {
     this.char.update(dt);
   }
 
+  // cerf d'éther sous le cavalier (créé à la première chevauchée, fondu à l'apparition)
+  updateMount(dt, hs) {
+    const on = this.mounted && !this.dead && !this.gliding;
+    if (on && !this.stag) { this.stag = buildStag(this.game.scene); this.stagFade = 0; }
+    const c = this.stag;
+    this.char.legPose = on ? RIDE : null;
+    if (!c) return;
+    this.stagFade = damp(this.stagFade, on ? 1 : 0, 8, dt);
+    c.object.visible = this.stagFade > 0.02 && this.object.visible;
+    c.setOpacity?.(Math.min(1, this.stagFade));
+    if (on) rideStag(c, this.char, this.position, this.facing, hs, dt);
+    else {
+      this.char.model.position.y = 0; this.char.model.rotation.x = 0;
+      if (c.object.visible) { c.object.position.copy(this.position); c.update(dt); }
+    }
+  }
+
   onGroundRecently() { return this.onGround; }
 
   say(text) { this.bubble = text; this.bubbleT = 7; }
@@ -103,8 +131,11 @@ export class RemotePlayer {
   faceTowards(x, z) { this.facing = Math.atan2(x - this.position.x, z - this.position.z); }
 
   plate(ui) {
-    ui.setPlate({ id: 'p:' + this.id, position: this.position, height: 2.6, name: `${this.name} · ${this.level}`, kind: 'player', hpPct: this.hpPct, title: this.title || CLASSES[this.classId].name, bubble: this.bubble, hidden: this.stealth });
+    ui.setPlate({ id: 'p:' + this.id, position: this.position, height: this.mounted ? 3.9 : 2.6, name: `${this.name} · ${this.level}`, kind: 'player', hpPct: this.hpPct, title: this.title || CLASSES[this.classId].name, bubble: this.bubble, hidden: this.stealth });
   }
 
-  dispose() { this.char.dispose(); this.object.removeFromParent(); }
+  dispose() {
+    if (this.stag) { this.stag.object.removeFromParent(); this.stag.dispose?.(); this.stag = null; }
+    this.char.dispose(); this.object.removeFromParent();
+  }
 }

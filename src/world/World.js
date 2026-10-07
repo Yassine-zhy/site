@@ -11,6 +11,7 @@ import { Vegetation } from './Vegetation.js';
 import { Village } from './Village.js';
 import { Outposts } from './Outposts.js';
 import { Interiors } from './Interiors.js';
+import { Signposts } from './Signposts.js';
 import { Colliders } from './Colliders.js';
 import { EnvLight, updateRim } from '../engine/ModelLook.js';
 import { LightPool } from './Lights.js';
@@ -80,6 +81,7 @@ export class World {
     this.outposts = new Outposts(this.scene, assets, this.terrain, this.colliders);
     await step('On allume les cheminées…');
     this.interiors = new Interiors(this.scene, assets, this.terrain, this.colliders);
+    this.signposts = new Signposts(this.scene, this.terrain, this.colliders);
     // flammes, lumières et pales restés hors fusion : masqués au loin
     this.cullFar(this.village.group, 1, true);
     this.cullFar(this.outposts.group, 1, true);

@@ -13,6 +13,8 @@ const MODES = {
   souls: { color: '#bfaaff', size: 0.17, box: [46, 16, 46], fall: -0.45, sway: 1.4, flicker: 0.9, alpha: 0.8, additive: true, share: 0.55 },
   // spores et pollen de la Canopée, le jour
   spores: { color: '#d6ffa8', size: 0.11, box: [42, 14, 42], fall: 0.12, sway: 1.0, flicker: 0.4, alpha: 0.7, additive: true, share: 0.75 },
+  // intérieurs : poussière dorée qui danse dans la lumière des fenêtres
+  motes: { color: '#ffe2b0', size: 0.045, box: [16, 6, 16], fall: 0.03, sway: 0.25, flicker: 0.35, alpha: 0.5, additive: true, share: 0.4 },
 };
 
 const VERT = `
@@ -81,6 +83,7 @@ export class Ambient {
   setCount(n) { this.points.geometry.setDrawRange(0, Math.min(n, this.points.geometry.attributes.seed.count)); }
 
   pick(pos, night) {
+    if (pos.x > 8000) return 'motes'; // salles intérieures
     if (pos.x > 3500) return 'embers';
     // biome dominant sous le joueur (fourni par le monde)
     const b = this.biome;

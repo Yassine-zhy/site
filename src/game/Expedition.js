@@ -268,7 +268,7 @@ export class Expedition {
       this.citadel.setObjects(this.state.a, this.state.b);
     }
     // ciel de la Citadelle
-    const inCitadel = g.player && g.player.position.x > 3500;
+    const inCitadel = g.player && g.player.position.x > 3500 && g.player.position.x < 8000; // (au-delà : salles intérieures)
     g.world.sky.mood = inCitadel ? 1 : 0;
     if (this.state.ph === 'done' && !this.doneShown && inCitadel) { this.doneShown = true; this.victory(); }
     // chute dans le vide : retour à la plateforme de l'épreuve

@@ -99,7 +99,8 @@ export class Boss {
       if (!e.alive) continue;
       const kit = this.kitOf(e);
       let done = this.summoned.get(e.id);
-      if (!done) { done = new Set(); this.summoned.set(e.id, done); }
+      // boss repris d'un ancien hôte : les seuils déjà franchis ont eu leurs renforts
+      if (!done) { done = new Set([0.7, 0.4, 0.15].filter((th) => e.hpPct < th)); this.summoned.set(e.id, done); }
       for (const th of [0.7, 0.4, 0.15]) {
         if (e.hpPct < th && !done.has(th)) {
           done.add(th);
@@ -164,6 +165,8 @@ export class Boss {
         g.ui.announce(`${kit.name} est vaincu`, kit.down, 5);
         g.audio?.play('beacon', p);
         g.chat?.system(`✦ ${kit.name} a été vaincu !`);
+        // tout le monde retient l'heure de réapparition : un nouvel hôte ne le ressuscite pas aussitôt
+        { const wb = WORLD_BOSSES.find((b) => b.id === ev.b); if (wb && !g.enemies.isHost) this.state.set(wb.id, { respawnAt: Date.now() + wb.respawnMinutes * 60000 }); }
         break;
       case 'bossSlam':
         fx.explosion(p, c, (ev.r || 8) * 0.8);

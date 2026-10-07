@@ -271,6 +271,8 @@ const BOSS_TIPS = {
   roi: 'Il appelle ses gardes à 70 %, 40 % et 15 % de vie : éliminez-les vite.',
   colosse: 'Ses charges traversent l’arène en ligne droite : écartez-vous sur le côté. Ses séismes frappent en anneaux.',
   reine: 'Le blizzard gèle le sol : quittez les zones bleues. Ses novas de givre vous ralentissent, gardez votre esquive.',
+  gardien: 'Ses spores tombent du ciel en pluie : ne restez jamais immobile. Il se téléporte : gardez-le en cible verrouillée.',
+  fossoyeur: 'Il charge en ligne droite puis tournoie : écartez-vous sur le côté et frappez-le dans le dos après son tourbillon.',
 };
 
 function bossTutorial(g, o, touch) {
@@ -298,6 +300,8 @@ const GATHER_WHERE = {
   plume: 'au pied des colonnes de vent (tourbillons lumineux)',
   ambre: 'dans les Terres d’Ambre : mesas, mine de Kessa, Gorge Rouge',
   givre: 'aux Cimes de Givre : autour du Lac de Cristal et du Sanctuaire',
+  orchidee: 'dans la Canopée d’Émeraude : autour du Lac Émeraude et du Temple Englouti',
+  ame: 'dans les Landes Spectrales : autour du Grand Cimetière et du Marais des Âmes',
 };
 
 function collectTutorial(g, o) {

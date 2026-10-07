@@ -5,7 +5,7 @@ import { ABILITIES, basicVisual } from '../game/Abilities.js';
 import { ENEMIES } from '../config.js';
 import { ENEMY_TYPES } from '../entities/Enemy.js';
 
-export const PROTO = 5;
+export const PROTO = 6;
 const MAX_BYTES = 3900;
 
 // Synchronisation multijoueur par "présence" : chaque joueur publie son état complet
@@ -197,7 +197,15 @@ export class Net {
         g.onRemoteKill?.({ type, x, y, z, boss: !!boss });
       }
       for (const [s, target, dmg, kind, sx, sz] of fresh(pr.D, st.seen, 'D')) {
-        if (target === this.selfId) g.takeDamage(Math.min(2000, dmg | 0), sx != null && sz != null ? { position: new THREE.Vector3(sx, 0, sz), def: { name: kind === 'boss' ? 'le Roi Sans Lumière' : 'un squelette' } } : null, { kind });
+        if (target !== this.selfId) continue;
+        let src = null;
+        if (sx != null && sz != null) {
+          // l'auteur du coup : le monstre le plus proche du point d'origine
+          let best = null, bd = 8;
+          for (const e of g.enemies.map.values()) { const d = Math.hypot(e.position.x - sx, e.position.z - sz); if (d < bd) { bd = d; best = e; } }
+          src = { position: new THREE.Vector3(sx, 0, sz), def: { name: best?.def.name || (kind === 'boss' ? 'un seigneur de la Brume' : 'un monstre') } };
+        }
+        g.takeDamage(Math.min(2000, dmg | 0), src, { kind });
       }
       for (const ev of fresh(pr.X, st.seen, 'X')) { const [s, type, x, y, z, data] = ev; try { g.enemies.playFx({ type, x, y, z, ...(data || {}) }); } catch { /* */ } }
     }
@@ -301,7 +309,7 @@ export class Net {
       pr.n = hero.name; pr.c = hero.classId; pr.l = hero.level; pr.ti = hero.title || '';
       pr.p = [Math.round(p.position.x * 10), Math.round(p.position.y * 10), Math.round(p.position.z * 10)];
       pr.r = Math.round(p.facing * 100);
-      pr.s = (p.gliding ? 1 : 0) | (p.dead ? 2 : 0) | (hero.hasBuff('stealth') ? 4 : 0) | (p.onGround ? 8 : 0) | (p.sprinting ? 16 : 0);
+      pr.s = (p.gliding ? 1 : 0) | (p.dead ? 2 : 0) | (hero.hasBuff('stealth') ? 4 : 0) | (p.onGround ? 8 : 0) | (p.sprinting ? 16 : 0) | (p.mounted ? 32 : 0);
       pr.hp = Math.round(Math.max(0, hero.hp / hero.stats.hp) * 100);
       pr.a = this.out.a; pr.h = this.out.h; pr.fx = this.out.fx;
       pr.ch = this.chat; pr.em = this.emote; pr.ab = this.allyBuff;

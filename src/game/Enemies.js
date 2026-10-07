@@ -352,7 +352,7 @@ export class Enemies {
   kill(e) {
     e.die();
     const killers = [...e.lastDamagers.entries()].filter(([, t]) => Date.now() - t < 30000).map(([id]) => id);
-    this.killEvents.push({ id: e.id, type: e.type, level: e.level, elite: e.elite, xp: e.xp, x: e.position.x, y: e.position.y, z: e.position.z, killers, t: Date.now() });
+    this.killEvents.push({ id: e.id, type: e.type, level: e.level, elite: e.elite, boss: !!e.def.boss, xp: e.xp, x: e.position.x, y: e.position.y, z: e.position.z, killers, t: Date.now() });
     if (this.killEvents.length > 10) this.killEvents.shift();
     this.game.onEnemyKilled(e, killers);
     this.game.expedition?.onKill({ exp: !!e.exp });
@@ -455,9 +455,12 @@ export class Enemies {
     this.isHost = true;
     for (const e of this.map.values()) { e.snapBuf.length = 0; if (e.state === 'spawn') e.setState('idle'); e.home = e.home || { x: e.position.x, z: e.position.z }; }
     for (const z of this.zones) z.ids.clear();
+    // seuls les monstres ordinaires situés dans une zone y sont rattachés : boss, gardes d'expédition et
+    // monstres de vague gardent leur point d'ancrage (sinon ils repartent à des centaines de mètres)
     for (const e of this.map.values()) {
+      if (e.def.boss || e.exp || e.wave) continue;
       let best = null, bd = Infinity;
-      for (const z of this.zones) { const d = Math.hypot(e.position.x - z.x, e.position.z - z.z); if (d < bd) { bd = d; best = z; } }
+      for (const z of this.zones) { const d = Math.hypot(e.position.x - z.x, e.position.z - z.z); if (d < z.radius * 1.3 && d < bd) { bd = d; best = z; } }
       if (best) { best.ids.add(e.id); e.home = { x: best.x, z: best.z }; e.zone = best.id; }
     }
   }

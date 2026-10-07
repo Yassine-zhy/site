@@ -114,7 +114,13 @@ export class Chests {
     return group;
   }
 
+  // une quête en cours réclame ce coffre précis : il est disponible même s'il a été pillé avant
+  questWants(sp) {
+    return !!this.game.quests?.active.some((q) => q.objectives.some((o) => o.type === 'treasure' && o.spot === sp.id && !o.done));
+  }
+
   available(sp) {
+    if (this.questWants(sp)) return true;
     const t = this.game.hero?.discovered['tc:' + sp.id];
     return !t || Date.now() - t > RESPAWN_MIN[sp.tier] * 60000;
   }
