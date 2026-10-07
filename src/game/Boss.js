@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { VirtualLight } from '../world/Lights.js';
 import { WORLD_BOSSES } from '../config.js';
+import { ARENA_OF } from '../world/ArenaDefs.js';
 import { angleDiff } from '../engine/math.js';
 
 // Les boss : une « trousse » par boss (couleur, renforts, attaques par phase) et une
@@ -88,7 +89,11 @@ export class Boss {
           continue;
         }
         if (Date.now() < st.respawnAt) continue;
-        const players = g.playerTargets().filter((p) => Math.hypot(p.position.x - wb.x, p.position.z - wb.z) < 75 && p.position.y > wb.minY);
+        // le seigneur se dresse quand un héros franchit l'enceinte de son arène
+        const A = ARENA_OF[wb.id];
+        const players = g.playerTargets().filter((p) => A
+          ? Math.hypot(p.position.x - A.x, p.position.z - A.z) < A.r + 1 && p.position.y > A.floor - 5
+          : Math.hypot(p.position.x - wb.x, p.position.z - wb.z) < 75 && p.position.y > wb.minY);
         if (players.length) this.spawnBoss(wb.type, wb.x, wb.z, wb.level, { players: players.length });
       }
     } else {
@@ -156,7 +161,7 @@ export class Boss {
       case 'bossSpawn':
         fx.beam(p, c, { height: 60, radius: 5, life: 2.5 });
         fx.explosion(p, c, 7);
-        g.ui.announce(kit.name, kit.spawn, 4);
+        if (!g.arenaFights?.introActive && !g.arenaFights?.cur) g.ui.announce(kit.name, kit.spawn, 4);
         g.audio?.play('summon', p); g.shakeAt(p, 1);
         break;
       case 'bossDown':

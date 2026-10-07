@@ -222,8 +222,12 @@ export class Audio {
       if (fn) fn(this, now, out);
       if (pl.coast > 0.4 && !pl.room && night < 0.6 && Math.random() < 0.12 * pl.coast) AMB.gull(this, now + 0.3, this.out(0.4, Math.random() * 1.6 - 0.8, 0.3));
     }
+    // thème du seigneur affronté (arène) et seconde phase (fureur)
+    const af = g?.arenaFights?.cur;
+    this.bossTheme = BOSS_THEMES[af?.A.boss || g?.bossEngaged?.def.bossId] || BOSS_THEMES.roi;
+    this.rage = af?.rage ? 1 : 0;
     // ordonnanceur musical
-    const tempo = this.boss > 0.5 ? 0.3 : th.tempo * (night > 0.5 ? 1.2 : 1);
+    const tempo = this.boss > 0.5 ? this.bossTheme.tempo * (this.rage ? 0.8 : 1) : th.tempo * (night > 0.5 ? 1.2 : 1);
     while (this.nextT < now + 0.25) {
       this.scheduleBeat(this.nextT, night);
       this.nextT += tempo;
@@ -233,8 +237,8 @@ export class Audio {
 
   scheduleBeat(t, night) {
     const th = this.theme || THEMES.temperate;
-    const boss = this.boss > 0.5;
-    const prog = boss ? BOSS_PROG : night > 0.5 && th.night ? th.night : th.day;
+    const boss = this.boss > 0.5, bt = this.bossTheme || BOSS_THEMES.roi;
+    const prog = boss ? (this.rage ? bt.rage : bt.prog) : night > 0.5 && th.night ? th.night : th.day;
     const bar = 8;
     const step = this.beat % bar;
     if (step === 0 || this.prog !== prog) {
@@ -242,19 +246,34 @@ export class Audio {
       if (this.prog !== prog) { this.prog = prog; this.chordIdx = -1; if (step !== 0) return; }
       this.chordIdx = (this.chordIdx + 1) % prog.length;
       const ch = prog[this.chordIdx];
-      const len = (boss ? 0.3 : th.tempo * (night > 0.5 ? 1.2 : 1)) * bar;
-      const padNight = night > 0.5 || th.dark ? 1 : 0;
-      for (const n of ch.slice(0, 4)) padVoice(this, t, midi(n), len * 1.05, padNight, th.pad);
+      const len = (boss ? bt.tempo * (this.rage ? 0.8 : 1) : th.tempo * (night > 0.5 ? 1.2 : 1)) * bar;
+      const padNight = night > 0.5 || th.dark || boss ? 1 : 0;
+      for (const n of ch.slice(0, 4)) padVoice(this, t, midi(n), len * 1.05, padNight, boss ? bt.pad : th.pad);
       // basse (ou bourdon)
-      this.tone(this.padOut, t, { type: 'triangle', f: midi(ch[0] - 12), a: 0.4, d: len * 0.9, v: th.drone ? 0.24 : 0.18 });
+      this.tone(this.padOut, t, { type: 'triangle', f: midi(ch[0] - 12), a: boss ? 0.05 : 0.4, d: len * 0.9, v: th.drone || boss ? 0.24 : 0.18 });
+      // cuivres du seigneur en début de mesure
+      if (boss && (this.chordIdx % 2 === 0 || this.rage)) brass(this, this.melodyOut, t, ch.slice(0, 3).map(midi), len * 0.45, 0.05);
+      this.bar = (this.bar || 0) + 1;
     }
-    // mélodie clairsemée, timbre propre à la région
     const ch = prog[Math.max(0, this.chordIdx)];
-    const dens = boss ? 0.3 : th.density * (night > 0.5 ? 0.7 : 1);
-    if (Math.random() < dens && (step % 2 === 0 || th.busy)) {
-      const scale = [ch[1], ch[2], ch[3], ch[4], ch[1] + 12, ch[2] + 12];
-      const n = scale[Math.floor(Math.random() * scale.length)] + 12 + (th.octave || 0);
-      (LEADS[boss ? 'pluck' : th.lead] || LEADS.pluck)(this, t, midi(n), night);
+    const scale = [ch[1], ch[2], ch[3], ch[4], ch[1] + 12, ch[2] + 12, ch[3] + 12];
+    if (boss) {
+      // ostinato (arpège obstiné), doublé en fureur, et thème du seigneur
+      const arp = [0, 2, 1, 3, 0, 2, 4, 3];
+      LEADS[bt.ost](this, t, midi(ch[arp[step] % 5] + 12), 0, 0.6);
+      if (this.rage) LEADS[bt.ost](this, t + tempoOf(this) / 2, midi(ch[arp[(step + 3) % 8] % 5] + 24), 0, 0.45);
+      const m = bt.motif[(this.bar * 8 + step) % bt.motif.length];
+      if (m !== null) (LEADS[bt.lead] || LEADS.pluck)(this, t, midi(scale[m] + 12), 1);
+    } else {
+      // mélodie à motifs : une phrase qui revient, variée selon l'accord, avec des silences
+      const dens = th.density * (night > 0.5 ? 0.7 : 1);
+      const motif = th.motif || MOTIF;
+      if ((step % 2 === 0 || th.busy) && Math.random() < dens * 1.5) {
+        this.phrase = (this.phrase || 0) + 1;
+        let idx = motif[this.phrase % motif.length];
+        if (Math.random() < 0.18) idx = Math.min(scale.length - 1, idx + (Math.random() < 0.5 ? 1 : 2)); // variation
+        (LEADS[th.lead] || LEADS.pluck)(this, t, midi(scale[idx] + 12 + (th.octave || 0)), night);
+      }
     }
     // percussions de combat
     if (this.combat > 0.05 || this.boss > 0.05) {
@@ -262,6 +281,8 @@ export class Audio {
       if (step % 4 === 2) this.noise(this.drumOut, t, { d: 0.12, v: 0.25, type: 'highpass', f: 2500 });
       if (step === 7 || (this.boss > 0.5 && step === 3)) tom(this, t, 110);
       if (this.boss > 0.5 && step % 2 === 1) tom(this, t, 70);
+      // tambours de guerre du seigneur, plus serrés en fureur
+      if (this.boss > 0.5 && (this.bossTheme?.taiko || this.rage)) { if (step % 2 === 0) taiko(this, t, step % 4 === 0 ? 1 : 0.6); if (this.rage && step % 2 === 1) kick(this, t); }
     }
   }
 }
@@ -296,17 +317,17 @@ function plucked(A, t, f, { cutoff = 1800, d = 0.7, v = 0.1 } = {}) {
   o.start(t); o.stop(t + d + 0.05);
 }
 const LEADS = {
-  pluck,
+  pluck: (A, t, f, night, k = 1) => (k === 1 ? pluck(A, t, f, night) : A.tone(A.melodyOut, t, { type: 'triangle', f, a: 0.003, d: 0.35, v: 0.09 * k })),
   // cloche de cristal : partiels inharmoniques, longue résonance
-  bell: (A, t, f) => { A.tone(A.melodyOut, t, { type: 'sine', f, a: 0.003, d: 2.6, v: 0.1 }); A.tone(A.melodyOut, t, { type: 'sine', f: f * 2.76, a: 0.002, d: 0.9, v: 0.035 }); A.tone(A.melodyOut, t, { type: 'sine', f: f * 5.4, a: 0.001, d: 0.3, v: 0.015 }); },
+  bell: (A, t, f, n, k = 1) => { A.tone(A.melodyOut, t, { type: 'sine', f, a: 0.003, d: 2.6 * k, v: 0.1 * k }); A.tone(A.melodyOut, t, { type: 'sine', f: f * 2.76, a: 0.002, d: 0.9, v: 0.035 * k }); A.tone(A.melodyOut, t, { type: 'sine', f: f * 5.4, a: 0.001, d: 0.3, v: 0.015 * k }); },
   // marimba de bois : attaque sèche, résonance courte
-  marimba: (A, t, f) => { A.tone(A.melodyOut, t, { type: 'sine', f, a: 0.002, d: 0.45, v: 0.16 }); A.tone(A.melodyOut, t, { type: 'sine', f: f * 4, a: 0.001, d: 0.06, v: 0.05 }); },
+  marimba: (A, t, f, n, k = 1) => { A.tone(A.melodyOut, t, { type: 'sine', f, a: 0.002, d: 0.45, v: 0.16 * k }); A.tone(A.melodyOut, t, { type: 'sine', f: f * 4, a: 0.001, d: 0.06, v: 0.05 * k }); },
   // luth / oud : corde pincée filtrée
-  lute: (A, t, f) => plucked(A, t, f, { cutoff: 2400, d: 0.8, v: 0.09 }),
+  lute: (A, t, f, n, k = 1) => plucked(A, t, f, { cutoff: 2400, d: 0.8 * Math.max(0.5, k), v: 0.09 * k }),
   // flûte : attaque douce, souffle
   flute: (A, t, f) => { A.tone(A.melodyOut, t, { type: 'sine', f, a: 0.09, d: 0.9, v: 0.11, detune: 4 }); A.tone(A.melodyOut, t, { type: 'triangle', f: f * 2, a: 0.1, d: 0.6, v: 0.02 }); A.noise(A.melodyOut, t, { a: 0.05, d: 0.25, v: 0.025, f: f * 2, q: 6 }); },
   // glas lointain : grave et sombre
-  knell: (A, t, f) => { A.tone(A.melodyOut, t, { type: 'sine', f: f / 2, a: 0.004, d: 3.2, v: 0.09 }); A.tone(A.melodyOut, t, { type: 'sine', f: f * 1.19, a: 0.003, d: 1.6, v: 0.03 }); },
+  knell: (A, t, f, n, k = 1) => { A.tone(A.melodyOut, t, { type: 'sine', f: f / 2, a: 0.004, d: 3.2 * k, v: 0.09 * k }); A.tone(A.melodyOut, t, { type: 'sine', f: f * 1.19, a: 0.003, d: 1.6 * k, v: 0.03 * k }); },
   // chœur : voyelle tenue (chapelle)
   choir: (A, t, f) => { for (const det of [-6, 5]) A.tone(A.melodyOut, t, { type: 'triangle', f, a: 0.35, d: 1.8, v: 0.05, detune: det }); },
 };
@@ -386,6 +407,39 @@ const THEMES = {
 };
 THEMES.cliffs = THEMES.highland;
 
+const tempoOf = (A) => (A.boss > 0.5 ? (A.bossTheme?.tempo || 0.3) * (A.rage ? 0.8 : 1) : (A.theme?.tempo || 0.5));
+// phrase par défaut (degrés de la gamme de l'accord, null = silence)
+const MOTIF = [0, 1, 2, 4, 3, 1, 2, 0, 1, 3, 2, 1];
+
+// cuivres : dents de scie filtrées qui s'ouvrent (accords des seigneurs, fanfares)
+function brass(A, dest, t, freqs, len, v) {
+  const c = A.ctx;
+  for (const f of freqs) for (const det of [-5, 5]) {
+    const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det;
+    const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.Q.value = 1.2;
+    fl.frequency.setValueAtTime(300, t); fl.frequency.linearRampToValueAtTime(Math.min(4200, f * 6), t + Math.min(0.25, len * 0.4)); fl.frequency.linearRampToValueAtTime(f * 2, t + len);
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.06); g.gain.setValueAtTime(v * 0.8, t + len * 0.7); g.gain.linearRampToValueAtTime(0.0001, t + len);
+    o.connect(fl).connect(g).connect(dest); o.start(t); o.stop(t + len + 0.05);
+  }
+}
+function taiko(A, t, k = 1) { A.tone(A.drumOut, t, { type: 'sine', f: 95, f2: 48, a: 0.003, d: 0.5, v: 0.75 * k }); A.noise(A.drumOut, t, { d: 0.09, v: 0.22 * k, type: 'lowpass', f: 700 }); }
+
+// Thèmes de combat des seigneurs : progression, progression de fureur (un demi-ton plus haut,
+// plus sombre), tempo, voix de l'ostinato et du thème, motif (degrés ; null = silence)
+const BOSS_THEMES = {
+  roi: { prog: [[38, 45, 50, 53, 57], [36, 43, 48, 51, 55], [34, 41, 46, 50, 53], [33, 40, 45, 49, 52]], rage: [[39, 46, 51, 54, 58], [37, 44, 49, 52, 56], [35, 42, 47, 51, 54], [34, 41, 46, 50, 53]],
+    tempo: 0.3, ost: 'pluck', lead: 'choir', pad: 'sawtooth', motif: [0, null, 2, null, 3, 2, null, 1, 0, null, 4, null, 3, null, 2, null] },
+  colosse: { prog: [[40, 47, 52, 53, 59], [41, 48, 53, 56, 60], [38, 45, 50, 53, 57], [40, 47, 52, 55, 59]], rage: [[41, 48, 53, 54, 60], [42, 49, 54, 57, 61], [39, 46, 51, 54, 58], [41, 48, 53, 56, 60]],
+    tempo: 0.27, ost: 'lute', lead: 'lute', pad: 'sawtooth', taiko: true, motif: [0, 1, null, 0, 3, null, 2, 1, 0, null, 1, 2, 4, null, 3, null] },
+  reine: { prog: [[45, 52, 57, 60, 64], [41, 48, 53, 57, 60], [43, 50, 55, 59, 62], [40, 47, 52, 56, 59]], rage: [[46, 53, 58, 61, 65], [42, 49, 54, 58, 61], [44, 51, 56, 60, 63], [41, 48, 53, 57, 60]],
+    tempo: 0.29, ost: 'bell', lead: 'choir', pad: 'triangle', motif: [4, null, 3, null, 2, null, 0, null, 1, null, 2, 3, null, null, 0, null] },
+  gardien: { prog: [[43, 50, 55, 58, 62], [39, 46, 51, 55, 58], [41, 48, 53, 57, 60], [38, 45, 50, 54, 57]], rage: [[44, 51, 56, 59, 63], [40, 47, 52, 56, 59], [42, 49, 54, 58, 61], [39, 46, 51, 55, 58]],
+    tempo: 0.26, ost: 'marimba', lead: 'flute', pad: 'triangle', taiko: true, motif: [0, 2, null, 3, null, 2, 0, null, 4, null, 3, 2, null, 1, null, null] },
+  fossoyeur: { prog: [[38, 45, 50, 53, 57], [39, 46, 51, 54, 58], [34, 41, 46, 50, 53], [37, 44, 49, 52, 56]], rage: [[39, 46, 51, 54, 58], [40, 47, 52, 55, 59], [35, 42, 47, 51, 54], [38, 45, 50, 53, 57]],
+    tempo: 0.32, ost: 'knell', lead: 'choir', pad: 'triangle', motif: [0, null, null, 1, 0, null, 3, null, 2, null, null, 1, 0, null, null, null] },
+};
+BOSS_THEMES.sentinelle = BOSS_THEMES.roi; BOSS_THEMES.liche = BOSS_THEMES.fossoyeur;
+
 function kick(A, t) { A.tone(A.drumOut, t, { type: 'sine', f: 140, f2: 42, a: 0.002, d: 0.32, v: 0.9 }); }
 function tom(A, t, f) { A.tone(A.drumOut, t, { type: 'sine', f: f * 1.6, f2: f, a: 0.003, d: 0.35, v: 0.5 }); A.noise(A.drumOut, t, { d: 0.08, v: 0.15, f: 900 }); }
 
@@ -398,7 +452,7 @@ function crickets(A, t, out) {
   for (let i = 0; i < 6; i++) A.tone(out, t + i * 0.045, { type: 'square', f: 4300, a: 0.002, d: 0.02, v: 0.012 });
 }
 
-const REVERBY = new Set(['discover', 'cast', 'holy', 'levelup', 'beacon', 'rune', 'runeok', 'summon', 'blink', 'storm', 'respawn', 'death', 'epic', 'quest', 'oracle', 'frost', 'rally', 'heal']);
+const REVERBY = new Set(['bossIntro', 'gateClose', 'bossRage', 'victory', 'discover', 'cast', 'holy', 'levelup', 'beacon', 'rune', 'runeok', 'summon', 'blink', 'storm', 'respawn', 'death', 'epic', 'quest', 'oracle', 'frost', 'rally', 'heal']);
 
 // Bibliothèque de bruitages.
 const SOUNDS = {
@@ -455,5 +509,23 @@ const SOUNDS = {
   runeok: (A, t, o) => { [0, 5, 12, 17].forEach((s, i) => A.tone(o, t + i * 0.04, { type: 'sine', f: midi(74 + s), d: 0.7, v: 0.09 })); },
   runefail: (A, t, o) => { A.tone(o, t, { type: 'sawtooth', f: 300, f2: 120, d: 0.3, v: 0.07 }); A.noise(o, t, { d: 0.3, v: 0.1, f: 600 }); },
   beacon: (A, t, o) => { [50, 57, 62, 66, 69, 74].forEach((n, i) => A.tone(o, t + i * 0.08, { type: 'triangle', f: midi(n), a: 0.15, d: 3, v: 0.08 })); A.tone(o, t, { f: 60, f2: 40, d: 2, v: 0.4 }); },
+  // arrivée dans une arène : coup sourd, cuivres qui montent, chœur
+  bossIntro: (A, t, o) => {
+    A.tone(o, t, { type: 'sine', f: 62, f2: 34, a: 0.005, d: 2.6, v: 0.8 }); A.noise(o, t, { d: 1.6, v: 0.5, type: 'lowpass', f: 900, f2: 80 });
+    brass(A, o, t + 0.25, [38, 45, 50, 53].map(midi), 2.6, 0.07);
+    [62, 65, 69, 74].forEach((n, i) => A.tone(o, t + 0.9 + i * 0.05, { type: 'triangle', f: midi(n), a: 0.5, d: 2.2, v: 0.05, detune: i * 3 }));
+    A.noise(o, t + 0.6, { a: 1.2, d: 1.4, v: 0.12, type: 'highpass', f: 2500, f2: 7000 });
+  },
+  // la brume se referme : pierre qui retombe et souffle
+  gateClose: (A, t, o) => { A.tone(o, t, { type: 'sine', f: 70, f2: 38, a: 0.004, d: 0.7, v: 0.6 }); A.noise(o, t, { d: 0.5, v: 0.4, type: 'lowpass', f: 500, f2: 120 }); A.noise(o, t + 0.1, { a: 0.4, d: 1.0, v: 0.18, f: 400, f2: 1600, q: 0.8 }); },
+  // fureur du seigneur : rugissement et accord dissonant
+  bossRage: (A, t, o) => { SOUNDS.roar(A, t, o); A.tone(o, t, { type: 'sawtooth', f: 82, f2: 55, a: 0.08, d: 1.4, v: 0.16 }); brass(A, o, t + 0.1, [37, 43, 50].map(midi), 1.6, 0.07); A.tone(o, t, { type: 'sine', f: 50, f2: 30, d: 1.2, v: 0.6 }); },
+  // fanfare de victoire
+  victory: (A, t, o) => {
+    [0, 4, 7, 12].forEach((s, i) => brass(A, o, t + i * 0.16, [midi(60 + s)], i === 3 ? 1.6 : 0.22, 0.08));
+    brass(A, o, t + 0.7, [60, 64, 67, 72].map(midi), 2.2, 0.05);
+    for (let i = 0; i < 6; i++) A.tone(o, t + 0.64 + i * 0.05, { type: 'sine', f: 110, f2: 70, a: 0.003, d: 0.25, v: 0.35 });
+    [76, 79, 84, 88].forEach((n, i) => A.tone(o, t + 0.9 + i * 0.09, { type: 'triangle', f: midi(n), d: 1.6, v: 0.05 }));
+  },
   oracle: (A, t, o) => [74, 79, 81, 86].forEach((n, i) => A.tone(o, t + i * 0.11, { type: 'sine', f: midi(n), d: 1.2, v: 0.06 })),
 };

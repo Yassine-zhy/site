@@ -3,6 +3,7 @@ import { Simplex, smoothstep, lerp, clamp, distToSegment } from '../engine/math.
 import {
   WORLD_SEED, WORLD_HALF, LANDMASS, VILLAGE, HAMLET, LAKE, HILLS, FOREST, RUINS, MOUNTAIN, REGIONS, PATHS, ZONES,
 } from '../config.js';
+import { ARENAS } from './ArenaDefs.js';
 
 // Le continent d'Aetheria : relief, couleurs et matières du sol, calculés point par point.
 // Ces fonctions servent à cuire la carte de hauteur (tools/bake-terrain.mjs) ; le jeu ne lit
@@ -226,6 +227,11 @@ function landHeight(x, z, state) {
   // routes : légèrement creusées et adoucies
   const pd = pathDistance(x, z);
   if (pd < 6 && state.peak < 0.35) h -= 0.3 * (1 - smoothstep(2, 6, pd));
+  // arènes des boss : sol parfaitement plat sous l'enceinte, les piliers et le portail
+  for (const A of ARENAS) {
+    const d = Math.hypot(x - A.x, z - A.z), R = A.r + 5.5;
+    if (d < R + 13) h = lerp(h, A.floor, 1 - smoothstep(R, R + 13, d));
+  }
   return h;
 }
 
@@ -434,6 +440,11 @@ export function surfaceAt(out, mats, x, y, z, slope, sd, cl) {
   const pd = pathDistance(x, z);
   const pt = 1 - smoothstep(1.6, 3.7, pd);
   if (pt > 0) { out.lerp(tA.copy(C[ROAD[biome]]).lerp(C.dirt2, n2 * 0.4), pt * 0.88); matTo(1, pt * 0.9); }
+  // arènes : dallage et terre battue (pas d'herbe sous l'enceinte)
+  for (const A of ARENAS) {
+    const d = Math.hypot(x - A.x, z - A.z);
+    if (d < A.r + 9) { const t = 1 - smoothstep(A.r + 4, A.r + 9, d); out.lerp(tA.set(A.theme.stone2).lerp(C.dirt2, 0.35 + n2 * 0.2), t * 0.9); matTo(1, t * 0.6); matTo(2, t * 0.5); }
+  }
   // plages et falaises du littoral
   if (sd < 40 && y < 3.2 && sd > -2) {
     const t = (1 - smoothstep(1.4, 3.2, y)) * (1 - cl * 0.6);
@@ -469,10 +480,10 @@ export function zoneAt(x, z) {
 // Grille de hauteurs : RES × RES échantillons sur [-WORLD_HALF, WORLD_HALF] (aux sommets),
 // couleurs et matières : CRES × CRES texels (aux centres).
 export const RES = 2049, CRES = 1024, BRES = 512;
-export const BAKE_VERSION = 7;
+export const BAKE_VERSION = 8;
 
 export function continentSignature() {
-  const str = JSON.stringify({ BAKE_VERSION, WORLD_SEED, WORLD_HALF, LANDMASS, VILLAGE, HAMLET, LAKE, HILLS, FOREST, RUINS, MOUNTAIN, REGIONS, PATHS, RES, CRES, BRES });
+  const str = JSON.stringify({ BAKE_VERSION, WORLD_SEED, WORLD_HALF, LANDMASS, VILLAGE, HAMLET, LAKE, HILLS, FOREST, RUINS, MOUNTAIN, REGIONS, PATHS, ARENAS: ARENAS.map((a) => [a.x, a.z, a.r, a.floor]), RES, CRES, BRES });
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
   return h.toString(16);

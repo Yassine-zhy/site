@@ -146,7 +146,7 @@ export class Enemies {
     e.slow = Math.max(0, e.slow - dt);
     let moving = 0;
     const def = e.def;
-    const spd = def.speed * (e.slow > 0 ? 0.45 : 1) * (e.elite ? 1.08 : 1);
+    const spd = def.speed * (e.slow > 0 ? 0.45 : 1) * (e.elite ? 1.08 : 1) * (e.enraged ? 1.22 : 1);
     if (e.state === 'spawn') {
       if (e.stateT > (def.boss ? 1.4 : 2.0)) { e.char.stopAction(0.25); e.setState('idle'); }
       return 0;
@@ -209,7 +209,7 @@ export class Enemies {
 
   startAttack(e, tgt) {
     const def = e.def;
-    e.attackCd = def.cd * (0.85 + Math.random() * 0.3) / (e.elite ? 1.15 : 1);
+    e.attackCd = def.cd * (0.85 + Math.random() * 0.3) / (e.elite ? 1.15 : 1) * (e.enraged ? 0.7 : 1); // fureur des seigneurs d'arène
     if (def.boss && this.game.boss) { this.game.boss.chooseAttack(e, tgt); return; }
     // nécromancien : invocation ou zone d'ombre de temps en temps
     if (def.caster && Math.random() < 0.28) {
@@ -314,7 +314,19 @@ export class Enemies {
     const g = this.game;
     const hero = g.hero;
     const atk = opts.atk ?? hero.stats.atk;
-    const r = opts.fixed ? { amount: Math.round(opts.fixed), crit: false } : computeDamage(atk, mult, e.armor, { crit: hero.stats.crit + (opts.critBonus || 0) });
+    // riposte après une esquive parfaite : critique assuré et renforcé
+    const rip = !opts.fixed && hero.hasBuff('riposte');
+    const r = opts.fixed ? { amount: Math.round(opts.fixed), crit: false } : computeDamage(atk, mult, e.armor, { crit: hero.stats.crit + (opts.critBonus || 0) + (rip ? 100 : 0) });
+    if (rip) {
+      r.amount = Math.round(r.amount * 1.35);
+      hero.buffs = hero.buffs.filter((b) => b !== rip); hero.recompute();
+      g.ui.floatText(e.position.clone().setY(e.position.y + e.height + 1), 'Riposte !', 'crit', { scale: 1.1 });
+      g.hitStop(0.07); g.rig.shake(0.3);
+    }
+    // coup de grâce : les monstres affaiblis encaissent davantage
+    if (!e.def.boss && e.hpPct < 0.2) r.amount = Math.round(r.amount * 1.2);
+    // les critiques sur un seigneur marquent un temps d'arrêt
+    if (e.def.boss && r.crit && !rip) g.hitStop(0.035);
     if (e.def.boss && opts.vsUndead) r.amount = Math.round(r.amount * 1.0);
     if (opts.vsUndead) r.amount = Math.round(r.amount * 1.25);
     const selfId = g.selfId;

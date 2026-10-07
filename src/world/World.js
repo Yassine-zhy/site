@@ -12,6 +12,7 @@ import { Village } from './Village.js';
 import { Outposts } from './Outposts.js';
 import { Interiors } from './Interiors.js';
 import { Signposts } from './Signposts.js';
+import { Arenas } from './Arenas.js';
 import { Colliders } from './Colliders.js';
 import { EnvLight, updateRim } from '../engine/ModelLook.js';
 import { LightPool } from './Lights.js';
@@ -82,6 +83,8 @@ export class World {
     await step('On allume les cheminées…');
     this.interiors = new Interiors(this.scene, assets, this.terrain, this.colliders);
     this.signposts = new Signposts(this.scene, this.terrain, this.colliders);
+    await step('Les arènes s’embrasent…');
+    this.arenas = new Arenas(this.scene, assets, this.terrain, this.colliders);
     // flammes, lumières et pales restés hors fusion : masqués au loin
     this.cullFar(this.village.group, 1, true);
     this.cullFar(this.outposts.group, 1, true);
@@ -191,6 +194,7 @@ export class World {
     this.village.update(dt, e, st.night);
     this.outposts?.update(dt, e, st.night);
     this.interiors?.update(dt, e);
+    this.arenas?.update(dt, e, st.night, this.playerFocus || focus);
     if (focus) this.lightPool.update(focus);
     if (camera) this.ambient.update(dt, e, camera, this.playerFocus || focus, st.night, this.renderer.renderer.domElement.height);
     return st;

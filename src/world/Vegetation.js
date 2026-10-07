@@ -9,6 +9,7 @@ import { applyCorruption, CORR_UV_GLSL } from './Maps.js';
 import { registerJungleTrees } from './JungleTrees.js';
 import { registerProcTrees } from './ProcTrees.js';
 import { bindShared, rockGLSL, FOLIAGE_GLSL } from './SurfaceDetail.js';
+import { ARENAS } from './ArenaDefs.js';
 
 // Arbres et rochers instanciés (modèles KayKit), avec balancement au vent.
 export class Vegetation {
@@ -43,6 +44,7 @@ export class Vegetation {
     for (const u of UPDRAFTS) poi(u, u.radius + 4);
     for (const w of WAYSTONES) poi(w, 8);
     for (const wb of WORLD_BOSSES) poi(wb, 28);
+    for (const A of ARENAS) poi(A, A.r + 14); // arènes : enceinte, piliers et décor
     for (const def of REGIONS) {
       poi(def.camp, (def.camp?.radius || 0) + 10);
       for (const k of ['sanctuary', 'temple', 'cemetery', 'table', 'belvedere']) poi(def[k], (def[k]?.radius || 0) + 6);

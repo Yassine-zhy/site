@@ -14,6 +14,7 @@ export class Interactions {
     if (!p || p.dead) return null;
     const pos = p.position;
     if (this.task) return { kind: 'busy', text: `${this.task.label}… ${Math.round(this.task.t / this.task.dur * 100)} %` };
+    if (g.arenaFights?.wallPrompt) return { kind: 'busy', text: g.arenaFights.wallPrompt };
     const ex = g.expedition?.target(pos);
     if (ex) return ex;
     const npc = g.npcs?.nearest(pos, 3.8);

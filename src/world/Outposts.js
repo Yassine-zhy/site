@@ -24,20 +24,17 @@ export class Outposts extends Decor {
     this.rng = mulberry32(777);
     this.buildGivreCamp();
     this.buildSanctuary();
-    this.buildSummit();
     this.buildAmbreCamp();
     this.buildMine();
-    this.buildCirque();
     this.buildWildlands();
     this.buildIce();
     // nouvelles îles
     this.buildHanteeCamp();
     this.buildCemetery();
-    this.buildCrypt();
     this.buildMarsh();
+    // (les arènes des boss sont construites par Arenas.js)
     this.buildSylveCamp();
     this.buildTemple();
-    this.buildFeuillu();
     this.mergeStatic();
   }
 
@@ -76,18 +73,6 @@ export class Outposts extends Decor {
     put('chest', s.x, s.z + 3, Math.PI, 1.6);
   }
 
-  buildSummit() {
-    const p = GIVRE.peak;
-    this.ring(p.x, p.z, 16, 8, (x, z, a, i) => {
-      const o = this.assets.prop(i % 2 ? 'pillar_decorated' : 'pillar');
-      const y = this.ground(x, z);
-      o.position.set(x, y - 0.2, z); o.rotation.y = a; o.scale.setScalar(1.6);
-      this.group.add(o);
-      this.colliders.addCircle(x, z, 0.8, y - 1, y + 6, 'ruin');
-      if (i % 2 === 0) this.placeLantern(x + Math.cos(a) * 2.2, z + Math.sin(a) * 2.2, i % 4 === 0);
-    });
-  }
-
   buildAmbreCamp() {
     this.where = 'Comptoir d’Ambre';
     const c = AMBRE.camp;
@@ -111,25 +96,6 @@ export class Outposts extends Decor {
     const P = (name, dx, dz, s, r) => this.placeProp(name, m.x + dx, m.z + dz, s, r, 0, true);
     P('resource_stone', -8, -6, 8, 0.4); P('resource_stone', -10, -3, 7, 1.7); P('crate_open', 7, -7, 7, 2.2); P('wheelbarrow', 9, -3, 7, 0.3); P('resource_lumber', -4, -12, 8, 1.2);
     this.placeLantern(m.x - 5, m.z - 2, true); this.placeLantern(m.x + 5, m.z - 2, false);
-  }
-
-  buildCirque() {
-    const a = AMBRE.cirque;
-    this.ring(a.x, a.z, a.radius * 0.72, 10, (x, z, ang, i) => {
-      if (Math.abs(Math.atan2(Math.sin(ang - Math.PI), Math.cos(ang - Math.PI))) < 0.5) return; // entrée ouest
-      const o = this.assets.prop(i % 3 === 0 ? 'pillar_decorated' : 'pillar');
-      const y = this.ground(x, z);
-      o.position.set(x, y - 0.2, z); o.rotation.y = ang; o.scale.setScalar(1.7);
-      this.group.add(o);
-      this.colliders.addCircle(x, z, 0.85, y - 1, y + 6, 'ruin');
-    });
-    for (const [dx, dz, r] of [[-8, 9, 0.4], [9, -7, 2], [11, 10, 1.2]]) {
-      const o = this.assets.prop('rubble_large'); const x = a.x + dx, z = a.z + dz, y = this.ground(x, z);
-      o.position.set(x, y - 0.1, z); o.rotation.y = r; o.scale.setScalar(1.4); this.group.add(o);
-      const box = this.assets.propBox('rubble_large');
-      this.colliders.addFootprint(this.hulls('rubble_large', 1.4, 0.02, 0.6), x, z, r, y - 1, y + box.max.y * 1.4, 'prop', true);
-    }
-    this.placeLantern(a.x - a.radius * 0.95, a.z - 5, true); this.placeLantern(a.x - a.radius * 0.95, a.z + 5, true);
   }
 
   // terres sauvages : cercle de pierres sur la Table du Vent, camp de pêcheurs aux Récifs,
@@ -242,23 +208,6 @@ export class Outposts extends Decor {
     this.placeLantern(C.x + half + 3, C.z + 6, true);
   }
 
-  buildCrypt() {
-    const A = HANTEE.crypt;
-    // grande crypte au fond (ouest) de l'arène, ouverte vers l'est
-    this.put('hw_crypt', A.x - A.radius * 0.85, A.z, 2.6, Math.PI / 2, true);
-    this.ring(A.x, A.z, A.radius * 0.75, 12, (x, z, ang, i) => {
-      if (Math.abs(Math.atan2(Math.sin(ang), Math.cos(ang))) < 0.45) return; // entrée est
-      if (Math.abs(Math.atan2(Math.sin(ang - Math.PI), Math.cos(ang - Math.PI))) < 0.35) return; // crypte
-      this.put(i % 3 === 0 ? 'hw_pillar' : 'hw_post_skull', x, z, i % 3 === 0 ? 1.5 : 1.6, ang + Math.PI / 2, true);
-    });
-    for (const [dx, dz, r] of [[-6, 7, 0.3], [5, -8, 1.8], [8, 6, 2.6], [-4, -6, 4]]) this.put(this.rng() < 0.5 ? 'hw_coffin' : 'hw_floor_dirt_grave', A.x + dx, A.z + dz, 1.3, r, false, 0.02);
-    for (const [dx, dz] of [[-2, 3], [3, -2], [0, -5], [-5, 0]]) this.put('hw_candle_triple', A.x + dx, A.z + dz, 1.6, dx);
-    this.put('hw_skull_candle', A.x + A.radius * 0.95, A.z - 4, 1.6, -Math.PI / 2);
-    this.put('hw_skull_candle', A.x + A.radius * 0.95, A.z + 4, 1.6, -Math.PI / 2);
-    this.placeLantern(A.x + A.radius * 1.05, A.z - 7, true);
-    this.placeLantern(A.x + A.radius * 1.05, A.z + 7, true);
-  }
-
   buildMarsh() {
     const L = HANTEE.lake, rng = this.rng;
     this.ring(L.x, L.z, L.radius * 1.2, 10, (x, z, a, i) => { if (i % 2 === 0) this.put('hw_post_lantern', x, z, 1.4, a + Math.PI / 2, true); });
@@ -319,16 +268,5 @@ export class Outposts extends Decor {
     for (const [dx, dz] of [[-10, -4 * W - 2], [10, -4 * W - 2]]) this.placeLantern(T.x + dx, T.z + dz, true);
   }
 
-  buildFeuillu() {
-    const p = SYLVE.peak;
-    this.ring(p.x, p.z, 15, 8, (x, z, a, i) => {
-      const o = this.assets.prop(i % 2 ? 'pillar_decorated' : 'column');
-      const y = this.ground(x, z);
-      o.position.set(x, y - 0.2, z); o.rotation.y = a; o.scale.setScalar(1.6);
-      this.group.add(o);
-      this.colliders.addCircle(x, z, 0.8, y - 1, y + 6, 'ruin');
-      if (i % 2 === 0) this.placeLantern(x + Math.cos(a) * 2.2, z + Math.sin(a) * 2.2, i % 4 === 0);
-    });
-  }
 }
 

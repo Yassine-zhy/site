@@ -77,6 +77,7 @@ export class Player {
     else if (rel > 0.7) anim = 'Dodge_Left';
     else if (rel < -0.7) anim = 'Dodge_Right';
     this.dodge = { t: 0, dur: 0.42, dx: dirX, dz: dirZ, speed: 15 };
+    this.invulnerable = true; // invulnérable dès la première image de la roulade
     this.char.playAction(anim, { full: true, timeScale: 1.0 });
     this.emit('dodge');
     return true;

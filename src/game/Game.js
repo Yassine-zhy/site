@@ -180,6 +180,8 @@ export class Game {
 
   schedule(delay, fn) { this.timers.push({ t: delay, fn }); }
   hitStop(d) { this.hitStopT = Math.max(this.hitStopT, d); }
+  // ralenti (victoire, esquive parfaite) : le monde passe à k × la vitesse normale
+  slowMo(d, k = 0.35) { this.slowT = Math.max(this.slowT || 0, d); this.slowK = k; }
   shakeAt(p, amount) {
     if (!this.player) return;
     const d = Math.hypot(p.x - this.player.position.x, p.z - this.player.position.z);
@@ -199,6 +201,7 @@ export class Game {
     for (let i = 0; i < steps; i++) {
       let dt = sdt;
       if (this.hitStopT > 0) { this.hitStopT -= sdt; dt = sdt * 0.08; }
+      else if (this.slowT > 0) { this.slowT -= sdt; const k = this.slowT > 0.4 ? this.slowK : 1 + (this.slowK - 1) * (this.slowT / 0.4); dt = sdt * k; }
       simulated += dt;
       this.elapsed += dt;
       for (let k = this.timers.length - 1; k >= 0; k--) {
@@ -247,7 +250,7 @@ export class Game {
       if (!this.runes?.drawing) this.rig.handleLook(look);
       else this.runes.feedLook(look);
     }
-    const blocked = this.paused || this.windowOpen || this.dialogueOpen || this.chatOpen;
+    const blocked = this.paused || this.windowOpen || this.dialogueOpen || this.chatOpen || !!this.arenaFights?.introActive;
     input.enabled = !blocked;
     // cooldowns
     for (const k of Object.keys(this.cooldowns)) this.cooldowns[k] = Math.max(0, this.cooldowns[k] - dt);
@@ -255,7 +258,8 @@ export class Game {
     if (this.comboT <= 0) this.combo = 0;
     if (!p.dead && !blocked && first) this.handleCombatInput(dt);
     p.update(dt, input, this.rig);
-    if (p.invulnerableT) { p.invulnerableT -= dt; p.invulnerable = p.invulnerableT > 0 || p.invulnerable; if (p.invulnerableT <= 0) { p.invulnerableT = 0; } }
+    // invulnérabilité temporaire (compétences, cinématique) : levée à l'échéance, sauf pendant une esquive
+    if (p.invulnerableT) { p.invulnerableT -= dt; if (p.invulnerableT > 0) p.invulnerable = true; else { p.invulnerableT = 0; if (!p.dodge) p.invulnerable = false; } }
     this.handlePlayerEvents();
     this.updateTarget();
     this.enemies.update(dt);
@@ -551,7 +555,12 @@ export class Game {
   takeDamage(raw, source, opts = {}) {
     const p = this.player, hero = this.hero;
     if (!p || p.dead) return;
-    if (p.invulnerable && opts.kind !== 'fall') { this.ui.floatText(p.position.clone().setY(p.position.y + 2.4), 'Esquive', 'info'); return; }
+    if (p.invulnerable && opts.kind !== 'fall') {
+      // esquive au dernier moment : ralenti et riposte critique
+      if (p.dodge && p.dodge.t < 0.3 && source && this.elapsed - (this.perfectT ?? -9) > 1.5) this.perfectDodge();
+      else this.ui.floatText(p.position.clone().setY(p.position.y + 2.4), 'Esquive', 'info');
+      return;
+    }
     let dmg = raw * (60 / (60 + hero.stats.def * 2.2)) * (0.9 + Math.random() * 0.2);
     if (p.mounted && opts.kind !== 'fall') this.mount?.dismount(); // un coup fait vider les étriers
     const wall = hero.hasBuff('shieldwall');
@@ -587,6 +596,34 @@ export class Game {
     if (hero.hp <= 0) this.die(source, opts);
   }
 
+  perfectDodge() {
+    const p = this.player, hero = this.hero;
+    this.perfectT = this.elapsed;
+    this.slowMo(0.75, 0.3);
+    hero.addBuff('riposte', 3, {}, { icon: 'blink', label: 'Riposte' });
+    p.stamina = Math.min(100, p.stamina + 25);
+    this.ui.floatText(p.position.clone().setY(p.position.y + 2.6), 'Esquive parfaite !', 'crit', { scale: 1.05 });
+    this.fx.ring(p.position.clone().setY(p.position.y + 0.15), '#bfe8ff', { from: 0.5, to: 3.5, life: 0.5 });
+    this.audio?.play('blink', p.position);
+    this.rig.fovKick = 5;
+    if (!this.perfectHint) { this.perfectHint = true; this.ui.toast('<b>Esquive parfaite</b> : votre prochain coup est un critique renforcé.', { time: 3.5 }); }
+  }
+
+  // séries d'éliminations : bonus d'expérience croissant
+  killStreak() {
+    const now = this.elapsed;
+    this.streak = now - (this.streakT ?? -99) < 4.5 ? (this.streak || 1) + 1 : 1;
+    this.streakT = now;
+    const names = { 2: 'Doublé !', 3: 'Triplé !', 4: 'Quadruplé !', 5: 'Carnage !' };
+    const n = this.streak;
+    if (n >= 2) {
+      const p = this.player.position;
+      this.ui.floatText(p.clone().setY(p.y + 3.2), names[Math.min(5, n)] || `Série ×${n}`, 'crit', { scale: 0.9 + Math.min(0.5, n * 0.08), rise: 1.6 });
+      if (n === 3 || n === 5 || n % 5 === 0) this.audio?.play('epic', p);
+    }
+    return 1 + Math.min(0.5, Math.max(0, n - 1) * 0.1);
+  }
+
   onDamageDealt(e, r, opts) {
     const pos = e.position.clone().setY(e.position.y + e.height + 0.3);
     // vol de vie (objets mythiques)
@@ -614,7 +651,8 @@ export class Game {
     // bonus d'expérience (repas, repos…)
     let xpB = 1;
     for (const b of hero.buffs) if (b.xpBonus) xpB += b.xpBonus;
-    const xp = Math.round(k.xp * (diff < -5 ? 0.3 : diff < -2 ? 0.7 : diff > 2 ? 1.25 : 1) * xpB);
+    const streak = k.remote ? 1 : this.killStreak();
+    const xp = Math.round(k.xp * (diff < -5 ? 0.3 : diff < -2 ? 0.7 : diff > 2 ? 1.25 : 1) * xpB * streak);
     hero.kills++;
     this.rooms?.onKill(k);
     const pos = new THREE.Vector3(k.x, k.y + 2.6, k.z);

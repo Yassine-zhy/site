@@ -48,6 +48,18 @@ export class CameraRig {
   }
 
   update(dt, target, speedFactor = 0) {
+    // plan de cinéma (arrivée dans une arène) : position et visée imposées, transitions douces
+    if (this.cinematic) {
+      const c = this.cinematic, k = 1 - Math.exp(-dt * 5);
+      if (!this.cineLook) { this.cineLook = c.look.clone(); this.camera.position.lerp(c.pos, 0.35); }
+      this.camera.position.lerp(c.pos, k);
+      this.cineLook.lerp(c.look, k);
+      this.camera.lookAt(this.cineLook);
+      if (c.fov && Math.abs(this.camera.fov - c.fov) > 0.05) { this.camera.fov = damp(this.camera.fov, c.fov, 4, dt); this.camera.updateProjectionMatrix(); }
+      this.closeFade = 1;
+      return;
+    }
+    this.cineLook = null;
     this.focus.set(target.x, target.y + 2.0, target.z);
     if (!this.initialized) { this.smoothFocus.copy(this.focus); this.initialized = true; }
     this.smoothFocus.x = damp(this.smoothFocus.x, this.focus.x, 14, dt);
