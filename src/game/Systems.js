@@ -21,6 +21,7 @@ import { Waves } from './Waves.js';
 import { Rooms } from './Rooms.js';
 import { Villagers } from './Villagers.js';
 import { ArenaFights } from './ArenaFights.js';
+import { Story } from './Story.js';
 
 // Démarre les systèmes de jeu une fois le héros créé.
 export async function boot(game) {
@@ -32,6 +33,7 @@ export async function boot(game) {
   game.worldState = new WorldState(game);
   game.quests = new Quests(game);
   game.npcs = new NPCs(game);
+  game.story = new Story(game);
   game.villagers = new Villagers(game);
   game.mind = new Mind(game);
   game.dialogue = new Dialogue(game);
@@ -49,7 +51,7 @@ export async function boot(game) {
   game.mount = new Mount(game);
   game.net = new Net(game);
   if (game.input.isTouch) game.touch = new TouchControls(game);
-  extra.push(game.rooms, game.mount, game.waystones, game.expedition, game.gathering, game.chests, game.waves, game.runes, game.worldState, game.quests, game.npcs, game.villagers, game.dialogue, game.echoes, game.chat, game.interactions, game.boss, game.arenaFights, game.net);
+  extra.push(game.rooms, game.mount, game.waystones, game.expedition, game.gathering, game.chests, game.waves, game.runes, game.worldState, game.quests, game.npcs, game.villagers, game.dialogue, game.echoes, game.chat, game.interactions, game.boss, game.arenaFights, game.story, game.net);
   if (game.touch) extra.push(game.touch);
   game.systems = extra;
   game.worldState.start();
@@ -77,21 +79,22 @@ export async function boot(game) {
       return;
     }
     if (game.dialogueOpen || game.chatOpen) return;
-    const map = { KeyM: 'map', KeyI: 'inventory', KeyB: 'inventory', KeyJ: 'quests', KeyL: 'quests', KeyO: 'leaderboard', KeyK: 'grimoire', KeyH: 'help', F1: 'help', KeyP: 'party' };
+    const map = { KeyM: 'map', KeyI: 'inventory', KeyB: 'inventory', KeyJ: 'quests', KeyL: 'quests', KeyO: 'leaderboard', KeyK: 'grimoire', KeyH: 'help', F1: 'help', KeyP: 'party', KeyU: 'chronicles' };
     if (map[code]) game.windows.toggle(map[code]);
     else if (code === 'KeyT' && !game.windowOpen) game.echoes.composeWindow();
     else if (code === 'KeyG' && !game.windowOpen) game.emote('wave');
     else if (code === 'KeyN' && !game.windowOpen) game.mount?.toggle();
     else if (code === 'Tab' && !game.windowOpen) game.lockNext();
   });
-  // première visite : guide rapide
-  if (!game.save?.hadSave && !game.save?.data?.some(Boolean)) game.schedule(1.2, () => {
+  // première visite : prologue puis guide rapide
+  const firstVisit = !game.save?.hadSave && !game.save?.data?.some(Boolean);
+  game.story.begin(() => firstVisit && game.schedule(0.2, () => {
     const touch = game.input.isTouch;
     game.ui.announce('Aetheria', touch ? 'Suivez le losange doré jusqu’à Maëlis, près de l’église.' : 'Suivez le losange doré jusqu’à Maëlis, près de l’église (E). Touche H pour le guide.', 5);
     game.chat.system(touch
       ? 'Bienvenue à Havrelumière. Pouce gauche : se déplacer (n’importe où à gauche). Glisser à droite : tourner la caméra. Tape sur la scène : attaquer.'
       : 'Bienvenue à Havrelumière. Clic pour capturer la souris, Échap pour la libérer. H : guide du voyageur.', 20);
-  });
+  }));
   addEventListener('beforeunload', () => { game.save?.write(true); game.net?.transport?.close(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) game.save?.write(true); });
   return extra;
@@ -107,6 +110,7 @@ function applyHeroSave(game) {
     const gy = game.world.terrain.heightAt(pos[0], pos[2]);
     if (gy !== null && Math.abs(gy - pos[1]) < 3) game.player.spawn(pos[0], gy, pos[2], 0);
   }
+  game.story.attach();
 }
 
 // Retour en jeu avec un autre héros (les systèmes existent déjà).
@@ -121,5 +125,6 @@ export function reenter(game) {
   }
   game.mind?.reset?.();
   applyHeroSave(game);
+  game.story.begin();
   game.net.start();
 }

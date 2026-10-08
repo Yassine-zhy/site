@@ -286,6 +286,9 @@ export class Hud {
   renderTracker() {
     const g = this.game;
     this.trackBody.innerHTML = '';
+    // en-tête : l'acte du récit en cours
+    const A = g.story?.actInfo();
+    this.tracker.firstChild.textContent = A ? `${A.title} · ${A.name}` : 'quêtes';
     const list = g.quests ? g.quests.tracked() : [];
     if (!list.length) { this.trackBody.appendChild(h('div', { class: 'qo' }, 'Parlez aux habitants de Havrelumière.')); return; }
     for (const q of list.slice(0, 3)) {

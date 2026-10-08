@@ -21,6 +21,8 @@ export class Interactions {
     if (npc) return { kind: 'npc', npc, text: `Parler à ${npc.name}` };
     const room = g.rooms?.target(pos);
     if (room) return room;
+    const st = g.story?.steleNear(pos);
+    if (st) return { kind: 'stele', st, text: g.story.lore?.steles[st.def.id] ? `Relire la stèle · ${st.def.title}` : 'Lire la stèle de mémoire' };
     const ec = g.echoes?.nearest(pos, 2.6);
     if (ec) return ec.kind === 'echo'
       ? { kind: 'echo', key: ec.key, text: ec.it.uid === g.echoes.uid ? 'Votre écho' : `Faire résonner l’écho de ${ec.it.e.n}` }
@@ -47,6 +49,7 @@ export class Interactions {
     if (!t) return;
     if (t.kind === 'npc') g.dialogue.open(t.npc);
     else if (t.kind === 'room') g.rooms.use(t);
+    else if (t.kind === 'stele') g.story.readStele(t.st);
     else if (t.kind === 'echo') g.echoes.resonate(t.key);
     else if (t.kind === 'ghost') g.echoes.playGhost(t.key);
     else if (t.kind === 'chest') this.startTask({ dur: 0.9, label: 'Ouverture', anim: 'Interact', onDone: () => g.chests.openSpot(t.spot) });

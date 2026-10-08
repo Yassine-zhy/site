@@ -72,7 +72,7 @@ export class Dialogue {
     g.ui.root.appendChild(this.el);
     npc.char.playAction('Interact', { timeScale: 1.2 });
     g.quests?.onEvent('talk', { npc: npc.id });
-    const greet = GREET[npc.id];
+    const greet = (npc.id === 'elder' && g.story?.elderLines()) || GREET[npc.id];
     this.say(greet[Math.floor(Math.random() * greet.length)]);
     this.menu();
     g.audio?.play('ui');

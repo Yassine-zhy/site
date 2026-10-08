@@ -37,7 +37,7 @@ export class Windows {
     this.current = name;
     this.game.windowOpen = true;
     this.game.input.exitLock();
-    const builders = { inventory: () => this.inventory(), map: () => this.map(), help: () => this.help(), settings: () => this.settings(), quests: () => this.game.quests?.window(this) || this.help(), leaderboard: () => this.game.worldState?.leaderboardWindow(this) || this.help(), tutorial: () => this.tutorial(), custom: () => this.frame(this.customContent?.title || '', this.customContent?.content || ''), party: () => this.game.expedition?.window(this) || this.help(), grimoire: () => this.grimoire() };
+    const builders = { inventory: () => this.inventory(), map: () => this.map(), help: () => this.help(), settings: () => this.settings(), quests: () => this.game.quests?.window(this) || this.help(), leaderboard: () => this.game.worldState?.leaderboardWindow(this) || this.help(), tutorial: () => this.tutorial(), custom: () => this.frame(this.customContent?.title || '', this.customContent?.content || ''), party: () => this.game.expedition?.window(this) || this.help(), grimoire: () => this.grimoire(), chronicles: () => this.game.story?.window(this) || this.help() };
     const body = (builders[name] || builders.help)();
     this.el = body;
     this.ui.root.appendChild(body);

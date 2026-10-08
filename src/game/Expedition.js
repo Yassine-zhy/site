@@ -141,6 +141,7 @@ export class Expedition {
   launch(ex = 'citadelle', dif = 0) {
     const g = this.game;
     if (!this.isHost) return;
+    if (g.story && !g.story.expeditionOpen(ex)) { g.ui.toast(`${EXPEDITIONS[ex]?.name || 'Cette expédition'} est scellée. ${g.story.expeditionNeed(ex)}.`, { time: 4 }); return; }
     const members = g.net.partyMembers();
     const lv = Math.max(10, ...members.map((m) => m.l || 1)) + dif * 3;
     this.state = { ...this.freshState(), ph: 'run', ex, lv, dif, t0: Date.now(), sg: 0 };
@@ -382,7 +383,11 @@ export class Expedition {
     }
     const actions = h('div', { class: 'exp-actions' });
     if (iAmHost && s.ph !== 'run') {
-      for (const [id, ex] of Object.entries(EXPEDITIONS)) actions.append(h('button', { class: 'btn', onclick: () => { this.launch(id, s.ph === 'done' && s.ex === id ? s.dif + 1 : 0); win.close(); } }, (s.ph === 'done' && s.ex === id ? 'Recommencer, plus difficile : ' : 'Lancer : ') + ex.name));
+      for (const [id, ex] of Object.entries(EXPEDITIONS)) {
+        // le récit scelle les expéditions tant que le héros n'a pas repris les Éclats
+        if (this.game.story && !this.game.story.expeditionOpen(id)) { actions.append(h('button', { class: 'btn ghost', disabled: true, title: this.game.story.expeditionNeed(id) }, `Scellée : ${ex.name}`), h('div', { class: 'istats' }, this.game.story.expeditionNeed(id) + '.')); continue; }
+        actions.append(h('button', { class: 'btn', onclick: () => { this.launch(id, s.ph === 'done' && s.ex === id ? s.dif + 1 : 0); win.close(); } }, (s.ph === 'done' && s.ex === id ? 'Recommencer, plus difficile : ' : 'Lancer : ') + ex.name));
+      }
     } else if (!iAmHost && s.ph === 'lobby') {
       actions.append(h('button', { class: 'btn' + (this.ready ? ' ghost' : ''), onclick: () => { this.ready = !this.ready; this.refreshWindow(); } }, this.ready ? 'Je ne suis plus prêt' : 'Je suis prêt'));
       actions.append(h('div', { class: 'istats' }, 'L’hôte lance l’expédition quand tout le monde est prêt.'));

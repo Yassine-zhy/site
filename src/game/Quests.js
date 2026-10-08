@@ -8,6 +8,7 @@ import { RARITY } from './Items.js';
 import { generateItem } from './Items.js';
 import { RUNE_SPELLS } from './Runes.js';
 import { hasTutorial } from '../ui/Tutorials.js';
+import { MAIN_TEXT } from './Lore.js';
 
 const ROOM_LABEL = { tavern: 'à la taverne', forge: 'dans sa forge', guild: 'à la guilde', chapel: 'à la chapelle', home: 'chez lui', tower: 'dans sa tour' };
 
@@ -139,7 +140,7 @@ const SIDE_LIST = [
   { id: 's_tour', giver: 'pip', title: 'Le tour des Prés', desc: 'Je dois vérifier ma carte ! Va voir le Lac Miroir, le Bois-Murmure et les Cendres pour moi.', objectives: [{ type: 'visit', place: 'lac' }, { type: 'visit', place: 'foret' }, { type: 'visit', place: 'ruines' }], rewards: { xp: 300, gold: 50 } },
   { id: 's_pierres', giver: 'pip', title: 'Les pierres de passage', desc: 'Les pierres de passage permettent de voyager d’un coup ! Éveille-en trois (approche-toi et appuie sur E).', objectives: [{ type: 'waystone', count: 3 }], rewards: { xp: 400, gold: 60 } },
   { id: 's_ilots', giver: 'pip', req: ['m4'], title: 'Les lieux oubliés', desc: 'Quatre lieux sont flous sur ma carte : le Belvédère du Couchant, la Pointe aux Coquillages, la Croisée du Pèlerin et la Table du Vent. Va les voir pour moi !', objectives: [{ type: 'visit', place: 'nuees' }, { type: 'visit', place: 'tresor' }, { type: 'visit', place: 'pelerin' }, { type: 'visit', place: 'eclat' }], rewards: { xp: 900, gold: 120, item: 2 } },
-  { id: 's_confins', giver: 'pip', req: ['m9'], title: 'Cartographe des confins', desc: 'Les terres lointaines cachent des merveilles : la Mine de Kessa, le Cirque d’Ambre, le Lac de Cristal et le Sanctuaire Gelé. Visite-les tous !', objectives: [{ type: 'visit', place: 'mine' }, { type: 'visit', place: 'cirque' }, { type: 'visit', place: 'cristal' }, { type: 'visit', place: 'sanctuaire' }], rewards: { xp: 2400, gold: 260, item: 3 } },
+  { id: 's_confins', giver: 'pip', req: ['m12'], title: 'Cartographe des confins', desc: 'Les terres lointaines cachent des merveilles : la Mine de Kessa, le Cirque d’Ambre, le Lac de Cristal et le Sanctuaire Gelé. Visite-les tous !', objectives: [{ type: 'visit', place: 'mine' }, { type: 'visit', place: 'cirque' }, { type: 'visit', place: 'cristal' }, { type: 'visit', place: 'sanctuaire' }], rewards: { xp: 2400, gold: 260, item: 3 } },
   { id: 's_monture', giver: 'rhea', lvl: 8, req: ['m5'], title: 'L’éther apprivoisé', desc: 'Les montures d’éther naissent de la lumière des feux follets. Abattez-en quatre (autour du Lac Miroir, dans les ruines du sud des Cendres ou sur le Pic), puis offrez de la lumière à un phare : une monture viendra à vous.', objectives: [{ type: 'kill', enemy: 'wisp', count: 4 }, { type: 'light', beacon: 'any', count: 10 }], rewards: { xp: 900, gold: 100, mount: true } },
   { id: 's_bapteme', giver: 'rhea', title: 'Baptême de l’air', desc: 'Saute, ouvre ta paravoile, puis entre dans une colonne de vent : elle te portera vers les nuages.', objectives: [{ type: 'glide' }, { type: 'updraft' }], rewards: { xp: 200, gold: 40 } },
   { id: 's_anneaux', giver: 'rhea', lvl: 3, title: 'Les anneaux du vent', desc: 'Au-dessus du village flottent des anneaux de vent. Monte dans la colonne près du Pic, puis plane à travers eux.', objectives: [{ type: 'rings', set: 'village', count: 5 }], rewards: { xp: 600, gold: 90, item: 1 } },
@@ -202,6 +203,9 @@ SIDE_LIST.push(
   { id: 's_crypte', giver: 'silas', req: ['m24'], title: 'Le trésor du Fossoyeur', desc: 'Le Fossoyeur garde un coffre mythique au fond de sa crypte. Il est pour toi… si tu en reviens.', objectives: [{ type: 'treasure', spot: 'crypte' }], rewards: { xp: 5000, gold: 600 } },
   { id: 's_ameslumiere', giver: 'morwen', req: ['m23'], title: 'Lumière pour les morts', desc: 'Le Phare des Âmes doit briller chaque nuit pour guider les égarés.', objectives: [{ type: 'light', beacon: 'ames', count: 20 }], rewards: { xp: 4200, gold: 380 }, repeat: true },
 );
+// les quêtes principales racontent l'histoire de la Couronne Brisée (textes dans Lore.js)
+for (const m of MAIN) Object.assign(m, MAIN_TEXT[m.id] || {});
+export const MAIN_IDS = MAIN.map((m) => m.id);
 const SIDE = Object.fromEntries(SIDE_LIST.map((q) => [q.id, q]));
 
 export class Quests {
@@ -219,6 +223,8 @@ export class Quests {
     if (!d) return;
     this.active = (d.active || []).filter((q) => q && q.objectives);
     this.done = new Set(d.done || []);
+    // quêtes principales en cours : leur texte suit le récit actuel
+    for (const q of this.active) if (MAIN_TEXT[q.id]) Object.assign(q, MAIN_TEXT[q.id]);
     // la chaîne principale reprend à la première quête non accomplie (de nouvelles quêtes ont pu s'insérer)
     const idx = MAIN.findIndex((m) => !this.done.has(m.id));
     this.mainIdx = idx < 0 ? MAIN.length : idx;
@@ -490,6 +496,12 @@ export class Quests {
       ));
     }
     if (this.active.length) list.prepend(h('div', { class: 'istats', style: { marginBottom: '4px' } }, 'Touchez un objectif pour savoir comment le réussir.'));
+    // l'acte en cours du récit, et le chemin des Chroniques
+    const st = this.game.story, A = st?.actInfo();
+    if (A) list.prepend(h('div', { class: 'q-act' },
+      h('div', { class: 'qa-h' }, `${A.title} · ${A.name}`),
+      h('div', { class: 'qa-p' }, A.summary),
+      h('button', { class: 'btn', type: 'button', onclick: () => win.open('chronicles') }, `Chroniques (${st.shardCount()}/5 Éclats)`)));
     const doneN = this.done.size;
     return win.frame('Journal de quêtes', list, h('div', { class: 'istats', style: { marginTop: '10px' } }, `${doneN} quête${doneN > 1 ? 's' : ''} accomplie${doneN > 1 ? 's' : ''}.`));
   }

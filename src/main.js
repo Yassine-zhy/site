@@ -118,7 +118,11 @@ async function main(hotData = {}) {
   // raccourcis de test : ?play=knight
   if (params.get('play')) {
     const cls = CLASSES[params.get('play')] ? params.get('play') : 'knight';
-    await begin(new Hero(cls, params.get('name') || 'Testeur'));
+    const hero = new Hero(cls, params.get('name') || 'Testeur');
+    // essais : pas de prologue (sauf &prologue=1), et &free=1 lève les sceaux du récit
+    if (!params.get('prologue')) hero.lore = { prologue: true };
+    if (params.get('free')) game.storyFree = true;
+    await begin(hero);
     if (params.get('t')) game.world.sky.override = parseFloat(params.get('t'));
     return;
   }

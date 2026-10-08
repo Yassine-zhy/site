@@ -84,11 +84,14 @@ export class Waystones {
     for (const w of this.list) {
       if (REGION_OF[w.id] !== region) { region = REGION_OF[w.id]; rows.push(h('div', { class: 'sc', style: { color: 'var(--gold)', fontSize: '12px', margin: '10px 0 4px' } }, region)); }
       const known = this.known(w.id), here = from && from.id === w.id;
+      // une pierre derrière un sceau de Brume ne répond pas tant que le récit n'y mène pas
+      const veiled = !!this.game.story?.sealAt(w.x, w.z);
+      const ok = known && !here && !veiled;
       rows.push(h('button', {
-        class: 'qo-link', type: 'button', disabled: !known || here,
-        style: { opacity: known ? 1 : 0.5 },
-        onclick: () => { if (known && !here) { win.close(); this.travel(w); } },
-      }, h('span', {}, (known ? '◆ ' : '◇ ') + w.name), h('span', { class: 'istats' }, here ? 'vous êtes ici' : known ? 'voyager' : 'à découvrir')));
+        class: 'qo-link', type: 'button', disabled: !ok,
+        style: { opacity: ok || here ? 1 : 0.5 },
+        onclick: () => { if (ok) { win.close(); this.travel(w); } },
+      }, h('span', {}, (known && !veiled ? '◆ ' : '◇ ') + w.name), h('span', { class: 'istats' }, here ? 'vous êtes ici' : veiled ? 'voilée par la Brume' : known ? 'voyager' : 'à découvrir')));
     }
     win.custom('Pierres de passage', h('div', {},
       h('div', { class: 'istats' }, 'Touchez une pierre éveillée pour y voyager. Les autres s’éveillent quand vous les approchez (E).'),

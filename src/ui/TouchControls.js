@@ -3,6 +3,7 @@ import { h, svgIcon } from './dom.js';
 import { ABILITIES, ABILITY_ICONS } from '../game/Abilities.js';
 
 const ICON = {
+  crown: 'M3 18h18M4 18l-1-10 5 4 4-7 4 7 5-4-1 10M12 14v.01',
   mount: 'M7 2v5L4 5M7 5l2-2M17 2v5l3-2M17 5l-2-2M8 8c0 2.5 1.6 4 4 4s4-1.5 4-4M10 12l-1 9h6l-1-9M11 16h2',
   jump: 'M12 19V5M5 12l7-7 7 7', dodge: 'M4 12h12M12 6l6 6-6 6M4 6v12', interact: 'M8 12h8M12 8v8M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0',
   map: 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6ZM9 3v15M15 6v15', lock: 'M12 3v4M12 17v4M3 12h4M17 12h4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8', party: 'M7 21v-2a4 4 0 0 1 4-4h2a4 4 0 0 1 4 4v2M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M4 21v-1a3 3 0 0 1 3-3M20 21v-1a3 3 0 0 0-3-3', bag: 'M5 8h14l-1 13H6L5 8ZM9 8V6a3 3 0 0 1 6 0v2', menu: 'M4 6h16M4 12h16M4 18h16', chat: 'M4 5h16v11H9l-5 4V5Z', quest: 'M6 3h12v18l-6-4-6 4V3Z',
@@ -152,6 +153,7 @@ export class TouchControls {
     const items = [
       ['map', ICON.map, 'Carte', () => game.toggleWindow('map')],
       ['grimoire', ABILITY_ICONS.book, 'Compétences', () => game.toggleWindow('grimoire')],
+      ['chronicles', ICON.crown, 'Chroniques', () => game.toggleWindow('chronicles')],
       game.hero?.mount ? ['mount', ICON.mount, 'Monture', () => game.mount?.toggle()] : null,
       ['party', ICON.party, 'Groupe · expéditions', () => game.toggleWindow('party')],
       ['chat', ICON.chat, 'Discussion', () => game.chat?.open()],

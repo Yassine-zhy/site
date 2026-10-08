@@ -305,7 +305,7 @@ export class Game {
       if (!this.runes?.drawing) this.rig.handleLook(look);
       else this.runes.feedLook(look);
     }
-    const blocked = this.paused || this.windowOpen || this.dialogueOpen || this.chatOpen || !!this.arenaFights?.introActive;
+    const blocked = this.paused || this.windowOpen || this.dialogueOpen || this.chatOpen || !!this.arenaFights?.introActive || !!this.story?.blocking;
     input.enabled = !blocked;
     // cooldowns
     for (const k of Object.keys(this.cooldowns)) this.cooldowns[k] = Math.max(0, this.cooldowns[k] - dt);
@@ -728,6 +728,7 @@ export class Game {
     else if (k.elite && Math.random() < 0.18) this.loot.drop(lp, { chest: Math.random() < 0.25 ? 'fer' : 'bois' });
     else if (!k.exp && Math.random() < 0.012) this.loot.drop(lp, { chest: 'bois' });
     this.quests?.onEvent('kill', k);
+    this.story?.onKill(k);
     this.worldState?.onKill(k);
     this.save?.soon();
   }
@@ -843,6 +844,7 @@ export class Game {
     const out = [];
     this.npcs?.markers(out);
     this.quests?.markers(out);
+    this.story?.markers(out);
     this.echoes?.markers?.(out);
     return out;
   }

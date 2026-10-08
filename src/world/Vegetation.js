@@ -10,6 +10,8 @@ import { registerJungleTrees } from './JungleTrees.js';
 import { registerProcTrees } from './ProcTrees.js';
 import { bindShared, rockGLSL, FOLIAGE_GLSL, SHARED } from './SurfaceDetail.js';
 import { ARENAS } from './ArenaDefs.js';
+import { statueSpots } from './Aura.js';
+import { STELES } from '../game/Lore.js';
 
 // Arbres et rochers instanciés (modèles KayKit), avec balancement au vent.
 export class Vegetation {
@@ -45,6 +47,9 @@ export class Vegetation {
     for (const w of WAYSTONES) poi(w, 8);
     for (const wb of WORLD_BOSSES) poi(wb, 28);
     for (const A of ARENAS) poi(A, A.r + 14); // arènes : enceinte, piliers et décor
+    // statues des seigneurs (des deux côtés de la route) et stèles de mémoire
+    for (const sp of Object.values(statueSpots())) for (const k of [9, -9]) poi({ x: sp.x + sp.nx * k, z: sp.z + sp.nz * k }, 7);
+    for (const st of STELES) poi(st, 4);
     for (const def of REGIONS) {
       poi(def.camp, (def.camp?.radius || 0) + 10);
       for (const k of ['sanctuary', 'temple', 'cemetery', 'table', 'belvedere']) poi(def[k], (def[k]?.radius || 0) + 6);

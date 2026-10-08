@@ -92,6 +92,8 @@ export class ArenaFights {
     if (!p) return;
     if (this.cine) this.updateIntro(dt);
     const pos = p.position;
+    // sceau du seigneur : l'arène reste fermée tant que le récit n'y mène pas
+    if (!this.cur && this.gateClosed(pos, dt)) return;
     const A = this.cur?.A || arenaAt(pos.x, pos.z, 1);
     const inside = A && Math.hypot(pos.x - A.x, pos.z - A.z) < A.r + 1 && pos.y > A.floor - 6 && pos.y < A.floor + 30;
     const boss = A ? this.bossOf(A) : null;
@@ -143,6 +145,30 @@ export class ArenaFights {
     } else this.escapeT = Math.max(0, this.escapeT - dt * 2);
   }
 
+  gateClosed(pos, dt) {
+    const g = this.game, story = g.story;
+    const A = arenaAt(pos.x, pos.z, 70);
+    if (this.gated && this.gated !== A) { g.world.arenas?.setState(this.gated.id, { seal: false }); this.gated = null; }
+    if (!A || !story || story.arenaOpen(A.boss)) return false;
+    if (this.gated !== A) { this.gated = A; g.world.arenas?.setState(A.id, { fight: false, seal: true, win: false }); }
+    const d = Math.hypot(pos.x - A.x, pos.z - A.z), R = A.r + 3;
+    if (d < R) {
+      const k = R / Math.max(d, 0.01);
+      pos.x = A.x + (pos.x - A.x) * k; pos.z = A.z + (pos.z - A.z) * k;
+      const p = g.player;
+      if (p.dodge) p.dodge = null;
+      if (Math.random() < dt * 14) g.fx.sparkle(pos.clone().setY(pos.y + 1.2), A.theme?.glow || '#b48cff', 0.8, 1, 0.3);
+      this.gateMsgT = (this.gateMsgT || 0) - dt;
+      if (this.gateMsgT <= 0) {
+        this.gateMsgT = 6;
+        const kit = BOSS_KITS[A.boss];
+        g.ui.announce('Le sceau du seigneur', `${kit?.name || A.name} n’est pas encore pour vous. ${story.arenaNeed(A.boss)}.`, 3.6);
+        g.audio?.play('gateClose', pos);
+      }
+    }
+    return true;
+  }
+
   leave() {
     const g = this.game, cur = this.cur;
     this.cur = null; this.wallPrompt = ''; this.escapeT = 0;
@@ -162,7 +188,7 @@ export class ArenaFights {
     g.slowMo?.(1.6, 0.3);
     g.audio?.play('victory', null);
     g.vibrate?.([60, 40, 120]);
-    g.schedule(0.9, () => this.showCard('Victoire', `${kit?.name || 'Le seigneur'} est tombé`, `${cur.A.name} · combat de ${time}`, 'win'));
+    g.schedule(0.9, () => this.showCard('Seigneur déchu', `${kit?.name || 'Le seigneur'} est tombé`, `${cur.A.name} · combat de ${time}`, 'win'));
     g.schedule(5.5, () => this.hideCard());
     g.schedule(8, () => arenas?.setState(cur.A.id, { win: false }));
     // record personnel

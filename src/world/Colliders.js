@@ -154,6 +154,14 @@ export class Colliders {
     return hit;
   }
 
+  // un obstacle quelconque (arbre, rocher, mur…) recouvre-t-il ce point ?
+  occupied(x, z, margin = 0) {
+    const list = this.grid.get(this.key(Math.floor(x / CELL), Math.floor(z / CELL)));
+    if (!list) return false;
+    for (const c of list) if (c.tag !== 'npc' && this.contains(c, x, z, margin)) return true;
+    return false;
+  }
+
   contains(c, x, z, margin = 0) {
     if (c.type === 'circle') return Math.hypot(x - c.x, z - c.z) < c.r + margin;
     for (let k = 0; k < c.n; k++) if (c.nx[k] * x + c.nz[k] * z - c.off[k] > margin) return false;
