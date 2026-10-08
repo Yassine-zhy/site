@@ -344,11 +344,11 @@ export class Story {
     if (st !== this.statuePlate) { if (this.statuePlate) ui.removePlate('statue'); this.statuePlate = st; }
     if (st) {
       const pl = this.aura.statuePlate(st, !!this.lore?.shards[st.key]);
-      ui.setPlate({ id: 'statue', position: new THREE.Vector3(st.x, st.y, st.z), height: 13, name: pl.name, title: pl.title, kind: 'npc', questMark: '' });
+      ui.setPlate({ id: 'statue', position: st.pos || (st.pos = new THREE.Vector3(st.x, st.y, st.z)), height: 13, name: pl.name, title: pl.title, kind: 'npc', questMark: '' });
     }
     if (best) {
       const read = !!this.lore?.steles[best.def.id];
-      ui.setPlate({ id: 'stele', position: new THREE.Vector3(best.x, best.y, best.z), height: 4.1, name: read ? best.def.title : 'Stèle de mémoire', title: read ? 'mémoire retrouvée' : 'mémoire oubliée', kind: 'npc', questMark: read ? '' : '✦' });
+      ui.setPlate({ id: 'stele', position: best.pos || (best.pos = new THREE.Vector3(best.x, best.y, best.z)), height: 4.1, name: read ? best.def.title : 'Stèle de mémoire', title: read ? 'mémoire retrouvée' : 'mémoire oubliée', kind: 'npc', questMark: read ? '' : '✦' });
     }
   }
 
