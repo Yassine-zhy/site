@@ -703,3 +703,6 @@ html, body, #app, #app *:not(input):not(textarea) { -webkit-touch-callout: none;
 /* contexte graphique perdu : message au lieu d'un écran vide */
 .gl-veil { position: absolute; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, #1a1433, #0b0916); color: var(--gold-hi); font-family: var(--font-display); font-size: 22px; letter-spacing: 0.04em; pointer-events: none; }
 .gl-veil[hidden] { display: none; }
+
+/* blessure en qualité basse (rendu direct, sans étalonnage) : bords de l'écran rougis */
+.hurt-veil { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 52%, rgba(190, 20, 20, 0.75) 100%); }

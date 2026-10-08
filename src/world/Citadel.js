@@ -74,7 +74,10 @@ export class Citadel extends Decor {
       fragmentShader: `uniform float uTime; uniform vec3 uColor; varying vec2 vUv;
         void main(){ float w = sin(vUv.x * 40.0 + uTime * 3.0) * 0.5 + 0.5; float v = sin(vUv.y * 22.0 - uTime * 4.0 + vUv.x * 9.0) * 0.5 + 0.5;
           float edgeF = smoothstep(0.0, 0.15, vUv.y) * smoothstep(1.0, 0.7, vUv.y);
-          float a = (0.25 + 0.5 * w * v) * edgeF; gl_FragColor = vec4(uColor * 1.8 * a, a); }`,
+          float a = (0.25 + 0.5 * w * v) * edgeF; gl_FragColor = vec4(uColor * 1.8 * a, a);
+#include <tonemapping_fragment>
+#include <colorspace_fragment>
+}`,
     });
     this.barriers = CITADEL.bridges.map(([a, b], i) => {
       const A = P[a], B = P[b];

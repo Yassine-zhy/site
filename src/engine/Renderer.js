@@ -5,7 +5,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 export const QUALITY = {
-  low: { label: 'Basse', treeNear: 95, treeFar: 700, lights: 3, pixelRatio: 0.8, shadows: false, shadowSize: 1024, bloom: false, grass: 9000, grassRadius: 42, trees: 0.55, far: 1400, vegView: 300, terrainNear: 140, terrainMid: 340, decorView: 420, maxPixelRatio: 1.1, particles: 280 },
+  low: { label: 'Basse', direct: true, treeNear: 95, treeFar: 700, lights: 3, pixelRatio: 0.8, shadows: false, shadowSize: 1024, bloom: false, grass: 9000, grassRadius: 42, trees: 0.55, far: 1400, vegView: 300, terrainNear: 140, terrainMid: 340, decorView: 420, maxPixelRatio: 1.1, particles: 280 },
   medium: { label: 'Moyenne', treeNear: 150, treeFar: 1100, lights: 5, pixelRatio: 1, shadows: true, shadowSize: 1024, bloom: true, grass: 22000, grassRadius: 56, trees: 0.8, far: 2200, vegView: 650, terrainNear: 200, terrainMid: 480, decorView: 650, maxPixelRatio: 1.25, particles: 560 },
   high: { label: 'Haute', treeNear: 210, treeFar: 1500, lights: 7, pixelRatio: 1.5, shadows: true, shadowSize: 2048, bloom: true, grass: 42000, grassRadius: 70, trees: 1, far: 3200, vegView: 950, terrainNear: 260, terrainMid: 640, decorView: 950, particles: 800 },
   ultra: { label: 'Ultra', treeNear: 280, treeFar: 2000, lights: 9, pixelRatio: 2, shadows: true, shadowSize: 4096, bloom: true, grass: 64000, grassRadius: 84, trees: 1, far: 4000, vegView: 1300, terrainNear: 340, terrainMid: 820, decorView: 1300, particles: 900 },
@@ -116,6 +116,10 @@ export class Renderer {
   buildComposer() {
     if (this.composer) { this.composer.dispose?.(); this.composer = null; }
     const q = this.quality;
+    // qualité basse : rendu direct à l'écran, sans image intermédiaire ni passe plein écran
+    // (deux à trois fois moins de mémoire graphique traversée à chaque image : le téléphone chauffe moins)
+    this.grade = null; this.bloom = null;
+    if (q.direct) return;
     const w = window.innerWidth, h = window.innerHeight;
     // anticrénelage : inutile (et très coûteux) sur les écrans denses des téléphones
     const pr = this.renderer.getPixelRatio();
@@ -159,7 +163,8 @@ export class Renderer {
     const fps = d.n / d.t;
     d.t = 0; d.n = 0;
     if (d.cool > 0) return;
-    const target = this.targetFps || (this.targetFps = matchMedia('(pointer: coarse)').matches ? 42 : 50);
+    const base = this.targetFps || (this.targetFps = matchMedia('(pointer: coarse)').matches ? 42 : 50);
+    const target = this.fpsCap ? Math.min(base, this.fpsCap * 0.9) : base; // plafond d'images/s choisi
     if (fps < target && d.ratio > d.min + 0.01) {
       // jamais sous le plancher de netteté (1080 lignes)
       d.ceiling = d.ratio; // ce niveau était trop lourd : on n'y remonte pas tout de suite
@@ -185,7 +190,16 @@ export class Renderer {
     this.renderer.info.autoReset = false;
     this.renderer.info.reset();
     if (this.grade) this.grade.uniforms.uTime.value = elapsed % 10;
-    if (this.composer) this.composer.render(dt);
-    else this.renderer.render(this.scene, this.camera);
+    if (this.composer) { this.composer.render(dt); return; }
+    const r = this.renderer;
+    r.render(this.scene, this.camera);
+    // image opaque : certains matériaux écrivent une transparence partielle, qui laisserait voir
+    // le fond de la page (l'« écran bleu ») ; on remet seulement le canal alpha à 1
+    const gl = r.getContext();
+    gl.colorMask(false, false, false, true);
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.colorMask(true, true, true, true);
+    r.state.buffers.color.reset();
   }
 }

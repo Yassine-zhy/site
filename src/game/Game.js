@@ -167,11 +167,36 @@ export class Game {
     return { x, y, z, facing };
   }
 
+  // Plafond d'images par seconde. « auto » : 30 en qualité basse sur téléphone, 45 en moyenne,
+  // 60 sinon. Menus ouverts et écran titre : 30 au plus. (base = sans tenir compte des menus)
+  fpsCapValue(base = false) {
+    const s = this.settings?.fpsCap ?? 'auto';
+    let cap;
+    if (s !== 'auto') cap = +s || 0;
+    else {
+      const q = this.renderer.qualityName;
+      cap = this.input?.isTouch ? (q === 'low' ? 30 : q === 'medium' ? 45 : 60) : 60;
+    }
+    if (!base && (!this.inGame || this.windowOpen || this.dialogueOpen)) cap = Math.min(cap || 60, 30);
+    return cap;
+  }
+
   start() {
     this.running = true;
+    let acc = 0, prev = 0;
     const loop = (t) => {
       if (!this.running) return;
       requestAnimationFrame(loop);
+      // images sautées au-delà du plafond : ni simulation ni rendu (la carte graphique se repose)
+      const cap = this.fpsCapValue();
+      this.renderer.fpsCap = cap;
+      if (cap) {
+        const min = 1000 / cap;
+        acc += prev ? Math.min(250, t - prev) : min;
+        prev = t;
+        if (acc < min - 1) return;
+        acc = Math.min(min * 0.5, acc - min);
+      } else prev = t;
       this.timer.update(t);
       let dt = Math.min(this.timer.getDelta(), 1 / 15);
       this.frame(dt);
@@ -258,10 +283,17 @@ export class Game {
     this.audio?.update(dt);
     this.fx.update(dt, this.camera, this.renderer.renderer.domElement.clientHeight * this.renderer.renderer.getPixelRatio());
     this.ui.update(dt, this.camera);
-    if (this.renderer.grade) {
+    {
       this.hurtFlash = Math.max(0, this.hurtFlash - rawDt * 1.8);
       const low = inGame ? Math.max(0, 0.35 - this.hero.hp / this.hero.stats.hp) * 1.6 : 0;
-      this.renderer.grade.uniforms.uHurt.value = Math.min(1, this.hurtFlash + low * (0.7 + 0.3 * Math.sin(this.elapsed * 5)));
+      const hurt = Math.min(1, this.hurtFlash + low * (0.7 + 0.3 * Math.sin(this.elapsed * 5)));
+      if (this.renderer.grade) this.renderer.grade.uniforms.uHurt.value = hurt;
+      else {
+        // rendu direct (qualité basse) : bords rouges en CSS, affichés seulement quand il le faut
+        if (!this.hurtVeil) { this.hurtVeil = document.createElement('div'); this.hurtVeil.className = 'hurt-veil'; this.ui.root.prepend(this.hurtVeil); }
+        const v = Math.round(hurt * 20) / 20;
+        if (v !== this.hurtVeilV) { this.hurtVeilV = v; this.hurtVeil.style.opacity = v; this.hurtVeil.hidden = v <= 0; }
+      }
     }
     this.frameN = (this.frameN || 0) + 1;
     if (!this.renderEvery || this.frameN % this.renderEvery === 0) this.renderer.render(dt, this.elapsed);

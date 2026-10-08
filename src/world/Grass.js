@@ -121,7 +121,8 @@ export class Grass {
           vec3 light = uAmbient + uSunColor * max(uSunDir.y, 0.0) * 0.55;
           col *= light;
           gl_FragColor = vec4(col, 1.0);
-          #include <colorspace_fragment>
+          #include <tonemapping_fragment>
+#include <colorspace_fragment>
           #include <fog_fragment>
         }`,
     });

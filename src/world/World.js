@@ -67,6 +67,7 @@ export class World {
     this.lightPool = new LightPool(this.scene, quality.lights ?? 6);
     this.sky.update(0, null, 0);
     this.env = new EnvLight(renderer.renderer, this.sky);
+    this.env.interval = SHARED.lite ? 12 : 2.5;
     this.env.update(0);
     updateRim(this.sky);
     this.clouds = new Clouds(this.scene, assets, renderer.qualityName);
@@ -94,6 +95,13 @@ export class World {
     // flammes, lumières et pales restés hors fusion : masqués au loin
     this.cullFar(this.village.group, 1, true);
     this.cullFar(this.outposts.group, 1, true);
+    // décors immobiles figés (matrices calculées une fois pour toutes)
+    const mon = this.village.monument;
+    this.village.freeze(mon ? [mon.crystal, ...mon.rings] : []);
+    this.outposts.freeze();
+    this.interiors.freeze([this.interiors.orb]);
+    this.arenas.freeze(this.arenas.sites.flatMap((s) => [s.runes, s.key, s.barrier]));
+    for (const m of [...(this.vegetation.meshes || []), ...(this.farTrees?.meshes || []), ...(this.scene.userData.staticMeshes || [])]) { m.updateMatrix(); m.updateMatrixWorld(true); m.matrixAutoUpdate = false; }
     this.elapsed = 0;
     this.perfDone();
     if (new URLSearchParams(location.search).get('colliders')) this.debugColliders();
@@ -146,6 +154,7 @@ export class World {
     this.grass.build(q.grass, q.grassRadius);
     this.sky.setShadowSize(q.shadowSize, q.shadowSize >= 2048 ? 75 : 60);
     this.lightPool.setSize(q.lights ?? 6);
+    this.env.interval = q.direct ? 12 : 2.5;
   }
 
   // Niveau de détail du relief et visibilité des décors lointains, selon la distance à la caméra.

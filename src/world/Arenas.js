@@ -148,6 +148,9 @@ function barrierMaterial(color, time) {
         // liseré lumineux au ras du sol
         a += uOpacity * 0.6 * (1.0 - smoothstep(0.0, 0.05, vUv.y));
         gl_FragColor = vec4(uColor * (0.7 + 1.3 * n2), a);
+#include <tonemapping_fragment>
+#include <colorspace_fragment>
+
       }`,
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
   });

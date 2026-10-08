@@ -36,6 +36,9 @@ export class Character {
   constructor(assets, model, { scale = 1, show = null, attach = [], tint = null } = {}) {
     this.assets = assets;
     this.object = new THREE.Group();
+    // personnage masqué (loin, rentré chez lui…) : ni lui ni ses os ne sont recalculés
+    const upd = this.object.updateMatrixWorld;
+    this.object.updateMatrixWorld = function (force) { if (this.visible) upd.call(this, force); };
     this.model = assets.character(model);
     this.model.scale.setScalar(scale);
     this.scale = scale;

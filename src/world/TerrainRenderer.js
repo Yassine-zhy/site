@@ -212,8 +212,10 @@ export class TerrainRenderer {
           vec4 dd = mix(d1, d2, 0.3);
           // de près, une troisième échelle plus fine : un sol net, même en 1080p et plus
           float camD = length(vViewPosition);
-          vec4 d3 = texture2D(uDetail, duv * 3.7 + vec2(0.13, 0.57));
-          dd = mix(dd, mix(dd, d3, 0.45), 1.0 - smoothstep(12.0, 40.0, camD));
+          if (camD < 40.0) {
+            vec4 d3 = texture2D(uDetail, duv * 3.7 + vec2(0.13, 0.57));
+            dd = mix(dd, mix(dd, d3, 0.45), 1.0 - smoothstep(12.0, 40.0, camD));
+          }
           // roche en projection triplanaire sur les pentes
           float rk = dd.b;
           ${hi ? `{

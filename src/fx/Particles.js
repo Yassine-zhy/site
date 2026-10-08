@@ -49,7 +49,10 @@ export class ParticleSystem {
         void main(){ vColor = color; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = size * uScale / max(-mv.z, 0.1); gl_Position = projectionMatrix * mv; }`,
       fragmentShader: /* glsl */`
         uniform sampler2D uTex; varying vec4 vColor;
-        void main(){ vec4 t = texture2D(uTex, gl_PointCoord); gl_FragColor = vec4(vColor.rgb, vColor.a * t.a); if (gl_FragColor.a < 0.003) discard; }`,
+        void main(){ vec4 t = texture2D(uTex, gl_PointCoord); gl_FragColor = vec4(vColor.rgb, vColor.a * t.a); if (gl_FragColor.a < 0.003) discard;
+#include <tonemapping_fragment>
+#include <colorspace_fragment>
+}`,
     });
     this.points = new THREE.Points(geo, mat);
     this.points.frustumCulled = false;

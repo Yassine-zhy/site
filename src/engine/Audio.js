@@ -16,24 +16,33 @@ export class Audio {
 
   unlock() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    // téléphone : tampons audio plus longs (latence imperceptible pour de la musique et des
+    // bruitages, mais plus de trous ni de grésillements quand le processeur est chargé)
+    this.lite = matchMedia('(pointer: coarse)').matches;
+    this.maxVoices = this.lite ? 40 : 72;
+    this.voices = 0;
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) { this.enabled = false; return; }
-      this.ctx = new AC();
+      try { this.ctx = new AC({ latencyHint: this.lite ? 'playback' : 'interactive' }); } catch { this.ctx = new AC(); }
     } catch { this.enabled = false; return; }
     const c = this.ctx;
     this.master = c.createGain(); this.master.gain.value = this.vol;
     this.comp = c.createDynamicsCompressor(); this.comp.threshold.value = -14; this.comp.ratio.value = 4;
-    this.master.connect(this.comp).connect(c.destination);
+    // limiteur final : jamais de saturation (qui s'entend comme un grésillement)
+    this.limiter = c.createDynamicsCompressor();
+    this.limiter.threshold.value = -3; this.limiter.knee.value = 0; this.limiter.ratio.value = 20; this.limiter.attack.value = 0.002; this.limiter.release.value = 0.12;
+    this.master.connect(this.comp).connect(this.limiter).connect(c.destination);
     this.sfx = c.createGain(); this.sfx.gain.value = 0.9; this.sfx.connect(this.master);
     this.music = c.createGain(); this.music.gain.value = this.musicVol * 0.5; this.music.connect(this.master);
     this.amb = c.createGain(); this.amb.gain.value = 0.5; this.amb.connect(this.master);
     // réverbération (réponse impulsionnelle générée)
     this.reverb = c.createConvolver();
-    this.reverb.buffer = this.makeIR(3.2, 2.6);
+    this.reverb.buffer = this.makeIR(this.lite ? 1.5 : 2.4, 2.6); // réponse courte : bien moins de calcul
     this.revGain = c.createGain(); this.revGain.gain.value = 0.55;
     this.reverb.connect(this.revGain).connect(this.master);
     this.noiseBuf = this.makeNoise(2);
+    this.windBuf = this.makeWind(8);
     this.startAmbience();
     this.startMusic();
   }
@@ -49,6 +58,30 @@ export class Audio {
     let last = 0;
     for (let i = 0; i < d.length; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = w * 0.7 + last * 3; }
     return b;
+  }
+
+  // souffle doux (bruit rose) pour le vent et le ressac : 8 s, bouclage sans couture (pas de clic)
+  makeWind(sec) {
+    const c = this.ctx, L = Math.floor(c.sampleRate * sec), F = Math.floor(c.sampleRate * 0.6);
+    const a = new Float32Array(L + F);
+    let b0 = 0, b1 = 0, b2 = 0, peak = 1e-6;
+    for (let i = 0; i < a.length; i++) {
+      const w = Math.random() * 2 - 1;
+      b0 = 0.99765 * b0 + w * 0.099046; b1 = 0.963 * b1 + w * 0.2965164; b2 = 0.57 * b2 + w * 1.0526913;
+      a[i] = b0 + b1 + b2 + w * 0.1848;
+      peak = Math.max(peak, Math.abs(a[i]));
+    }
+    const b = c.createBuffer(1, L, c.sampleRate), d = b.getChannelData(0), k = 0.55 / peak;
+    for (let i = 0; i < L; i++) d[i] = (i < F ? a[i] * (i / F) + a[L + i] * (1 - i / F) : a[i]) * k;
+    return b;
+  }
+
+  // une voix de plus (false si le plafond est atteint : on renonce au son plutôt que de saturer)
+  voice(src) {
+    if (this.voices >= this.maxVoices) return false;
+    this.voices++;
+    src.onended = () => { this.voices = Math.max(0, this.voices - 1); };
+    return true;
   }
 
   makeIR(sec, decay) {
@@ -76,7 +109,9 @@ export class Audio {
 
   tone(dest, t, { type = 'sine', f = 440, f2 = null, a = 0.005, d = 0.3, v = 0.3, detune = 0 }) {
     const c = this.ctx;
+    if (this.voices >= this.maxVoices) return;
     const o = c.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t); o.detune.value = detune;
+    this.voice(o);
     if (f2) o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + a + d);
     const g = c.createGain();
     this.env(g, t, a, v, d);
@@ -86,7 +121,9 @@ export class Audio {
 
   noise(dest, t, { a = 0.005, d = 0.2, v = 0.3, type = 'bandpass', f = 1200, f2 = null, q = 1 }) {
     const c = this.ctx;
+    if (this.voices >= this.maxVoices) return;
     const s = c.createBufferSource(); s.buffer = this.noiseBuf;
+    this.voice(s);
     s.playbackRate.value = 0.8 + Math.random() * 0.4;
     const fl = c.createBiquadFilter(); fl.type = type; fl.frequency.setValueAtTime(f, t); fl.Q.value = q;
     if (f2) fl.frequency.exponentialRampToValueAtTime(Math.max(30, f2), t + a + d);
@@ -126,18 +163,23 @@ export class Audio {
   // ------------------------------------------------------------------ ambiance
   startAmbience() {
     const c = this.ctx;
-    const s = c.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true;
-    const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500; f.Q.value = 0.7;
-    const g = c.createGain(); g.gain.value = 0.12;
-    const lfo = c.createOscillator(); lfo.frequency.value = 0.07;
-    const lg = c.createGain(); lg.gain.value = 260;
-    lfo.connect(lg).connect(f.frequency);
-    s.connect(f).connect(g).connect(this.amb);
-    s.start(); lfo.start();
+    const s = c.createBufferSource(); s.buffer = this.windBuf; s.loop = true;
+    const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 420; f.Q.value = 0.3;
+    const g = c.createGain(); g.gain.value = 0.05;
+    // rafales : le volume enfle et retombe lentement (plutôt qu'un filtre qui « siffle »)
+    const gust = c.createGain(); gust.gain.value = 0.75;
+    const lfo = c.createOscillator(); lfo.frequency.value = 0.045;
+    const lg = c.createGain(); lg.gain.value = 0.25;
+    lfo.connect(lg).connect(gust.gain);
+    const lfo2 = c.createOscillator(); lfo2.frequency.value = 0.03;
+    const lg2 = c.createGain(); lg2.gain.value = 120;
+    lfo2.connect(lg2).connect(f.frequency);
+    s.connect(f).connect(gust).connect(g).connect(this.amb);
+    s.start(); lfo.start(); lfo2.start();
     this.windGain = g; this.windFilter = f;
     this.ambT = 0;
     // ressac : bruit grave qui enfle et retombe comme une houle
-    const w = c.createBufferSource(); w.buffer = this.noiseBuf; w.loop = true; w.playbackRate.value = 0.6;
+    const w = c.createBufferSource(); w.buffer = this.windBuf; w.loop = true; w.playbackRate.value = 0.8;
     const wf = c.createBiquadFilter(); wf.type = 'lowpass'; wf.frequency.value = 420; wf.Q.value = 0.4;
     const swell = c.createGain(); swell.gain.value = 0.5;
     const wl = c.createOscillator(); wl.frequency.value = 0.11;
@@ -201,7 +243,9 @@ export class Audio {
     this.combat += (inCombat - this.combat) * Math.min(1, dt * (inCombat ? 2 : 0.4));
     const bossOn = g?.bossEngaged ? 1 : 0;
     this.boss += (bossOn - this.boss) * Math.min(1, dt * 0.8);
-    this.drumOut.gain.setTargetAtTime(Math.max(this.combat * 0.55, this.boss * 0.8), now, 0.3);
+    this.paramT = (this.paramT || 0) - dt;
+    const params = this.paramT <= 0;
+    if (params) { this.paramT = 0.25; this.drumOut.gain.setTargetAtTime(Math.max(this.combat * 0.55, this.boss * 0.8), now, 0.3); }
     this.placeT -= dt;
     if (this.placeT <= 0) { this.placeT = 0.5; this.sensePlace(); }
     const pl = this.place, th = THEMES[pl.room ? 'room_' + pl.room : pl.biome] || THEMES[pl.biome] || THEMES.temperate;
@@ -209,8 +253,10 @@ export class Audio {
     // vent selon l'altitude et la région ; ressac près des côtes
     const alt = g?.player ? Math.max(0, g.player.position.y - 20) : 40;
     const gl = g?.player?.gliding ? 1 : 0;
-    this.windGain.gain.setTargetAtTime((0.06 + Math.min(0.2, alt / 400) + gl * 0.12) * th.wind, now, 0.8);
-    this.wavesGain.gain.setTargetAtTime(pl.room ? 0 : pl.coast * 0.32, now, 1.2);
+    if (params) {
+      this.windGain.gain.setTargetAtTime(Math.min(0.16, (0.035 + Math.min(0.09, alt / 900) + gl * 0.08) * th.wind), now, 1.2);
+      this.wavesGain.gain.setTargetAtTime(pl.room ? 0 : pl.coast * 0.3, now, 1.2);
+    }
     // vie sonore de la région : oiseaux, insectes, corbeaux, grenouilles, feu de cheminée…
     this.ambT -= dt;
     if (this.ambT <= 0 && g?.inGame) {
@@ -228,7 +274,8 @@ export class Audio {
     this.rage = af?.rage ? 1 : 0;
     // ordonnanceur musical
     const tempo = this.boss > 0.5 ? this.bossTheme.tempo * (this.rage ? 0.8 : 1) : th.tempo * (night > 0.5 ? 1.2 : 1);
-    while (this.nextT < now + 0.25) {
+    if (this.nextT < now - 1) this.nextT = now + 0.05; // l'onglet a dormi : on ne rattrape pas les notes perdues
+    while (this.nextT < now + 0.35) {
       this.scheduleBeat(this.nextT, night);
       this.nextT += tempo;
       this.beat++;
@@ -289,12 +336,14 @@ export class Audio {
 
 function padVoice(A, t, f, len, night, type = null) {
   const c = A.ctx;
-  for (const det of [-7, 6]) {
+  for (const det of A.lite ? [0] : [-7, 6]) {
+    if (A.voices >= A.maxVoices) return;
     const o = c.createOscillator(); o.type = type || (night > 0.5 ? 'triangle' : 'sawtooth'); o.frequency.value = f; o.detune.value = det;
+    A.voice(o);
     const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.setValueAtTime(night > 0.5 ? 700 : 1100, t); fl.Q.value = 0.5;
     const g = c.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.05, t + len * 0.3);
+    g.gain.linearRampToValueAtTime(A.lite ? 0.07 : 0.05, t + len * 0.3);
     g.gain.linearRampToValueAtTime(0.0001, t + len);
     o.connect(fl).connect(g).connect(A.padOut);
     o.start(t); o.stop(t + len + 0.1);
@@ -309,7 +358,9 @@ function pluck(A, t, f, night) {
 // voix mélodiques des régions
 function plucked(A, t, f, { cutoff = 1800, d = 0.7, v = 0.1 } = {}) {
   const c = A.ctx;
+  if (A.voices >= A.maxVoices) return;
   const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+  A.voice(o);
   const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.Q.value = 2;
   fl.frequency.setValueAtTime(cutoff, t); fl.frequency.exponentialRampToValueAtTime(Math.max(120, f * 1.2), t + d * 0.6);
   const g = c.createGain(); A.env(g, t, 0.003, v, d);
@@ -339,20 +390,20 @@ const AMB = {
   // oiseaux tropicaux : trilles qui montent et descendent
   tropic: (A, t, o) => { const b = 1400 + Math.random() * 1200; for (let i = 0; i < 5; i++) A.tone(o, t + i * 0.11, { type: 'sine', f: b * (i % 2 ? 1.5 : 1), f2: b * (i % 2 ? 1 : 1.6), a: 0.01, d: 0.09, v: 0.05 }); },
   frog: (A, t, o) => { const f = 140 + Math.random() * 90; for (let i = 0; i < 2 + Math.floor(Math.random() * 3); i++) A.tone(o, t + i * 0.22, { type: 'square', f, f2: f * 0.7, a: 0.01, d: 0.09, v: 0.03 }); },
-  insects: (A, t, o) => { for (let i = 0; i < 14; i++) A.tone(o, t + i * 0.03, { type: 'sawtooth', f: 5200 + Math.random() * 600, a: 0.002, d: 0.018, v: 0.008 }); },
-  cicada: (A, t, o) => A.noise(o, t, { a: 0.4, d: 1.6, v: 0.05, f: 5600, q: 12 }),
+  insects: (A, t, o) => { for (let i = 0; i < 7; i++) A.tone(o, t + i * 0.06, { type: 'sine', f: 4600 + Math.random() * 500, a: 0.008, d: 0.035, v: 0.006 }); },
+  cicada: (A, t, o) => A.noise(o, t, { a: 0.5, d: 1.4, v: 0.03, f: 5200, q: 14 }),
   hawk: (A, t, o) => { A.tone(o, t, { type: 'sine', f: 2300, f2: 1500, a: 0.04, d: 0.55, v: 0.05 }); A.tone(o, t + 0.7, { type: 'sine', f: 2100, f2: 1400, a: 0.04, d: 0.5, v: 0.035 }); },
-  gust: (A, t, o) => A.noise(o, t, { a: 0.9, d: 1.8, v: 0.18, f: 300, f2: 900, q: 1.5 }),
+  gust: (A, t, o) => A.noise(o, t, { a: 1.1, d: 2, v: 0.09, type: 'lowpass', f: 380, f2: 650, q: 0.5 }),
   chime: (A, t, o) => { for (let i = 0; i < 3; i++) A.tone(o, t + i * (0.15 + Math.random() * 0.2), { type: 'sine', f: midi(84 + [0, 3, 7, 10, 12][Math.floor(Math.random() * 5)]), a: 0.002, d: 1.4, v: 0.025 }); },
   crow: (A, t, o) => { for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) { A.tone(o, t + i * 0.42, { type: 'sawtooth', f: 620, f2: 430, a: 0.01, d: 0.22, v: 0.035 }); A.noise(o, t + i * 0.42, { d: 0.2, v: 0.05, f: 1400, q: 3 }); } },
   bell: (A, t, o) => { A.tone(o, t, { type: 'sine', f: 196, a: 0.004, d: 4, v: 0.06 }); A.tone(o, t, { type: 'sine', f: 196 * 2.4, a: 0.003, d: 2.2, v: 0.025 }); },
   owl: (A, t, o) => { A.tone(o, t, { type: 'sine', f: 430, f2: 390, a: 0.05, d: 0.35, v: 0.06 }); A.tone(o, t + 0.55, { type: 'sine', f: 420, f2: 370, a: 0.05, d: 0.6, v: 0.05 }); },
-  whisper: (A, t, o) => A.noise(o, t, { a: 0.6, d: 1.4, v: 0.05, type: 'highpass', f: 2600, f2: 4200, q: 0.8 }),
+  whisper: (A, t, o) => A.noise(o, t, { a: 0.7, d: 1.4, v: 0.03, type: 'bandpass', f: 1800, f2: 2600, q: 1.2 }),
   bubble: (A, t, o) => { for (let i = 0; i < 3; i++) A.tone(o, t + i * 0.12 + Math.random() * 0.1, { type: 'sine', f: 280, f2: 900, a: 0.003, d: 0.05, v: 0.04 }); },
   gull: (A, t, o) => { for (let i = 0; i < 2; i++) A.tone(o, t + i * 0.32, { type: 'triangle', f: 1500, f2: 980, a: 0.02, d: 0.25, v: 0.04 }); },
   eagle: (A, t, o) => A.tone(o, t, { type: 'sine', f: 2700, f2: 1700, a: 0.03, d: 0.8, v: 0.045 }),
   // intérieurs : feu qui crépite, chopes, enclume
-  fire: (A, t, o) => { for (let i = 0; i < 6; i++) A.noise(o, t + Math.random() * 1.2, { a: 0.001, d: 0.02 + Math.random() * 0.03, v: 0.12, type: 'highpass', f: 2500 + Math.random() * 2500 }); A.noise(o, t, { a: 0.3, d: 1.2, v: 0.04, type: 'lowpass', f: 300 }); },
+  fire: (A, t, o) => { for (let i = 0; i < 4; i++) A.noise(o, t + Math.random() * 1.2, { a: 0.004, d: 0.03 + Math.random() * 0.04, v: 0.05, type: 'bandpass', f: 1400 + Math.random() * 1600, q: 1.5 }); A.noise(o, t, { a: 0.3, d: 1.2, v: 0.04, type: 'lowpass', f: 300 }); },
   clink: (A, t, o) => { A.tone(o, t, { type: 'sine', f: 2600, a: 0.001, d: 0.25, v: 0.03 }); A.tone(o, t + 0.04, { type: 'sine', f: 3900, a: 0.001, d: 0.18, v: 0.02 }); },
   murmur: (A, t, o) => { for (let i = 0; i < 3; i++) A.noise(o, t + i * 0.3, { a: 0.1, d: 0.35, v: 0.04, f: 500 + Math.random() * 500, q: 4 }); },
   anvil: (A, t, o) => { for (let i = 0; i < 3; i++) { const k = t + i * 0.5; [1, 2.76, 5.4].forEach((m) => A.tone(o, k, { type: 'sine', f: 520 * m, a: 0.001, d: 0.7 / m, v: 0.06 / m })); A.noise(o, k, { d: 0.05, v: 0.1, f: 3000 }); } },
@@ -449,7 +500,7 @@ function birdChirp(A, t, out) {
   for (let i = 0; i < n; i++) A.tone(out, t + i * 0.09, { type: 'sine', f: base * (1 + Math.random() * 0.2), f2: base * (1.3 + Math.random() * 0.4), a: 0.005, d: 0.06, v: 0.05 });
 }
 function crickets(A, t, out) {
-  for (let i = 0; i < 6; i++) A.tone(out, t + i * 0.045, { type: 'square', f: 4300, a: 0.002, d: 0.02, v: 0.012 });
+  for (let i = 0; i < 4; i++) A.tone(out, t + i * 0.07, { type: 'sine', f: 4200, a: 0.008, d: 0.04, v: 0.008 });
 }
 
 const REVERBY = new Set(['bossIntro', 'gateClose', 'bossRage', 'victory', 'discover', 'cast', 'holy', 'levelup', 'beacon', 'rune', 'runeok', 'summon', 'blink', 'storm', 'respawn', 'death', 'epic', 'quest', 'oracle', 'frost', 'rally', 'heal']);

@@ -13,6 +13,9 @@ const ringFrag = `uniform float uFill; uniform vec3 uColor; uniform vec3 uEmpty;
     float tick = step(0.5, fract(a * 40.0));
     vec3 c = mix(uEmpty * (0.6 + 0.2 * tick), uColor * (1.6 + 0.4 * sin(uTime * 3.0 + a * 20.0)), on);
     gl_FragColor = vec4(c, edge * (0.55 + on * 0.45));
+#include <tonemapping_fragment>
+#include <colorspace_fragment>
+
   }`;
 
 // Les Phares : monuments partagés. Leur cristal s'allume selon la lumière offerte par tous.
@@ -54,7 +57,10 @@ export class Beacons {
         transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
         vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
         fragmentShader: `uniform vec3 uColor; uniform float uAlpha; uniform float uTime; varying vec2 vUv;
-          void main(){ float f = pow(clamp(1.0 - vUv.y, 0.0, 1.0), 1.6) * (0.75 + 0.25 * sin(vUv.x * 30.0 + uTime * 2.0 - vUv.y * 20.0)); gl_FragColor = vec4(uColor * 1.4 * f, uAlpha * f); }`,
+          void main(){ float f = pow(clamp(1.0 - vUv.y, 0.0, 1.0), 1.6) * (0.75 + 0.25 * sin(vUv.x * 30.0 + uTime * 2.0 - vUv.y * 20.0)); gl_FragColor = vec4(uColor * 1.4 * f, uAlpha * f);
+#include <tonemapping_fragment>
+#include <colorspace_fragment>
+}`,
       });
       const beam = new THREE.Mesh(beamGeo, beamMat);
       beam.scale.set(1.1, 260, 1.1); beam.position.y = 6;

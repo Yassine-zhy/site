@@ -52,6 +52,9 @@ const FRAG = `
     a *= a;
     if (vA * a < 0.01) discard;
     gl_FragColor = vec4(uColor * (1.0 + a), vA * a * uAlpha);
+#include <tonemapping_fragment>
+#include <colorspace_fragment>
+
   }`;
 
 export class Ambient {

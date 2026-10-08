@@ -150,7 +150,7 @@ export class EnvLight {
   update(dt) {
     this.t -= dt;
     if (this.t > 0 && this.target) return false;
-    this.t = 2.5;
+    this.t = this.interval || 2.5; // qualité basse : bien plus rarement (le ciel change lentement)
     const first = !this.target;
     this.refresh();
     if (first) setModelEnv(this.target.texture);

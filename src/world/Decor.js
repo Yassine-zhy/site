@@ -21,6 +21,20 @@ export class Decor {
     this.fallbackY = 14;
   }
 
+  // Figement : les matrices des objets immobiles ne sont plus recalculées à chaque image (des
+  // milliers d'objets : un vrai gain de processeur sur téléphone). Seuls les objets animés
+  // (flammes, pales, cristaux…) et leurs enfants restent libres.
+  freeze(extra = []) {
+    const g = this.group, keep = new Set(extra.filter(Boolean));
+    if (this.windmillBlades) keep.add(this.windmillBlades);
+    for (const f of this.flames) keep.add(f);
+    for (const k of this.keep) keep.add(k);
+    for (const f of this.fires || []) for (const m of f.flames) keep.add(m);
+    g.updateMatrixWorld(true);
+    g.traverse((o) => { o.matrixAutoUpdate = false; });
+    for (const k of keep) k.traverse((o) => { o.matrixAutoUpdate = true; });
+  }
+
   // Fusionne les décors immobiles par matériau et par case de 64 m : peu d'appels de rendu,
   // et les cases hors champ (ou loin de l'ombre du joueur) ne sont pas dessinées.
   mergeStatic(cell = 64) {

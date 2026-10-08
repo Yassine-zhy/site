@@ -296,6 +296,11 @@ export class Windows {
     const qsel = h('select', { id: 'opt-quality', style: { width: '100%', padding: '8px', background: 'rgba(0,0,0,0.35)', color: 'var(--parch)', border: '1px solid var(--line)', borderRadius: '4px', fontSize: '15px' } },
       ...Object.entries(QUALITY).map(([k, q]) => h('option', { value: k, selected: g.renderer.qualityName === k }, q.label)));
     qsel.addEventListener('change', () => { g.renderer.setQuality(qsel.value); g.world.setQuality(g.renderer.quality); g.prewarm(); s.quality = qsel.value; Save.saveSettings(s); });
+    // plafond d'images par seconde : la première économie d'énergie (et de chaleur) sur téléphone
+    const fsel = h('select', { id: 'opt-fpscap', style: { width: '100%', padding: '8px', background: 'rgba(0,0,0,0.35)', color: 'var(--parch)', border: '1px solid var(--line)', borderRadius: '4px', fontSize: '15px' } },
+      ...[['auto', `Automatique (${g.fpsCapValue(true)} i/s)`], ['30', '30 i/s · économie, le téléphone chauffe moins'], ['45', '45 i/s'], ['60', '60 i/s'], ['0', 'Sans limite']]
+        .map(([v, l]) => h('option', { value: v, selected: String(s.fpsCap ?? 'auto') === v }, l)));
+    fsel.addEventListener('change', () => { s.fpsCap = fsel.value; Save.saveSettings(s); });
     const slider = (id, label, val, min, max, step, on) => {
       const out = h('span', { class: 'num' }, String(val));
       const inp = h('input', { id, type: 'range', min, max, step, value: val, style: { width: '100%' } });
@@ -319,6 +324,7 @@ export class Windows {
       buttons,
       sec('Graphismes'),
       h('div', { class: 'field' }, h('label', { for: 'opt-quality' }, 'qualité graphique'), qsel),
+      h('div', { class: 'field' }, h('label', { for: 'opt-fpscap' }, 'images par seconde'), fsel),
       h('div', { class: 'istats' }, `${Math.round(g.fps)} images/s · rendu à ${Math.round((g.renderer.dyn?.ratio || 1) * 100)} %`),
       check('opt-adaptive', 'Résolution adaptative (garde le jeu fluide)', s.adaptive !== false, (v) => { s.adaptive = v; if (!v) g.renderer.setRatio(g.renderer.baseRatio()); }),
       slider('opt-fov', 'champ de vision', s.fov || 60, 50, 85, 1, (v) => { s.fov = v; apply(); }),

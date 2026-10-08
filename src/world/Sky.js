@@ -54,7 +54,8 @@ void main() {
     col += aur * band * band * ay * uNight * uAurora * 0.9;
   }
   gl_FragColor = vec4(col, 1.0);
-  #include <colorspace_fragment>
+  #include <tonemapping_fragment>
+#include <colorspace_fragment>
 }`;
 
 // Palette du ciel par moment de la journée (t : 0 minuit, 0.5 midi).

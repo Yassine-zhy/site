@@ -20,6 +20,9 @@ export class Updrafts {
           vec3 col = mix(vec3(0.75, 0.95, 1.0), vec3(1.0, 0.95, 0.8), vUv.y);
           float near = 0.35 + 0.65 * smoothstep(2.0, 20.0, vDist);
           gl_FragColor = vec4(col * streak * 0.9 * near, streak * fade * 0.5 * near);
+#include <tonemapping_fragment>
+#include <colorspace_fragment>
+
         }`,
     });
     const stoneMat = new THREE.MeshStandardMaterial({ color: '#8f8a9c', roughness: 0.9, flatShading: true });

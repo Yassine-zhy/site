@@ -36,7 +36,8 @@ export class Clouds {
           float f = smoothstep(500.0, 3800.0, dist);
           col = mix(col, uFog, f);
           gl_FragColor = vec4(col, 1.0);
-          #include <colorspace_fragment>
+          #include <tonemapping_fragment>
+#include <colorspace_fragment>
         }`,
     });
     this.sea = new THREE.Mesh(geo, mat);
