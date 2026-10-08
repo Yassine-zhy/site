@@ -1,0 +1,3 @@
+# Outils pour lancer les tests automatiques : pip install -r requirements-dev.txt
+-r requirements.txt
+pytest>=7.0

@@ -1,0 +1,15 @@
+# Secrets : ne jamais publier les clés API
+.env
+
+# Fichiers produits par le bot
+*.log
+*.log.*
+state_*.json
+*.tmp
+*.csv
+
+# Python
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
