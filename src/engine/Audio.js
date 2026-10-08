@@ -1,5 +1,7 @@
 // Moteur audio procédural (Web Audio) : bruitages synthétisés, musique générative, ambiance.
-// Aucun fichier audio : tout est calculé en temps réel.
+// La musique est jouée par un orchestre échantillonné (Orchestra.js, échantillons CC0) ; si ses
+// fichiers ne se chargent pas, une musique générative synthétisée prend le relais.
+import { Orchestra } from './Orchestra.js';
 
 const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
 
@@ -19,7 +21,7 @@ export class Audio {
     // téléphone : tampons audio plus longs (latence imperceptible pour de la musique et des
     // bruitages, mais plus de trous ni de grésillements quand le processeur est chargé)
     this.lite = matchMedia('(pointer: coarse)').matches;
-    this.maxVoices = this.lite ? 40 : 72;
+    this.maxVoices = this.lite ? 56 : 80; // voix d'orchestre (lecture d'échantillons) peu coûteuses
     this.voices = 0;
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -45,6 +47,17 @@ export class Audio {
     this.windBuf = this.makeWind(8);
     this.startAmbience();
     this.startMusic();
+    this.orch = new Orchestra(this);
+    this.orch.init();
+  }
+
+  // thème imposé par le récit (prologue…), ou null pour revenir à la musique du lieu
+  playTheme(name) { this.forced = name || null; }
+
+  // fanfare orchestrale du récit (ou un bruitage de secours)
+  sting(name, fallback = null) {
+    if (this.ctx?.state === 'running' && this.orch?.sting(name)) return;
+    if (fallback) this.play(fallback, null);
   }
 
   setVolume(v, m) {
@@ -156,6 +169,8 @@ export class Audio {
     this.lastPlay.set(name, now);
     const sp = this.spatial(pos);
     if (sp.v <= 0.01) return;
+    // grands moments : l'orchestre remplace la version synthétisée
+    if ((name === 'victory' || name === 'bossIntro' || name === 'death') && this.orch?.sting(name)) return;
     const fn = SOUNDS[name];
     if (fn) fn(this, now, this.out(vol * sp.v, sp.pan, REVERBY.has(name) ? 0.5 : 0.15));
   }
@@ -272,6 +287,15 @@ export class Audio {
     const af = g?.arenaFights?.cur;
     this.bossTheme = BOSS_THEMES[af?.A.boss || g?.bossEngaged?.def.bossId] || BOSS_THEMES.roi;
     this.rage = af?.rage ? 1 : 0;
+    // orchestre : thème du lieu, du seigneur affronté ou du récit (les intérieurs gardent leur
+    // musique de chambre synthétisée)
+    const orch = this.orch;
+    if (orch?.ready) {
+      const bossId = af?.A.boss || g?.bossEngaged?.def.bossId || 'roi';
+      const mode = this.forced || (!g?.inGame ? 'title' : pl.room ? null : this.boss > 0.5 ? 'boss:' + bossId : 'biome:' + (pl.biome || 'temperate'));
+      orch.update(now, { mode, night, combat: this.combat, rage: this.rage });
+      if (mode) { this.nextT = now + 0.1; return; }
+    }
     // ordonnanceur musical
     const tempo = this.boss > 0.5 ? this.bossTheme.tempo * (this.rage ? 0.8 : 1) : th.tempo * (night > 0.5 ? 1.2 : 1);
     if (this.nextT < now - 1) this.nextT = now + 0.05; // l'onglet a dormi : on ne rattrape pas les notes perdues

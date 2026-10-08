@@ -1,0 +1,174 @@
+ORCHESTRAL SAMPLES (public/assets/orch) - CREDITS AND LICENCE
+==============================================================
+
+Every sound in this folder is derived from two sample libraries released under
+CC0 1.0 Universal (public domain dedication). No attribution is legally required;
+the credits below are given as a courtesy. The processed files in this folder
+are likewise offered under CC0 1.0:
+https://creativecommons.org/publicdomain/zero/1.0/
+
+The full licence texts, copied from each repository at the pinned commit, are in
+licenses/VSCO-2-CE_LICENSE.txt and licenses/VCSL_LICENSE.txt.
+
+1. VS Chamber Orchestra: Community Edition (VSCO 2 CE)
+   By Versilian Studios LLC / Sam Gossner and Ivy Audio / Simon Dalzell
+   (recorded by Sam Gossner & Simon Dalzell; sample cutting by Elan Hickler /
+   Soundemote).
+   Repository: https://github.com/sgossner/VSCO-2-CE
+   Commit:     440300901dfe9275fd84e0b7763af1f8443ae62e
+   Licence:    CC0 1.0 Universal (LICENSE at that commit)
+   Homepage:   http://vis.versilstudios.net/vsco-community.html
+   Courtesy credit, as requested in the library's Readme.txt: samples by
+   Versilian Studios / Sam Gossner and Ivy Audio / Simon Dalzell - VSCO 2:
+   Community Edition, http://vis.versilstudios.net/vsco-community.html
+   (The Readme also asks that the samples not be sold directly; they are not.)
+
+2. Versilian Community Sample Library (VCSL)
+   By Versilian Studios LLC (Sam Gossner) and contributors.
+   Repository: https://github.com/sgossner/VCSL
+   Commit:     c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e
+   Licence:    CC0 1.0 Universal (LICENSE at that commit; the README says
+               "no royalties, no credit, no special terms")
+   Homepage:   https://versilian-studios.com/vcsl/
+
+PROCESSING
+   Mono (channels averaged), resampled to 32000 Hz (soxr), leading silence
+   removed (5 ms kept before the onset), trimmed (sustains 4.5 s / 0.35 s fade,
+   short notes 2.5 s / 0.15 s fade, harp 3 s, tubular bells 5 s, percussion up
+   to 5 s, timpani roll 4 s, gong 6 s), peak-normalised towards -1 dBFS with
+   at most +12 dB of gain, encoded as OGG Vorbis (libvorbis, quality 3).
+   MIDI numbers in manifest.json are the SOUNDING pitch of each recording
+   (both libraries name most folders one octave below the sounding pitch).
+
+SOURCE OF EACH FILE (output <- library: path at the pinned commit)
+   cello_sus_36.ogg
+      <- VSCO 2 CE: Strings/Cello Section/susvib/susvib_C1_v3_1.wav
+   cello_sus_43.ogg
+      <- VSCO 2 CE: Strings/Cello Section/susvib/susvib_G1_v3_1.wav
+   cello_sus_47.ogg
+      <- VSCO 2 CE: Strings/Cello Section/susvib/susvib_B1_v3_1.wav
+   cello_sus_53.ogg
+      <- VSCO 2 CE: Strings/Cello Section/susvib/susvib_F2_v3_1.wav
+   cello_sus_60.ogg
+      <- VSCO 2 CE: Strings/Cello Section/susvib/susvib_C3_v3_1.wav
+   violin_sus_55.ogg
+      <- VSCO 2 CE: Strings/Violin Section/susVib/VlnEns_susVib_G2_v2.wav
+   violin_sus_62.ogg
+      <- VSCO 2 CE: Strings/Violin Section/susVib/VlnEns_susVib_D3_v2.wav
+   violin_sus_69.ogg
+      <- VSCO 2 CE: Strings/Violin Section/susVib/VlnEns_susVib_A3_v2.wav
+   violin_sus_76.ogg
+      <- VSCO 2 CE: Strings/Violin Section/susVib/VlnEns_susVib_E4_v2.wav
+   violin_sus_83.ogg
+      <- VSCO 2 CE: Strings/Violin Section/susVib/VlnEns_susVib_B4_v2.wav
+   bass_sus_30.ogg
+      <- VSCO 2 CE: Strings/Solo Contrabass/SusVib/BKCtbss_SusVib_F#0_v3_rr1.wav
+   bass_sus_34.ogg
+      <- VSCO 2 CE: Strings/Solo Contrabass/SusVib/BKCtbss_SusVib_A#0_v3_rr1.wav
+   bass_sus_38.ogg
+      <- VSCO 2 CE: Strings/Solo Contrabass/SusVib/BKCtbss_SusVib_D1_v3_rr1.wav
+   violin_trem_55.ogg
+      <- VSCO 2 CE: Strings/Violin Section/Trem/VlnEns_Trem_G2_v2.wav
+   violin_trem_62.ogg
+      <- VSCO 2 CE: Strings/Violin Section/Trem/VlnEns_Trem_D3_v2.wav
+   violin_trem_69.ogg
+      <- VSCO 2 CE: Strings/Violin Section/Trem/VlnEns_Trem_A3_v2.wav
+   violin_trem_76.ogg
+      <- VSCO 2 CE: Strings/Violin Section/Trem/VlnEns_Trem_E4_v2.wav
+   cello_trem_36.ogg
+      <- VSCO 2 CE: Strings/Cello Section/trem/trem_C1_v2_1.wav
+   cello_trem_43.ogg
+      <- VSCO 2 CE: Strings/Cello Section/trem/trem_G1_v2_1.wav
+   cello_trem_50.ogg
+      <- VSCO 2 CE: Strings/Cello Section/trem/trem_D2_v2_1.wav
+   horn_sus_46.ogg
+      <- VSCO 2 CE: Brass/F Horn/sus/MOHorn_sus_A#1_v2_1.wav
+   horn_sus_53.ogg
+      <- VSCO 2 CE: Brass/F Horn/sus/MOHorn_sus_F2_v2_1.wav
+   horn_sus_60.ogg
+      <- VSCO 2 CE: Brass/F Horn/sus/MOHorn_sus_C3_v2_1.wav
+   horn_sus_74.ogg
+      <- VSCO 2 CE: Brass/F Horn/sus/MOHorn_sus_D4_v1_1.wav
+   trombone_sus_39.ogg
+      <- VSCO 2 CE: Brass/Tenor Trombone/sus/tenortbn_sus_D#1_v2_1.wav
+   trombone_sus_46.ogg
+      <- VSCO 2 CE: Brass/Tenor Trombone/sus/tenortbn_sus_A#1_v2_1.wav
+   trombone_sus_53.ogg
+      <- VSCO 2 CE: Brass/Tenor Trombone/sus/tenortbn_sus_F2_v2_1.wav
+   tuba_sus_29.ogg
+      <- VSCO 2 CE: Brass/Tuba/sus/Tuba3_sus_F0_v1_rr1_Mid.wav
+   tuba_sus_34.ogg
+      <- VSCO 2 CE: Brass/Tuba/sus/Tuba3_sus_A#0_v2_rr1_Mid.wav
+   trumpet_sus_60.ogg
+      <- VSCO 2 CE: Brass/Trumpet/sus/Sum_SHTrumpet_sus_C3_v3_rr1.wav
+   trumpet_sus_67.ogg
+      <- VSCO 2 CE: Brass/Trumpet/sus/Sum_SHTrumpet_sus_G3_v3_rr1.wav
+   trumpet_sus_74.ogg
+      <- VSCO 2 CE: Brass/Trumpet/sus/Sum_SHTrumpet_sus_D4_v3_rr1.wav
+   flute_sus_72.ogg
+      <- VSCO 2 CE: Woodwinds/Flute/susNV/LDFlute_susNV_C4_v3_1.wav
+   flute_sus_81.ogg
+      <- VSCO 2 CE: Woodwinds/Flute/susNV/LDFlute_susNV_A4_v3_1.wav
+   flute_sus_84.ogg
+      <- VSCO 2 CE: Woodwinds/Flute/susNV/LDFlute_susNV_C5_v1_1.wav
+   vibes_bowed_57.ogg
+      <- VCSL: Idiophones/Struck Idiophones/Vibraphone/Bowed/Vibes_bowed_A2_rr1_Main.wav
+   vibes_bowed_67.ogg
+      <- VCSL: Idiophones/Struck Idiophones/Vibraphone/Bowed/Vibes_bowed_G3_rr1_Main.wav
+   vibes_bowed_74.ogg
+      <- VCSL: Idiophones/Struck Idiophones/Vibraphone/Bowed/Vibes_bowed_D4_rr1_Main.wav
+   cello_pizz_36.ogg
+      <- VSCO 2 CE: Strings/Cello Section/pizzT/pizzT_C1_v2_RR1.wav
+   cello_pizz_43.ogg
+      <- VSCO 2 CE: Strings/Cello Section/pizzT/pizzT_G1_v2_RR1.wav
+   cello_pizz_47.ogg
+      <- VSCO 2 CE: Strings/Cello Section/pizzT/pizzT_B1_v2_RR1.wav
+   cello_pizz_53.ogg
+      <- VSCO 2 CE: Strings/Cello Section/pizzT/pizzT_F2_v2_RR1.wav
+   violin_spic_55.ogg
+      <- VSCO 2 CE: Strings/Violin Section/Spic/VlnEns_Spic_G2_v2_rr1.wav
+   violin_spic_62.ogg
+      <- VSCO 2 CE: Strings/Violin Section/Spic/VlnEns_Spic_D3_v2_rr1.wav
+   violin_spic_69.ogg
+      <- VSCO 2 CE: Strings/Violin Section/Spic/VlnEns_Spic_A3_v2_rr1.wav
+   violin_spic_76.ogg
+      <- VSCO 2 CE: Strings/Violin Section/Spic/VlnEns_Spic_E4_v2_rr1.wav
+   horn_stac_46.ogg
+      <- VSCO 2 CE: Brass/F Horn/stac/MOHorn_stac_A#1_v2_rr1.wav
+   horn_stac_53.ogg
+      <- VSCO 2 CE: Brass/F Horn/stac/MOHorn_stac_F2_v2_rr1.wav
+   horn_stac_60.ogg
+      <- VSCO 2 CE: Brass/F Horn/stac/MOHorn_stac_C3_v2_rr1.wav
+   harp_pluck_48.ogg
+      <- VCSL: Chordophones/Composite Chordophones/Concert Harp/KSHarp_C3_mf3.wav
+   harp_pluck_55.ogg
+      <- VCSL: Chordophones/Composite Chordophones/Concert Harp/KSHarp_G3_mf1.wav
+   harp_pluck_59.ogg
+      <- VCSL: Chordophones/Composite Chordophones/Concert Harp/KSHarp_B3_mf1.wav
+   harp_pluck_65.ogg
+      <- VCSL: Chordophones/Composite Chordophones/Concert Harp/KSHarp_F4_mf1.wav
+   harp_pluck_72.ogg
+      <- VCSL: Chordophones/Composite Chordophones/Concert Harp/KSHarp_C5_mf1.wav
+   harp_pluck_79.ogg
+      <- VCSL: Chordophones/Composite Chordophones/Concert Harp/KSHarp_G5_mf1.wav
+   tubularbells_hit_60.ogg
+      <- VCSL: Idiophones/Struck Idiophones/Tubular Bells 2/TB_hit_C4_v4_1.wav
+   tubularbells_hit_67.ogg
+      <- VCSL: Idiophones/Struck Idiophones/Tubular Bells 2/TB_hit_G4_v4_1.wav
+   glock_hit_79.ogg
+      <- VCSL: Idiophones/Struck Idiophones/Glockenspiel/glock_medium_G4_01.wav
+   glock_hit_84.ogg
+      <- VCSL: Idiophones/Struck Idiophones/Glockenspiel/glock_medium_C5_01.wav
+   timpani_hit_41.ogg
+      <- VCSL: Membranophones/Struck Membranophones/Timpani 2/Hit/Timpani7E_hit_v3_rr1_main.wav
+   timpani_hit_48.ogg
+      <- VCSL: Membranophones/Struck Membranophones/Timpani 2/Hit/Timpani3B_hit_v3_rr1_main.wav
+   timpani_roll_42.ogg
+      <- VCSL: Membranophones/Struck Membranophones/Timpani 1/Roll/Timpani1_Roll_v5_rr1_Sum.wav
+   bassdrum_hit_0.ogg
+      <- VCSL: Membranophones/Struck Membranophones/Bass Drum 1/BDrumNew_hit_v5_rr1_Sum.wav
+   cymbal_hit_0.ogg
+      <- VCSL: Idiophones/Struck Idiophones/Suspended Cymbal 1/susCymb1_hit_f1.wav
+   gong_hit_0.ogg
+      <- VCSL: Idiophones/Struck Idiophones/Gong 1/gong_mf.wav
+

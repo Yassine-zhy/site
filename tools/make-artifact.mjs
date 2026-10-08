@@ -34,8 +34,8 @@ fs.writeFileSync(path.join(out, 'index.html'), page);
 // modèles 3D
 const copy = (src, dst) => { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.copyFileSync(src, dst); };
 const files = {};
-// les modèles binaires sont publiés en base64 (.glb.txt), un type servi par la plateforme
-const walk = (dir) => { for (const f of fs.readdirSync(dir)) { const p = path.join(dir, f); if (fs.statSync(p).isDirectory()) walk(p); else if (p.endsWith('.glb') || p.endsWith('.bin')) { const rel = path.relative(dist, p).split(path.sep).join('/') + '.txt'; fs.mkdirSync(path.dirname(path.join(out, rel)), { recursive: true }); fs.writeFileSync(path.join(out, rel), fs.readFileSync(p).toString('base64')); files[rel] = 'artifact/' + rel; } } };
+// les modèles et échantillons binaires sont publiés en base64 (.glb.txt, .ogg.txt), un type servi par la plateforme
+const walk = (dir) => { for (const f of fs.readdirSync(dir)) { const p = path.join(dir, f); if (fs.statSync(p).isDirectory()) walk(p); else if (p.endsWith('.glb') || p.endsWith('.bin') || p.endsWith('.ogg') || p.endsWith(path.join('orch', 'manifest.json'))) { const rel = path.relative(dist, p).split(path.sep).join('/') + '.txt'; fs.mkdirSync(path.dirname(path.join(out, rel)), { recursive: true }); fs.writeFileSync(path.join(out, rel), fs.readFileSync(p).toString('base64')); files[rel] = 'artifact/' + rel; } } };
 walk(path.join(dist, 'assets'));
 fs.writeFileSync(path.join(out, 'files.json'), JSON.stringify(files, null, 2));
 // page de test locale (squelette identique à celui de la plateforme)

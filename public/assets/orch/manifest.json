@@ -1,0 +1,375 @@
+{
+  "version": 1,
+  "sampleRate": 32000,
+  "instruments": {
+    "cello_sus": [
+      {
+        "midi": 36,
+        "file": "cello_sus_36.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 43,
+        "file": "cello_sus_43.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 47,
+        "file": "cello_sus_47.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 53,
+        "file": "cello_sus_53.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 60,
+        "file": "cello_sus_60.ogg",
+        "seconds": 4.5
+      }
+    ],
+    "violin_sus": [
+      {
+        "midi": 55,
+        "file": "violin_sus_55.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 62,
+        "file": "violin_sus_62.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 69,
+        "file": "violin_sus_69.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 76,
+        "file": "violin_sus_76.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 83,
+        "file": "violin_sus_83.ogg",
+        "seconds": 4.5
+      }
+    ],
+    "bass_sus": [
+      {
+        "midi": 30,
+        "file": "bass_sus_30.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 34,
+        "file": "bass_sus_34.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 38,
+        "file": "bass_sus_38.ogg",
+        "seconds": 4.5
+      }
+    ],
+    "violin_trem": [
+      {
+        "midi": 55,
+        "file": "violin_trem_55.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 62,
+        "file": "violin_trem_62.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 69,
+        "file": "violin_trem_69.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 76,
+        "file": "violin_trem_76.ogg",
+        "seconds": 4.5
+      }
+    ],
+    "cello_trem": [
+      {
+        "midi": 36,
+        "file": "cello_trem_36.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 43,
+        "file": "cello_trem_43.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 50,
+        "file": "cello_trem_50.ogg",
+        "seconds": 4.5
+      }
+    ],
+    "horn_sus": [
+      {
+        "midi": 46,
+        "file": "horn_sus_46.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 53,
+        "file": "horn_sus_53.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 60,
+        "file": "horn_sus_60.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 74,
+        "file": "horn_sus_74.ogg",
+        "seconds": 4.5
+      }
+    ],
+    "trombone_sus": [
+      {
+        "midi": 39,
+        "file": "trombone_sus_39.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 46,
+        "file": "trombone_sus_46.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 53,
+        "file": "trombone_sus_53.ogg",
+        "seconds": 4.5
+      }
+    ],
+    "tuba_sus": [
+      {
+        "midi": 29,
+        "file": "tuba_sus_29.ogg",
+        "seconds": 3.976
+      },
+      {
+        "midi": 34,
+        "file": "tuba_sus_34.ogg",
+        "seconds": 4.5
+      }
+    ],
+    "trumpet_sus": [
+      {
+        "midi": 60,
+        "file": "trumpet_sus_60.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 67,
+        "file": "trumpet_sus_67.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 74,
+        "file": "trumpet_sus_74.ogg",
+        "seconds": 4.5
+      }
+    ],
+    "flute_sus": [
+      {
+        "midi": 72,
+        "file": "flute_sus_72.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 81,
+        "file": "flute_sus_81.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 84,
+        "file": "flute_sus_84.ogg",
+        "seconds": 4.5
+      }
+    ],
+    "vibes_bowed": [
+      {
+        "midi": 57,
+        "file": "vibes_bowed_57.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 67,
+        "file": "vibes_bowed_67.ogg",
+        "seconds": 4.5
+      },
+      {
+        "midi": 74,
+        "file": "vibes_bowed_74.ogg",
+        "seconds": 4.5
+      }
+    ],
+    "cello_pizz": [
+      {
+        "midi": 36,
+        "file": "cello_pizz_36.ogg",
+        "seconds": 2.5
+      },
+      {
+        "midi": 43,
+        "file": "cello_pizz_43.ogg",
+        "seconds": 2.5
+      },
+      {
+        "midi": 47,
+        "file": "cello_pizz_47.ogg",
+        "seconds": 2.5
+      },
+      {
+        "midi": 53,
+        "file": "cello_pizz_53.ogg",
+        "seconds": 1.808
+      }
+    ],
+    "violin_spic": [
+      {
+        "midi": 55,
+        "file": "violin_spic_55.ogg",
+        "seconds": 2.23
+      },
+      {
+        "midi": 62,
+        "file": "violin_spic_62.ogg",
+        "seconds": 1.489
+      },
+      {
+        "midi": 69,
+        "file": "violin_spic_69.ogg",
+        "seconds": 1.009
+      },
+      {
+        "midi": 76,
+        "file": "violin_spic_76.ogg",
+        "seconds": 0.602
+      }
+    ],
+    "horn_stac": [
+      {
+        "midi": 46,
+        "file": "horn_stac_46.ogg",
+        "seconds": 0.964
+      },
+      {
+        "midi": 53,
+        "file": "horn_stac_53.ogg",
+        "seconds": 1.15
+      },
+      {
+        "midi": 60,
+        "file": "horn_stac_60.ogg",
+        "seconds": 0.63
+      }
+    ],
+    "harp_pluck": [
+      {
+        "midi": 48,
+        "file": "harp_pluck_48.ogg",
+        "seconds": 3.0
+      },
+      {
+        "midi": 55,
+        "file": "harp_pluck_55.ogg",
+        "seconds": 3.0
+      },
+      {
+        "midi": 59,
+        "file": "harp_pluck_59.ogg",
+        "seconds": 3.0
+      },
+      {
+        "midi": 65,
+        "file": "harp_pluck_65.ogg",
+        "seconds": 3.0
+      },
+      {
+        "midi": 72,
+        "file": "harp_pluck_72.ogg",
+        "seconds": 3.0
+      },
+      {
+        "midi": 79,
+        "file": "harp_pluck_79.ogg",
+        "seconds": 3.0
+      }
+    ],
+    "tubularbells_hit": [
+      {
+        "midi": 60,
+        "file": "tubularbells_hit_60.ogg",
+        "seconds": 5.0
+      },
+      {
+        "midi": 67,
+        "file": "tubularbells_hit_67.ogg",
+        "seconds": 5.0
+      }
+    ],
+    "glock_hit": [
+      {
+        "midi": 79,
+        "file": "glock_hit_79.ogg",
+        "seconds": 2.5
+      },
+      {
+        "midi": 84,
+        "file": "glock_hit_84.ogg",
+        "seconds": 2.5
+      }
+    ],
+    "timpani_hit": [
+      {
+        "midi": 41,
+        "file": "timpani_hit_41.ogg",
+        "seconds": 5.0
+      },
+      {
+        "midi": 48,
+        "file": "timpani_hit_48.ogg",
+        "seconds": 4.91
+      }
+    ],
+    "timpani_roll": [
+      {
+        "midi": 42,
+        "file": "timpani_roll_42.ogg",
+        "seconds": 4.0
+      }
+    ],
+    "bassdrum_hit": [
+      {
+        "midi": 0,
+        "file": "bassdrum_hit_0.ogg",
+        "seconds": 2.31
+      }
+    ],
+    "cymbal_hit": [
+      {
+        "midi": 0,
+        "file": "cymbal_hit_0.ogg",
+        "seconds": 5.0
+      }
+    ],
+    "gong_hit": [
+      {
+        "midi": 0,
+        "file": "gong_hit_0.ogg",
+        "seconds": 6.0
+      }
+    ]
+  }
+}

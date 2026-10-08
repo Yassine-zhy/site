@@ -134,7 +134,8 @@ export class Story {
     );
     el.hidden = false;
     void el.offsetWidth; el.classList.add('show');
-    if (b.sound) this.game.audio?.play(b.sound, null);
+    if (b.sting) this.game.audio?.sting?.(b.sting, b.sound);
+    else if (b.sound) this.game.audio?.play(b.sound, null);
     const dur = b.time || 5.2;
     setTimeout(() => {
       el.classList.remove('show');
@@ -156,7 +157,7 @@ export class Story {
     this.lore.shards[key] = Date.now();
     g.save?.soon(1);
     g.schedule(6.2, () => {
-      this.showBanner({ small: 'Éclat repris', big: S.name, text: lord?.fall || '', color: S.color, cls: 'shard', sound: 'levelup', time: 6 });
+      this.showBanner({ small: 'Éclat repris', big: S.name, text: lord?.fall || '', color: S.color, cls: 'shard', sting: 'shard', sound: 'levelup', time: 6 });
       this.aura.setCrown(this.lore.shards, key);
       this.aura.updateStatues(this.lore.shards);
       g.fx.beam(g.player.position.clone(), S.color, { height: 90, radius: 2.6, life: 2.6 });
@@ -238,7 +239,7 @@ export class Story {
       const open = this.sealOpen(s);
       if (open && !s.open) {
         s.open = true;
-        this.showBanner({ small: 'La Brume se retire', big: cap(s.name), text: 'Une nouvelle terre s’ouvre à vous', cls: 'seal', sound: 'discover', time: 5 });
+        this.showBanner({ small: 'La Brume se retire', big: cap(s.name), text: 'Une nouvelle terre s’ouvre à vous', cls: 'seal', sting: 'seal', sound: 'discover', time: 5 });
       } else if (!open && s.open) { s.open = false; s.dissolve = 0; }
       if (s.open && s.dissolve < 1) s.dissolve = Math.min(1, s.dissolve + dt / 5);
       const d = Math.hypot(pos.x - s.x, pos.z - s.z);
@@ -375,7 +376,7 @@ export class Story {
     if (a > (this.lore.act ?? 0) && !this.blocking) {
       this.lore.act = a;
       const A = ACTS[a];
-      this.showBanner({ small: A.title, big: A.name, text: '', cls: 'act', sound: 'epic', time: 5.5 });
+      this.showBanner({ small: A.title, big: A.name, text: '', cls: 'act', sting: 'act', sound: 'epic', time: 5.5 });
       g.chat?.system(`${A.title} · ${A.name}. ${A.summary}`, 16);
       g.save?.soon(1);
     }
