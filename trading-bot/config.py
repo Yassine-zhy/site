@@ -22,6 +22,7 @@ LOG_FILE = BASE_DIR / "bot_trading.log"
 
 VALID_MODES = ("paper", "testnet", "live")
 VALID_STRATEGIES = ("indicators", "ai")
+STOCK_BROKERS = ("alpaca",)     # courtiers d'actions (voir stocks.py) ; le reste passe par ccxt
 VALID_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
 # Mot à recopier dans CONFIRM_LIVE pour autoriser les ordres en argent réel.
@@ -84,6 +85,21 @@ class Settings:
     ai: AISettings = field(default_factory=AISettings)
 
     @property
+    def is_stock(self) -> bool:
+        """Vrai pour les actions et ETF (courtier Alpaca), faux pour les cryptos."""
+        return self.exchange_id in STOCK_BROKERS
+
+    @property
+    def base_currency(self) -> str:
+        """Ce qu'on achète : « BTC » pour BTC/USDT, « NVDA » pour une action."""
+        return self.symbol.split("/")[0]
+
+    @property
+    def quote_currency(self) -> str:
+        """La monnaie de paiement : « USDT » pour BTC/USDT, dollars pour une action."""
+        return self.symbol.split("/")[1] if "/" in self.symbol else "USD"
+
+    @property
     def uses_real_orders(self) -> bool:
         """Vrai si des ordres sont envoyés à l'exchange (testnet ou réel)."""
         return self.mode in ("testnet", "live")
@@ -141,8 +157,8 @@ def load_settings(for_backtest: bool = False) -> Settings:
         raise ConfigError(f"MODE doit valoir paper, testnet ou live (valeur lue : {mode!r}).")
 
     exchange_id = _get_str("EXCHANGE", "kraken").lower()
-    if exchange_id not in ccxt.exchanges:
-        raise ConfigError(f"EXCHANGE inconnu de ccxt : {exchange_id!r}.")
+    if exchange_id not in STOCK_BROKERS and exchange_id not in ccxt.exchanges:
+        raise ConfigError(f"EXCHANGE inconnu : {exchange_id!r} (kraken, binance, alpaca...).")
 
     api_key = os.getenv("API_KEY", "").strip()
     api_secret = os.getenv("API_SECRET", "").strip()
@@ -186,6 +202,11 @@ def load_settings(for_backtest: bool = False) -> Settings:
             raise ConfigError(
                 "STRATEGY=ai nécessite une clé ANTHROPIC_API_KEY dans le .env "
                 "(à créer sur https://console.anthropic.com, voir le README)."
+            )
+        if exchange_id in STOCK_BROKERS and not (api_key and api_secret):
+            raise ConfigError(
+                "Les actions passent par Alpaca, qui demande ses clés API même pour lire les prix : "
+                "renseignez API_KEY et API_SECRET (voir le README)."
             )
         if mode in ("testnet", "live") and not (api_key and api_secret):
             raise ConfigError(f"Le mode {mode} nécessite API_KEY et API_SECRET dans le fichier .env.")

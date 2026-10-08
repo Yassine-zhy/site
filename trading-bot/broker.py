@@ -104,6 +104,17 @@ class ExchangeClient:
             self.exchange.fetch_balance()
 
     @property
+    def name(self) -> str:
+        return self.exchange.id
+
+    def market_is_open(self) -> bool:
+        """Les marchés crypto ne ferment jamais (les actions, si : voir stocks.py)."""
+        return True
+
+    def next_open_text(self) -> str:
+        return "maintenant"
+
+    @property
     def base(self) -> str:
         """Crypto achetée, ex. BTC."""
         return self.market["base"]
@@ -182,17 +193,7 @@ class LiveTrader:
         amount = self.client.round_amount(quote_amount / price)
         if amount <= 0:
             raise ccxt.InvalidOrder(f"Montant trop faible pour acheter du {self.client.base}.")
-        before = self.get_free_balances()
-        try:
-            order = self.exchange.create_market_buy_order(self.client.symbol, amount)
-        except ccxt.NetworkError:
-            # Un timeout peut survenir APRÈS l'exécution de l'ordre : on
-            # vérifie le solde avant de conclure à un échec.
-            fill = self._fill_from_balance_change("buy", amount, before, price)
-            if fill is None:
-                raise
-            return fill
-        return self._fill_from_order(self._wait_until_filled(order), "buy", amount, before, price)
+        return self._execute("buy", amount, quote_amount, price)
 
     def market_sell(self, amount: float) -> Fill:
         """Vend au marché la quantité indiquée."""
@@ -200,15 +201,26 @@ class LiveTrader:
         amount = self.client.round_amount(amount)
         if amount <= 0:
             raise ccxt.InvalidOrder(f"Quantité de {self.client.base} trop faible pour être vendue.")
+        return self._execute("sell", amount, amount * price, price)
+
+    def _execute(self, side: str, amount: float, quote_amount: float, price: float) -> Fill:
         before = self.get_free_balances()
         try:
-            order = self.exchange.create_market_sell_order(self.client.symbol, amount)
+            order = self._send_order(side, amount, quote_amount)
         except ccxt.NetworkError:
-            fill = self._fill_from_balance_change("sell", amount, before, price)
+            # Un timeout peut survenir APRÈS l'exécution de l'ordre : on
+            # vérifie le solde avant de conclure à un échec.
+            fill = self._fill_from_balance_change(side, amount, before, price)
             if fill is None:
                 raise
             return fill
-        return self._fill_from_order(self._wait_until_filled(order), "sell", amount, before, price)
+        return self._fill_from_order(self._wait_until_filled(order), side, amount, before, price)
+
+    def _send_order(self, side: str, amount: float, quote_amount: float) -> dict[str, Any]:
+        """Envoie l'ordre au marché à l'exchange (redéfini pour les actions, voir stocks.py)."""
+        if side == "buy":
+            return self.exchange.create_market_buy_order(self.client.symbol, amount)
+        return self.exchange.create_market_sell_order(self.client.symbol, amount)
 
     # ------------------------------------------------------- détails internes
     def _wait_until_filled(self, order: dict[str, Any], attempts: int = 5) -> dict[str, Any]:

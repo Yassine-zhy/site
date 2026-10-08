@@ -97,6 +97,7 @@ class TradingBot:
         self._errors = 0              # erreurs consécutives (pour espacer les essais)
         self._reconciled = False
         self._ai_disabled = False     # True si la clé Anthropic est refusée
+        self._market_closed = False   # Bourse fermée (actions uniquement)
 
     # ------------------------------------------------------------- boucle
     def run(self) -> None:
@@ -162,6 +163,17 @@ class TradingBot:
             self._reconciled = True
         if self.state.get("pending_buy"):
             self.resolve_pending_buy()
+
+        # Actions : rien à faire tant que la Bourse est fermée (un ordre serait
+        # mis en attente jusqu'à l'ouverture, au prix du moment).
+        if not self.client.market_is_open():
+            if not self._market_closed:
+                log.info("Marché fermé : le bot attend la prochaine séance (%s).", self.client.next_open_text())
+                self._market_closed = True
+            return
+        if self._market_closed:
+            log.info("Marché ouvert : reprise de la surveillance.")
+            self._market_closed = False
 
         # 1. La gestion du risque passe avant tout le reste.
         if self.state["in_position"]:
@@ -452,7 +464,7 @@ def connect_with_retry(client: ExchangeClient, stop_event: threading.Event) -> b
     while not stop_event.is_set():
         try:
             client.connect()
-            log.info("Connecté à %s : paire %s (%s / %s).", client.exchange.id, client.symbol, client.base, client.quote)
+            log.info("Connecté à %s : %s (%s / %s).", client.name, client.symbol, client.base, client.quote)
             return True
         except ccxt.AuthenticationError as exc:
             log.critical("Clés API refusées : %s. Vérifiez le fichier .env et les permissions de la clé.", exc)
@@ -463,7 +475,7 @@ def connect_with_retry(client: ExchangeClient, stop_event: threading.Event) -> b
         except (ccxt.NetworkError, ccxt.ExchangeError) as exc:
             attempt += 1
             wait = min(30 * 2 ** (attempt - 1), MAX_BACKOFF_SECONDS)
-            log.warning("Connexion à %s impossible (%s). Nouvel essai dans %d s.", client.exchange.id, exc, wait)
+            log.warning("Connexion à %s impossible (%s). Nouvel essai dans %d s.", client.name, exc, wait)
             stop_event.wait(wait)
     return False
 
@@ -525,11 +537,17 @@ def main(argv: list[str] | None = None) -> int:
     stop_event = threading.Event()
     install_signal_handlers(stop_event)
     try:
-        client = ExchangeClient(settings)
+        if settings.is_stock:
+            from stocks import AlpacaClient, AlpacaTrader   # actions : courtier Alpaca
+            client = AlpacaClient(settings)
+        else:
+            client = ExchangeClient(settings)
         if not connect_with_retry(client, stop_event):
             return 0 if stop_event.is_set() else 1   # 0 si l'arrêt a été demandé
         if settings.mode == "paper":
             trader = PaperTrader(client, state, settings.paper_fee, settings.paper_slippage)
+        elif settings.is_stock:
+            trader = AlpacaTrader(client)
         else:
             trader = LiveTrader(client)
         advisor = ClaudeAdvisor(settings) if settings.strategy_mode == "ai" else None

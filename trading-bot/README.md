@@ -1,8 +1,10 @@
 # Bot de swing trading crypto (Python + ccxt)
 
-Bot autonome qui trade **une paire** (BTC/USDT par défaut) sur Kraken ou Binance,
-avec des bougies de **4 h** : peu d'ordres, donc peu de frais, ce qui compte
-beaucoup avec un capital de 100 $.
+Bot autonome qui trade **un actif au choix** : une crypto (BTC, ETH, SOL...)
+sur Kraken ou Binance, ou **une action ou un ETF américain** (Nvidia, Apple,
+Tesla, S&P 500...) via le courtier Alpaca. Il travaille sur des bougies de 4 h
+ou d'un jour : peu d'ordres, donc peu de frais, ce qui compte beaucoup avec un
+capital de 100 $.
 
 Deux façons de prendre les décisions, au choix dans le `.env` :
 
@@ -30,6 +32,7 @@ trading-bot/
 ├── strategy.py          ← les règles fixes : RSI, EMA 50/200, check_buy_sell_signals(df)
 ├── risk.py              ← taille de position, stop-loss, take-profit
 ├── broker.py            ← connexion ccxt, ordres réels (LiveTrader) ou simulés (PaperTrader)
+├── stocks.py            ← actions et ETF via Alpaca (même interface que broker.py)
 ├── config.py            ← lecture et validation du fichier .env
 ├── state.py             ← mémoire du bot (position ouverte, prix d'achat) dans un JSON
 ├── backtest.py          ← rejoue la stratégie sur l'historique
@@ -60,6 +63,7 @@ numpy>=1.24
 ta>=0.11,<0.12
 python-dotenv>=1.0
 anthropic>=1.12,<2
+alpaca-py>=0.40
 ```
 
 Testé avec Python 3.13, ccxt 4.5, pandas 3.0, ta 0.11 et anthropic 1.12.
@@ -209,7 +213,69 @@ Ces chiffres décrivent le passé et ne prédisent rien. Ne cherchez pas les
 réglages qui auraient « gagné » sur l'historique : c'est le meilleur moyen
 d'obtenir une stratégie qui échoue ensuite.
 
-## 5. Installation
+## 5. Trader des actions : Nvidia, Apple, S&P 500...
+
+Kraken et Binance ne proposent que des cryptos. Pour les actions et les ETF
+américains, le bot passe par **Alpaca**, un courtier en ligne avec une API :
+
+* **aucune commission**, et achat de **fractions d'action** : avec 50 $, on
+  achète 50 $ de Nvidia, même si une action coûte bien plus cher ;
+* un **compte d'entraînement gratuit** (argent fictif), idéal pour tester ;
+* tout le reste du bot fonctionne pareil : le mode IA, les règles fixes, le
+  stop-loss, le take-profit et le journal.
+
+### Mise en place
+
+1. Créez un compte sur <https://alpaca.markets>. Alpaca accepte des clients
+   de nombreux pays, mais pas tous : vérifiez le vôtre. Le compte
+   d'entraînement (*Paper Trading*) suffit pour commencer.
+2. Dans le tableau de bord *Paper Trading*, générez une clé API (*API Keys*,
+   puis *Generate*).
+3. Dans `.env` :
+   ```ini
+   EXCHANGE=alpaca
+   SYMBOL=NVDA
+   TIMEFRAME=1d
+   API_KEY=votre_cle_alpaca
+   API_SECRET=votre_secret_alpaca
+   PAPER_FEE_PCT=0.05
+   MODE=testnet
+   ```
+4. Lancez `python bot.py --once`, puis `python bot.py`.
+
+Avec Alpaca, les trois modes signifient :
+
+| `MODE` | Avec Alpaca |
+| --- | --- |
+| `paper` | Prix réels, ordres simulés par le bot lui-même (clés d'entraînement suffisantes) |
+| `testnet` | Vrais ordres sur le **compte d'entraînement** d'Alpaca (argent fictif) : le plus réaliste pour tester |
+| `live` | Vrais ordres sur votre compte réel (clés du compte réel, `CONFIRM_LIVE=OUI`) |
+
+Pour le backtest d'une action : `python backtest.py --days 1460` (clés Alpaca
+nécessaires, même d'entraînement).
+
+### Ce qui change par rapport aux cryptos
+
+* **La Bourse ferme.** Elle est ouverte en semaine, de 15 h 30 à 22 h (heure
+  de Paris, une heure plus tôt quelques semaines par an au changement d'heure),
+  hors jours fériés américains. En dehors de ces heures, le bot
+  attend et l'écrit dans le journal (`Marché fermé : ...`).
+* **Risque de trou à l'ouverture.** Le stop-loss ne peut agir que pendant la
+  séance. Si l'action baisse de 10 % pendant la nuit (mauvais résultats, par
+  exemple), la vente se fera à l'ouverture, bien au-delà de -3 %.
+* **Bougies d'un jour conseillées** (`TIMEFRAME=1d`). L'EMA 200 demande alors
+  200 séances, soit environ 10 mois d'historique : le bot les télécharge seul.
+* **Cours ajustés.** Les divisions d'actions (Nvidia a divisé la sienne par 10
+  en 2024) sont corrigées dans l'historique : sans ça, les indicateurs seraient faux.
+* **Règle américaine des « day trades ».** Sur un compte de moins de 25 000 $,
+  pas plus de 3 achats-ventes dans la même journée sur 5 jours. Le bot fait du
+  swing trading, il est donc rarement concerné ; un stop-loss déclenché le jour
+  même de l'achat compte pourtant comme un day trade.
+* **Prix gratuits.** Le flux gratuit d'Alpaca (IEX) suffit pour des bougies
+  d'un jour ; `ALPACA_DATA_FEED=sip` utilise le flux complet, réservé aux
+  abonnés payants.
+
+## 6. Installation
 
 ```bash
 cd trading-bot
@@ -227,7 +293,7 @@ cp .env.example .env        # Windows : copy .env.example .env
 
 ---
 
-## 6. Guide pas à pas : tester sans argent réel
+## 7. Guide pas à pas : tester sans argent réel
 
 Il y a trois niveaux de test, du plus sûr au plus réaliste. Ne passez à
 l'étape suivante que si la précédente vous convient.
@@ -346,7 +412,7 @@ présentes sur votre compte ne sont pas touchées.
 
 ---
 
-## 7. Faire tourner le bot 24 h/24
+## 8. Faire tourner le bot 24 h/24
 
 Le stop-loss est surveillé **par le bot**. Si l'ordinateur est éteint ou en
 veille, plus rien ne protège la position. Pour du réel, utilisez une machine
@@ -381,7 +447,7 @@ journalctl -u trading-bot -f      # suivre le journal en direct
 Le bot enregistre sa position dans `state_<mode>.json` : après un redémarrage,
 il reprend la position ouverte, avec son stop-loss et son take-profit.
 
-## 8. Robustesse : ce que le bot gère tout seul
+## 9. Robustesse : ce que le bot gère tout seul
 
 | Situation | Réaction |
 | --- | --- |
@@ -391,12 +457,13 @@ il reprend la position ouverte, avec son stop-loss et son take-profit.
 | Clé API invalide ou révoquée | Arrêt du bot avec un message clair (insister ne servirait à rien) |
 | IA injoignable, crédit Anthropic épuisé | Décision HOLD, nouvel essai à l'analyse suivante ; le stop-loss reste actif |
 | Clé Anthropic refusée | IA désactivée, le bot continue de protéger la position |
+| Bourse fermée (actions) | Aucun ordre, le bot attend la séance suivante |
 | Erreur imprévue | Journalisée avec le détail technique, le bot continue |
 | Position vendue à la main sur le site | Détectée, la position du bot est remise à zéro |
 | Fichier d'état corrompu | Arrêt du bot, plutôt que d'oublier une position ouverte |
 | `Ctrl+C` ou arrêt du service | Fin du cycle en cours, puis arrêt propre |
 
-## 9. Limites à connaître
+## 10. Limites à connaître
 
 * **Stop-loss logiciel.** La vente part au marché dès que le seuil est franchi.
   En cas de chute brutale, elle peut s'exécuter un peu sous -3 %. Si le bot
@@ -412,7 +479,7 @@ il reprend la position ouverte, avec son stop-loss et son take-profit.
 * **Impôts.** Les plus-values sur cryptomonnaies peuvent être imposables :
   renseignez-vous sur les règles de votre pays.
 
-## 10. Personnaliser
+## 11. Personnaliser
 
 * **Réglages simples** (seuils RSI, EMA, stop-loss, unité de temps) : fichier `.env`.
 * **Nouvel indicateur** (MACD, bandes de Bollinger...) : ajoutez la colonne
@@ -420,14 +487,15 @@ il reprend la position ouverte, avec son stop-loss et son take-profit.
   Le bot et le backtest utilisent automatiquement la nouvelle logique.
 * Relancez le backtest et les tests après chaque modification.
 
-## 11. Tests automatiques
+## 12. Tests automatiques
 
 ```bash
 pip install -r requirements-dev.txt
 pytest
 ```
 
-Ces tests utilisent un faux exchange : aucun accès réseau, aucun ordre réel.
+Ces tests utilisent un faux exchange, un faux courtier Alpaca et un faux
+client Anthropic : aucun accès réseau, aucun ordre réel, aucun coût.
 Ils vérifient les signaux, le stop-loss et le take-profit, les frais, la
 reprise après redémarrage, et la résistance aux coupures réseau (y compris un
 timeout pendant un ordre).

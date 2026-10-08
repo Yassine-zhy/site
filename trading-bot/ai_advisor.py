@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import anthropic
+import ccxt
 import pandas as pd
 
 from config import Settings
@@ -88,15 +89,17 @@ DECISION_TOOL = {
 
 SYSTEM_PROMPT = """\
 Tu es le moteur de décision d'un bot de swing trading automatique. Le bot \
-trade une seule paire au comptant (spot) sur un petit compte, d'environ \
-100 dollars. Il peut seulement acheter puis revendre : pas de vente à \
-découvert, pas d'effet de levier.
+trade un seul actif (une crypto, ou une action ou un ETF américain) sur un \
+petit compte, d'environ 100 dollars. Il peut seulement acheter puis revendre : \
+pas de vente à découvert, pas d'effet de levier.
 
 À chaque consultation, tu reçois l'état du marché, la position en cours et tes \
 décisions précédentes. Sers-toi de la recherche web pour vérifier les \
-actualités des dernières 24 à 48 heures susceptibles de faire bouger cette \
-crypto : régulation, flux des ETF, piratages ou problèmes d'exchanges, \
-annonces macro-économiques, mouvements inhabituels. Ensuite, appelle l'outil \
+actualités des dernières 24 à 48 heures susceptibles de faire bouger cet \
+actif. Pour une crypto : régulation, flux des ETF, piratages ou problèmes \
+d'exchanges. Pour une action : résultats trimestriels et prévisions, \
+annonces de l'entreprise, avis des analystes, actualité de son secteur. \
+Dans les deux cas : annonces macro-économiques, mouvements inhabituels. Ensuite, appelle l'outil \
 submit_decision une seule fois.
 
 Le contexte qui doit guider ta décision :
@@ -138,32 +141,37 @@ class AIDecision:
 # Contexte envoyé à Claude
 # ============================================================================
 
-def _change(df: pd.DataFrame, price: float, hours: int) -> str:
-    """Variation du prix actuel par rapport à la clôture d'il y a `hours` heures."""
-    cutoff = df.index[-1] - pd.Timedelta(hours=hours)
-    past = df.loc[:cutoff, "close"]
-    if past.empty:
-        return "n.d."
-    return f"{pnl_pct(past.iloc[-1], price):+.1f} %"
+def _changes(df: pd.DataFrame, price: float, timeframe: str, now: datetime) -> str:
+    """Variations du prix actuel sur 4 h, 24 h, 7 j et 30 j (celles que les bougies permettent)."""
+    candle = pd.Timedelta(seconds=ccxt.Exchange.parse_timeframe(timeframe))
+    closes_at = df.index + candle               # heure de clôture de chaque bougie
+    parts = []
+    for label, hours in (("4 h", 4), ("24 h", 24), ("7 j", 24 * 7), ("30 j", 24 * 30)):
+        if pd.Timedelta(hours=hours) < candle:
+            continue                            # trop court pour ces bougies
+        past = df.loc[closes_at <= pd.Timestamp(now) - pd.Timedelta(hours=hours), "close"]
+        parts.append(f"{label} {pnl_pct(past.iloc[-1], price):+.1f} %" if not past.empty else f"{label} n.d.")
+    return " | ".join(parts)
 
 
 def build_market_context(df: pd.DataFrame, price: float, state: dict[str, Any], settings: Settings,
                          balances: tuple[float, float], now: datetime | None = None) -> str:
     """Rédige, en texte simple, tout ce que Claude doit savoir pour décider."""
     now = now or datetime.now(timezone.utc)
-    base, quote = settings.symbol.split("/")
+    base, quote = settings.base_currency, settings.quote_currency
     last = df.iloc[-1]
     month = df.loc[df.index[-1] - pd.Timedelta(days=30):]
     daily = df["close"].resample("1D").last().dropna().tail(30)
-    recent = df.tail(18)   # 3 jours de bougies 4 h
+    recent = df.tail(18)   # 3 jours de bougies 4 h, ou 18 séances en bougies journalières
+    kind = ("action ou ETF américain (Bourse ouverte en semaine, 15 h 30 - 22 h heure de Paris)"
+            if settings.is_stock else "crypto au comptant, marché ouvert 24 h/24")
 
     lines = [
         f"Date et heure : {now:%Y-%m-%d %H:%M} UTC",
-        f"Paire : {settings.symbol} au comptant sur {settings.exchange_id}, "
+        f"Actif : {settings.base_currency} ({kind}) sur {settings.exchange_id}, "
         f"frais d'environ {settings.paper_fee * 100:g} % par ordre",
         f"Prix actuel : {price:.2f} {quote}",
-        f"Variations : 4 h {_change(df, price, 4)} | 24 h {_change(df, price, 24)} | "
-        f"7 j {_change(df, price, 24 * 7)} | 30 j {_change(df, price, 24 * 30)}",
+        f"Variations : {_changes(df, price, settings.timeframe, now)}",
         f"Plus haut / plus bas sur 30 jours : {month['high'].max():.2f} / {month['low'].min():.2f}",
         f"Indicateurs (bougies {settings.timeframe} clôturées) : RSI {last['rsi']:.1f} | "
         f"EMA{settings.strategy.ema_fast} {last['ema_fast']:.2f} | EMA{settings.strategy.ema_slow} {last['ema_slow']:.2f}",

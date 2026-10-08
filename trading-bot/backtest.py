@@ -188,7 +188,7 @@ def run_backtest(df: pd.DataFrame, settings: Settings) -> dict:
 
 
 def print_report(result: dict, settings: Settings) -> None:
-    quote = settings.symbol.split("/")[1]
+    quote = settings.quote_currency
     start, end = result["period"]
     print()
     print(f"=== Backtest {settings.symbol} {settings.timeframe} | {start:%Y-%m-%d} -> {end:%Y-%m-%d} "
@@ -234,6 +234,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.csv:
             df = load_csv(args.csv)
+        elif settings.is_stock:
+            from stocks import fetch_stock_history
+            print(f"Téléchargement de {args.days} jours de bougies {settings.base_currency} "
+                  f"{settings.timeframe} sur Alpaca...")
+            df = fetch_stock_history(settings, args.days)
         else:
             exchange_id = (args.exchange or settings.exchange_id).lower()
             print(f"Téléchargement de {args.days} jours de bougies {settings.symbol} {settings.timeframe} "
