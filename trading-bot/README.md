@@ -87,6 +87,29 @@ Avec 100 $, Binance coûte environ quatre fois moins cher en frais. Les frais
 exacts dépendent de votre volume et de votre pays : vérifiez la grille de
 votre compte.
 
+**Résultats du backtest sur données réelles** (Binance, octobre 2022 à
+octobre 2026, 100 $ de départ, réglages par défaut sauf mention) :
+
+| Variante | Frais 0,10 % | Frais 0,40 % | Garder sans rien faire | Pire baisse du bot | Pire baisse en gardant |
+| --- | --- | --- | --- | --- | --- |
+| BTC/USDT 4h, SL 3 % / TP 8 % (défaut) | **+2,5 %** | **-13,9 %** | +379 % | -11,6 % | -53 % |
+| BTC/USDT 1d, SL 3 % / TP 8 % | +1,5 % | -4,1 % | +183 % | -6,0 % | -53 % |
+| ETH/USDT 4h, SL 3 % / TP 8 % | +9,5 % | -6,7 % | +93 % | -12,3 % | -68 % |
+| BTC/USDT 4h, SL 5 % / TP 15 % | -2,4 % | -15,8 % | +379 % | -12,6 % | -53 % |
+
+Ce qu'il faut en retenir :
+
+* sur cette période, **aucune variante ne bat le simple fait de garder la crypto** ;
+* avec les frais de Kraken (0,40 %), la stratégie **perd de l'argent** ;
+  avec ceux de Binance (0,10 %), elle fait à peu près zéro ;
+* son seul atout est de **limiter les baisses** (environ -12 % au pire, contre
+  -53 % en gardant le BTC). En contrepartie, elle n'est investie que
+  16 % du temps, avec la moitié du capital.
+
+Ces chiffres décrivent le passé et ne prédisent rien. Ne cherchez pas les
+réglages qui auraient « gagné » sur l'historique : c'est le meilleur moyen
+d'obtenir une stratégie qui échoue ensuite.
+
 ## 4. Installation
 
 ```bash

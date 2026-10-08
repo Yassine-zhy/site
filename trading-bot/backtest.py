@@ -53,6 +53,10 @@ def fetch_history(exchange_id: str, symbol: str, timeframe: str, days: int) -> p
     if exchange_id == "binance":
         options["fetchMarkets"] = {"types": ["spot"]}
     exchange = getattr(ccxt, exchange_id)({"enableRateLimit": True, "options": options})
+    if exchange_id == "binance":
+        # Miroir officiel des données publiques de Binance : accessible même
+        # là où api.binance.com est bloqué, et suffisant pour un backtest.
+        exchange.urls["api"]["public"] = "https://data-api.binance.vision/api/v3"
     exchange.load_markets()
     timeframe_ms = exchange.parse_timeframe(timeframe) * 1000
     since = exchange.milliseconds() - days * 86_400_000
