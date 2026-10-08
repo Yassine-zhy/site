@@ -21,6 +21,24 @@ positions sont appliqués par le code : l'IA ne peut pas les contourner.
 > l'avenir. Testez-le plusieurs semaines en paper trading, puis n'engagez que
 > de l'argent que vous acceptez de perdre en totalité.
 
+## Démarrage rapide (3 étapes, sans compte et sans argent)
+
+1. Installez Python depuis <https://www.python.org/downloads>. Sous Windows,
+   cochez **« Add Python to PATH »** pendant l'installation.
+2. Téléchargez le bot :
+   <https://github.com/yassine20060825-lang/site-bu/archive/refs/heads/claude/epic-dirac-4uotoh.zip>,
+   dézippez-le et ouvrez le dossier `trading-bot`.
+3. Double-cliquez sur **`demarrer.bat`** (Windows) ou **`demarrer.command`**
+   (Mac ; si le Mac refuse, faites un clic droit puis *Ouvrir*).
+
+Le premier lancement installe tout (1 à 3 minutes) et crée le fichier `.env`
+en mode sans risque : argent fictif et règles fixes. Le bot analyse ensuite le
+vrai marché et écrit tout dans la fenêtre et dans `bot_trading.log`. Pour
+l'arrêter : `Ctrl+C`, ou fermez la fenêtre.
+
+Pour activer l'IA, ouvrez `.env` avec le Bloc-notes, mettez `STRATEGY=ai` et
+collez votre clé Anthropic (section 3), puis relancez.
+
 ---
 
 ## 1. Arborescence
@@ -36,6 +54,9 @@ trading-bot/
 ├── config.py            ← lecture et validation du fichier .env
 ├── state.py             ← mémoire du bot (position ouverte, prix d'achat) dans un JSON
 ├── backtest.py          ← rejoue la stratégie sur l'historique
+├── demarrer.bat         ← double-clic sous Windows : installe puis lance le bot
+├── demarrer.command     ← double-clic sur Mac : idem
+├── installer.py         ← l'installation automatique utilisée par ces deux fichiers
 ├── .env.example         ← modèle de configuration à copier en .env
 ├── requirements.txt     ← dépendances
 ├── requirements-dev.txt ← dépendances + pytest pour les tests
