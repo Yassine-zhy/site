@@ -182,6 +182,56 @@ function bush(seed, flowers = '#ff8fb8') {
   return mergeGeometries(parts, false);
 }
 
+// --- petits éléments du sol (dessinés seulement près du héros)
+// touffe de fleurs : tiges fines et corolles colorées
+function flowers(seed, colors) {
+  const rng = mulberry32(seed), parts = [];
+  for (let i = 0; i < 9; i++) {
+    const a = rng() * Math.PI * 2, r = rng() * 0.22, x = Math.cos(a) * r, z = Math.sin(a) * r, h = 0.12 + rng() * 0.16;
+    parts.push(painted(new THREE.CylinderGeometry(0.006, 0.008, h, 3).translate(x, h / 2, z), '#4f8f34', rng, 0.08));
+    const petal = new THREE.OctahedronGeometry(0.035 + rng() * 0.02, 0); petal.scale(1, 0.55, 1); petal.translate(x, h + 0.01, z);
+    parts.push(painted(petal, colors[i % colors.length], rng, 0.1));
+  }
+  for (let i = 0; i < 4; i++) { const a = rng() * 6.28; parts.push(painted(new THREE.ConeGeometry(0.03, 0.14, 3).translate(Math.cos(a) * 0.15, 0.07, Math.sin(a) * 0.15), '#5aa040', rng, 0.1)); }
+  return mergeGeometries(parts, false);
+}
+// champignons : pied clair et chapeau rouge à pois ou brun
+function mushrooms(seed, cap) {
+  const rng = mulberry32(seed), parts = [];
+  for (let i = 0; i < 3; i++) {
+    const x = (rng() - 0.5) * 0.25, z = (rng() - 0.5) * 0.25, h = 0.08 + rng() * 0.1, r = 0.05 + rng() * 0.05;
+    parts.push(painted(new THREE.CylinderGeometry(r * 0.35, r * 0.45, h, 5).translate(x, h / 2, z), '#efe6cf', rng, 0.05));
+    parts.push(painted(new THREE.SphereGeometry(r, 7, 4, 0, Math.PI * 2, 0, Math.PI / 2).translate(x, h, z), cap, rng, 0.08));
+  }
+  return mergeGeometries(parts, false);
+}
+// souche coupée
+function stump(seed) {
+  const rng = mulberry32(seed), parts = [];
+  parts.push(painted(new THREE.CylinderGeometry(0.22, 0.28, 0.32, 8).translate(0, 0.16, 0), '#6d4b30', rng, 0.08, { top: '#c9a06a', topMin: 0.9 }));
+  for (let i = 0; i < 4; i++) { const a = i / 4 * 6.28 + rng(); parts.push(painted(limb(V(Math.cos(a) * 0.2, 0.05, Math.sin(a) * 0.2), V(Math.cos(a) * 0.42, -0.02, Math.sin(a) * 0.42), 0.07, 0.03, 5), '#5e402a', rng, 0.08)); }
+  return mergeGeometries(parts, false);
+}
+// tronc couché, moussu
+function log(seed) {
+  const rng = mulberry32(seed), parts = [];
+  const g = new THREE.CylinderGeometry(0.16, 0.19, 1.6, 7); g.rotateZ(Math.PI / 2); g.translate(0, 0.16, 0);
+  parts.push(painted(g, '#6a4a30', rng, 0.08, { top: '#5f8f3a', topMin: 0.55 }));
+  parts.push(painted(limb(V(0.3, 0.2, 0), V(0.45, 0.5, 0.15), 0.05, 0.02, 4), '#5e402a', rng, 0.08));
+  return mergeGeometries(parts, false);
+}
+// grande touffe d'herbes folles
+function tuft(seed, color) {
+  const rng = mulberry32(seed), parts = [];
+  for (let i = 0; i < 11; i++) {
+    const a = rng() * 6.28, r = rng() * 0.12, h = 0.25 + rng() * 0.3;
+    const blade = new THREE.ConeGeometry(0.025, h, 3); blade.translate(0, h / 2, 0);
+    blade.rotateX((rng() - 0.5) * 0.5); blade.rotateZ((rng() - 0.5) * 0.5); blade.translate(Math.cos(a) * r, 0, Math.sin(a) * r);
+    parts.push(painted(blade, color, rng, 0.12, { top: '#c9d66a', topMin: 0.2 }));
+  }
+  return mergeGeometries(parts, false);
+}
+
 // Enregistre les modèles comme props instanciables (noms « pt_… »).
 export function registerProcTrees(assets) {
   if (assets.geoCache.has('pt_oak_A')) return;
@@ -206,5 +256,15 @@ export function registerProcTrees(assets) {
   add('pt_bush_rose', bush(1414, '#ff8fb8'));
   add('pt_bush_yellow', bush(1515, '#ffe066'));
   add('pt_bush', bush(1616, null));
+  add('pt_flowers_A', flowers(1717, ['#ffe066', '#ffffff', '#ffd23a']));
+  add('pt_flowers_B', flowers(1818, ['#ff8fb8', '#d27aff', '#ffffff']));
+  add('pt_flowers_C', flowers(1919, ['#7fb8ff', '#b0d4ff', '#ffffff']));
+  add('pt_flowers_D', flowers(2020, ['#ff6a3a', '#ffb347', '#ffe066']));
+  add('pt_mushroom_red', mushrooms(2121, '#d93a2a'));
+  add('pt_mushroom_brown', mushrooms(2222, '#9a6a3c'));
+  add('pt_stump', stump(2323));
+  add('pt_log', log(2424));
+  add('pt_tuft', tuft(2525, '#6aa646'));
+  add('pt_tuft_dry', tuft(2626, '#b9a75a'));
   return mat;
 }

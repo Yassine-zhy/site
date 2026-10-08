@@ -57,7 +57,7 @@ export async function boot(game) {
   game.net.start();
   game.systemsUpdate = (dt) => {
     if (!game.inGame) return;
-    game.world.beacons.update(dt, game.elapsed, game.world.sky.state.night);
+    game.world.beacons.update(dt, game.elapsed, game.world.sky.state.night, game.player?.position);
     for (const s of extra) { try { s.update?.(dt); } catch (e) { console.error(e); } }
   };
   game.emote = (e = 'wave') => {

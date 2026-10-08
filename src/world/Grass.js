@@ -3,6 +3,7 @@ import { CORR_UV_GLSL } from './Maps.js';
 import { TERRAIN_HEIGHT_GLSL } from './TerrainRenderer.js';
 import { WORLD_HALF } from '../config.js';
 import { mulberry32 } from '../engine/math.js';
+import { SHARED } from './SurfaceDetail.js';
 
 // Herbe GPU : une seule instance de brins qui "s'enroule" autour du joueur.
 // Hauteur, densité et couleur viennent des textures du monde ; le vent et le
@@ -18,14 +19,15 @@ export class Grass {
     this.radius = radius;
     const blade = new THREE.InstancedBufferGeometry();
     const w = 0.09;
-    const verts = new Float32Array([
+    // qualité basse : brin à 3 triangles au lieu de 5
+    const verts = SHARED.lite ? new Float32Array([-w, 0, 0, w, 0, 0, -w * 0.62, 0.48, 0, w * 0.62, 0.48, 0, 0, 1, 0]) : new Float32Array([
       -w, 0, 0, w, 0, 0,
       -w * 0.8, 0.38, 0, w * 0.8, 0.38, 0,
       -w * 0.5, 0.72, 0, w * 0.5, 0.72, 0,
       0, 1, 0,
     ]);
     blade.setAttribute('position', new THREE.BufferAttribute(verts, 3));
-    blade.setIndex([0, 1, 2, 2, 1, 3, 2, 3, 4, 4, 3, 5, 4, 5, 6]);
+    blade.setIndex(SHARED.lite ? [0, 1, 2, 2, 1, 3, 2, 3, 4] : [0, 1, 2, 2, 1, 3, 2, 3, 4, 4, 3, 5, 4, 5, 6]);
     const rng = mulberry32(9001);
     const offs = new Float32Array(count * 4);
     const side = radius * 2;

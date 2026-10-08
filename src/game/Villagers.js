@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Character } from '../entities/Character.js';
 import { VILLAGE, HAMLET, GIVRE, AMBRE, SYLVE, HANTEE } from '../config.js';
 import { dampAngle, mulberry32 } from '../engine/math.js';
+import { SHARED } from '../world/SurfaceDetail.js';
 
 // Villageois : des habitants sans quête qui vivent leur vie. Ils flânent entre les maisons et
 // les échoppes, s'arrêtent pour discuter, saluent le héros qui passe, et rentrent chez eux à la
@@ -46,11 +47,14 @@ export class Villagers {
     const pick = (a) => a[Math.floor(rng() * a.length)];
     const buildings = game.scene.userData.buildings || [];
     let k = 0;
+    const lite = SHARED.lite; // qualité basse : moins d'habitants animés
+    this.viewD = lite ? 70 : 140;
     for (const pl of PLACES) {
       // portes des maisons de l'endroit (pour rentrer la nuit)
       const doors = buildings.filter((b) => Math.hypot(b.x - pl.x, b.z - pl.z) < pl.r + 25 && !/well|windmill|castle/.test(b.name))
         .map((b) => { const d = b.front + 0.6; return { x: b.x + Math.sin(b.rot) * d, z: b.z + Math.cos(b.rot) * d }; });
-      for (let i = 0; i < pl.n; i++) {
+      const count = lite ? Math.max(1, Math.round(pl.n * 0.45)) : pl.n;
+      for (let i = 0; i < count; i++) {
         const role = (ROLES[pl.id] || ROLES.village)[i % (ROLES[pl.id] || ROLES.village).length];
         const v = {
           id: 'v' + (k++), place: pl, name: FIRST[(k * 7 + i * 3) % FIRST.length], title: role,
@@ -114,7 +118,7 @@ export class Villagers {
     for (const v of this.list) {
       const d = Math.hypot(p.x - v.position.x, p.z - v.position.z);
       // loin du héros : ni modèle ni animation
-      if (d > 140) { if (v.char) v.char.object.visible = false; continue; }
+      if (d > this.viewD) { if (v.char) v.char.object.visible = false; continue; }
       this.ensureChar(v);
       const ch = v.char;
       // la nuit, les casaniers rentrent chez eux (et disparaissent derrière la porte)

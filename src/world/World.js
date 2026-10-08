@@ -8,11 +8,13 @@ import { Water } from './Water.js';
 import { Grass } from './Grass.js';
 import { Maps, applyCorruption } from './Maps.js';
 import { Vegetation } from './Vegetation.js';
+import { FarTrees } from './FarTrees.js';
 import { Village } from './Village.js';
 import { Outposts } from './Outposts.js';
 import { Interiors } from './Interiors.js';
 import { Signposts } from './Signposts.js';
 import { Arenas } from './Arenas.js';
+import { SHARED } from './SurfaceDetail.js';
 import { Colliders } from './Colliders.js';
 import { EnvLight, updateRim } from '../engine/ModelLook.js';
 import { LightPool } from './Lights.js';
@@ -48,6 +50,7 @@ export class World {
     this.maps = new Maps();
 
     await step('Les montagnes se dressent…');
+    SHARED.lite = renderer.qualityName === 'low';
     this.terrainTex = makeTerrainTextures(this.terrain, renderer.qualityName);
     this.terrainRenderer = new TerrainRenderer(this.scene, this.terrain, this.terrainTex, this.maps, { quality: renderer.qualityName, detail: quality.terrainDetail ?? 1 });
     // îles flottantes ajoutées ensuite (Citadelle) : maillages classiques
@@ -74,8 +77,11 @@ export class World {
     await step('Les herbes poussent…');
     this.grass = new Grass(this.scene, this.maps, this.terrainTex, quality.grass, quality.grassRadius);
     await step('Les forêts murmurent…');
-    this.vegetation = new Vegetation(this.scene, assets, this.terrain, this.colliders, this.maps, quality.trees);
-    this.vegetation.setViewDistance(quality.vegView);
+    // forêts denses partout ; la qualité ne règle que la portée des arbres en 3D (au-delà : imposteurs)
+    this.vegetation = new Vegetation(this.scene, assets, this.terrain, this.colliders, this.maps, 1);
+    this.farTrees = new FarTrees(renderer.renderer, this.scene, assets, this.vegetation.farItems, { near: quality.treeNear ?? 150, far: quality.treeFar ?? 1100 });
+    this.vegetation.farTrees = this.farTrees;
+    this.vegetation.setViewDistance(quality.treeNear ?? 150);
     await step('Havrelumière se construit…');
     this.village = new Village(this.scene, assets, this.terrain, this.colliders, this.maps);
     await step('Les campements s’allument…');
@@ -134,7 +140,8 @@ export class World {
 
   setQuality(q) {
     this.quality = q;
-    this.vegetation.setViewDistance(q.vegView);
+    this.vegetation.setViewDistance(q.treeNear ?? 150);
+    this.farTrees?.setFar(q.treeFar ?? 1100);
     this.ambient.setCount(q.particles ?? 600);
     this.grass.build(q.grass, q.grassRadius);
     this.sky.setShadowSize(q.shadowSize, q.shadowSize >= 2048 ? 75 : 60);
@@ -191,6 +198,7 @@ export class World {
     this.ocean.update(dt, e, this.sky, camera);
     this.grass.update(dt, e, focus, pushers, this.sky);
     this.vegetation.update(dt, e, this.playerFocus || focus, camera);
+    this.farTrees?.update(this.sky, this.scene, camera);
     this.village.update(dt, e, st.night);
     this.outposts?.update(dt, e, st.night);
     this.interiors?.update(dt, e);

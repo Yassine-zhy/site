@@ -200,6 +200,7 @@ export class Game {
         this.ui.toast(`Qualité graphique abaissée (${r.quality.label}) pour éviter les coupures d’affichage.`, { time: 5 });
       } else { r.buildComposer(); r.resize(); }
       r.renderer.shadowMap.needsUpdate = true;
+      try { this.world?.farTrees?.bake(); } catch (e) { console.warn(e); } // l'atlas des arbres lointains est à refaire
       try { this.prewarm(); } catch (e) { console.warn(e); }
       if (this.glVeil) this.glVeil.hidden = true;
     });
@@ -221,7 +222,8 @@ export class Game {
     this.fpsAcc += rawDt; this.fpsN++;
     if (this.fpsAcc > 1) { this.fps = this.fpsN / this.fpsAcc; this.fpsAcc = 0; this.fpsN = 0; }
     // simulation à pas fixes (stable même quand l'affichage ralentit)
-    const steps = Math.min(40, Math.max(1, Math.ceil(rawDt / (1 / 30))));
+    // au plus 3 pas par image : sur un appareil lent, simuler davantage ralentirait encore l'image suivante
+    const steps = Math.min(3, Math.max(1, Math.ceil(rawDt / (1 / 30))));
     const sdt = rawDt / steps;
     let simulated = 0;
     for (let i = 0; i < steps; i++) {

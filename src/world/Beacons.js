@@ -74,7 +74,11 @@ export class Beacons {
 
   setLevels(levels) { levels.forEach((lv, i) => { if (this.list[i]) this.list[i].level = lv; }); }
 
-  update(dt, elapsed, night) {
+  update(dt, elapsed, night, focus = null) {
+    if (focus) for (const b of this.list) {
+      const far = Math.hypot(b.def.x - focus.x, b.def.z - focus.z) > 450;
+      if (far !== b.far) { b.far = far; for (const c of b.group.children) if (c !== b.beam && !c.isVirtualLight) c.visible = !far; }
+    }
     for (const b of this.list) {
       b.shown += (b.level - b.shown) * Math.min(1, dt * 1.5);
       const lv = b.shown;

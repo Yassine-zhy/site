@@ -9,6 +9,7 @@ import { TERRAIN_HEIGHT_GLSL } from './TerrainRenderer.js';
 
 // textures partagées, renseignées par le rendu du terrain
 export const SHARED = {
+  lite: false, // qualité basse : pas de détails de surface (téléphones)
   uDetail: { value: null }, uNoise: { value: null }, uHeightMap: { value: null }, uTerr: { value: new THREE.Vector3() },
 };
 
@@ -66,7 +67,7 @@ const DECOR_GLSL = `{
 const decorCache = new Map();
 // Matériau des décors fusionnés : celui du modèle + détails de surface (copie partagée par source)
 export function decorMaterial(src) {
-  if (!src?.isMeshStandardMaterial || !SHARED.uDetail.value) return src;
+  if (!src?.isMeshStandardMaterial || !SHARED.uDetail.value || SHARED.lite) return src;
   if (decorCache.has(src)) return decorCache.get(src);
   const m = src.clone();
   m.onBeforeCompile = (shader) => {
