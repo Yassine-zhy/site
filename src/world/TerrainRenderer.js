@@ -114,7 +114,7 @@ export class TerrainRenderer {
     this.half = gridGeometry(G / 2, MAX);
     this.uniforms = {
       uHeightMap: { value: textures.heightTex }, uNormalMap: { value: textures.normalTex }, uColorMap: { value: textures.colorTex },
-      uMatMap: { value: textures.matTex }, uDetail: { value: makeDetailTexture(quality === 'low' ? 256 : 512) }, uNoise: { value: textures.noiseTex },
+      uMatMap: { value: textures.matTex }, uDetail: { value: makeDetailTexture(512) }, uNoise: { value: textures.noiseTex },
       uTerr: { value: textures.uTerr }, uTerrHalf: { value: WORLD_HALF }, uCamPos: { value: new THREE.Vector3() },
       uMorph: { value: this.morph }, uCorruption: { value: maps.corruptionTex },
     };
@@ -210,6 +210,10 @@ export class TerrainRenderer {
           vec2 duv = vTerrWorld.xz * 0.15;
           vec4 d1 = texture2D(uDetail, duv), d2 = texture2D(uDetail, duv * 0.29 + vec2(0.37, 0.71));
           vec4 dd = mix(d1, d2, 0.3);
+          // de près, une troisième échelle plus fine : un sol net, même en 1080p et plus
+          float camD = length(vViewPosition);
+          vec4 d3 = texture2D(uDetail, duv * 3.7 + vec2(0.13, 0.57));
+          dd = mix(dd, mix(dd, d3, 0.45), 1.0 - smoothstep(12.0, 40.0, camD));
           // roche en projection triplanaire sur les pentes
           float rk = dd.b;
           ${hi ? `{
@@ -226,7 +230,6 @@ export class TerrainRenderer {
           float bs = bl.x + bl.y + bl.z + bl.w + wn + 1e-4;
           float snowD = 0.5 + (dd.a - 0.5) * 0.35;
           float det = (dot(bl, hv) + wn * snowD) / bs;
-          float camD = length(vViewPosition);
           float fade = 1.0 - smoothstep(70.0, 260.0, camD) * 0.65;
           // teintes propres aux matières : brins d'herbe plus jaunes, joints de roche plus froids
           vec3 tint = vec3(1.0);
@@ -258,7 +261,7 @@ export class TerrainRenderer {
         .replace('#include <normal_fragment_begin>', `
           float faceDirection = gl_FrontFacing ? 1.0 : - 1.0;
           vec3 normal = normalize((viewMatrix * vec4(wN, 0.0)).xyz);
-          ${hi ? 'normal = perturbTerr(-vViewPosition, normal, vec2(dFdx(det), dFdy(det)) * 0.9 * fade);' : ''}
+          normal = perturbTerr(-vViewPosition, normal, vec2(dFdx(det), dFdy(det)) * 0.9 * fade); // relief du détail (toutes qualités)
           vec3 nonPerturbedNormal = normal;`);
     };
     mat.customProgramCacheKey = () => 'terrain' + n + hi;

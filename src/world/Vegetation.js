@@ -92,7 +92,7 @@ export class Vegetation {
         const hills = Math.hypot(x - HILLS.x, z - HILLS.z) < HILLS.radius ? 0.5 : 1;
         const clearing = Math.sin(x * 0.031) * Math.cos(z * 0.027) > 0.55 ? 0.15 : 1;
         if (h < 85 && sl < 0.7) {
-          const p = (ft * 0.62 * clearing + grove * 0.34 * hills + dense * 0.5 + (mt ? 0.08 : 0.022)) * density;
+          const p = (ft * 0.7 * clearing + grove * 0.62 * hills + dense * 0.6 + (mt ? 0.11 : 0.07)) * density;
           if (rng() < p) return mt || h > 40 ? conifer(x, z) : deciduous(x, z);
         }
         if (sl < 0.4 && h < 60 && rng() < (0.012 + grove * 0.02) * density) return bushAt(x, z);
@@ -104,7 +104,7 @@ export class Vegetation {
       },
       amber(x, z, h, sl, grove) {
         const r = rng();
-        if (sl < 0.6 && r < (0.022 + grove * 0.09 + dense * 0.22) * density) {
+        if (sl < 0.6 && r < (0.03 + grove * 0.12 + dense * 0.25) * density) {
           const r2 = rng();
           if (r2 < 0.5) return pt(rng() < 0.5 ? 'pt_acacia_A' : 'pt_acacia_B', x, z, 9 + rng() * 4);
           if (r2 < 0.8) return pt(rng() < 0.5 ? 'pt_oak_autumn' : 'pt_oak_gold', x, z, 7.5 + rng() * 3);
@@ -129,7 +129,7 @@ export class Vegetation {
       },
       haunted(x, z, h, sl, grove) {
         const r = rng();
-        if (sl < 0.62 && r < (0.055 + grove * 0.21 + dense * 0.25) * density) {
+        if (sl < 0.62 && r < (0.07 + grove * 0.26 + dense * 0.3) * density) {
           const pine = grove > 0.55 && rng() < 0.6;
           const name = pine ? rng.pick(['hw_tree_pine_orange_large', 'hw_tree_pine_yellow_large', 'hw_tree_pine_orange_medium', 'hw_tree_pine_yellow_medium'])
             : rng.pick(['hw_tree_dead_large', 'hw_tree_dead_large', 'hw_tree_dead_medium', 'hw_tree_dead_small', 'hw_tree_dead_large_decorated']);
@@ -143,7 +143,7 @@ export class Vegetation {
       },
       highland(x, z, h, sl, grove) {
         const r = rng();
-        if (sl < 0.55 && r < (0.014 + grove * 0.09 + dense * 0.35) * density) return rng() < 0.6 ? conifer(x, z) : pt('pt_oak_gold', x, z, 6.5 + rng() * 2.5);
+        if (sl < 0.55 && r < (0.042 + grove * 0.2 + dense * 0.4) * density) return rng() < 0.6 ? conifer(x, z) : pt('pt_oak_gold', x, z, 6.5 + rng() * 2.5);
         if (sl < 0.45 && r < 0.03 * density) return bushAt(x, z, ['pt_bush', 'pt_bush_yellow']);
         if (r < 0.06 * density) rock(x, z, rng() < 0.45, 'base', 1.4);
       },
@@ -158,7 +158,7 @@ export class Vegetation {
       },
       swamp(x, z, h, sl, grove) {
         const r = rng();
-        if (sl < 0.55 && r < (0.065 + grove * 0.2 + dense * 0.25) * density) {
+        if (sl < 0.55 && r < (0.08 + grove * 0.25 + dense * 0.3) * density) {
           if (rng() < 0.35) return add(rng.pick(['hw_tree_dead_large', 'hw_tree_dead_medium', 'hw_tree_dead_small']), x, z, 2 + rng() * 0.9, R(), { col: 'tree', look: 'hw' });
           if (rng() < 0.6) return pt('pt_willow', x, z, 9 + rng() * 4);
           const cl = rng() < 0.3;
@@ -168,16 +168,16 @@ export class Vegetation {
       },
       cliffs(x, z, h, sl, grove) {
         const r = rng();
-        if (sl < 0.58 && r < (0.025 + grove * 0.18 + dense * 0.35) * density) return conifer(x, z);
+        if (sl < 0.58 && r < (0.04 + grove * 0.25 + dense * 0.4) * density) return conifer(x, z);
         if (r < 0.07 * density) rock(x, z, rng() < 0.5, 'base', 1.6);
       },
     };
     const CLUTTER = {
-      temperate: [[0.16, ['pt_flowers_A', 'pt_flowers_B', 'pt_flowers_C']], [0.1, ['pt_tuft']], [0.012, ['pt_mushroom_red', 'pt_mushroom_brown'], 'grove'], [0.008, ['pt_stump', 'pt_log'], 'grove']],
-      highland: [[0.12, ['pt_flowers_A', 'pt_flowers_C']], [0.12, ['pt_tuft', 'pt_tuft_dry']]],
-      cliffs: [[0.04, ['pt_flowers_B', 'pt_flowers_C']], [0.05, ['pt_tuft']]],
-      snow: [[0.02, ['pt_tuft_dry']], [0.006, ['pt_stump', 'pt_log'], 'grove']],
-      amber: [[0.06, ['pt_tuft_dry']], [0.025, ['pt_flowers_D']]],
+      temperate: [[0.16, ['pt_flowers_A', 'pt_flowers_B', 'pt_flowers_C']], [0.1, ['pt_tuft']], [0.05, ['rock_single_C', 'rock_single_D', 'rock_single_E']], [0.012, ['pt_mushroom_red', 'pt_mushroom_brown'], 'grove'], [0.008, ['pt_stump', 'pt_log'], 'grove']],
+      highland: [[0.12, ['pt_flowers_A', 'pt_flowers_C']], [0.12, ['pt_tuft', 'pt_tuft_dry']], [0.08, ['rock_single_C', 'rock_single_D', 'rock_single_E']]],
+      cliffs: [[0.04, ['pt_flowers_B', 'pt_flowers_C']], [0.05, ['pt_tuft']], [0.08, ['rock_single_C', 'rock_single_D', 'rock_single_E']]],
+      snow: [[0.02, ['pt_tuft_dry']], [0.05, ['rock_single_C', 'rock_single_D', 'rock_single_E']], [0.006, ['pt_stump', 'pt_log'], 'grove']],
+      amber: [[0.06, ['pt_tuft_dry']], [0.025, ['pt_flowers_D']], [0.06, ['rock_single_C', 'rock_single_D', 'rock_single_E']]],
       jungle: [[0.05, ['pt_flowers_B', 'pt_flowers_D']], [0.03, ['pt_mushroom_red', 'pt_mushroom_brown']], [0.012, ['pt_log', 'pt_stump']]],
       beach: [[0.03, ['pt_tuft_dry']], [0.02, ['pt_flowers_D', 'pt_flowers_A']]],
       swamp: [[0.05, ['pt_tuft']], [0.03, ['pt_mushroom_brown']], [0.012, ['pt_log', 'pt_stump']]],
@@ -189,9 +189,9 @@ export class Vegetation {
       for (const [p, names, where] of CLUTTER[biome] || CLUTTER.temperate) {
         const pp = where === 'grove' ? p * (0.3 + grove * 2.5) : p;
         if (r < pp) {
-          const name = rng.pick(names), big = /stump|log/.test(name);
-          const sc = big ? 2.4 + rng() * 1.2 : /tuft/.test(name) ? 1.3 + rng() * 0.7 : 1.8 + rng() * 1.0;
-          add(name, x, z, sc, R(), { look: 'pt', sink: big ? 0.08 : 0.02 });
+          const name = rng.pick(names), big = /stump|log/.test(name), pebble = /rock/.test(name);
+          const sc = big ? 2.4 + rng() * 1.2 : pebble ? 1.4 + rng() * 1.6 : /tuft/.test(name) ? 1.3 + rng() * 0.7 : 1.8 + rng() * 1.0;
+          add(name, x, z, sc, R(), { look: pebble ? ({ snow: 'snow', amber: 'red', haunted: 'dark' }[biome] || 'base') : 'pt', sink: big ? 0.08 : 0.02 });
           return;
         }
         r -= pp;

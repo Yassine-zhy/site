@@ -712,10 +712,3 @@ export function unpackBaked(buf) {
   const n = CRES * CRES * 4;
   return { kind: 'c', color: new Uint8Array(buf, off, n), mats: new Uint8Array(buf, off + n, n), biome: new Uint8Array(buf, off + 2 * n, BRES * BRES) };
 }
-export function _dbg(x, z) {
-  const w = regionWeights(x, z, false), st = { peak: 0 };
-  const parts = SOURCES.map((s, i) => w[i] > 1e-4 ? `${s.biome}:${w[i].toFixed(2)}×${baseHeight(s, x, z).toFixed(1)}` : '').filter(Boolean).join(' ');
-  let h = 0; for (let i = 0; i < SOURCES.length; i++) if (w[i] > 1e-4) h += w[i] * baseHeight(SOURCES[i], x, z);
-  const h1 = coreFeatures(x, z, h, st); let h2 = h1; for (let i = 1; i < SOURCES.length; i++) h2 = applyFeatures(SOURCES[i], x, z, h2, st);
-  return `${parts} | base ${h.toFixed(1)} core ${h1.toFixed(1)} feat ${h2.toFixed(1)}`;
-}
