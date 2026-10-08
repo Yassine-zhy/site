@@ -66,6 +66,7 @@ export class TouchControls {
     // caméra : glisser sur le canevas
     const canvas = game.renderer.canvas;
     let lookId = null, lx = 0, ly = 0, lt = 0, travel = 0;
+    canvas.addEventListener('pointerdown', () => { if (this.drawer) this.drawer.hidden = true; }); // toucher la scène referme le tiroir du menu
     canvas.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch' || lookId !== null) return; lookId = e.pointerId; lx = e.clientX; ly = e.clientY; lt = performance.now(); travel = 0; });
     canvas.addEventListener('pointermove', (e) => { if (e.pointerId !== lookId) return; const sens = 1.6 * (game.settings.touchSens || 1); input.touch.look.dx += (e.clientX - lx) * sens; input.touch.look.dy += (e.clientY - ly) * sens; travel += Math.hypot(e.clientX - lx, e.clientY - ly); lx = e.clientX; ly = e.clientY; if (travel > 10) this.lastLook = performance.now(); });
     const lend = (e) => {
@@ -75,6 +76,7 @@ export class TouchControls {
       if (e.type === 'pointerup' && travel < 10 && performance.now() - lt < 350) {
         const hit = this.enemyAt(e.clientX, e.clientY);
         if (hit && hit !== game.locked) game.lock(hit);
+        else if (hit && hit === game.locked && !game.locked.def?.boss) game.unlock();
         input.mouse.clicked = true;
       }
     };
@@ -115,35 +117,66 @@ export class TouchControls {
       const b = btn('lock', ICON.lock, 4, 214, false, () => { t0 = performance.now(); held = setTimeout(() => { held = null; game.unlock(); }, 450); }, () => { if (held) { clearTimeout(held); held = null; if (performance.now() - t0 < 450) game.lockNext(); } }, 'cible');
       b.classList.add('tb-lock');
       this.lockBtn = b;
+      b.hidden = true; // n'apparaît qu'au combat (ennemi proche ou cible verrouillée)
     }
     // bouton d'interaction (apparaît au besoin)
     this.interactBtn = h('button', { class: 'btn small interactive tinteract', style: { position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 'calc(250px + var(--safe-b))', pointerEvents: 'auto', maxWidth: '70%' } }, 'Interagir');
     this.interactBtn.addEventListener('click', () => game.interactions?.interact());
     this.root.appendChild(this.interactBtn);
-    // petits boutons de menu
-    const top = h('div', { class: 'tmenu', style: { position: 'absolute', left: 'calc(14px + var(--safe-l))', top: 'calc(132px + var(--safe-t))', display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' } });
-    for (const [id, icon, fn] of [['map', ICON.map, () => game.toggleWindow('map')], ['bag', ICON.bag, () => game.toggleWindow('inventory')], ['quest', ICON.quest, () => game.toggleWindow('quests')], ['party', ICON.party, () => game.toggleWindow('party')], ['chat', ICON.chat, () => game.chat?.open()], ['mount', ICON.mount, () => game.mount?.toggle()], ['grimoire', ABILITY_ICONS.book, () => game.toggleWindow('grimoire')], ['menu', ICON.menu, () => game.toggleWindow('settings')]]) {
-      const b = h('button', { class: 'tb', style: { position: 'relative', width: '40px', height: '40px' }, 'aria-label': id }, svgIcon(icon));
-      b.addEventListener('click', fn);
-      top.appendChild(b);
-    }
-    this.root.appendChild(top);
+    // menu : trois boutons seulement (quêtes, sac, tiroir) ; la carte s'ouvre en touchant la minicarte
+    this.menu = h('div', { class: 'tmenu', style: { position: 'absolute', left: 'calc(14px + var(--safe-l))', top: 'calc(132px + var(--safe-t))', display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' } });
+    this.root.appendChild(this.menu);
+    this.drawer = h('div', { class: 'tdrawer panel', hidden: true });
+    this.root.appendChild(this.drawer);
+    this.refreshMenu();
     game.ui.root.appendChild(this.root);
     // libère les appuis ponctuels
     this.joyHide = false;
   }
 
-  // boutons des 6 emplacements de la barre (reconstruits quand le grimoire change la barre)
+  // boutons du menu (reconstruits quand la monture est apprivoisée)
+  refreshMenu() {
+    const game = this.game, close = () => { this.drawer.hidden = true; };
+    const mk = (id, icon, fn, label) => {
+      const b = h('button', { class: 'tb', style: { position: 'relative', width: '40px', height: '40px' }, 'aria-label': label || id }, svgIcon(icon));
+      b.addEventListener('click', fn);
+      return b;
+    };
+    this.menu.innerHTML = '';
+    this.menu.append(
+      mk('quest', ICON.quest, () => { close(); game.toggleWindow('quests'); }, 'quêtes'),
+      mk('bag', ICON.bag, () => { close(); game.toggleWindow('inventory'); }, 'sac'),
+      mk('more', ICON.menu, () => { this.drawer.hidden = !this.drawer.hidden; }, 'menu'),
+    );
+    // tiroir : le reste, avec des noms (plus clair que des icônes seules)
+    const items = [
+      ['map', ICON.map, 'Carte', () => game.toggleWindow('map')],
+      ['grimoire', ABILITY_ICONS.book, 'Compétences', () => game.toggleWindow('grimoire')],
+      game.hero?.mount ? ['mount', ICON.mount, 'Monture', () => game.mount?.toggle()] : null,
+      ['party', ICON.party, 'Groupe · expéditions', () => game.toggleWindow('party')],
+      ['chat', ICON.chat, 'Discussion', () => game.chat?.open()],
+      ['settings', ICON.menu, 'Options', () => game.toggleWindow('settings')],
+    ].filter(Boolean);
+    this.drawer.innerHTML = '';
+    for (const [id, icon, label, fn] of items) {
+      const b = h('button', { class: 'tditem', type: 'button', 'aria-label': label }, svgIcon(icon), h('span', {}, label));
+      b.addEventListener('click', () => { close(); fn(); });
+      this.drawer.appendChild(b);
+    }
+  }
+
+  // compétences de la barre : seulement les emplacements remplis (le grimoire est dans le menu)
   buildAbilities() {
     const g = this.game;
     for (const b of this.abBtns || []) b.remove();
     this.abBtns = [];
     const pos = [[96, 0], [96, 30], [96, 60], [96, 90], [160, 41], [160, 61]];
+    let k = 0;
     (g.hero.bar || []).forEach((id, i) => {
-      const [x, y] = this.arc(...pos[i]);
       const ab = ABILITIES[id];
-      const b = this.btn(id || 'empty' + i, ab ? ABILITY_ICONS[ab.icon] : ABILITY_ICONS.book, x, y, false, () => (ab ? g.useAbility(i) : g.windows?.open('grimoire')));
-      if (!ab) b.classList.add('emptyslot');
+      if (!ab) return;
+      const [x, y] = this.arc(...pos[k++]);
+      const b = this.btn(id, ABILITY_ICONS[ab.icon], x, y, false, () => g.useAbility(i));
       this.abBtns.push(b);
     });
   }
@@ -166,6 +199,14 @@ export class TouchControls {
     const g = this.game;
     this.autoCamera(dt);
     this.lockBtn?.classList.toggle('on', !!g.locked);
+    // bouton cible : au combat seulement
+    this.lockT = (this.lockT || 0) - dt;
+    if (this.lockBtn && this.lockT <= 0) {
+      this.lockT = 0.4;
+      const p = g.player?.position;
+      const near = !!g.locked || (p && g.enemies.hittable().some((e) => Math.hypot(e.position.x - p.x, e.position.z - p.z) < 28));
+      this.lockBtn.hidden = !near;
+    }
     const set = (id, remain, total) => { const el = this.cdEls[id]; if (el) el.style.setProperty('--p', (remain > 0 ? Math.round(remain / total * 100) : 0) + '%'); };
     set('attack', g.cooldowns.attack || 0, g.basicCd);
     for (const a of g.hero.bar || []) if (a) set(a, g.cooldowns[a] || 0, ABILITIES[a].cd * g.cdMult());

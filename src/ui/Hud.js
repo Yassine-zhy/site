@@ -31,11 +31,9 @@ export class Hud {
       h('div', { class: 'bar mp' }, this.mpFill, this.mpTxt),
       h('div', { class: 'bar st' }, this.stFill),
       this.buffBox));
-    // phares
+    // phares : le détail est sur la carte ; à l'écran, seulement la lumière du monde sous la minicarte
     this.beaconEls = BEACONS.map((b) => h('div', { class: 'bcn', title: b.name }));
     this.worldLight = h('b', {}, '0 %');
-    root.appendChild(h('div', { class: 'beacons panel interactive', onclick: () => game.toggleWindow?.('map') },
-      h('div', { class: 'lbl' }, 'Lumière du monde ', this.worldLight), ...this.beaconEls));
     // cible
     this.tName = h('div', { class: 'tn' }); this.tLvl = h('div', { class: 'tl' });
     this.tFill = h('div', { class: 'fill' }); this.tTxt = h('span');
@@ -52,8 +50,7 @@ export class Hud {
     this.clockEl = h('div', { class: 'clock' });
     root.appendChild(this.mmWrap = h('div', { class: 'minimap-wrap interactive' },
       h('div', { class: 'minimap', title: 'Carte (M)', onclick: () => game.toggleWindow?.('map') }, this.mmCanvas),
-      this.zoneEl, this.clockEl,
-      h('button', { class: 'btn small exp-btn', title: 'Expéditions entre amis (P)', onclick: () => game.toggleWindow?.('party') }, '⚔ Expéditions')));
+      this.zoneEl, this.clockEl));
     // quêtes
     this.trackBody = h('div');
     this.tracker = h('div', { class: 'tracker panel interactive', onclick: () => game.toggleWindow?.('quests') }, h('h4', {}, 'quêtes'), this.trackBody);
@@ -101,6 +98,7 @@ export class Hud {
     bar.append(mk('attack', 'Clic', ABILITY_ICONS.attack));
     (game.hero.bar || []).forEach((id, i) => {
       const ab = ABILITIES[id];
+      if (!ab) return; // emplacements vides : pas affichés (le grimoire, touche K, permet de les remplir)
       const el = mk(id || 'empty' + i, String(i + 1), ab ? ABILITY_ICONS[ab.icon] : null, ab ? '' : 'emptyslot');
       el.title = ab ? `${ab.name} — ${ab.desc} (${ab.mana} éther, ${ab.cd} s)` : 'Emplacement libre : ouvrez le grimoire (K)';
       if (ab) el.dataset.lvl = 'niv. ' + ab.level;
@@ -110,8 +108,7 @@ export class Hud {
     bar.append(h('div', { class: 'sep' }));
     const pot = mk('potion', 'R', ABILITY_ICONS.potion); pot.title = 'Élixir de vie (R)'; pot.addEventListener('click', () => game.usePotion());
     const rune = mk('rune', 'X', ABILITY_ICONS.rune, 'rune'); rune.title = 'Tracer une rune (clic droit maintenu ou X)';
-    const book = mk('grimoire', 'K', ABILITY_ICONS.book, 'book'); book.title = 'Grimoire des compétences (K)'; book.addEventListener('click', () => game.windows?.toggle('grimoire'));
-    bar.append(pot, rune, book);
+    bar.append(pot, rune);
   }
 
   set(key, val, fn) { if (this.cache[key] !== val) { this.cache[key] = val; fn(val); } }
@@ -194,7 +191,7 @@ export class Hud {
     this.set('clock', `${hh}:${mm}:${online}`, () => {
       this.clockEl.innerHTML = '';
       this.clockEl.append(h('span', {}, (tod > 0.25 && tod < 0.76 ? 'Jour ' : 'Nuit ') + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0')),
-        h('span', { class: 'on' }, h('b', {}, String(online)), online > 1 ? ' en ligne' : ' en ligne'));
+        h('span', { class: 'on' }, h('b', {}, String(online)), ' en ligne'), h('span', { class: 'wl', title: 'Lumière du monde (détail sur la carte)' }, '✦ ', this.worldLight));
     });
     // invite d'interaction
     const pr = g.promptText;

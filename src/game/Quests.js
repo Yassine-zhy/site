@@ -140,6 +140,7 @@ const SIDE_LIST = [
   { id: 's_pierres', giver: 'pip', title: 'Les pierres de passage', desc: 'Les pierres de passage permettent de voyager d’un coup ! Éveille-en trois (approche-toi et appuie sur E).', objectives: [{ type: 'waystone', count: 3 }], rewards: { xp: 400, gold: 60 } },
   { id: 's_ilots', giver: 'pip', req: ['m4'], title: 'Les lieux oubliés', desc: 'Quatre lieux sont flous sur ma carte : le Belvédère du Couchant, la Pointe aux Coquillages, la Croisée du Pèlerin et la Table du Vent. Va les voir pour moi !', objectives: [{ type: 'visit', place: 'nuees' }, { type: 'visit', place: 'tresor' }, { type: 'visit', place: 'pelerin' }, { type: 'visit', place: 'eclat' }], rewards: { xp: 900, gold: 120, item: 2 } },
   { id: 's_confins', giver: 'pip', req: ['m9'], title: 'Cartographe des confins', desc: 'Les terres lointaines cachent des merveilles : la Mine de Kessa, le Cirque d’Ambre, le Lac de Cristal et le Sanctuaire Gelé. Visite-les tous !', objectives: [{ type: 'visit', place: 'mine' }, { type: 'visit', place: 'cirque' }, { type: 'visit', place: 'cristal' }, { type: 'visit', place: 'sanctuaire' }], rewards: { xp: 2400, gold: 260, item: 3 } },
+  { id: 's_monture', giver: 'rhea', lvl: 8, req: ['m5'], title: 'L’éther apprivoisé', desc: 'Les montures d’éther naissent de la lumière des feux follets. Abattez-en quatre (autour du Lac Miroir, dans les ruines du sud des Cendres ou sur le Pic), puis offrez de la lumière à un phare : une monture viendra à vous.', objectives: [{ type: 'kill', enemy: 'wisp', count: 4 }, { type: 'light', beacon: 'any', count: 10 }], rewards: { xp: 900, gold: 100, mount: true } },
   { id: 's_bapteme', giver: 'rhea', title: 'Baptême de l’air', desc: 'Saute, ouvre ta paravoile, puis entre dans une colonne de vent : elle te portera vers les nuages.', objectives: [{ type: 'glide' }, { type: 'updraft' }], rewards: { xp: 200, gold: 40 } },
   { id: 's_anneaux', giver: 'rhea', lvl: 3, title: 'Les anneaux du vent', desc: 'Au-dessus du village flottent des anneaux de vent. Monte dans la colonne près du Pic, puis plane à travers eux.', objectives: [{ type: 'rings', set: 'village', count: 5 }], rewards: { xp: 600, gold: 90, item: 1 } },
   { id: 's_course', giver: 'rhea', req: ['m9'], title: 'La course des nuages', desc: 'Au-dessus des Terres d’Ambre, j’ai suspendu cinq anneaux de vent. Monte dans une colonne et traverse-les tous en planant !', objectives: [{ type: 'rings', set: 'ambre', count: 5 }], rewards: { xp: 1600, gold: 200, item: 2 } },
@@ -243,6 +244,11 @@ export class Quests {
     return { ...def, objectives: def.objectives.map((o) => ({ ...o, have: 0, count: o.count || 1, done: false, text: objectiveText({ ...o, count: o.count || 1 }) })), state: 'active', t: Date.now() };
   }
 
+  // une quête en cours attend-elle de la lumière pour ce phare ?
+  wantsLight(id) {
+    return this.active.some((q) => q.state === 'active' && q.objectives.some((o) => !o.done && o.type === 'light' && (!o.beacon || o.beacon === 'any' || o.beacon === id)));
+  }
+
   add(q) { this.active.push(q); this.changed(); this.game.audio?.play('quest'); this.game.ui.toast(`Nouvelle quête : <b>${escapeHtml(q.title)}</b>`); }
 
   mainFor(npc) {
@@ -330,6 +336,9 @@ export class Quests {
       }
     }
     for (const q of this.active) for (const o of q.objectives) if (o.type === 'level' && !o.done && this.game.hero.level >= o.count) this.onEvent('level', { level: this.game.hero.level });
+    // pierres de passage éveillées avant d'avoir la quête : elles comptent
+    const known = Object.keys(this.game.hero.discovered).filter((k) => k.startsWith('ws:')).length;
+    for (const q of this.active) for (const o of q.objectives) if (o.type === 'waystone' && !o.done && o.have < Math.min(o.count, known)) { o.have = Math.min(o.count, known) - 1; this.onEvent('waystone', {}); }
   }
 
   complete(q) {
@@ -347,6 +356,11 @@ export class Quests {
     if (r.potions) g.hero.potions.hp = (g.hero.potions.hp || 0) + r.potions;
     if (r.chest) { g.hero.chests[r.chest] = (g.hero.chests[r.chest] || 0) + 1; g.ui.toast(`Récompense : <b style="color:${CHEST_TIERS[r.chest].color}">${CHEST_TIERS[r.chest].name}</b> (à ouvrir dans le sac)`, { time: 4 }); }
     if (r.xp) g.gainXp(r.xp);
+    if (r.mount) {
+      g.hero.mount = true;
+      g.touch?.refreshMenu?.();
+      g.schedule?.(1.2, () => g.ui.announce('Monture d’éther apprivoisée', g.input?.isTouch ? 'Bouton monture du menu pour l’invoquer' : 'Touche N pour l’invoquer · Maj pour galoper', 4));
+    }
     if (q.id.startsWith('m')) {
       // première quête principale pas encore accomplie (comme au chargement)
       this.done.add(q.id);

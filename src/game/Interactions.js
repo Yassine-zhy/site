@@ -60,7 +60,7 @@ export class Interactions {
   startChannel(t) {
     const g = this.game;
     if ((this.beaconCd[t.bc.def.id] || 0) > 0) { g.ui.toast('Le phare a besoin d’un instant avant de recevoir à nouveau votre lumière.'); return; }
-    if ((g.worldState?.levels[t.i] || 0) >= 0.999) { g.ui.toast(`${t.bc.def.name} brille déjà de tous ses feux.`); return; }
+    if ((g.worldState?.levels[t.i] || 0) >= 0.999 && !g.quests?.wantsLight?.(t.bc.def.id)) { g.ui.toast(`${t.bc.def.name} brille déjà de tous ses feux.`); return; }
     this.channel = { t: 0, dur: 2.6, bc: t.bc, i: t.i, start: g.player.position.clone() };
     g.player.char.playLoop('Spellcasting', { full: true });
     g.player.rooted = 2.7;

@@ -130,7 +130,7 @@ export class Player {
     this.rooted = Math.max(0, this.rooted - dt);
 
     let speed = this.walkToggle ? WALK : (this.sprinting ? SPRINT : RUN);
-    if (this.mounted) speed = this.sprinting ? 26 : 18.5; // monture d'éther
+    if (this.mounted) speed = this.sprinting ? 15.5 : 11.5; // monture d'éther : plus rapide qu'à pied, sans traverser la carte d'un trait
     speed *= this.cls.base.speed * this.speedMult * (this.game.hero?.hasBuff('chill') ? 0.65 : 1);
     if (this.inWater) speed *= 0.55;
     if (this.attackSlow) speed *= this.attackSlow;

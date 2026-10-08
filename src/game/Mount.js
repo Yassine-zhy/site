@@ -84,6 +84,11 @@ export class Mount {
 
   toggle() {
     if (this.active) return this.dismount();
+    if (!this.game.hero?.mount) {
+      this.game.ui.toast('Vous n’avez pas encore de monture. La Capitaine Rhéa, à Havrelumière, sait en apprivoiser une (dès le niveau 8).', { time: 3.5 });
+      this.game.audio?.play('error');
+      return;
+    }
     const why = this.blocked();
     if (why) { this.game.ui.toast(why, { time: 1.6 }); this.game.audio?.play('error'); return; }
     this.mount();

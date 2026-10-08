@@ -105,14 +105,22 @@ export class WorldState {
     const total = this.levels[i] * 100;
     const room = Math.max(0, 100 - total);
     const gain = Math.min(amount, room + 0.0001);
-    if (gain <= 0.001) return 0;
+    // une quête qui demande cette offrande la compte entièrement, même si le phare est déjà
+    // plein (le phare la garde en réserve) : on ne peut pas « gâcher » une quête en avance
+    const wanted = this.game.quests?.wantsLight?.(b.id);
+    const p = this.game.player.position;
+    if (gain <= 0.001) {
+      if (!wanted) return 0;
+      this.game.ui.floatText(new THREE.Vector3(p.x, p.y + 3, p.z), `+${amount.toFixed(1)} % (réserve du phare)`, 'gold', { rise: 2 });
+      this.game.quests.onEvent('light', { id: b.id, amount, reason });
+      return amount;
+    }
     this.mine[b.id] = { a: Math.round((cur + gain) * 100) / 100, t: now };
     this.game.hero.light += gain;
     this.dirty = true;
     this.recompute(false);
-    const p = this.game.player.position;
     this.game.ui.floatText(new THREE.Vector3(p.x, p.y + 3, p.z), `+${gain.toFixed(1)} % lumière`, 'gold', { rise: 2 });
-    this.game.quests?.onEvent('light', { id: b.id, amount: gain, reason });
+    this.game.quests?.onEvent('light', { id: b.id, amount: wanted ? Math.max(gain, amount) : gain, reason });
     return gain;
   }
 
