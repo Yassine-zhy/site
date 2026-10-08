@@ -298,7 +298,7 @@ export class Windows {
     qsel.addEventListener('change', () => { g.renderer.setQuality(qsel.value); g.world.setQuality(g.renderer.quality); g.prewarm(); s.quality = qsel.value; Save.saveSettings(s); });
     // plafond d'images par seconde : la première économie d'énergie (et de chaleur) sur téléphone
     const fsel = h('select', { id: 'opt-fpscap', style: { width: '100%', padding: '8px', background: 'rgba(0,0,0,0.35)', color: 'var(--parch)', border: '1px solid var(--line)', borderRadius: '4px', fontSize: '15px' } },
-      ...[['auto', `Automatique (${g.fpsCapValue(true)} i/s)`], ['30', '30 i/s · économie, le téléphone chauffe moins'], ['45', '45 i/s'], ['60', '60 i/s'], ['0', 'Sans limite']]
+      ...[['auto', '60 i/s (recommandé)'], ['30', '30 i/s · économie de batterie'], ['0', 'Sans limite (écrans 90 / 120 Hz)']]
         .map(([v, l]) => h('option', { value: v, selected: String(s.fpsCap ?? 'auto') === v }, l)));
     fsel.addEventListener('change', () => { s.fpsCap = fsel.value; Save.saveSettings(s); });
     const slider = (id, label, val, min, max, step, on) => {

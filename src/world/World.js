@@ -23,6 +23,33 @@ import { Updrafts } from './Updrafts.js';
 import { UPDRAFTS } from '../config.js';
 
 // Le monde d'Aetheria : îles, ciel, eau, végétation, village.
+// Lambert à la place du rendu physique (PBR) : pas de reflets spéculaires ni d'environnement,
+// deux à trois fois moins de calcul par pixel. Les correctifs de shaders (vent, Brume…) sont
+// conservés ; les personnages et les objets à reflets (envMap) gardent leur matériau.
+const PROPS = ['name', 'map', 'vertexColors', 'transparent', 'opacity', 'alphaTest', 'side', 'emissiveMap', 'emissiveIntensity', 'flatShading', 'depthWrite', 'depthTest', 'alphaMap', 'fog', 'polygonOffset', 'polygonOffsetFactor', 'polygonOffsetUnits', 'blending', 'toneMapped', 'visible', 'wireframe', 'aoMap', 'aoMapIntensity'];
+function liteMaterials(root) {
+  const cache = new Map();
+  const conv = (m) => {
+    if (!m || !m.isMeshStandardMaterial || m.userData.enhanced || m.envMap) return m;
+    let l = cache.get(m);
+    if (l) return l;
+    l = new THREE.MeshLambertMaterial();
+    for (const k of PROPS) if (m[k] !== undefined) l[k] = m[k];
+    l.color = m.color; l.emissive = m.emissive; // mêmes couleurs (modifiées ailleurs par référence)
+    l.userData = m.userData;
+    if (m.defines) { l.defines = { ...m.defines }; delete l.defines.STANDARD; delete l.defines.PHYSICAL; } // (STANDARD activerait les calculs physiques)
+    if (Object.prototype.hasOwnProperty.call(m, 'onBeforeCompile')) l.onBeforeCompile = m.onBeforeCompile;
+    if (Object.prototype.hasOwnProperty.call(m, 'customProgramCacheKey')) { const key = m.customProgramCacheKey.bind(m); l.customProgramCacheKey = () => 'lambert|' + key(); }
+    cache.set(m, l);
+    return l;
+  };
+  root.traverse((o) => {
+    if (!o.isMesh || o.isSkinnedMesh) return;
+    o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material);
+  });
+  return cache.size;
+}
+
 export class World {
   constructor(renderer, assets, quality) {
     this.renderer = renderer;
@@ -95,6 +122,8 @@ export class World {
     // flammes, lumières et pales restés hors fusion : masqués au loin
     this.cullFar(this.village.group, 1, true);
     this.cullFar(this.outposts.group, 1, true);
+    // qualité basse : matériaux du monde en éclairage diffus simple (comme les jeux mobiles)
+    if (SHARED.lite) liteMaterials(this.scene);
     // décors immobiles figés (matrices calculées une fois pour toutes)
     const mon = this.village.monument;
     this.village.freeze(mon ? [mon.crystal, ...mon.rings] : []);

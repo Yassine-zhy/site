@@ -206,7 +206,7 @@ export class Hud {
     if (showFps) this.set('fps', Math.round(g.fps), (v) => { this.fpsEl.textContent = `${v} i/s · ${Math.round((g.renderer.dyn?.ratio || 1) * 100)} %`; });
     // minicarte (10 fps)
     this.mmT -= dt;
-    if (this.mmT <= 0) { this.mmT = 0.1; this.drawMinimap(); }
+    if (this.mmT <= 0) { this.mmT = 0.2; this.drawMinimap(); } // 5 fois par seconde suffisent
   }
 
   updateWaypoint(dt) {
@@ -221,11 +221,16 @@ export class Hud {
         t.wy = t.ring ? t.y : Math.max(gy, t.y ?? -Infinity) + 2.6;
       }
       this.wpTarget = t;
-      // tous les panneaux de l'interface que la balise doit contourner
-      const sel = '.tracker, .minimap-wrap, .pframe, .beacons, .actionbar, .topstack > :not(:empty), .tmenu, .tb, .joy, .tinteract, .xpbar';
-      this.wpAvoid = [...document.querySelectorAll(sel)].filter((e) => e.offsetWidth > 0 && e.offsetHeight > 0 && getComputedStyle(e).visibility !== 'hidden').map((e) => e.getBoundingClientRect());
-      const log = this.game.chat?.log;
-      if (log && [...log.children].some((l) => !l.classList.contains('old'))) this.wpAvoid.push(log.getBoundingClientRect());
+      // tous les panneaux de l'interface que la balise doit contourner (mesure coûteuse : elle
+      // force le navigateur à recalculer la mise en page, donc toutes les 2 s seulement)
+      this.wpAvoidT = (this.wpAvoidT || 0) - 0.3;
+      if (this.wpAvoidT <= 0 || !this.wpAvoid) {
+        this.wpAvoidT = 2;
+        const sel = '.tracker, .minimap-wrap, .pframe, .actionbar, .topstack > :not(:empty), .tmenu, .tb, .joy, .tinteract, .xpbar';
+        this.wpAvoid = [...document.querySelectorAll(sel)].filter((e) => e.offsetWidth > 0 && e.offsetHeight > 0 && getComputedStyle(e).visibility !== 'hidden').map((e) => e.getBoundingClientRect());
+        const log = this.game.chat?.log;
+        if (log && [...log.children].some((l) => !l.classList.contains('old'))) this.wpAvoid.push(log.getBoundingClientRect());
+      }
       const key = t ? t.label + '|' + t.color : '';
       this.set('wp', key, () => { this.wpLabel.textContent = t?.label || ''; this.wp.style.setProperty('--wc', t?.color || '#ffe3a3'); });
     }

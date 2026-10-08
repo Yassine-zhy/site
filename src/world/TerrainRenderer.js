@@ -163,8 +163,9 @@ export class TerrainRenderer {
   }
 
   makeMaterial(n, quality) {
-    const mat = new THREE.MeshStandardMaterial({ roughness: 0.94, metalness: 0 });
     const u = this.uniforms, hi = quality !== 'low';
+    // qualité basse : éclairage diffus simple (Lambert), bien moins coûteux sur téléphone
+    const mat = hi ? new THREE.MeshStandardMaterial({ roughness: 0.94, metalness: 0 }) : new THREE.MeshLambertMaterial();
     mat.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, u);
       shader.vertexShader = shader.vertexShader
@@ -263,7 +264,7 @@ export class TerrainRenderer {
         .replace('#include <normal_fragment_begin>', `
           float faceDirection = gl_FrontFacing ? 1.0 : - 1.0;
           vec3 normal = normalize((viewMatrix * vec4(wN, 0.0)).xyz);
-          normal = perturbTerr(-vViewPosition, normal, vec2(dFdx(det), dFdy(det)) * 0.9 * fade); // relief du détail (toutes qualités)
+          ${hi ? 'normal = perturbTerr(-vViewPosition, normal, vec2(dFdx(det), dFdy(det)) * 0.9 * fade);' : ''}
           vec3 nonPerturbedNormal = normal;`);
     };
     mat.customProgramCacheKey = () => 'terrain' + n + hi;

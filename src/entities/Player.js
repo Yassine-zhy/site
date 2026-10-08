@@ -18,6 +18,7 @@ export class Player {
     this.classId = classId;
     this.name = name;
     this.char = new Character(game.assets, this.cls.model, { show: this.cls.weapons.show });
+    this.char.noLod = true; // le héros : toujours animé à chaque image
     this.object = this.char.object;
     this.glider = createGlider(this.cls.color, '#2b2350');
     this.object.add(this.glider);

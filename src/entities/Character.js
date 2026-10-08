@@ -32,13 +32,18 @@ export function blobAssets() {
 }
 
 // Personnage animé KayKit : mixeur à deux couches, armes, flash d'impact, dissolution.
+// position de la caméra et numéro d'image, mis à jour par le jeu (niveau de détail des animations)
+export const ANIM_LOD = { cam: null, frame: 0 };
+
 export class Character {
   constructor(assets, model, { scale = 1, show = null, attach = [], tint = null } = {}) {
     this.assets = assets;
     this.object = new THREE.Group();
-    // personnage masqué (loin, rentré chez lui…) : ni lui ni ses os ne sont recalculés
+    // personnage masqué (loin, rentré chez lui…) ou en pause d'animation : ni lui ni ses os
+    // ne sont recalculés
     const upd = this.object.updateMatrixWorld;
-    this.object.updateMatrixWorld = function (force) { if (this.visible) upd.call(this, force); };
+    this.object.updateMatrixWorld = function (force) { if (this.visible && !this.userData.hold) upd.call(this, force); };
+    this.animAcc = 0; this.lodPhase = Math.floor(Math.random() * 3);
     this.model = assets.character(model);
     this.model.scale.setScalar(scale);
     this.scale = scale;
@@ -207,6 +212,17 @@ export class Character {
   }
 
   update(dt) {
+    // niveau de détail de l'animation : au-delà de 22 m une image sur deux, au-delà de 45 m une
+    // sur trois (le temps écoulé est rattrapé d'un coup : le mouvement reste juste)
+    this.animAcc += dt;
+    const cam = ANIM_LOD.cam;
+    if (cam && !this.noLod) {
+      const p = this.object.position, d2 = (p.x - cam.x) ** 2 + (p.z - cam.z) ** 2;
+      const step = d2 > 2025 ? 3 : d2 > 484 ? 2 : 1;
+      if (step > 1 && (ANIM_LOD.frame + this.lodPhase) % step !== 0) { this.object.userData.hold = true; return; }
+    }
+    this.object.userData.hold = false;
+    dt = this.animAcc; this.animAcc = 0;
     this.mixer.update(dt);
     if (this.legPose) this.applyLegPose(this.legPose);
     const off = Math.max(0, this.groundOffset || 0), k = Math.max(0, 1 - off / 5) * this.opacity;

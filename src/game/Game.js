@@ -18,6 +18,7 @@ import { platformAt } from '../world/Citadel.js';
 import { ROOMS } from '../world/Interiors.js';
 import { Updrafts } from '../world/Updrafts.js';
 import { cloneModelMaterial } from '../engine/ModelLook.js';
+import { ANIM_LOD } from '../entities/Character.js';
 import { Creature } from '../entities/Creature.js';
 
 // Orchestrateur principal : boucle de jeu, combat, liens entre systèmes.
@@ -167,18 +168,11 @@ export class Game {
     return { x, y, z, facing };
   }
 
-  // Plafond d'images par seconde. « auto » : 30 en qualité basse sur téléphone, 45 en moyenne,
-  // 60 sinon. Menus ouverts et écran titre : 30 au plus. (base = sans tenir compte des menus)
-  fpsCapValue(base = false) {
+  // Plafond d'images par seconde : 60 par défaut partout (fluide, et pas de calcul inutile sur
+  // les écrans à 90 ou 120 Hz) ; réglable dans les options.
+  fpsCapValue() {
     const s = this.settings?.fpsCap ?? 'auto';
-    let cap;
-    if (s !== 'auto') cap = +s || 0;
-    else {
-      const q = this.renderer.qualityName;
-      cap = this.input?.isTouch ? (q === 'low' ? 30 : q === 'medium' ? 45 : 60) : 60;
-    }
-    if (!base && (!this.inGame || this.windowOpen || this.dialogueOpen)) cap = Math.min(cap || 60, 30);
-    return cap;
+    return s === 'auto' ? 60 : +s || 0;
   }
 
   start() {
@@ -243,6 +237,7 @@ export class Game {
   // ------------------------------------------------------------------ boucle
   frame(rawDt) {
     rawDt = Math.min(rawDt, this.maxDt || 0.25);
+    ANIM_LOD.cam = this.camera.position; ANIM_LOD.frame++;
     this.renderer.adapt?.(rawDt, this.settings.adaptive !== false);
     this.fpsAcc += rawDt; this.fpsN++;
     if (this.fpsAcc > 1) { this.fps = this.fpsN / this.fpsAcc; this.fpsAcc = 0; this.fpsN = 0; }
@@ -281,7 +276,7 @@ export class Game {
     this.world.updrafts?.update(dt, this.elapsed, focus);
     this.systemsUpdate?.(dt);
     this.audio?.update(dt);
-    this.fx.update(dt, this.camera, this.renderer.renderer.domElement.clientHeight * this.renderer.renderer.getPixelRatio());
+    this.fx.update(dt, this.camera, innerHeight * this.renderer.renderer.getPixelRatio()); // (innerHeight : pas de recalcul de mise en page)
     this.ui.update(dt, this.camera);
     {
       this.hurtFlash = Math.max(0, this.hurtFlash - rawDt * 1.8);

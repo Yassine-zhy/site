@@ -34,6 +34,7 @@ export class Enemy {
     this.char = this.def.model.startsWith('proc:')
       ? new Creature(this.def.model.slice(5), { scale, tint: elite ? '#ffd36b' : this.def.tint || null })
       : new Character(game.assets, this.def.model, { scale, attach, tint });
+    if (this.def.boss) this.char.noLod = true; // seigneurs : animation pleine même de loin
     this.object = this.char.object;
     this.position = this.object.position;
     const y = game.world.terrain.heightAt(x, z) ?? 0;

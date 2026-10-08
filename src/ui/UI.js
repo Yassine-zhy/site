@@ -186,10 +186,12 @@ export class UI {
   }
 
   update(dt, camera) {
-    const w = this.root.clientWidth, hgt = this.root.clientHeight;
+    // dimensions de la fenêtre (innerWidth ne force pas le recalcul de la mise en page, contrairement
+    // à clientWidth lu après des modifications du DOM : une mise en page complète à chaque image)
+    const w = innerWidth, hgt = innerHeight;
     const v = this.v;
     this.rectT = (this.rectT || 0) - dt;
-    if (this.rectT <= 0) { this.rectT = 0.25; this.refreshHudRects(); }
+    if (this.rectT <= 0) { this.rectT = 1; this.refreshHudRects(); }
     for (let i = this.floats.length - 1; i >= 0; i--) {
       const f = this.floats[i];
       f.t += dt;
