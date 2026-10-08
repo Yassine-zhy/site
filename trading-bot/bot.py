@@ -13,7 +13,9 @@ Organisation d'un passage de boucle (toutes les PRICE_CHECK_INTERVAL_SECONDS) :
   1. Si une position est ouverte : contrôle stop-loss / take-profit sur le
      dernier prix, vente au marché immédiate si un seuil est franchi.
   2. Toutes les ANALYSIS_INTERVAL_SECONDS : téléchargement des bougies,
-     calcul des indicateurs, signal BUY / SELL / HOLD, puis exécution.
+     calcul des indicateurs, puis décision BUY / SELL / HOLD et exécution.
+     La décision vient soit des règles RSI + EMA (STRATEGY=indicators),
+     soit de Claude, qui lit aussi l'actualité (STRATEGY=ai).
 """
 
 from __future__ import annotations
@@ -30,11 +32,12 @@ from typing import Any
 
 import ccxt
 
+from ai_advisor import AIUnavailable, ClaudeAdvisor, build_market_context
 from broker import ExchangeClient, Fill, LiveTrader, OrderStatusUnknown, PaperTrader
 from config import LOG_FILE, ConfigError, Settings, load_settings
 from risk import STOP_LOSS, check_exit, compute_buy_cost, pnl_pct, stop_loss_price, take_profit_price
 from state import StateStore
-from strategy import BUY, SELL, add_indicators, evaluate_signal
+from strategy import BUY, HOLD, SELL, add_indicators, evaluate_signal
 
 log = logging.getLogger("bot")
 
@@ -82,8 +85,9 @@ class TradingBot:
     """Relie la stratégie, la gestion des risques et l'exécution des ordres."""
 
     def __init__(self, settings: Settings, client: ExchangeClient, trader, store: StateStore,
-                 state: dict[str, Any], stop_event: threading.Event):
+                 state: dict[str, Any], stop_event: threading.Event, advisor: ClaudeAdvisor | None = None):
         self.settings = settings
+        self.advisor = advisor        # conseiller IA, seulement si STRATEGY=ai
         self.client = client
         self.trader = trader          # LiveTrader ou PaperTrader
         self.store = store
@@ -92,6 +96,7 @@ class TradingBot:
         self._next_analysis = 0.0     # 0 = analyse dès le premier passage
         self._errors = 0              # erreurs consécutives (pour espacer les essais)
         self._reconciled = False
+        self._ai_disabled = False     # True si la clé Anthropic est refusée
 
     # ------------------------------------------------------------- boucle
     def run(self) -> None:
@@ -188,20 +193,26 @@ class TradingBot:
         """Télécharge les bougies, calcule le signal et agit en conséquence."""
         s = self.settings
         df = add_indicators(self.client.fetch_closed_candles(), s.strategy)
-        signal, reason = evaluate_signal(df, s.strategy)
         last = df.iloc[-1]
         candle_time = df.index[-1]
 
         log.info(
-            "Analyse %s %s | bougie du %s UTC | clôture %.2f | RSI %.1f | EMA%d %.2f | EMA%d %.2f -> %s (%s)",
+            "Analyse %s %s | bougie du %s UTC | clôture %.2f | RSI %.1f | EMA%d %.2f | EMA%d %.2f",
             s.symbol, s.timeframe, candle_time.strftime("%Y-%m-%d %H:%M"), last["close"], last["rsi"],
-            s.strategy.ema_fast, last["ema_fast"], s.strategy.ema_slow, last["ema_slow"], signal, reason,
+            s.strategy.ema_fast, last["ema_fast"], s.strategy.ema_slow, last["ema_slow"],
         )
         self.log_portfolio()
 
+        size = None   # part du solde à investir (None = POSITION_SIZE_PCT)
+        if s.strategy_mode == "ai":
+            signal, reason, size = self.ai_signal(df)
+        else:
+            signal, reason = evaluate_signal(df, s.strategy)
+        log.info("Décision : %s (%s)", signal, reason)
+
         if self.state["in_position"]:
             if signal == SELL:
-                self.sell("SIGNAL")
+                self.sell("IA" if s.strategy_mode == "ai" else "SIGNAL")
             else:
                 log.info("Position conservée.")
             return
@@ -213,9 +224,91 @@ class TradingBot:
                 # chaque aller-retour coûte des frais.
                 log.info("Signal BUY déjà utilisé sur cette bougie : on attend la suivante.")
                 return
-            self.buy(candle_id)
+            self.buy(candle_id, size)
         elif signal == SELL:
             log.info("Signal SELL ignoré : aucune position ouverte.")
+
+    # ------------------------------------------------------------ conseiller IA
+    def ai_signal(self, df) -> tuple[str, str, float | None]:
+        """
+        Consulte Claude si c'est le moment, et renvoie (signal, raison, part du
+        solde à investir). Entre deux consultations, le bot ne fait rien de
+        nouveau : il continue seulement de surveiller le stop-loss.
+        """
+        ai = self.settings.ai
+        price = self.client.fetch_last_price()
+        due, why = self._ai_due(price)
+        if not due:
+            return HOLD, f"IA : {why}", None
+
+        log.info("Consultation de l'IA (%s, effort %s) : %s...", ai.model, ai.effort, why)
+        context = build_market_context(df, price, self.state, self.settings, self.trader.get_free_balances())
+        try:
+            decision = self.advisor.decide(context)
+        except AIUnavailable as exc:
+            if exc.fatal:
+                self._ai_disabled = True
+                log.critical("IA désactivée : %s. Le bot continue de surveiller le stop-loss et le "
+                             "take-profit, mais ne prend plus de nouvelle décision.", exc)
+            else:
+                log.error("IA indisponible : %s. Nouvel essai à la prochaine analyse.", exc)
+            return HOLD, "IA indisponible", None
+
+        self._record_ai_call(price, decision)
+        log.info("Réponse de l'IA : %s | confiance %d/100 | taille %d %% du maximum | "
+                 "coût estimé %.3f $ (%d recherche(s) web), total %.2f $",
+                 decision.action, decision.confidence, decision.position_size_pct,
+                 decision.cost, decision.searches, self.state["ai_cost_total"])
+        log.info("  Raisonnement : %s", decision.reasoning)
+        log.info("  Actualités : %s", decision.news_summary)
+
+        if decision.action != HOLD and decision.confidence < ai.min_confidence:
+            return HOLD, (f"IA : {decision.action} ignoré, confiance {decision.confidence} "
+                          f"sous le seuil de {ai.min_confidence}"), None
+        if decision.action == BUY:
+            if decision.position_size_pct <= 0:
+                return HOLD, "IA : BUY sans taille de position", None
+            return BUY, f"IA, confiance {decision.confidence}/100", \
+                self.settings.position_size * decision.position_size_pct / 100
+        return decision.action, f"IA, confiance {decision.confidence}/100", None
+
+    def _ai_due(self, price: float) -> tuple[bool, str]:
+        """Faut-il consulter l'IA maintenant ? Renvoie (oui/non, raison)."""
+        if self._ai_disabled:
+            return False, "désactivée (clé refusée)"
+        ai = self.settings.ai
+        now = datetime.now(timezone.utc)
+        calls_today = self.state["ai_calls_count"] if self.state["ai_calls_day"] == now.date().isoformat() else 0
+        if calls_today >= ai.max_calls_per_day:
+            return False, f"plafond de {ai.max_calls_per_day} consultations par jour atteint"
+        last_call = self.state.get("ai_last_call")
+        if not last_call:
+            return True, "première consultation"
+        elapsed = (now - datetime.fromisoformat(last_call)).total_seconds() / 60
+        if elapsed >= ai.interval_minutes:
+            return True, "consultation régulière"
+        last_price = self.state.get("ai_last_price")
+        if last_price and ai.price_trigger > 0:
+            move = price / last_price - 1
+            if abs(move) >= ai.price_trigger:
+                return True, f"le prix a bougé de {move * 100:+.1f} % depuis la dernière consultation"
+        return False, (f"prochaine consultation dans {ai.interval_minutes - elapsed:.0f} min, "
+                       f"ou avant si le prix bouge de {ai.price_trigger * 100:g} %")
+
+    def _record_ai_call(self, price: float, decision) -> None:
+        now = datetime.now(timezone.utc)
+        today = now.date().isoformat()
+        if self.state["ai_calls_day"] != today:
+            self.state["ai_calls_day"], self.state["ai_calls_count"] = today, 0
+        self.state["ai_calls_count"] += 1
+        self.state["ai_last_call"] = now.isoformat(timespec="seconds")
+        self.state["ai_last_price"] = price
+        self.state["ai_cost_total"] += decision.cost
+        history = list(self.state.get("ai_history") or [])
+        history.append({"time": f"{now:%Y-%m-%d %H:%M} UTC", "price": price, "action": decision.action,
+                        "confidence": decision.confidence, "reasoning": decision.reasoning[:300]})
+        self.state["ai_history"] = history[-5:]   # les 5 dernières suffisent comme mémoire
+        self.store.save(self.state)
 
     def log_portfolio(self) -> None:
         quote_free, base_free = self.trader.get_free_balances()
@@ -234,11 +327,12 @@ class TradingBot:
         log.info(line)
 
     # --------------------------------------------------------------- ordres
-    def buy(self, candle_id: str) -> None:
-        """Achète au marché avec POSITION_SIZE_PCT % du solde disponible."""
+    def buy(self, candle_id: str, size: float | None = None) -> None:
+        """Achète au marché avec POSITION_SIZE_PCT % du solde (ou moins, si l'IA le demande)."""
         quote = self.client.quote
         quote_free, _ = self.trader.get_free_balances()
-        cost = compute_buy_cost(quote_free, self.settings.position_size, self.settings.max_order_cost)
+        size = self.settings.position_size if size is None else min(size, self.settings.position_size)
+        cost = compute_buy_cost(quote_free, size, self.settings.max_order_cost)
         min_cost = self.client.min_order_cost(self.client.fetch_last_price())
         if cost <= 0 or cost < min_cost:
             log.warning("Achat annulé : %.2f %s à investir, l'exchange exige au moins %.2f %s.",
@@ -246,8 +340,8 @@ class TradingBot:
             return
 
         log.info("Signal BUY : achat au marché pour %.2f %s (%.0f %% de %.2f %s disponibles%s).",
-                 cost, quote, self.settings.position_size * 100, quote_free, quote,
-                 ", plafonné par MAX_ORDER_COST" if cost < quote_free * self.settings.position_size else "")
+                 cost, quote, size * 100, quote_free, quote,
+                 ", plafonné par MAX_ORDER_COST" if cost < quote_free * size else "")
         try:
             fill = self.trader.market_buy(cost)
         except OrderStatusUnknown as exc:
@@ -405,6 +499,14 @@ def main(argv: list[str] | None = None) -> int:
              settings.exchange_id, settings.symbol, settings.timeframe)
     log.info("Risque : %.0f %% du solde par achat | stop-loss -%.1f %% | take-profit +%.1f %%",
              settings.position_size * 100, settings.stop_loss * 100, settings.take_profit * 100)
+    if settings.strategy_mode == "ai":
+        ai = settings.ai
+        log.info("Décisions : IA %s (effort %s) | consultation toutes les %d min, ou si le prix bouge de %g %% | "
+                 "%d consultations max par jour | confiance minimale %d/100 | recherche web %s",
+                 ai.model, ai.effort, ai.interval_minutes, ai.price_trigger * 100, ai.max_calls_per_day,
+                 ai.min_confidence, "activée" if ai.web_search else "désactivée")
+    else:
+        log.info("Décisions : règles RSI + EMA %d/%d", settings.strategy.ema_fast, settings.strategy.ema_slow)
     if settings.mode == "live":
         log.warning("MODE RÉEL : le bot va passer de vrais ordres avec votre argent.")
 
@@ -430,7 +532,8 @@ def main(argv: list[str] | None = None) -> int:
             trader = PaperTrader(client, state, settings.paper_fee, settings.paper_slippage)
         else:
             trader = LiveTrader(client)
-        bot = TradingBot(settings, client, trader, store, state, stop_event)
+        advisor = ClaudeAdvisor(settings) if settings.strategy_mode == "ai" else None
+        bot = TradingBot(settings, client, trader, store, state, stop_event, advisor)
         if args.once:
             bot.run_cycle()
         else:

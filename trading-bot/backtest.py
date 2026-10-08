@@ -255,6 +255,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     print_report(result, settings)
+    if settings.strategy_mode == "ai":
+        print("Note : ce backtest teste les règles RSI + EMA. Le mode IA ne peut pas être rejoué "
+              "sur le passé (voir le README) : testez-le en paper trading.")
     return 0
 
 

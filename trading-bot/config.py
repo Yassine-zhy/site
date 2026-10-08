@@ -9,7 +9,7 @@ Aucune clé API n'est écrite dans le code : elles sont lues depuis le fichier
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import ccxt
@@ -21,6 +21,8 @@ BASE_DIR = Path(__file__).resolve().parent
 LOG_FILE = BASE_DIR / "bot_trading.log"
 
 VALID_MODES = ("paper", "testnet", "live")
+VALID_STRATEGIES = ("indicators", "ai")
+VALID_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
 # Mot à recopier dans CONFIRM_LIVE pour autoriser les ordres en argent réel.
 LIVE_CONFIRMATION_WORD = "OUI"
@@ -39,6 +41,20 @@ class StrategyParams:
     rsi_sell_level: float = 70.0   # RSI au-dessus = surachat = vente
     ema_fast: int = 50
     ema_slow: int = 200
+
+
+@dataclass(frozen=True)
+class AISettings:
+    """Réglages du conseiller IA (STRATEGY=ai), voir ai_advisor.py."""
+
+    model: str = "claude-opus-5-5"
+    effort: str = "medium"         # profondeur de réflexion : low, medium, high, xhigh, max
+    interval_minutes: int = 240    # consultation régulière (240 = à chaque bougie 4 h)
+    price_trigger: float = 0.03    # consultation anticipée si le prix bouge de 3 %
+    max_calls_per_day: int = 12    # plafond de dépense
+    min_confidence: int = 60       # en dessous, la décision de l'IA est ignorée
+    web_search: bool = True
+    max_searches: int = 3          # recherches web par consultation
 
 
 @dataclass(frozen=True)
@@ -64,6 +80,8 @@ class Settings:
     paper_slippage: float      # écart de prix simulé sur un ordre au marché
     log_level: str
     state_file: Path
+    strategy_mode: str = "indicators"   # "indicators" (règles RSI/EMA) ou "ai" (Claude)
+    ai: AISettings = field(default_factory=AISettings)
 
     @property
     def uses_real_orders(self) -> bool:
@@ -97,6 +115,15 @@ def _get_int(name: str, default: int, minimum: int, maximum: int) -> int:
     if not value.is_integer():
         raise ConfigError(f"{name} doit être un nombre entier (valeur lue : {value}).")
     return int(value)
+
+
+def _get_bool(name: str, default: bool) -> bool:
+    raw = _get_str(name, "oui" if default else "non").lower()
+    if raw in ("1", "true", "oui", "yes", "on"):
+        return True
+    if raw in ("0", "false", "non", "no", "off"):
+        return False
+    raise ConfigError(f"{name} doit valoir oui ou non (valeur lue : {raw!r}).")
 
 
 def load_settings(for_backtest: bool = False) -> Settings:
@@ -138,7 +165,28 @@ def load_settings(for_backtest: bool = False) -> Settings:
     if candles_limit < strategy.ema_slow + 50:
         raise ConfigError(f"CANDLES_LIMIT doit valoir au moins EMA_SLOW + 50 ({strategy.ema_slow + 50}).")
 
+    strategy_mode = _get_str("STRATEGY", "indicators").lower()
+    if strategy_mode not in VALID_STRATEGIES:
+        raise ConfigError(f"STRATEGY doit valoir indicators ou ai (valeur lue : {strategy_mode!r}).")
+    ai = AISettings(
+        model=_get_str("AI_MODEL", "claude-opus-5-5"),
+        effort=_get_str("AI_EFFORT", "medium").lower(),
+        interval_minutes=_get_int("AI_INTERVAL_MINUTES", 240, 15, 10080),
+        price_trigger=_get_float("AI_PRICE_TRIGGER_PCT", 3, 0, 100) / 100,
+        max_calls_per_day=_get_int("AI_MAX_CALLS_PER_DAY", 12, 1, 500),
+        min_confidence=_get_int("AI_MIN_CONFIDENCE", 60, 0, 100),
+        web_search=_get_bool("AI_WEB_SEARCH", True),
+        max_searches=_get_int("AI_MAX_SEARCHES", 3, 1, 20),
+    )
+    if ai.effort not in VALID_EFFORTS:
+        raise ConfigError(f"AI_EFFORT doit valoir {', '.join(VALID_EFFORTS)} (valeur lue : {ai.effort!r}).")
+
     if not for_backtest:
+        if strategy_mode == "ai" and not os.getenv("ANTHROPIC_API_KEY", "").strip():
+            raise ConfigError(
+                "STRATEGY=ai nécessite une clé ANTHROPIC_API_KEY dans le .env "
+                "(à créer sur https://console.anthropic.com, voir le README)."
+            )
         if mode in ("testnet", "live") and not (api_key and api_secret):
             raise ConfigError(f"Le mode {mode} nécessite API_KEY et API_SECRET dans le fichier .env.")
         if mode == "live" and _get_str("CONFIRM_LIVE", "").upper() != LIVE_CONFIRMATION_WORD:
@@ -171,4 +219,6 @@ def load_settings(for_backtest: bool = False) -> Settings:
         # Un fichier d'état par mode : le paper trading ne touche jamais
         # à la position enregistrée en argent réel, et inversement.
         state_file=BASE_DIR / f"state_{mode}.json",
+        strategy_mode=strategy_mode,
+        ai=ai,
     )

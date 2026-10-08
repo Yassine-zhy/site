@@ -141,7 +141,7 @@ def make_settings(tmp_path: Path, mode: str = "paper", **overrides) -> Settings:
     return Settings(**values)
 
 
-def make_bot(settings: Settings, fake: FakeExchange) -> TradingBot:
+def make_bot(settings: Settings, fake: FakeExchange, advisor=None) -> TradingBot:
     client = ExchangeClient(settings)
     client.exchange = fake          # on remplace la vraie connexion par le faux exchange
     client.connect()
@@ -151,7 +151,7 @@ def make_bot(settings: Settings, fake: FakeExchange) -> TradingBot:
         trader = PaperTrader(client, state, settings.paper_fee, settings.paper_slippage)
     else:
         trader = LiveTrader(client)
-    return TradingBot(settings, client, trader, store, state, threading.Event())
+    return TradingBot(settings, client, trader, store, state, threading.Event(), advisor)
 
 
 @pytest.fixture(autouse=True)

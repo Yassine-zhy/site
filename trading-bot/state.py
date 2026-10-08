@@ -28,6 +28,13 @@ def default_state(paper_start_balance: float) -> dict[str, Any]:
         "realized_pnl": 0.0,       # gains / pertes cumulés (en USDT)
         "trades": 0,
         "wins": 0,
+        # Conseiller IA (STRATEGY=ai).
+        "ai_last_call": None,      # date de la dernière consultation (UTC)
+        "ai_last_price": None,     # prix à ce moment-là
+        "ai_calls_day": None,      # jour en cours...
+        "ai_calls_count": 0,       # ...et nombre de consultations ce jour-là
+        "ai_cost_total": 0.0,      # dépense estimée cumulée, en dollars
+        "ai_history": [],          # dernières décisions, renvoyées à l'IA
         # Portefeuille virtuel, utilisé uniquement en mode paper.
         "paper_quote": paper_start_balance,
         "paper_base": 0.0,

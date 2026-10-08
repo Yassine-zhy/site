@@ -4,6 +4,16 @@ Bot autonome qui trade **une paire** (BTC/USDT par défaut) sur Kraken ou Binanc
 avec des bougies de **4 h** : peu d'ordres, donc peu de frais, ce qui compte
 beaucoup avec un capital de 100 $.
 
+Deux façons de prendre les décisions, au choix dans le `.env` :
+
+* **`STRATEGY=ai`** : à chaque consultation, **Claude** (l'IA d'Anthropic) lit
+  les prix, cherche l'actualité sur le web et décide d'acheter, de vendre ou
+  d'attendre, avec une explication en français. Payant (voir section 3).
+* **`STRATEGY=indicators`** : des règles fixes RSI + EMA 50/200. Gratuit.
+
+Dans les deux cas, le stop-loss, le take-profit et la taille maximale des
+positions sont appliqués par le code : l'IA ne peut pas les contourner.
+
 > **Avertissement.** Ce bot n'est pas une machine à gagner de l'argent. Aucune
 > stratégie ne gagne à tous les coups, et un bon backtest ne garantit rien pour
 > l'avenir. Testez-le plusieurs semaines en paper trading, puis n'engagez que
@@ -16,7 +26,8 @@ beaucoup avec un capital de 100 $.
 ```
 trading-bot/
 ├── bot.py               ← script principal : boucle, journal, gestion des erreurs
-├── strategy.py          ← le « cerveau » : RSI, EMA 50/200, check_buy_sell_signals(df)
+├── ai_advisor.py        ← le conseiller IA : contexte envoyé à Claude, recherche web, décision
+├── strategy.py          ← les règles fixes : RSI, EMA 50/200, check_buy_sell_signals(df)
 ├── risk.py              ← taille de position, stop-loss, take-profit
 ├── broker.py            ← connexion ccxt, ordres réels (LiveTrader) ou simulés (PaperTrader)
 ├── config.py            ← lecture et validation du fichier .env
@@ -48,13 +59,101 @@ pandas>=2.0
 numpy>=1.24
 ta>=0.11,<0.12
 python-dotenv>=1.0
+anthropic>=1.12,<2
 ```
 
-Testé avec Python 3.13, ccxt 4.5, pandas 3.0 et ta 0.11. Python 3.10 ou plus
-récent est recommandé. La bibliothèque `ta` a été préférée à `pandas_ta`, moins
+Testé avec Python 3.13, ccxt 4.5, pandas 3.0, ta 0.11 et anthropic 1.12.
+**Python 3.10 ou plus récent est nécessaire.** La bibliothèque `ta` a été préférée à `pandas_ta`, moins
 bien maintenue et souvent incompatible avec les versions récentes de numpy.
 
-## 3. La stratégie
+## 3. Le mode IA : Claude décide en temps réel
+
+### Comment ça marche
+
+Toutes les 15 minutes, le bot regarde le marché. Il **consulte Claude** :
+
+* à chaque nouvelle bougie de 4 h (`AI_INTERVAL_MINUTES=240`) ;
+* **plus tôt si le prix bouge fortement**, de plus de 3 % depuis la dernière
+  consultation (`AI_PRICE_TRIGGER_PCT=3`).
+
+À chaque consultation, Claude reçoit :
+
+* les prix : 3 jours de bougies 4 h, 30 jours de clôtures, les variations sur 4 h, 24 h, 7 j et 30 j ;
+* les indicateurs RSI et EMA ;
+* la position ouverte (prix d'achat, gain ou perte, stop-loss), le portefeuille, les frais ;
+* ses 5 dernières décisions, pour garder le fil.
+
+Claude **cherche ensuite l'actualité sur le web** (régulation, ETF, piratages,
+annonces économiques...) et renvoie une décision structurée : action, confiance
+sur 100, taille de position et explication en français. Le tout est écrit dans
+le journal :
+
+```
+Consultation de l'IA (claude-opus-5-5, effort medium) : première consultation...
+Réponse de l'IA : BUY | confiance 72/100 | taille 60 % du maximum | coût estimé 0.140 $ (2 recherche(s) web), total 0.14 $
+  Raisonnement : Le prix rebondit après un repli dans une tendance haussière et aucune mauvaise nouvelle majeure n'est sortie. Achat prudent avec une taille réduite.
+  Actualités : Entrées nettes positives sur les ETF Bitcoin hier ; pas d'incident sur les exchanges.
+Décision : BUY (IA, confiance 72/100)
+Signal BUY : achat au marché pour 30.00 USDT (30 % de 100.00 USDT disponibles).
+```
+
+(Exemple produit par les tests, avec un prix fictif.)
+
+### Ce que l'IA ne peut pas faire
+
+Le code garde le dernier mot :
+
+* **le stop-loss (-3 %) et le take-profit (+8 %)** sont vérifiés par le code
+  toutes les 60 s, même si l'IA est en panne ou injoignable ;
+* l'IA ne peut pas investir plus que `POSITION_SIZE_PCT` du solde, ni ouvrir
+  plusieurs positions ;
+* une décision dont la confiance est sous `AI_MIN_CONFIDENCE` (60) est ignorée ;
+* l'IA n'a aucun accès à vos clés d'exchange, ni à la moindre fonction de retrait ;
+* si la clé Anthropic est refusée, le bot désactive l'IA mais continue de protéger la position.
+
+### Ce que ça coûte
+
+L'API d'Anthropic est **payante, et facturée à part** d'un éventuel abonnement
+Claude. Le prix dépend du nombre de mots lus et écrits par l'IA, plus 0,01 $
+par recherche web. Ordres de grandeur par consultation (le bot affiche le coût
+estimé de chaque consultation et le total) :
+
+| Modèle (`AI_MODEL`) | Par consultation (environ) | Par mois, avec 6 consultations par jour |
+| --- | --- | --- |
+| `claude-opus-5-5` (par défaut, le plus capable) | 0,10 à 0,20 $ | 20 à 35 $ |
+| `claude-sonnet-5-5` | 0,05 à 0,10 $ | 10 à 18 $ |
+| `claude-haiku-5-5` | moins de 0,02 $ | 1 à 3 $ |
+
+**Avec un capital de 100 $, la facture de l'IA peut dépasser les gains.** Pour
+la réduire, vous pouvez :
+
+* espacer les consultations (`AI_INTERVAL_MINUTES=480`) ;
+* baisser `AI_MAX_CALLS_PER_DAY` ;
+* choisir un modèle moins cher, ou couper la recherche web (`AI_WEB_SEARCH=non`).
+
+Fixez aussi une limite de dépense mensuelle dans la console Anthropic.
+
+### Obtenir une clé API Anthropic
+
+1. Créez un compte sur <https://console.anthropic.com>.
+2. Achetez quelques dollars de crédit (section *Billing*).
+3. Dans *API Keys*, créez une clé et copiez-la dans le `.env` : `ANTHROPIC_API_KEY=sk-ant-...`.
+
+### Pourquoi on ne peut pas faire de backtest du mode IA
+
+Pour rejouer le passé honnêtement, il faudrait que l'IA ignore ce qui s'est
+passé ensuite. Or Claude connaît déjà l'historique jusqu'à sa date
+d'entraînement, et il faudrait aussi reconstituer l'actualité de chaque jour.
+**La seule façon fiable de juger le mode IA est le paper trading**, sur
+plusieurs semaines : l'argent du trading reste fictif, mais les consultations
+de l'IA sont payées.
+
+Soyons honnêtes : rien ne prouve qu'une IA qui lit l'actualité batte le marché.
+Les nouvelles importantes sont intégrées dans les prix en quelques secondes par
+des professionnels bien plus rapides. Le mode IA est une expérience
+intéressante, pas une garantie de gain.
+
+## 4. Les règles fixes (`STRATEGY=indicators`)
 
 Le bot décide **uniquement sur des bougies clôturées** : la bougie en cours
 change jusqu'à sa clôture et ferait « clignoter » le signal.
@@ -110,7 +209,7 @@ Ces chiffres décrivent le passé et ne prédisent rien. Ne cherchez pas les
 réglages qui auraient « gagné » sur l'historique : c'est le meilleur moyen
 d'obtenir une stratégie qui échoue ensuite.
 
-## 4. Installation
+## 5. Installation
 
 ```bash
 cd trading-bot
@@ -128,14 +227,15 @@ cp .env.example .env        # Windows : copy .env.example .env
 
 ---
 
-## 5. Guide pas à pas : tester sans argent réel
+## 6. Guide pas à pas : tester sans argent réel
 
 Il y a trois niveaux de test, du plus sûr au plus réaliste. Ne passez à
 l'étape suivante que si la précédente vous convient.
 
-### Étape 1 : backtest (5 minutes, aucune clé)
+### Étape 1 : backtest des règles fixes (5 minutes, aucune clé)
 
-Rejoue la stratégie sur l'historique, avec les frais :
+Rejoue les règles RSI + EMA sur l'historique, avec les frais (le mode IA ne
+peut pas être backtesté, voir section 3) :
 
 ```bash
 python backtest.py --days 730 --exchange binance
@@ -157,12 +257,16 @@ Vous pouvez modifier `STOP_LOSS_PCT`, `TAKE_PROFIT_PCT`, `RSI_BUY_LEVEL` ou
 `TIMEFRAME=1d` dans le `.env`, puis relancer. Méfiez-vous du sur-ajustement :
 un réglage qui brille sur le passé échoue souvent sur l'avenir.
 
-### Étape 2 : paper trading en direct (2 à 4 semaines, aucune clé)
+### Étape 2 : paper trading en direct (2 à 4 semaines, aucune clé d'exchange)
 
 Le bot tourne normalement avec les **vrais prix du marché**, mais les ordres
 sont **simulés** sur un portefeuille virtuel de 100 $ (frais et glissement
-de prix compris). Aucune clé API n'est nécessaire, et aucune n'est transmise
-à l'exchange dans ce mode.
+de prix compris). Aucune clé d'exchange n'est nécessaire, et aucune n'est
+transmise à l'exchange dans ce mode.
+
+En mode IA (`STRATEGY=ai`), il faut en revanche la clé Anthropic
+(`ANTHROPIC_API_KEY`), et **les consultations de l'IA sont réellement
+facturées**, même en paper trading. Sans clé, passez `STRATEGY=indicators`.
 
 1. Dans `.env`, laissez `MODE=paper`. Choisissez `EXCHANGE` et `SYMBOL`, et
    réglez `PAPER_FEE_PCT` sur les frais de votre exchange (0.4 Kraken, 0.1 Binance).
@@ -170,14 +274,15 @@ de prix compris). Aucune clé API n'est nécessaire, et aucune n'est transmise
    ```bash
    python bot.py --once
    ```
-   Le journal doit afficher une ligne `Analyse BTC/USDT 4h | ... -> HOLD/BUY/SELL (raison)`.
+   Le journal doit afficher une ligne `Analyse BTC/USDT 4h | ...`, puis `Décision : HOLD/BUY/SELL (raison)`.
 3. Lancement en continu (`Ctrl+C` pour arrêter proprement) :
    ```bash
    python bot.py
    ```
 4. Suivez `bot_trading.log`. Exemple de journal (produit par les tests, avec des prix fictifs) :
    ```
-   2026-10-08 19:33:52 | INFO     | Analyse BTC/USDT 4h | bougie du 2024-01-05 08:00 UTC | clôture 308.10 | RSI 45.2 | EMA50 303.70 | EMA200 244.62 -> BUY (tendance haussière et RSI qui rebondit (37.5 -> 45.2, seuil 40))
+   2026-10-08 19:33:52 | INFO     | Analyse BTC/USDT 4h | bougie du 2024-01-05 08:00 UTC | clôture 308.10 | RSI 45.2 | EMA50 303.70 | EMA200 244.62
+   2026-10-08 19:33:52 | INFO     | Décision : BUY (tendance haussière et RSI qui rebondit (37.5 -> 45.2, seuil 40))
    2026-10-08 19:33:52 | INFO     | Signal BUY : achat au marché pour 50.00 USDT (50 % de 100.00 USDT disponibles).
    2026-10-08 19:33:52 | INFO     | ACHAT exécuté : 0.16163686 BTC à 308.10 (coût 50.00 USDT, frais inclus). Stop-loss 298.85 | Take-profit 332.74.
    2026-10-08 19:33:52 | WARNING  | STOP-LOSS déclenché : prix 298.24, soit -3.20 % depuis l'achat à 308.10. Vente au marché immédiate.
@@ -241,7 +346,7 @@ présentes sur votre compte ne sont pas touchées.
 
 ---
 
-## 6. Faire tourner le bot 24 h/24
+## 7. Faire tourner le bot 24 h/24
 
 Le stop-loss est surveillé **par le bot**. Si l'ordinateur est éteint ou en
 veille, plus rien ne protège la position. Pour du réel, utilisez une machine
@@ -276,7 +381,7 @@ journalctl -u trading-bot -f      # suivre le journal en direct
 Le bot enregistre sa position dans `state_<mode>.json` : après un redémarrage,
 il reprend la position ouverte, avec son stop-loss et son take-profit.
 
-## 7. Robustesse : ce que le bot gère tout seul
+## 8. Robustesse : ce que le bot gère tout seul
 
 | Situation | Réaction |
 | --- | --- |
@@ -284,12 +389,14 @@ il reprend la position ouverte, avec son stop-loss et son take-profit.
 | Timeout **pendant** un ordre | Vérifie les soldes pour savoir si l'ordre est passé, et n'achète jamais deux fois |
 | Fonds insuffisants, ordre refusé | Journalisé, ordre abandonné, nouvel essai à l'analyse suivante |
 | Clé API invalide ou révoquée | Arrêt du bot avec un message clair (insister ne servirait à rien) |
+| IA injoignable, crédit Anthropic épuisé | Décision HOLD, nouvel essai à l'analyse suivante ; le stop-loss reste actif |
+| Clé Anthropic refusée | IA désactivée, le bot continue de protéger la position |
 | Erreur imprévue | Journalisée avec le détail technique, le bot continue |
 | Position vendue à la main sur le site | Détectée, la position du bot est remise à zéro |
 | Fichier d'état corrompu | Arrêt du bot, plutôt que d'oublier une position ouverte |
 | `Ctrl+C` ou arrêt du service | Fin du cycle en cours, puis arrêt propre |
 
-## 8. Limites à connaître
+## 9. Limites à connaître
 
 * **Stop-loss logiciel.** La vente part au marché dès que le seuil est franchi.
   En cas de chute brutale, elle peut s'exécuter un peu sous -3 %. Si le bot
@@ -305,7 +412,7 @@ il reprend la position ouverte, avec son stop-loss et son take-profit.
 * **Impôts.** Les plus-values sur cryptomonnaies peuvent être imposables :
   renseignez-vous sur les règles de votre pays.
 
-## 9. Personnaliser
+## 10. Personnaliser
 
 * **Réglages simples** (seuils RSI, EMA, stop-loss, unité de temps) : fichier `.env`.
 * **Nouvel indicateur** (MACD, bandes de Bollinger...) : ajoutez la colonne
@@ -313,7 +420,7 @@ il reprend la position ouverte, avec son stop-loss et son take-profit.
   Le bot et le backtest utilisent automatiquement la nouvelle logique.
 * Relancez le backtest et les tests après chaque modification.
 
-## 10. Tests automatiques
+## 11. Tests automatiques
 
 ```bash
 pip install -r requirements-dev.txt

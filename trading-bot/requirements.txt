@@ -1,7 +1,9 @@
-# Dépendances du bot (testé avec Python 3.13, ccxt 4.5, pandas 3.0, ta 0.11).
+# Dépendances du bot (testé avec Python 3.13, ccxt 4.5, pandas 3.0, ta 0.11, anthropic 1.12).
+# Python 3.10 ou plus récent est nécessaire.
 # Installation : pip install -r requirements.txt
 ccxt>=4.4,<5
 pandas>=2.0
 numpy>=1.24
 ta>=0.11,<0.12
 python-dotenv>=1.0
+anthropic>=1.12,<2
