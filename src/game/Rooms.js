@@ -125,9 +125,14 @@ export class Rooms {
   // ------------------------------------------------------------- s'asseoir, se reposer, prier
   sit(spot) {
     const g = this.game, p = g.player;
-    p.position.set(spot.x, p.position.y, spot.z);
+    // la chaise regarde « spot.facing » ; dans l'animation assise, le bassin est 0,40 m derrière
+    // les pieds : on avance donc le héros d'autant pour que le bassin repose au milieu du siège,
+    // et on le relève à la hauteur de l'assise
+    const f = spot.facing;
+    p.position.set(spot.x + Math.sin(f) * 0.4, p.position.y, spot.z + Math.cos(f) * 0.4);
     p.velocity.set(0, 0, 0);
-    p.facing = spot.facing + Math.PI; p.object.rotation.y = p.facing;
+    p.facing = f; p.object.rotation.y = f;
+    p.char.model.position.y = spot.seatLift ?? 0.2;
     p.char.playLoop('Sit_Chair_Idle', { full: true });
     p.rooted = 1e9;
     this.seated = spot;
@@ -138,6 +143,7 @@ export class Rooms {
     if (!this.seated) return;
     const p = this.game.player;
     this.seated = null; p.rooted = 0; p.char.stopAction();
+    if (!p.mounted) p.char.model.position.y = 0;
   }
 
   rest(spot) {

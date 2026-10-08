@@ -42,7 +42,7 @@ export class NPCs {
       const spot = SPOTS[d.id];
       if (!spot) continue;
       const ch = new Character(game.assets, d.model, { show: d.show, tint: d.tint || null });
-      const y = game.world.terrain.heightAt(spot.x, spot.z) ?? 14;
+      const y = (spot.y ?? 0) + (game.world.terrain.heightAt(spot.x, spot.z) ?? 14);
       ch.object.position.set(spot.x, y, spot.z);
       const face = Math.atan2(spot.face[0] - spot.x, spot.face[1] - spot.z);
       ch.object.rotation.y = face;

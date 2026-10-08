@@ -35,14 +35,15 @@ export function roomAt(x, z) {
 export function roomSpawn(id) { const o = roomOrigin(id), r = ROOMS[id]; return { x: o.x, z: o.z + r.d / 2 - Math.min(5.5, r.d * 0.4), facing: Math.PI }; }
 export function roomExit(id) { const o = roomOrigin(id), r = ROOMS[id]; return { x: o.x, z: o.z + r.d / 2 - 0.9 }; }
 
-// habitants des intérieurs (positions fixes dans les salles)
-const at = (id, dx, dz, fx, fz) => { const o = roomOrigin(id); return { x: o.x + dx, z: o.z + dz, face: [o.x + fx, o.z + fz], room: id }; };
+// habitants des intérieurs : chacun à son poste, derrière son comptoir, son bureau ou son autel
+// (y : hauteur de l'estrade sur laquelle il se tient)
+const at = (id, dx, dz, fx, fz, y) => { const o = roomOrigin(id); return { x: o.x + dx, z: o.z + dz, face: [o.x + fx, o.z + fz], room: id, y }; };
 export const INTERIOR_NPCS = {
-  smith: at('forge', 3.5, -2.5, 0, 6),
-  innkeeper: at('tavern', 8.5, -3, 0, 4),
-  guildmaster: at('guild', 0, -7.5, 0, 6),
-  priestess: at('chapel', 0, -10, 0, 0),
-  archmage: at('tower', -3, -3, 0, 5),
+  smith: at('forge', -0.7, 0, 4, 0),             // à l'enclume, face au client
+  innkeeper: at('tavern', 10.5, -1, 0, -1),      // derrière le comptoir, entre le bar et les tonneaux
+  guildmaster: at('guild', 0, -9.3, 0, 6, 0.62), // sur l'estrade, derrière son bureau
+  priestess: at('chapel', 0, -12.7, 0, 0, 0.72), // dans le chœur, derrière l'autel
+  archmage: at('tower', 4.5, -5.3, 4.5, 3),      // derrière sa table de lecture
 };
 
 // --------------------------------------------------------------- géométrie colorée (boîtes)
@@ -227,7 +228,8 @@ export class Interiors extends Decor {
     for (let k = 0; k < 3; k++) this.P('keg', x1 - 1.4, o.z - 5 + k * 2.6, 0.95, -Math.PI / 2);
     S.box(x1 - 0.45, 3.2, o.z - 1, 0.5, 0.12, 8, '#7a4e2e');
     for (let k = 0; k < 8; k++) this.P('bottle_A_green', x1 - 0.5, o.z - 4.6 + k * 1.0, 0.8, 0, 3.27, false);
-    for (let k = 0; k < 3; k++) this.P('chair', x1 - 5.6, o.z - 4 + k * 2.5, 1.3, Math.PI / 2);
+    // tabourets du comptoir, tournés vers le bar (les chaises « chair » regardent -X sans rotation)
+    for (let k = 0; k < 3; k++) this.P('chair', x1 - 5.6, o.z - 4 + k * 2.5, 1.3, Math.PI);
     // tables et chaises
     const tables = [[o.x - 6, o.z + 1], [o.x - 1, o.z - 3], [o.x + 3, o.z + 3], [o.x - 7, o.z + 6]];
     for (const [tx, tz] of tables) {
@@ -299,7 +301,7 @@ export class Interiors extends Decor {
     // longues tables, bannières, piliers
     for (const tx of [o.x - 7, o.x + 5]) {
       this.P('table_long_decorated_A', tx, o.z + 3, 0.85, 0);
-      for (let k = 0; k < 3; k++) for (const sx of [-1, 1]) this.P('chair', tx + sx * 1.6, o.z + 1.2 + k * 1.6, 1.25, sx > 0 ? -Math.PI / 2 : Math.PI / 2);
+      for (let k = 0; k < 3; k++) for (const sx of [-1, 1]) this.P('chair', tx + sx * 1.6, o.z + 1.2 + k * 1.6, 1.25, sx > 0 ? 0 : Math.PI);
     }
     for (const [px, pz] of [[x0 + 4, z0 + 6], [x1 - 4, z0 + 6], [x0 + 4, z1 - 5], [x1 - 4, z1 - 5]]) this.P('pillar_decorated', px, pz, 1.25 * H / 5, 0);
     for (const [bxx, name] of [[o.x - 9, 'banner_patternA_blue'], [o.x - 3, 'banner_triple_blue'], [o.x + 3, 'banner_shield_red'], [o.x + 9, 'banner_thin_yellow']]) this.P(name, bxx, z0 + 0.5, 1.4, 0, 1.5, false);
