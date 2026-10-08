@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Simplex, smoothstep, lerp, clamp, distToSegment } from '../engine/math.js';
 import {
-  WORLD_SEED, WORLD_HALF, LANDMASS, VILLAGE, HAMLET, LAKE, HILLS, FOREST, RUINS, MOUNTAIN, REGIONS, PATHS, ZONES,
+  WORLD_SEED, WORLD_HALF, LANDMASS, VILLAGE, HAMLET, LAKE, HILLS, FOREST, RUINS, MOUNTAIN, REGIONS, PATHS, ZONES, BEACONS,
 } from '../config.js';
 import { ARENAS } from './ArenaDefs.js';
 
@@ -10,7 +10,8 @@ import { ARENAS } from './ArenaDefs.js';
 // ensuite que les tableaux pré-calculés.
 //
 //   hauteur   : base de chaque région mêlée en douceur, puis les reliefs (pics, plateaux, lacs…),
-//               les routes, et enfin le littoral (plages, falaises, fonds marins).
+//               les routes (taillées dans le relief, pente douce et régulière), les terrasses des
+//               phares et des arènes, et enfin le littoral (plages, falaises, fonds marins).
 //   couleur   : palette du biome dominant + routes, plages, roche des pentes, neige des cimes.
 //   matières  : herbe, terre, roche, sable, neige (pour les textures de détail du rendu).
 
@@ -19,15 +20,24 @@ const N2 = new Simplex(WORLD_SEED + 99);
 const NC = new Simplex(WORLD_SEED + 7);
 
 // ------------------------------------------------------------------ routes
-// Index spatial des segments : la distance n'est exacte que jusqu'à ROAD_REACH unités.
-const ROAD_REACH = 40, CELL = 64;
-const SEGS = [];
-for (const p of PATHS) for (let i = 0; i < p.length - 1; i++) SEGS.push([p[i][0], p[i][1], p[i + 1][0], p[i + 1][1]]);
+// Index spatial des segments : la distance n'est exacte que jusqu'à ROAD_REACH unités (et les
+// talus des routes s'étendent jusqu'à CARVE_REACH).
+const ROAD_REACH = 40, CARVE_REACH = 64, CELL = 64;
+const SEGS = []; // [ax, az, bx, bz, route, abscisse au début, longueur]
+const ROADS = PATHS.map((p, ri) => {
+  const cum = [0];
+  for (let i = 0; i < p.length - 1; i++) {
+    const l = Math.hypot(p[i + 1][0] - p[i][0], p[i + 1][1] - p[i][1]);
+    SEGS.push([p[i][0], p[i][1], p[i + 1][0], p[i + 1][1], ri, cum[i], l]);
+    cum.push(cum[i] + l);
+  }
+  return { pts: p, cum, len: cum[cum.length - 1], summit: !!p.summit, prof: null, ds: 1 };
+});
 const GRID = new Map();
 for (let s = 0; s < SEGS.length; s++) {
   const [ax, az, bx, bz] = SEGS[s];
-  const x0 = Math.floor((Math.min(ax, bx) - ROAD_REACH) / CELL), x1 = Math.floor((Math.max(ax, bx) + ROAD_REACH) / CELL);
-  const z0 = Math.floor((Math.min(az, bz) - ROAD_REACH) / CELL), z1 = Math.floor((Math.max(az, bz) + ROAD_REACH) / CELL);
+  const x0 = Math.floor((Math.min(ax, bx) - CARVE_REACH) / CELL), x1 = Math.floor((Math.max(ax, bx) + CARVE_REACH) / CELL);
+  const z0 = Math.floor((Math.min(az, bz) - CARVE_REACH) / CELL), z1 = Math.floor((Math.max(az, bz) + CARVE_REACH) / CELL);
   for (let i = x0; i <= x1; i++) for (let j = z0; j <= z1; j++) {
     const k = i * 4096 + j;
     if (!GRID.has(k)) GRID.set(k, []);
@@ -50,6 +60,13 @@ export function pathDistance(x, z) {
 // ------------------------------------------------------------------ littoral
 // Distance signée à la côte (positive dans les terres) : union douce des disques du continent,
 // déformée par du bruit pour dessiner caps, baies et presqu'îles.
+// arête adoucie (crêtes arrondies, sans pointes)
+function sridge(n, x, z, oct) {
+  let a = 1, f = 1, s = 0, t = 0;
+  for (let i = 0; i < oct; i++) { const v = n.noise2(x * f, z * f); s += a * (1 - Math.sqrt(v * v + 0.015)); t += a; a *= 0.5; f *= 2; }
+  return s / t;
+}
+
 function smax(a, b, k) { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.max(a, b) + h * h * k * 0.25; }
 
 export function coastDistance(x, z) {
@@ -111,12 +128,15 @@ function baseHeight(s, x, z) {
   const [big, fine] = BASE[biome];
   let h = s.def.baseY + nz.fbm2(x / 160, z / 160, 4) * big + nz.fbm2(x / 40, z / 40, 3) * fine;
   if (biome === 'amber') h += Math.max(0, nz2.noise2(x / 22, z / 60)) * 1.6; // dunes allongées
-  else if (biome === 'jungle') h += Math.pow(Math.max(0, nz2.ridge2(x / 70, z / 70, 3) - 0.35), 1.5) * 18; // collines arrondies
+  else if (biome === 'jungle') { const u = nz2.fbm2(x / 110, z / 110, 2) * 0.5 + 0.5; h += u * u * 14; } // collines arrondies
   else if (biome === 'haunted') h += nz2.fbm2(x / 55, z / 55, 3) * 3 - Math.max(0, nz2.noise2(x / 90, z / 90)) * 3; // landes bosselées
-  else if (biome === 'highland') h += Math.pow(Math.max(0, nz2.ridge2(x / 90, z / 90, 3) - 0.55), 1.3) * 26; // chaos rocheux
+  else if (biome === 'highland') h += Math.pow(Math.max(0, sridge(nz2, x / 120, z / 120, 2) - 0.45), 1.5) * 22; // dômes rocheux
   else if (biome === 'beach') h += Math.max(0, nz2.noise2(x / 30, z / 30)) * 1.2;
   else if (biome === 'swamp') h += Math.max(0, nz2.noise2(x / 14, z / 14)) * 0.8 - Math.max(0, nz2.noise2(x / 40 + 9, z / 40)) * 1.6;
-  else if (biome === 'cliffs') h += Math.round(nz2.ridge2(x / 80, z / 80, 3) * 4) * 3 * smoothstep(0.3, 0.7, nz.noise2(x / 200, z / 200) * 0.5 + 0.5); // terrasses
+  else if (biome === 'cliffs') { // terrasses (marches adoucies)
+    const t = sridge(nz2, x / 110, z / 110, 2) * 4, f = Math.floor(t);
+    h += (f + smoothstep(0.2, 0.8, t - f)) * 2.2 * smoothstep(0.3, 0.7, nz.noise2(x / 200, z / 200) * 0.5 + 0.5);
+  }
   return h;
 }
 
@@ -146,10 +166,12 @@ function applyFeatures(s, x, z, h, state) {
     }
     const d = Math.hypot(x - f.x, z - f.z);
     if (f.type === 'peak') {
-      const mt = 1 - smoothstep(0, f.radius, d);
-      if (mt <= 0) continue;
+      // montagne à arène : dôme (sommet large et doux) où la route en lacets garde une pente régulière
+      const u = d / f.radius;
+      if (u >= 1) continue;
+      const mt = f.summitHeight ? Math.pow(1 - u * u, 1.5) : 1 - smoothstep(0, f.radius, d);
       state.peak = Math.max(state.peak, mt);
-      h += f.height * Math.pow(mt, 1.25) + nz2.ridge2(x / 34, z / 34, 4) * 13 * mt;
+      h += f.height * (f.summitHeight ? mt : Math.pow(mt, 1.25)) + sridge(nz2, x / 75, z / 75, 3) * 8 * mt * (1 - mt * 0.5);
       if (f.summitHeight) h = lerp(h, f.summitHeight, 1 - smoothstep(f.summitRadius * 0.6, f.summitRadius * 1.35, d));
     } else if (f.type === 'plateau') {
       h = lerp(h, f.height + nz.noise2(x / 20, z / 20) * 0.3, 1 - smoothstep(f.radius * 0.75, f.radius + 20, d));
@@ -190,14 +212,15 @@ function applyFeatures(s, x, z, h, state) {
 // reliefs du cœur : Collines Ambrées, Bois-Murmure, Pic du Silence, Cendres, Lac Miroir, Prés-Bas, Havrelumière
 function coreFeatures(x, z, h, state) {
   const dh = Math.hypot(x - HILLS.x, z - HILLS.z);
-  if (dh < HILLS.radius * 1.2) h += (1 - smoothstep(0, HILLS.radius * 1.2, dh)) * (N2.ridge2(x / 55, z / 55, 3) * 16 - 4);
+  if (dh < HILLS.radius * 1.2) h += (1 - smoothstep(0, HILLS.radius * 1.2, dh)) * (sridge(N2, x / 95, z / 95, 3) * 11 - 3);
   const df = Math.hypot(x - FOREST.x, z - FOREST.z);
   if (df < FOREST.radius) h += (1 - smoothstep(0, FOREST.radius, df)) * N2.fbm2(x / 30, z / 30, 3) * 3.5;
   const dm = Math.hypot(x - MOUNTAIN.x, z - MOUNTAIN.z);
-  const mt = 1 - smoothstep(0, MOUNTAIN.radius, dm);
-  if (mt > 0) {
+  const um = dm / MOUNTAIN.radius;
+  if (um < 1) {
+    const mt = Math.pow(1 - um * um, 1.5); // dôme (voir les pics à arène)
     state.peak = Math.max(state.peak, mt);
-    h += (MOUNTAIN.peak - 11) * Math.pow(mt, 1.25) + N2.ridge2(x / 38, z / 38, 4) * 14 * mt;
+    h += (MOUNTAIN.peak - 11) * mt + sridge(N2, x / 80, z / 80, 3) * 9 * mt * (1 - mt * 0.5);
     // plateau sommital pour l'arène du boss
     h = lerp(h, MOUNTAIN.summitHeight, 1 - smoothstep(MOUNTAIN.summitRadius * 0.6, MOUNTAIN.summitRadius * 1.35, dm));
   }
@@ -217,23 +240,140 @@ function coreFeatures(x, z, h, state) {
   return h;
 }
 
-// Hauteur du continent (avant le littoral). state.peak : 0..1 sur les montagnes.
-function landHeight(x, z, state) {
+// arènes des boss : sol parfaitement plat sous l'enceinte, les piliers, le décor et le parvis
+function arenaFlat(x, z, h) {
+  for (const A of ARENAS) {
+    const d = Math.hypot(x - A.x, z - A.z), R = A.r + 12;
+    if (d < R + 14) h = lerp(h, A.floor, 1 - smoothstep(R, R + 14, d));
+  }
+  return h;
+}
+
+// relief naturel (sans les routes)
+function naturalHeight(x, z, state) {
   const w = regionWeights(x, z, false);
   let h = 0;
   for (let i = 0; i < SOURCES.length; i++) if (w[i] > 1e-4) h += w[i] * baseHeight(SOURCES[i], x, z);
   h = coreFeatures(x, z, h, state);
   for (let i = 1; i < SOURCES.length; i++) h = applyFeatures(SOURCES[i], x, z, h, state);
-  // routes : légèrement creusées et adoucies
-  const pd = pathDistance(x, z);
-  if (pd < 6 && state.peak < 0.35) h -= 0.3 * (1 - smoothstep(2, 6, pd));
-  // arènes des boss : sol parfaitement plat sous l'enceinte, les piliers et le portail
-  for (const A of ARENAS) {
-    const d = Math.hypot(x - A.x, z - A.z), R = A.r + 5.5;
-    if (d < R + 13) h = lerp(h, A.floor, 1 - smoothstep(R, R + 13, d));
+  return h;
+}
+
+// Profil en long des routes : le relief lissé, sans dépasser une pente de GRADE, et au-dessus de
+// l'eau des lacs (chaussées). Les routes de sommet arrivent exactement au sol de leur arène.
+const STEP = 4, GRADE = 0.2;
+const LAKES = [LAKE, ...REGIONS.flatMap((r) => r.lake ? [r.lake] : [])];
+const _ps = { peak: 0 };
+function groundNoRoad(x, z) { _ps.peak = 0; return arenaFlat(x, z, naturalHeight(x, z, _ps)); }
+function nodeHeight(x, z) {
+  let s = groundNoRoad(x, z) * 2, n = 2;
+  for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; s += groundNoRoad(x + Math.cos(a) * 9, z + Math.sin(a) * 9); n++; }
+  return s / n;
+}
+function roadPoint(R, sx) {
+  const { pts, cum } = R;
+  let i = 0;
+  while (i < pts.length - 2 && cum[i + 1] < sx) i++;
+  const l = cum[i + 1] - cum[i], t = l > 0 ? clamp((sx - cum[i]) / l, 0, 1) : 0;
+  return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * t, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * t];
+}
+let profiled = false;
+function buildProfiles() {
+  profiled = true;
+  for (const R of ROADS) {
+    const K = Math.max(1, Math.ceil(R.len / STEP)), ds = R.len / K;
+    const prof = new Float32Array(K + 1);
+    const [sx, sz] = R.pts[0], [ex, ez] = R.pts[R.pts.length - 1];
+    const h0 = nodeHeight(sx, sz);
+    const arena = R.summit ? ARENAS.reduce((b, A) => (Math.hypot(ex - A.x, ez - A.z) < Math.hypot(ex - b.x, ez - b.z) ? A : b)) : null;
+    {
+      const raw = new Float32Array(K + 1);
+      for (let k = 0; k <= K; k++) {
+        const [x, z] = roadPoint(R, k * ds);
+        let h = groundNoRoad(x, z);
+        for (const L of LAKES) if (Math.hypot(x - L.x, z - L.z) < L.radius * 1.15) h = Math.max(h, L.level + 0.7);
+        raw[k] = h;
+      }
+      const W = 8;
+      for (let k = 0; k <= K; k++) {
+        let s = 0, n = 0;
+        for (let j = Math.max(0, k - W); j <= Math.min(K, k + W); j++) { s += raw[j]; n++; }
+        prof[k] = s / n;
+      }
+      // extrémités calées sur la hauteur des carrefours (les routes qui s'y croisent s'accordent)
+      const d0 = h0 - prof[0], d1 = (arena ? arena.floor : nodeHeight(ex, ez)) - prof[K], fade = 48;
+      for (let k = 0; k <= K; k++) prof[k] += d0 * Math.max(0, 1 - k * ds / fade) + d1 * Math.max(0, 1 - (R.len - k * ds) / fade);
+      const g = GRADE * ds;
+      for (let k = 1; k < K; k++) prof[k] = clamp(prof[k], prof[k - 1] - g, prof[k - 1] + g);
+      for (let k = K - 1; k > 0; k--) prof[k] = clamp(prof[k], prof[k + 1] - g, prof[k + 1] + g);
+    }
+    R.prof = prof; R.ds = ds;
+  }
+}
+function profileAt(R, sx) {
+  const f = clamp(sx / R.ds, 0, R.prof.length - 1), k = Math.min(R.prof.length - 2, Math.floor(f));
+  return R.prof.length === 1 ? R.prof[0] : lerp(R.prof[k], R.prof[k + 1], f - k);
+}
+
+// routes taillées dans le relief : chaussée à la hauteur du profil, talus d'autant plus larges
+// que l'entaille (ou le remblai) est haute, pour ne jamais créer de mur
+// (à l'intérieur d'un virage, deux segments sont presque aussi proches : on mêle leurs profils
+// selon l'écart de distance, pour que le talus reste continu)
+const _rd = new Float64Array(ROADS.length).fill(1e9), _pw = new Float64Array(ROADS.length), _pp = new Float64Array(ROADS.length), _touched = [];
+const _sd = new Float64Array(256), _sp = new Float64Array(256), _sr = new Int32Array(256);
+function carveRoads(x, z, h) {
+  const list = GRID.get(Math.floor(x / CELL) * 4096 + Math.floor(z / CELL));
+  if (!list) return h;
+  if (!profiled) buildProfiles();
+  _touched.length = 0;
+  let n = 0;
+  for (const si of list) {
+    const g = SEGS[si], vx = g[2] - g[0], vz = g[3] - g[1], l2 = vx * vx + vz * vz;
+    const t = l2 > 0 ? clamp(((x - g[0]) * vx + (z - g[1]) * vz) / l2, 0, 1) : 0;
+    const dx = x - (g[0] + vx * t), dz = z - (g[1] + vz * t), d = Math.sqrt(dx * dx + dz * dz), r = g[4];
+    if (d >= CARVE_REACH + 6 || n >= 256) continue;
+    _sd[n] = d; _sr[n] = r; _sp[n] = profileAt(ROADS[r], g[5] + t * g[6]); n++;
+    if (d < _rd[r]) { if (_rd[r] === 1e9) _touched.push(r); _rd[r] = d; }
+  }
+  for (let i = 0; i < n; i++) {
+    const r = _sr[i], k = 1 - (_sd[i] - _rd[r]) / 6;
+    if (k > 0) { _pw[r] += k * k; _pp[r] += k * k * _sp[i]; }
+  }
+  _touched.sort((a, b) => a - b);
+  for (const r of _touched) {
+    const d = _rd[r], pr = _pp[r] / _pw[r];
+    _rd[r] = 1e9; _pw[r] = 0; _pp[r] = 0;
+    if (d >= CARVE_REACH) continue;
+    const p = pr - 0.2 * (1 - smoothstep(1.2, 3.4, d));
+    const w = 1 - smoothstep(3.6, 3.6 + Math.min(CARVE_REACH - 4, 5 + Math.abs(h - p) * 2.8), d);
+    if (w > 0) h = lerp(h, p, w);
   }
   return h;
 }
+
+// terrasses des phares (le socle repose à plat, même à flanc de montagne, au niveau de la route
+// voisine) ; la route passe ensuite par-dessus sans être déformée
+let beaconY = null;
+function beaconFlat(x, z, h) {
+  for (let i = 0; i < BEACONS.length; i++) {
+    const b = BEACONS[i], d = Math.hypot(x - b.x, z - b.z);
+    if (d >= 15) continue;
+    if (!beaconY) beaconY = BEACONS.map((c) => { _ps.peak = 0; return carveRoads(c.x, c.z, naturalHeight(c.x, c.z, _ps)); });
+    h = lerp(h, beaconY[i], 1 - smoothstep(6, 15, d));
+  }
+  return h;
+}
+
+// Hauteur du continent (avant le littoral). state.peak : 0..1 sur les montagnes.
+function landHeight(x, z, state) {
+  let h = naturalHeight(x, z, state);
+  h = beaconFlat(x, z, h);
+  h = carveRoads(x, z, h);
+  return arenaFlat(x, z, h);
+}
+
+// profils des routes (outils de vérification)
+export function roadProfiles() { if (!profiled) buildProfiles(); return ROADS.map((R) => ({ pts: R.pts, len: R.len, summit: R.summit, prof: R.prof, ds: R.ds })); }
 
 const _st = { peak: 0, sd: 0, cliff: 0 };
 // Hauteur finale (avec plages, falaises et fonds marins). Renseigne _st.sd (distance à la côte).
@@ -253,7 +393,7 @@ export function continentHeight(x, z, st = _st) {
   const W = lerp(70, 9, cl);
   const t = smoothstep(0, W, sd);
   const beach = 0.6 + Math.min(sd, W) * 0.035;
-  return lerp(beach, Math.max(land, beach + 0.2), cl > 0.5 ? Math.pow(t, 0.6) : t);
+  return lerp(beach, Math.max(land, beach + 0.2), lerp(t, Math.pow(t, 0.6), smoothstep(0.4, 0.6, cl)));
 }
 
 // ------------------------------------------------------------------ couleurs et matières
@@ -480,10 +620,10 @@ export function zoneAt(x, z) {
 // Grille de hauteurs : RES × RES échantillons sur [-WORLD_HALF, WORLD_HALF] (aux sommets),
 // couleurs et matières : CRES × CRES texels (aux centres).
 export const RES = 2049, CRES = 1024, BRES = 512;
-export const BAKE_VERSION = 8;
+export const BAKE_VERSION = 9;
 
 export function continentSignature() {
-  const str = JSON.stringify({ BAKE_VERSION, WORLD_SEED, WORLD_HALF, LANDMASS, VILLAGE, HAMLET, LAKE, HILLS, FOREST, RUINS, MOUNTAIN, REGIONS, PATHS, ARENAS: ARENAS.map((a) => [a.x, a.z, a.r, a.floor]), RES, CRES, BRES });
+  const str = JSON.stringify({ BAKE_VERSION, WORLD_SEED, WORLD_HALF, LANDMASS, VILLAGE, HAMLET, LAKE, HILLS, FOREST, RUINS, MOUNTAIN, REGIONS, PATHS, BEACONS: BEACONS.map((b) => [b.x, b.z]), ARENAS: ARENAS.map((a) => [a.x, a.z, a.r, a.floor]), RES, CRES, BRES });
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
   return h.toString(16);
@@ -571,4 +711,11 @@ export function unpackBaked(buf) {
   if (head.kind === 'h') return { kind: 'h', h: new Int16Array(buf.slice(off, off + RES * RES * 2)) };
   const n = CRES * CRES * 4;
   return { kind: 'c', color: new Uint8Array(buf, off, n), mats: new Uint8Array(buf, off + n, n), biome: new Uint8Array(buf, off + 2 * n, BRES * BRES) };
+}
+export function _dbg(x, z) {
+  const w = regionWeights(x, z, false), st = { peak: 0 };
+  const parts = SOURCES.map((s, i) => w[i] > 1e-4 ? `${s.biome}:${w[i].toFixed(2)}×${baseHeight(s, x, z).toFixed(1)}` : '').filter(Boolean).join(' ');
+  let h = 0; for (let i = 0; i < SOURCES.length; i++) if (w[i] > 1e-4) h += w[i] * baseHeight(SOURCES[i], x, z);
+  const h1 = coreFeatures(x, z, h, st); let h2 = h1; for (let i = 1; i < SOURCES.length; i++) h2 = applyFeatures(SOURCES[i], x, z, h2, st);
+  return `${parts} | base ${h.toFixed(1)} core ${h1.toFixed(1)} feat ${h2.toFixed(1)}`;
 }

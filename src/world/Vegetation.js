@@ -78,9 +78,10 @@ export class Vegetation {
       const cl = rng() < 0.3;
       return tree(cl ? rng.pick(clustersA) : 'tree_single_A', x, z, cl ? 5.5 + rng() * 2.5 : 6 + rng() * 3.5, snow ? 'snow' : 'base');
     };
+    // rochers : blocs et dalles de taille raisonnable (plus de dalles géantes ni d'aiguilles étirées)
     const rock = (x, z, big, look, tall = 0.8) => {
-      const s = big ? 14 + rng() * 18 : 6 + rng() * 8;
-      add(rng.pick(rocks), x, z, s, R(), { col: 'rock', sink: s * 0.03, sy: 0.8 + rng() * tall, look });
+      const s = big ? 9 + rng() * 8 : 4.5 + rng() * 5;
+      add(rng.pick(rocks), x, z, s, R(), { col: 'rock', sink: s * 0.03, sy: 0.85 + rng() * tall * 0.45, look });
     };
     let dense = 0; // cœur des bosquets : vraies forêts denses
     // une case de la grille → au plus un élément, selon le biome dominant
@@ -355,7 +356,7 @@ export class Vegetation {
       const cells = new Map();
       list.forEach((it, i) => { const c = ck(it); const e = cells.get(c); if (e) e[1] = i + 1; else cells.set(c, [i, i + 1]); });
       // au loin, arbres et gros rochers deviennent des imposteurs (FarTrees)
-      if (isTree || (/rock_single_[AB]/.test(name))) for (const it of list) if (isTree || it.s > 12) this.farItems.push({ name, look, x: it.x, y: it.y, z: it.z, s: it.s, sy: it.sy });
+      if (isTree || (/rock_single_[AB]/.test(name))) for (const it of list) if (isTree || it.s > 10) this.farItems.push({ name, look, x: it.x, y: it.y, z: it.z, s: it.s, sy: it.sy });
       const mat = matFor(name, isTree, look);
       const mesh = new THREE.InstancedMesh(g.geometry, mat, list.length);
       const n = list.length;

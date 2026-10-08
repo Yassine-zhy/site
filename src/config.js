@@ -50,7 +50,7 @@ export const LAKE = { x: -300, z: 90, radius: 60, level: 8.6, name: 'Lac Miroir'
 export const HILLS = { x: -280, z: 300, radius: 170, name: 'Collines Ambrées' };
 export const FOREST = { x: 450, z: 40, radius: 240, name: 'Bois-Murmure' };
 export const RUINS = { x: 90, z: 480, radius: 90, height: 11, name: 'Les Cendres' };
-export const MOUNTAIN = { x: -30, z: -480, radius: 230, peak: 120, summitRadius: 22, summitHeight: 104, name: 'Pic du Silence' };
+export const MOUNTAIN = { x: -30, z: -480, radius: 230, peak: 110, summitRadius: 44, summitHeight: 104, name: 'Pic du Silence' };
 // (héritage) l'île principale n'existe plus : c'est le cœur du continent
 export const MAIN_ISLAND = { x: 0, z: 0, radius: 660, coastNoise: 0, baseY: 0 };
 // plus d'îlots flottants ni de ponts de corde
@@ -64,12 +64,12 @@ export const GIVRE = {
   id: 'givre', name: 'Les Cimes de Givre', biome: 'snow', x: -60, z: -1080, radius: 520, seed: 71, baseY: 34,
   camp: { x: -73, z: -761, radius: 30, name: 'Halte-du-Givre' },
   lake: { x: -302, z: -1014, radius: 79, level: 32.5, name: 'Lac de Cristal' },
-  peak: { x: 72, z: -1267, radius: 202, peak: 130, summitRadius: 20, summitHeight: 140, name: 'Mont Givrecroc' },
+  peak: { x: 72, z: -1267, radius: 235, peak: 110, summitRadius: 42, summitHeight: 140, name: 'Mont Givrecroc' },
   sanctuary: { x: 237, z: -970, radius: 42, height: 40, name: 'Sanctuaire Gelé' },
   features: [
     { type: 'plateau', x: -73, z: -761, radius: 30, height: 36 },
     { type: 'basin', x: -302, z: -1014, radius: 79, level: 32.5 },
-    { type: 'peak', x: 72, z: -1267, radius: 202, height: 130, summitRadius: 20, summitHeight: 140 },
+    { type: 'peak', x: 72, z: -1267, radius: 235, height: 110, summitRadius: 42, summitHeight: 140 },
     { type: 'plateau', x: 237, z: -970, radius: 42, height: 40 },
     { type: 'peak', x: -258, z: -1256, radius: 110, height: 52 },
     { type: 'peak', x: 300, z: -800, radius: 80, height: 31 },
@@ -79,13 +79,13 @@ export const AMBRE = {
   id: 'ambre', name: 'Les Terres d’Ambre', biome: 'amber', x: 1080, z: 40, radius: 500, seed: 83, baseY: 18,
   camp: { x: 772, z: 66, radius: 30, name: 'Comptoir d’Ambre' },
   mine: { x: 948, z: 348, name: 'Mine de Kessa' },
-  cirque: { x: 1322, z: 40, radius: 45, height: 16, name: 'Cirque d’Ambre' },
+  cirque: { x: 1322, z: 40, radius: 54, height: 16, name: 'Cirque d’Ambre' },
   features: [
     { type: 'plateau', x: 772, z: 66, radius: 30, height: 20 },
     { type: 'mesa', x: 1058, z: -158, radius: 70, height: 47, rampAngle: 1.7 },
     { type: 'mesa', x: 1234, z: 238, radius: 53, height: 39, rampAngle: -2.2 },
     { type: 'mesa', x: 904, z: -290, radius: 39, height: 36, rampAngle: 0.6 },
-    { type: 'basin', x: 1322, z: 40, radius: 45, level: 16, wall: 16 },
+    { type: 'basin', x: 1322, z: 40, radius: 54, level: 16, wall: 16 },
     { type: 'canyon', pts: [[860, 282], [992, 194], [1124, 216], [1234, 84]], width: 25, depth: 17 },
     { type: 'plateau', x: 948, z: 348, radius: 23, height: 19 },
   ],
@@ -95,13 +95,13 @@ export const HANTEE = {
   camp: { x: -741, z: 238, radius: 30, name: 'Veille-des-Morts' },
   lake: { x: -950, z: 476, radius: 75, level: 21.5, name: 'Marais des Âmes' },
   cemetery: { x: -1038, z: 132, radius: 48, height: 25, name: 'Le Grand Cimetière' },
-  crypt: { x: -1324, z: 337, radius: 36, height: 20, name: 'Crypte du Fossoyeur' },
+  crypt: { x: -1324, z: 337, radius: 46, height: 20, name: 'Crypte du Fossoyeur' },
   peak: { x: -1269, z: 7, radius: 123, peak: 57, name: 'Mont des Corbeaux' },
   features: [
     { type: 'plateau', x: -741, z: 238, radius: 30, height: 24 },
     { type: 'plateau', x: -1038, z: 132, radius: 48, height: 25 },
     { type: 'basin', x: -950, z: 476, radius: 75, level: 21.5 },
-    { type: 'basin', x: -1324, z: 337, radius: 36, level: 20, wall: 14, gate: 0 },
+    { type: 'basin', x: -1324, z: 337, radius: 46, level: 20, wall: 14, gate: -0.2 },
     { type: 'peak', x: -1269, z: 7, radius: 123, height: 57 },
     { type: 'peak', x: -862, z: -26, radius: 70, height: 23 },
     { type: 'canyon', pts: [[-1170, 546], [-1093, 594], [-1005, 612]], width: 22, depth: 13 },
@@ -112,12 +112,12 @@ export const SYLVE = {
   camp: { x: 169, z: 772, radius: 30, name: 'Refuge des Lianes' },
   lake: { x: 26, z: 1124, radius: 84, level: 15.5, name: 'Lac Émeraude' },
   temple: { x: 352, z: 992, radius: 36, height: 22, name: 'Temple Englouti' },
-  peak: { x: 290, z: 1282, radius: 128, peak: 81, summitRadius: 18, summitHeight: 96, name: 'Mont Feuillu' },
+  peak: { x: 290, z: 1282, radius: 190, peak: 86, summitRadius: 42, summitHeight: 96, name: 'Mont Feuillu' },
   features: [
     { type: 'plateau', x: 169, z: 772, radius: 30, height: 18 },
     { type: 'basin', x: 26, z: 1124, radius: 84, level: 15.5 },
     { type: 'plateau', x: 352, z: 992, radius: 36, height: 22 },
-    { type: 'peak', x: 290, z: 1282, radius: 128, height: 81, summitRadius: 18, summitHeight: 96 },
+    { type: 'peak', x: 290, z: 1282, radius: 190, height: 86, summitRadius: 42, summitHeight: 96 },
     { type: 'peak', x: -18, z: 904, radius: 75, height: 31 },
     { type: 'peak', x: 455, z: 1157, radius: 84, height: 39 },
   ],
@@ -192,14 +192,31 @@ export const BEACONS = [
   { id: 'murmures', name: 'Phare des Murmures', x: 480, z: 70, radius: 160, decayHours: 14, lore: 'Ses chants apaisent les arbres du Bois-Murmure.' },
   { id: 'cendres', name: 'Phare des Cendres', x: 100, z: 505, radius: 160, decayHours: 12, lore: 'Dressé sur les ruines de la vieille cité.' },
   { id: 'nuees', name: 'Phare du Couchant', x: -560, z: -545, radius: 170, decayHours: 12, lore: "Perché sur le Belvédère, il veille sur les Falaises du Couchant." },
-  { id: 'silence', name: 'Phare du Silence', x: -30, z: -493, radius: 200, decayHours: 10, lore: 'Au sommet du pic, gardé par le Roi Sans Lumière.' },
+  { id: 'silence', name: 'Phare du Silence', x: -64, z: -584, radius: 200, decayHours: 10, lore: 'Sur une corniche de la route du Pic, sous le regard du Roi Sans Lumière.' },
   { id: 'givre', name: 'Phare du Givre', x: -218, z: -860, radius: 176, decayHours: 12, lore: 'Sa flamme bleue fait fondre la glace des Cimes.' },
   { id: 'ambre', name: 'Phare d’Ambre', x: 1080, z: 97, radius: 187, decayHours: 12, lore: 'Dressé au milieu des mesas, il brille comme du miel.' },
   { id: 'ames', name: 'Phare des Âmes', x: -976, z: 216, radius: 176, decayHours: 10, lore: 'Sa lueur pâle guide les morts égarés hors des Landes.' },
   { id: 'emeraude', name: 'Phare d’Émeraude', x: 228, z: 924, radius: 176, decayHours: 12, lore: 'Les lianes de la Canopée s’enroulent autour de sa flamme verte.' },
 ];
 
-// Routes (polylignes XZ) : le relief s'y aplanit et la terre y est battue.
+// Route en lacets vers une arène de sommet : spirale autour du pic, du rayon r0 (angle a0) au
+// rayon r1 (angle a1), puis un dernier tronçon jusqu'au portail (rayon gateR, angle a1).
+// La pente y reste constante et douce (voir Continent : profil linéaire jusqu'au sol de l'arène).
+function summitRoad(cx, cz, r0, r1, a0, a1, gateR) {
+  const pts = [], n = Math.max(8, Math.ceil(Math.abs(a1 - a0) / 0.12));
+  const P = (a, r) => [Math.round((cx + Math.cos(a) * r) * 10) / 10, Math.round((cz + Math.sin(a) * r) * 10) / 10];
+  for (let i = 0; i <= n; i++) { const t = i / n; pts.push(P(a0 + (a1 - a0) * t, r0 + (r1 - r0) * t)); }
+  pts.push(P(a1, gateR));
+  pts.summit = true;
+  return pts;
+}
+// angles d'arrivée des routes de sommet (le portail de l'arène leur fait face)
+export const SUMMIT_GATES = { roi: 1.849 + 4.4 - Math.PI * 2, reine: 1.103 + 5.0 - Math.PI * 2, gardien: -1.336 - 4.7 + Math.PI * 2 };
+const ROI_ROAD = summitRoad(-30, -478, 175, 52, 1.849, 1.849 + 4.4, 33);
+const REINE_ROAD = summitRoad(72, -1274, 185, 50, 1.103, 1.103 + 5.0, 31);
+const GARDIEN_ROAD = summitRoad(290, 1287, 165, 50, -1.336, -1.336 - 4.7, 31);
+
+// Routes (polylignes XZ) : le relief s'y aplanit (pente douce et régulière) et la terre y est battue.
 export const PATHS = [
   // vers l'est : Bois-Murmure, Comptoir d'Ambre, Cirque, Mine
   [[0, 0], [90, -20], [200, 10], [330, 30], [480, 60], [620, 66], [772, 66]],
@@ -213,11 +230,12 @@ export const PATHS = [
   [[90, 480], [120, 620], [169, 772]],
   [[169, 772], [260, 880], [352, 992]],
   [[169, 772], [90, 950], [60, 1040]],
-  [[352, 992], [330, 1120], [300, 1250]],
+  [[352, 992], [330, 1120], GARDIEN_ROAD[0]],
+  GARDIEN_ROAD,
   [[90, 480], [300, 560], [520, 640], [760, 700]],
   // vers l'ouest : Lac Miroir, Landes Spectrales, Marais des Saules
-  [[0, 0], [-90, 30], [-200, 60], [-250, 80]],
-  [[-250, 80], [-420, 150], [-600, 220], [-741, 238]],
+  [[0, 0], [-90, 30], [-200, 60], [-238, 62]],
+  [[-238, 62], [-232, 96], [-246, 138], [-290, 172], [-350, 180], [-420, 160], [-600, 220], [-741, 238]],
   [[-741, 238], [-880, 190], [-1000, 150], [-1038, 132]],
   [[-1038, 132], [-1180, 250], [-1290, 330]],
   [[-741, 238], [-850, 380], [-910, 450]],
@@ -227,9 +245,11 @@ export const PATHS = [
   [[-250, -420], [-230, -560], [-150, -680], [-73, -761]],
   [[-73, -761], [60, -860], [200, -950], [237, -970]],
   [[-73, -761], [-200, -900], [-260, -980]],
-  [[237, -970], [160, -1100], [100, -1230]],
-  // sentier du sommet du Pic
-  [[-110, -200], [-60, -280], [-95, -340], [-25, -385], [-65, -435], [-30, -470]],
+  [[237, -970], [160, -1100], REINE_ROAD[0]],
+  REINE_ROAD,
+  // route en lacets du Pic du Silence
+  [[-110, -200], ROI_ROAD[0]],
+  ROI_ROAD,
   // vers les Falaises du Couchant
   [[-250, -420], [-420, -500], [-560, -560], [-680, -620]],
 ];

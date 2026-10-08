@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 export const QUALITY = {
@@ -22,7 +21,13 @@ export function detectQuality() {
   return 'high';
 }
 
-// Étalonnage final : vignette + légère saturation + grain discret.
+// Définition minimale de l'image, quelle que soit la qualité : 1080 lignes (ou la définition
+// native de l'écran, si elle est plus petite). La qualité joue sur le reste (ombres, halo,
+// distance de vue, herbe…), jamais sur la netteté.
+export const MIN_LINES = 1080;
+
+// Passe finale : tonemapping + espace sRGB (ex-OutputPass, une passe plein écran de moins),
+// puis étalonnage : vignette + légère saturation + grain discret.
 const GradeShader = {
   uniforms: { tDiffuse: { value: null }, uVignette: { value: 0.32 }, uSat: { value: 1.08 }, uTime: { value: 0 }, uHurt: { value: 0 }, uWarm: { value: 0 } },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
@@ -31,7 +36,10 @@ const GradeShader = {
     varying vec2 vUv;
     float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
     void main(){
-      vec4 c = texture2D(tDiffuse, vUv);
+      gl_FragColor = texture2D(tDiffuse, vUv);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+      vec4 c = gl_FragColor;
       float l = dot(c.rgb, vec3(0.2126,0.7152,0.0722));
       c.rgb = mix(vec3(l), c.rgb, uSat);
       c.rgb += vec3(0.02, 0.01, -0.01) * uWarm;
@@ -79,14 +87,22 @@ export class Renderer {
     window.addEventListener('resize', this.resize);
   }
 
+  // plus petit rapport de pixels qui garde MIN_LINES lignes (sans dépasser l'écran natif)
+  floorRatio() {
+    const dpr = window.devicePixelRatio || 1, short = Math.max(1, Math.min(window.innerWidth, window.innerHeight));
+    return Math.min(dpr, Math.max(1, MIN_LINES / short));
+  }
+
+  baseRatio() { return Math.max(this.floorRatio(), Math.min(window.devicePixelRatio || 1, this.quality.pixelRatio)); }
+
   setQuality(name) {
     this.qualityName = name;
     this.quality = QUALITY[name] || QUALITY.medium;
     const q = this.quality;
     const dpr = window.devicePixelRatio || 1;
-    const base = Math.min(dpr, q.pixelRatio);
-    // résolution adaptative : entre min et max selon les images/s mesurées
-    this.dyn = { ratio: base, min: Math.max(0.5, base * 0.62), max: Math.min(dpr, q.maxPixelRatio ?? q.pixelRatio), t: 0, n: 0, good: 0, cool: 3, ceiling: Infinity };
+    const base = this.baseRatio();
+    // résolution adaptative : seulement au-dessus du plancher de netteté
+    this.dyn = { ratio: base, min: this.floorRatio(), max: Math.max(base, Math.min(dpr, q.maxPixelRatio ?? q.pixelRatio)), t: 0, n: 0, good: 0, cool: 3, ceiling: Infinity };
     this.renderer.setPixelRatio(base);
     this.renderer.shadowMap.enabled = q.shadows;
     this.camera.far = q.far;
@@ -101,7 +117,9 @@ export class Renderer {
     if (this.composer) { this.composer.dispose?.(); this.composer = null; }
     const q = this.quality;
     const w = window.innerWidth, h = window.innerHeight;
-    const rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: q.pixelRatio >= 1 ? 4 : 0 });
+    // anticrénelage : inutile (et très coûteux) sur les écrans denses des téléphones
+    const pr = this.renderer.getPixelRatio();
+    const rt = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType, samples: pr >= 1.5 ? 0 : this.qualityName === 'low' ? 2 : 4 });
     this.composer = new EffectComposer(this.renderer, rt);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     if (q.bloom) this.composer.addPass(new ShaderPass(SanitizeShader));
@@ -110,12 +128,17 @@ export class Renderer {
       this.composer.addPass(this.bloom);
     } else this.bloom = null;
     this.grade = new ShaderPass(GradeShader);
-    this.composer.addPass(new OutputPass());
     this.composer.addPass(this.grade);
   }
 
   resize() {
     const w = window.innerWidth, h = window.innerHeight;
+    // rotation de l'écran, fenêtre agrandie : le plancher de netteté suit
+    const d = this.dyn, floor = this.floorRatio();
+    if (d) {
+      d.min = floor; d.max = Math.max(d.max, floor);
+      if (d.ratio < floor - 0.01) { d.ratio = floor; this.renderer.setPixelRatio(floor); }
+    }
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
@@ -138,6 +161,7 @@ export class Renderer {
     if (d.cool > 0) return;
     const target = this.targetFps || (this.targetFps = matchMedia('(pointer: coarse)').matches ? 42 : 50);
     if (fps < target && d.ratio > d.min + 0.01) {
+      // jamais sous le plancher de netteté (1080 lignes)
       d.ceiling = d.ratio; // ce niveau était trop lourd : on n'y remonte pas tout de suite
       d.ceilingT = 40;
       this.setRatio(Math.max(d.min, d.ratio * (fps < target * 0.7 ? 0.75 : 0.87)));

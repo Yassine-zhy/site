@@ -320,7 +320,7 @@ export class Windows {
       sec('Graphismes'),
       h('div', { class: 'field' }, h('label', { for: 'opt-quality' }, 'qualité graphique'), qsel),
       h('div', { class: 'istats' }, `${Math.round(g.fps)} images/s · rendu à ${Math.round((g.renderer.dyn?.ratio || 1) * 100)} %`),
-      check('opt-adaptive', 'Résolution adaptative (garde le jeu fluide)', s.adaptive !== false, (v) => { s.adaptive = v; if (!v) g.renderer.setRatio(Math.min(devicePixelRatio || 1, g.renderer.quality.pixelRatio)); }),
+      check('opt-adaptive', 'Résolution adaptative (garde le jeu fluide)', s.adaptive !== false, (v) => { s.adaptive = v; if (!v) g.renderer.setRatio(g.renderer.baseRatio()); }),
       slider('opt-fov', 'champ de vision', s.fov || 60, 50, 85, 1, (v) => { s.fov = v; apply(); }),
       check('opt-fps', 'Afficher les images par seconde', !!s.showFps, (v) => { s.showFps = v; }),
       sec('Son'),
