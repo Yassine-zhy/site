@@ -10,7 +10,7 @@ from streamlit.testing.v1 import AppTest
 
 import ui
 from conftest import make_article
-from core import aggregator, market
+from core import aggregator, macro, market
 from core.market import Quote
 
 ARTICLES = [
@@ -42,6 +42,14 @@ def app(db, monkeypatch):
     monkeypatch.setattr(market, "company_profile", lambda symbol: {"shortName": symbol, "trailingPE": 20.0})
     monkeypatch.setattr(market, "company_calendar", lambda symbol: {})
     monkeypatch.setattr(market, "euro_rates", lambda: {"EUR": 1.0, "USD": 1.1})
+    # Économie : une série mensuelle factice par indicateur, et des courbes des taux « normales »
+    months = pd.date_range("2016-01-01", "2026-09-01", freq="MS")
+    fake_macro = {i.key: pd.Series([2.0 + (n % 12) / 10 for n in range(len(months))], index=months)
+                  for i in macro.INDICATORS}
+    monkeypatch.setattr(macro, "fetch_all", lambda start, indicators=macro.INDICATORS: (fake_macro, []))
+    days = pd.date_range("2024-10-01", "2026-10-08", freq="B")
+    curve = pd.DataFrame({label: 2 + years / 10 for label, years, *_ in macro.MATURITIES}, index=days)
+    monkeypatch.setattr(macro, "fetch_yield_curves", lambda start: {macro.US: curve, macro.EA: curve})
     with mock.patch.object(ui, "summarize") as fake_summary:
         fake_summary.return_value.to_dict.return_value = {
             "points": ["Point"], "why": None, "engine": "Résumé local", "based_on": "article complet", "note": None,
@@ -52,7 +60,7 @@ def app(db, monkeypatch):
 @pytest.mark.parametrize("page", ["views/feed.py", "views/markets.py", "views/stats.py", "views/following.py",
                                   "views/favorites.py", "views/settings.py", "views/glossary.py", "views/compare.py",
                                   "views/portfolio.py", "views/alerts.py", "views/brief.py",
-                                  "views/account.py"])
+                                  "views/account.py", "views/economy.py"])
 def test_chaque_page_s_affiche(app, page):
     app.run()
     app.switch_page(page).run()

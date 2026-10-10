@@ -21,6 +21,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Mes suivis** | Entreprises (recherche par nom) et thèmes, avec un fil dédié pour chacun. |
 | **Fiches entreprises** | Logo, cours, graphique interactif (1 mois à 5 ans) avec les dépêches placées sur la courbe, 10 indicateurs clés expliqués (PER, VE/EBITDA, ROE, rendement, bêta…), fourchette sur 52 semaines, agenda (résultats, dividende, consensus). |
 | **Marchés** | Bandeau défilant des cours sur toutes les pages ; 20 instruments mondiaux avec mini-courbes et carte des performances ; carte du CAC 40 par secteur (40 valeurs, palmarès) ; convertisseur de devises. |
+| **Économie** | Tableau de bord des statistiques officielles (BCE, Réserve fédérale) : inflation et inflation sous-jacente, taux directeurs et taux réels, taux à 10 ans, chômage, croissance, pour la zone euro, la France et les États-Unis ; courbes des taux avec détection d'inversion. |
 | **Comparer** | Jusqu'à 4 entreprises en base 100, rendement annualisé, volatilité, perte maximale, valorisation et matrice de corrélation. |
 | **Portefeuille virtuel** | Positions multidevises valorisées en euros, plus-values latentes, répartition, performance comparée au CAC 40, portefeuille d'exemple. |
 | **Alertes** | Seuils de cours ou de variation du jour, bandeau d'alerte sur toutes les pages. |
@@ -55,8 +56,8 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
  │        market · summarizer · storage                                 │
  └──┬──────────────────┬──────────────────┬──────────────────┬───────┘
     ▼                  ▼                  ▼                  ▼
- RSS, Finnhub,     Yahoo Finance      Gemini / Groq     SQLite
- NewsAPI, Marketaux, (yfinance)        (résumés)         data/finveille.db
+ RSS, Finnhub,     Yahoo Finance,     Gemini / Groq     SQLite
+ NewsAPI, Marketaux, BCE, FRED       (résumés)         data/finveille.db
  Alpha Vantage
 ```
 
@@ -71,7 +72,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · Altair · trafilatura · SQLite · pytest
 
-15 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+16 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 
@@ -100,11 +101,11 @@ app.py            point d'entrée : thème, bandeau des cours, navigation
 ui.py             éléments partagés : chargement en cache, carte d'article, résumé
 theme.py          design : jetons de couleur clair/sombre, cartes, tuiles, tableaux, mise en forme française
 assets/           le logo (SVG)
-views/            une page par fichier (fil, brief, en chiffres, marchés, comparer, suivis, portefeuille,
+views/            une page par fichier (fil, brief, en chiffres, marchés, économie, comparer, suivis, portefeuille,
                   alertes, favoris, glossaire, réglages, mon compte)
 core/             logique métier : sources, agrégation, classement, statistiques, marché, indicateurs de
-                  risque, portefeuille, alertes, brief, résumé, stockage
-tests/            80 tests pytest (sources, recherche, base et comptes, résumé, indicateurs, portefeuille, alertes,
+                  risque, portefeuille, alertes, brief, économie (BCE, FRED), résumé, stockage
+tests/            107 tests pytest (sources, recherche, base et comptes, résumé, indicateurs, portefeuille, alertes,
                   brief, chaque page)
 guide/            le guide de construction, étape par étape
 ```
