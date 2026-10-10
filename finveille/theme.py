@@ -417,6 +417,19 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   color: var(--fv-muted); }
 .fv-gauge-history b { display: block; font-size: .95rem; color: var(--fv-text); }
 
+/* Quiz */
+.fv-quiz-question small { font-size: .74rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--fv-brand); }
+.fv-quiz-question p { margin: .5rem 0 .1rem; font-family: var(--fv-serif); font-size: 1.25rem; line-height: 1.5; }
+.fv-quiz-choice { padding: .55rem 1rem; border: 1px solid var(--fv-line-strong); border-radius: 8px; text-align: center;
+  background: var(--fv-surface); font-size: .95rem; color: var(--fv-muted); }
+.fv-quiz-choice.is-right { border-color: var(--fv-up); background: var(--fv-up-soft); color: var(--fv-up); font-weight: 600; }
+.fv-quiz-choice.is-wrong { border-color: var(--fv-down); background: var(--fv-down-soft); color: var(--fv-down); font-weight: 600; }
+.fv-quiz-feedback { margin: .3rem 0; font-weight: 600; }
+.fv-quiz-feedback.is-right { color: var(--fv-up); }
+.fv-quiz-feedback.is-wrong { color: var(--fv-down); }
+.fv-quiz-wrong { font-size: .8rem; color: var(--fv-down); }
+
 /* =============================================================================================
    8. Fiche entreprise
    ============================================================================================= */

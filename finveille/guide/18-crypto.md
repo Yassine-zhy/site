@@ -110,4 +110,4 @@ visiteurs : c'est ce qui permet de rester dans le quota gratuit.
 | Du texte `">` sous une image | HTML dans un attribut | Texte brut échappé dans `alt` et `title`. |
 | `TypeError: float() argument must be ... 'NoneType'` | Champ absent dans la réponse | `row.get("champ") or 0`, ou ignorer la ligne. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [le quiz et la frontière efficiente](19-quiz-et-frontiere-efficiente.md). Retour au [sommaire du guide](README.md).
