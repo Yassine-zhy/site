@@ -3,9 +3,9 @@
 import streamlit as st
 
 from core import storage
-from core.config import CATEGORIES
+from core.config import API_KEYS, CATEGORIES
 from core.filters import filter_articles
-from ui import NO_STATUS, article_card, load_articles
+from ui import NO_STATUS, api_keys, article_card, load_articles
 
 PAGE_SIZE = 30  # nombre d'articles affichés par « page »
 
@@ -15,7 +15,8 @@ def show_more():
     st.session_state.visible_count += PAGE_SIZE
 
 
-articles, errors = load_articles()
+keys = api_keys()
+articles, errors = load_articles(keys)
 statuses = storage.get_statuses()
 
 if "visible_count" not in st.session_state:
@@ -38,6 +39,13 @@ with st.sidebar:
         with st.expander(f"⚠️ {len(errors)} source(s) indisponible(s)"):
             for error in errors:
                 st.caption(error)
+
+    st.subheader("API", divider="gray")
+    for name, (label, signup_url) in API_KEYS.items():
+        if keys[name]:
+            st.caption(f":green-badge[active] {label}")
+        else:
+            st.caption(f":gray-badge[inactive] {label} · [obtenir une clé gratuite]({signup_url})")
 
 # --- En-tête : recherche et catégories (visibles même sur mobile) --------------------------
 st.title("📰 FinVeille")
