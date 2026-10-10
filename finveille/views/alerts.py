@@ -16,7 +16,7 @@ def remove(user: str, alert_id: int) -> None:
 
 flush_toast()
 theme.page_header("Alertes", "Sois prévenu quand un cours franchit un seuil : un bandeau s'affiche alors en haut "
-                  "de toutes les pages.")
+                  "de toutes les pages.", eyebrow="Mon espace")
 user = require_user()
 choices = company_choices(user)
 
@@ -44,9 +44,10 @@ if not alerts:
     st.stop()
 
 quotes = load_symbol_quotes(tuple(sorted({a["symbol"] for a in alerts})))
+panel = st.container(key="fvpanel_alerts")
 for alert in alerts:
     quote = quotes.get(alert["symbol"])
-    with st.container(key=f"fvalert_{alert['id']}", horizontal=True, vertical_alignment="center"):
+    with panel.container(key=f"fvalert_{alert['id']}", horizontal=True, vertical_alignment="center"):
         if quote is None:
             status, detail = '<span class="fv-status is-off">Cours indisponible</span>', ""
         else:

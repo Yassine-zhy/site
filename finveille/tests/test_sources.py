@@ -17,6 +17,11 @@ def test_clean_html_retire_un_credit_photo_seul():
     assert sources.clean_html("Image source: The Motley Fool") == ""
 
 
+def test_clean_html_retire_l_intertitre_key_points():
+    assert sources.clean_html("Key PointsForecasting an AI bubble…") == "Forecasting an AI bubble…"
+    assert sources.clean_html("<h2>Key Points</h2><p>Les marchés</p>") == "Les marchés"
+
+
 def test_shorten_coupe_a_la_fin_d_un_mot():
     text = sources.shorten("mot " * 100, width=20)
     assert len(text) <= 20 and text.endswith("…") and "mo …" not in text

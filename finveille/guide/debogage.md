@@ -78,6 +78,9 @@ Et quand rien ne marche : cherche le message exact entre guillemets sur un moteu
 | `The body parameter is required` (`st.html`) | Le HTML construit est vide : vérifie avant d'afficher. |
 | Avertissement « fragment rerun … callback that displays elements » | N'affiche rien depuis un callback de fragment (voir `flush_toast`, étape 9). |
 | Les données ne se rafraîchissent pas | C'est le cache : « Actualiser maintenant », ou menu ⋮ → *Clear cache*. |
+| Un bouton principal sans texte visible (mode sombre) | `primaryColor` trop clair sous le texte blanc : contraste ≥ 4,5 (étape 15, test automatique). |
+| Les listes de `st.html` sont décalées | Streamlit ajoute `padding-left` aux `ul` : sélecteur CSS plus spécifique (étape 15). |
+| Une couleur CSS ne suit pas le thème | Utilise un jeton `var(--fv-…)` défini avec `light-dark()` (étape 15). |
 | La mise en page change après une mise à jour de Streamlit | Les règles CSS qui ciblent des `data-testid` internes peuvent casser (`theme.py`). |
 
 ## Comptes et connexion

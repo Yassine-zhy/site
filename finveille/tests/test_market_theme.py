@@ -43,3 +43,38 @@ def test_horloges_des_places_boursieres():
     assert status["Paris"] and status["Londres"] and not status["New York"]
     saturday = datetime(2026, 10, 10, 10, 0, tzinfo=timezone.utc)
     assert not any(is_open for _, _, is_open in theme.exchange_status(saturday))
+
+
+# --- Refonte du design (étape 15) ----------------------------------------------------------------
+
+
+def contrast(color_a: str, color_b: str) -> float:
+    """Rapport de contraste WCAG entre deux couleurs « #RRGGBB » (de 1 à 21)."""
+    def luminance(color: str) -> float:
+        channels = [int(color.lstrip("#")[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+        r, g, b = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    light, dark = sorted([luminance(color_a), luminance(color_b)], reverse=True)
+    return (light + 0.05) / (dark + 0.05)
+
+
+def test_les_boutons_principaux_restent_lisibles_en_clair_et_en_sombre():
+    """Streamlit écrit en blanc sur la couleur principale : elle doit être assez foncée dans les DEUX thèmes."""
+    import tomllib
+    from pathlib import Path
+
+    config = tomllib.loads((Path(__file__).parent.parent / ".streamlit" / "config.toml").read_text())
+    for mode in ("light", "dark"):
+        palette = config["theme"][mode]
+        assert contrast(palette["primaryColor"], "#FFFFFF") >= 4.5, mode  # texte du bouton
+        assert contrast(palette["primaryColor"], palette["backgroundColor"]) >= 3, mode  # bouton visible sur le fond
+        assert contrast(palette["textColor"], palette["backgroundColor"]) >= 7, mode  # texte courant
+
+
+def test_variation_coloree_carte_et_tableau():
+    assert theme.change(1.2) == '<span class="fv-up">+1,20 %</span>'
+    assert theme.change(-0.5).startswith('<span class="fv-down">')
+    html = theme.table(["A", "B"], "<tr><td>x</td><td>y</td></tr>")
+    assert html.startswith('<div class="fv-table-wrap">') and "<th>A</th><th>B</th>" in html
+    assert theme.card("<p>corps</p>", "Titre").startswith('<section class="fv-card"><h4 class="fv-card-title">Titre')
+    assert "<script>" not in theme.card("", "<script>")  # le titre est échappé

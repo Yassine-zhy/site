@@ -8,9 +8,9 @@ import streamlit as st
 import theme
 from core import storage
 from theme import esc
-from ui import auth_providers, current_user, login_buttons
+from ui import auth_providers, current_user, login_box
 
-theme.page_header("Mon compte", "Ton profil et tes données personnelles.")
+theme.page_header("Mon compte", "Ton profil et tes données personnelles.", eyebrow="Outils")
 
 if not auth_providers():
     # --- Mode local : comptes non configurés -------------------------------------------------
@@ -25,11 +25,8 @@ if not auth_providers():
 else:
     user = current_user()
     if user is None:
-        theme.section("Connexion")
-        st.markdown("Crée un compte ou connecte-toi pour retrouver tes favoris, tes suivis, ton portefeuille et tes "
-                    "alertes sur n'importe quel appareil. Aucun mot de passe n'est stocké par FinVeille : la "
-                    "connexion est gérée par Google ou par le service Auth0.")
-        login_buttons("account")
+        login_box("account", "Crée ton compte ou connecte-toi",
+                  "Retrouve tes favoris, tes suivis, ton portefeuille et tes alertes sur n'importe quel appareil.")
         st.stop()
 
     theme.section("Profil")
@@ -37,8 +34,8 @@ else:
     picture = st.user.get("picture")
     since = datetime.fromisoformat(profile["created_at"]).strftime("%d/%m/%Y") if profile.get("created_at") else "—"
     st.html(
-        '<div class="fv-firm">'
-        + (f'<img src="{theme.safe_url(picture)}" alt="" style="border-radius:50%">' if picture else "")
+        '<div class="fv-firm fv-card">'
+        + (f'<img src="{theme.safe_url(picture)}" alt="" style="border-radius:50%;padding:0">' if picture else "")
         + f"<div><h2>{esc(st.user.get('name') or 'Mon compte')}</h2>"
         f"<p>{esc(st.user.get('email') or '')} · membre depuis le {since}</p></div></div>"
     )

@@ -1,5 +1,10 @@
 # Étape 5 — Une identité visuelle originale (clair / sombre)
 
+> **Mise à jour :** à l'étape 15, cette identité « papier » a été remplacée par un design de plateforme
+> financière (cartes, palette par thème avec `light-dark()`). Les principes de cette étape (couleur réservée aux
+> données, palette pour daltoniens, jamais d'information portée par la seule couleur) restent valables.
+> Voir [l'étape 15](15-design-professionnel.md).
+
 > **Objectif :** que FinVeille ait l'air d'un vrai produit, avec **sa** personnalité, et pas d'une démo Streamlit ou
 > d'un site « généré par IA ». Au passage : mode clair/sombre soigné, mise à jour automatique de la page, et
 > premières règles d'accessibilité.

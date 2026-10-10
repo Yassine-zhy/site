@@ -91,7 +91,7 @@ def price_chart(closes: pd.Series, currency: str, long_period: bool, markers: pd
     hover = alt.selection_point(fields=["date"], nearest=True, on="pointerover", empty=False, clear="pointerout")
     line = base.mark_line(color="#3987e5", strokeWidth=2, strokeJoin="round")
     rule = (
-        base.mark_rule(color="#8a8780", strokeWidth=1)
+        base.mark_rule(color=theme.NEUTRAL, strokeWidth=1)
         .encode(opacity=alt.condition(hover, alt.value(1), alt.value(0)),
                 tooltip=[alt.Tooltip("date:T", title="Date", format="%d/%m/%Y"),
                          alt.Tooltip("cours:Q", title=f"Clôture ({currency})", format=",.2f")])
@@ -102,13 +102,13 @@ def price_chart(closes: pd.Series, currency: str, long_period: bool, markers: pd
     )
     layers = line + rule + dot
     if not markers.empty:
-        news = alt.Chart(markers).mark_point(shape="diamond", filled=True, size=90, color="#8a8780").encode(
+        news = alt.Chart(markers).mark_point(shape="diamond", filled=True, size=90, color=theme.NEUTRAL).encode(
             x="date:T", y="cours:Q",
             tooltip=[alt.Tooltip("date:T", title="Séance", format="%d/%m/%Y"),
                      alt.Tooltip("titre:N", title="Dépêche"), alt.Tooltip("source:N", title="Source")],
         )
         layers = layers + news
-    return layers.properties(height=280)
+    return layers.properties(height=280, background="transparent")  # fond de la carte
 
 
 def agenda_html(symbol: str, currency: str) -> str:
@@ -134,7 +134,7 @@ def agenda_html(symbol: str, currency: str) -> str:
     if not rows:
         return ""
     items = "".join(f"<li><span>{label}</span><span>{value}</span></li>" for label, value in rows)
-    return f'<h4 class="fv-rail-title" style="margin-top:1.3rem">Agenda</h4><ul class="fv-agenda">{items}</ul>'
+    return theme.card(f'<ul class="fv-agenda">{items}</ul>', "Agenda")
 
 
 
@@ -168,11 +168,12 @@ def company_sheet(symbol: str, label: str, articles=()) -> None:
             day, span = (last / previous - 1) * 100, (last / first - 1) * 100
             st.html(
                 f'<div class="fv-quote-big"><b>{theme.price(last)} {esc(currency)}</b>'
-                f'<span class="{theme.direction(day)}">{theme.signed(day)}</span>'
+                f"{theme.change(day)}"
                 f"<small>sur la séance · {theme.signed(span)} sur {esc(period or '6 mois')}</small></div>"
             )
             markers = news_markers(closes, list(articles))
-            st.altair_chart(price_chart(closes, currency, period in ("1 an", "5 ans"), markers), width="stretch")
+            with st.container(key=f"fvchart_{symbol}"):
+                st.altair_chart(price_chart(closes, currency, period in ("1 an", "5 ans"), markers), width="stretch")
             if not markers.empty:
                 st.caption(f"◆ {len(markers)} dépêche(s) placée(s) sur la courbe : survole un losange pour lire le titre.")
 
@@ -182,17 +183,18 @@ def company_sheet(symbol: str, label: str, articles=()) -> None:
             f"<dd>{format_indicator(profile.get(key), kind, currency)}</dd>"
             for key, (title, kind, help_text) in INDICATORS.items()
         )
-        st.html(f'<h4 class="fv-rail-title">Indicateurs clés</h4><dl class="fv-ratios">{rows}</dl>')
         low, high, current = profile.get("fiftyTwoWeekLow"), profile.get("fiftyTwoWeekHigh"), profile.get("regularMarketPrice")
+        range_html = ""
         if low and high and current and high > low:
             position = min(max((current - low) / (high - low), 0), 1)
-            st.html(
+            range_html = (
                 f'<div class="fv-range" title="Le cours actuel se situe à {position:.0%} entre le plus bas et le plus haut sur un an">'
                 f"Fourchette sur 52 semaines"
                 f'<div class="fv-range-bar"><i style="left:{position:.1%}"></i></div>'
                 f'<div class="fv-range-ends"><span>{theme.price(low)}</span><span>cours {theme.price(current)}</span>'
                 f"<span>{theme.price(high)}</span></div></div>"
             )
+        st.html(theme.card(f'<dl class="fv-ratios">{rows}</dl>{range_html}', "Indicateurs clés"))
         if agenda := agenda_html(symbol, currency):
             st.html(agenda)
         st.caption("Survole un indicateur pour voir sa définition. Données Yahoo Finance.")
@@ -208,13 +210,15 @@ def news_list(user: str, articles, empty_message: str, key_prefix: str) -> None:
     visible = [a for a in articles if not statuses.get(a.id, NO_STATUS)["is_hidden"]]
     if not visible:
         st.caption(empty_message)
-    for article in visible[:20]:
-        article_card(article, statuses.get(article.id, NO_STATUS), key_prefix=key_prefix, user=user)
+    with st.container(key=f"fvpanel_{key_prefix}"):
+        for article in visible[:20]:
+            article_card(article, statuses.get(article.id, NO_STATUS), key_prefix=key_prefix, user=user)
 
 
 # --- La page ----------------------------------------------------------------------------------
 flush_toast()
-theme.page_header("Mes suivis", "Les entreprises et les thèmes que tu suis, avec leur fil et leur fiche.")
+theme.page_header("Mes suivis", "Les entreprises et les thèmes que tu suis, avec leur fil et leur fiche.",
+                  eyebrow="Mon espace")
 user = require_user()
 
 with st.container(horizontal=True, gap="small"):
