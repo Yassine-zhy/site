@@ -10,6 +10,7 @@ import streamlit as st
 import theme
 from core import storage
 from core.aggregator import collect_articles
+from core.market import fetch_quotes
 from core.config import API_KEYS, CATEGORIES
 from core.models import Article
 from theme import esc, safe_url
@@ -39,6 +40,15 @@ def load_articles(keys: dict[str, str | None]):
     """
     articles, errors = collect_articles(keys)
     return articles, errors, datetime.now(timezone.utc)
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def load_quotes():
+    """Cours des marchés, rafraîchis au plus toutes les 2 minutes. Liste vide si Yahoo ne répond pas."""
+    try:
+        return fetch_quotes()
+    except Exception:  # yfinance peut lever des erreurs très variées (réseau, quota, format) : on n'affiche rien
+        return []
 
 
 def _update(article: Article, flag: str, value: bool, message: str) -> None:

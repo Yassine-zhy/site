@@ -7,6 +7,7 @@ from typing import Callable
 
 import requests
 
+from core.analytics import detect_companies
 from core.classifier import classify
 from core.config import FINNHUB_CATEGORIES, RSS_FEEDS
 from core.models import Article
@@ -76,6 +77,8 @@ def run_tasks(tasks: list[Task]) -> tuple[list[Article], list[str]]:
 
     for article in articles:
         article.category = classify(article)
+        # Ajoute les grandes entreprises reconnues dans le texte aux tickers fournis par la source
+        article.tickers = list(dict.fromkeys(article.tickers + detect_companies(article)))
 
     articles = deduplicate(articles)
     articles.sort(key=lambda article: article.published, reverse=True)
