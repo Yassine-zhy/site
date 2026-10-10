@@ -64,7 +64,9 @@ def savings_view() -> None:
         ("Coût des frais", euros(without_fees - final["valeur"]), f"{theme.fr_number(fees, 1)} % par an"),
     ])
     long = plan.melt("année", value_vars=["versé", "intérêts"], var_name="part", value_name="montant")
+    long["ordre"] = long["part"].map({"versé": 0, "intérêts": 1})  # les sommes versées en bas, les intérêts au-dessus
     layer = alt.Chart(long).mark_area(opacity=0.85).encode(
+        order=alt.Order("ordre:Q", sort="ascending"),
         x=alt.X("année:Q", title="Années", axis=alt.Axis(tickMinStep=1, grid=False, domainOpacity=0.4)),
         y=alt.Y("montant:Q", title=None, stack="zero", axis=alt.Axis(format=",.0f", gridOpacity=0.18, domain=False)),
         color=alt.Color("part:N", scale=alt.Scale(domain=["versé", "intérêts"], range=[theme.NEUTRAL, BLUE]),

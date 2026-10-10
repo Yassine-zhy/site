@@ -36,13 +36,15 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 
 ## Aperçu
 
-| Le brief du jour | Carte du CAC 40 |
+| Le fil (thème sombre) | Le brief du jour |
 | --- | --- |
-| ![Le brief du jour](docs/screenshots/brief.jpg) | ![Carte du CAC 40 par secteur](docs/screenshots/cac40.jpg) |
-| **Comparateur** | **Portefeuille virtuel** |
-| ![Comparateur d'entreprises](docs/screenshots/comparer.jpg) | ![Portefeuille virtuel](docs/screenshots/portefeuille.jpg) |
-| **Marchés** | **En chiffres (thème sombre)** |
-| ![Tableau de bord des marchés](docs/screenshots/marches.jpg) | ![Tableau de bord de l'actualité](docs/screenshots/en-chiffres.jpg) |
+| ![Le fil d'actualité en thème sombre](docs/screenshots/fil-sombre.jpg) | ![Le brief du jour](docs/screenshots/brief.jpg) |
+| **Économie (BCE, Fed)** | **Crypto** |
+| ![Tableau de bord économique](docs/screenshots/economie.jpg) | ![Page crypto](docs/screenshots/crypto.jpg) |
+| **Carte du CAC 40** | **Frontière efficiente** |
+| ![Carte du CAC 40 par secteur](docs/screenshots/cac40.jpg) | ![Frontière efficiente de Markowitz](docs/screenshots/frontiere-efficiente.jpg) |
+| **Simulateur d'investissement programmé** | **Portefeuille virtuel** |
+| ![Simulateurs](docs/screenshots/simulateurs.jpg) | ![Portefeuille virtuel](docs/screenshots/portefeuille.jpg) |
 | **Fiche entreprise** | **Mobile** |
 | ![Fiche entreprise LVMH](docs/screenshots/fiche-entreprise.jpg) | ![Version mobile](docs/screenshots/mobile.jpg) |
 

@@ -192,10 +192,17 @@ Une proposition à adapter avec **tes** mots (un recruteur repère vite un texte
 > → suit les entreprises qui m'intéressent, avec leur cours et leurs indicateurs clés (PER, VE/EBITDA, ROE…) ;
 > → affiche un tableau de bord des marchés mondiaux et de la tonalité de l'actualité ;
 > → résume chaque article en trois points grâce à l'IA ;
-> → rédige chaque matin un « brief » de l'actualité, et gère un portefeuille virtuel avec alertes de cours.
+> → rédige chaque matin un « brief » de l'actualité, envoyé par e-mail, et gère un portefeuille virtuel avec
+> alertes de cours ;
+> → suit l'économie avec les statistiques officielles de la BCE et de la Fed (inflation, taux, courbe des taux) ;
+> → propose des simulateurs (épargne, investissement programmé, crédit immobilier) et la frontière efficiente de
+> Markowitz pour optimiser un portefeuille.
+>
+> Chaque utilisateur a son compte (connexion Google, e-mail ou Facebook) et ses données, conservées dans une base
+> PostgreSQL.
 >
 > Ce que j'ai appris en chemin :
-> • Python, les API REST et le JSON, SQL avec SQLite ;
+> • Python, les API REST et le JSON, SQL (SQLite et PostgreSQL), l'authentification OpenID Connect ;
 > • nettoyer des données réelles (souvent sales !) et gérer les quotas des API gratuites ;
 > • écrire des tests automatiques… qui m'ont fait découvrir de vrais bugs ;
 > • qu'un bon design repose sur la retenue et l'accessibilité : mes couleurs sont vérifiées pour le daltonisme.
@@ -214,7 +221,9 @@ Une proposition à adapter avec **tes** mots (un recruteur repère vite un texte
 > FinVeille : application web de veille financière (Python, Streamlit, SQLite). Agrège 12 flux d'actualité et
 > 4 API, suit des entreprises (cours, PER, ROE…), tableaux de bord des marchés et du CAC 40, comparateur
 > (volatilité, perte maximale, corrélation), portefeuille virtuel avec alertes, brief du jour rédigé
-> automatiquement, résumés d'articles par IA. 70 tests automatisés, thème clair/sombre, accessible.
+> automatiquement et envoyé par e-mail, résumés d'articles par IA, tableau de bord économique (BCE, Fed),
+> simulateurs financiers, frontière efficiente, comptes utilisateurs (Google, e-mail) et base PostgreSQL.
+> 164 tests automatisés, thèmes clair et sombre, accessible.
 
 Conseils de publication : joins **2 ou 3 captures** (ou la vidéo), publie en semaine en début de matinée, et réponds
 aux commentaires dans la journée.

@@ -50,7 +50,8 @@ def comparison_chart(rebased: pd.DataFrame, names: dict[str, str], colors: dict[
 theme.page_header("Comparer", "Jusqu'à quatre entreprises côte à côte : performance, risque et valorisation.",
                   eyebrow="Marchés")
 
-defaults = [s for s in ["MC.PA", "RMS.PA", "KER.PA"] if s in choices]
+# Par défaut, quatre secteurs différents (luxe, énergie, aéronautique, santé) : la diversification se voit mieux
+defaults = [s for s in ["MC.PA", "TTE.PA", "AIR.PA", "SAN.PA"] if s in choices]
 selected = st.multiselect("Entreprises", list(choices), default=defaults, max_selections=4,
                           format_func=lambda s: f"{choices[s]} · {s}", placeholder="Choisis 2 à 4 entreprises")
 period = st.segmented_control("Période", list(PERIODS), default="1 an", label_visibility="collapsed") or "1 an"
@@ -65,6 +66,10 @@ if closes is None or closes.empty or len(closes) < 5:
     st.stop()
 
 selected = [s for s in selected if s in closes.columns]  # un symbole sans données est ignoré
+if len(selected) < 2:
+    st.warning("Pas assez d'historiques disponibles pour comparer : choisis d'autres entreprises.",
+               icon=":material/cloud_off:")
+    st.stop()
 names = {s: choices[s] for s in selected}
 colors = {names[s]: theme.SERIES_COLORS[i] for i, s in enumerate(selected)}  # la couleur suit l'entreprise
 
@@ -160,7 +165,7 @@ labels = alt.Chart(assets).mark_text(align="left", dx=8, dy=-6, fontSize=11, col
 stars = alt.Chart(special).mark_point(size=260, filled=True, strokeWidth=1.5, stroke="white").encode(
     x=x, y=y,
     shape=alt.Shape("portefeuille:N", scale=alt.Scale(domain=list(best), range=["diamond", "triangle-up"]),
-                    legend=alt.Legend(title=None, orient="top", symbolSize=140)),
+                    legend=alt.Legend(title=None, orient="top", symbolSize=180, symbolFillColor="#c98500")),
     color=alt.value("#c98500"),
     tooltip=[alt.Tooltip("portefeuille:N", title="Portefeuille"), alt.Tooltip("rendement:Q", format=".1f"),
              alt.Tooltip("volatilité:Q", format=".1f"), alt.Tooltip("sharpe:Q", title="Sharpe", format=".2f")],
