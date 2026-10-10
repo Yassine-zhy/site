@@ -1,0 +1,14 @@
+# Environnement virtuel Python
+.venv/
+venv/
+
+# Fichiers générés automatiquement par Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Base de données locale (tes favoris, tes suivis…)
+data/
+
+# Tes clés API : ne JAMAIS les publier
+.streamlit/secrets.toml
