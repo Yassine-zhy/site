@@ -2,23 +2,38 @@
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 
 import streamlit as st
 
 from core import storage
 from core.aggregator import collect_articles
-from core.config import CATEGORIES
+from core.config import API_KEYS, CATEGORIES
 from core.models import Article
 
 CATEGORY_COLORS = {"marches": "blue", "crypto": "orange", "entreprises": "violet", "macro": "green"}
 NO_STATUS = {flag: False for flag in storage.FLAGS}
 
 
-@st.cache_data(ttl=600, show_spinner="Récupération des actualités…")
-def load_articles():
-    """Appelle les sources au plus une fois toutes les 10 minutes (600 s)."""
-    return collect_articles()
+def get_secret(name: str) -> str | None:
+    """Lit une clé dans .streamlit/secrets.toml, ou à défaut dans les variables d'environnement."""
+    try:
+        value = st.secrets.get(name)
+    except FileNotFoundError:  # pas de fichier secrets.toml : ce n'est pas une erreur
+        value = None
+    return value or os.environ.get(name) or None
+
+
+def api_keys() -> dict[str, str | None]:
+    """Toutes les clés API connues, None pour celles qui ne sont pas renseignées."""
+    return {name: get_secret(name) for name in API_KEYS}
+
+
+@st.cache_data(ttl=900, show_spinner="Récupération des actualités…")
+def load_articles(keys: dict[str, str | None]):
+    """Appelle les sources au plus une fois toutes les 15 minutes (900 s), pour ménager les quotas des API."""
+    return collect_articles(keys)
 
 
 def md_escape(text: str) -> str:

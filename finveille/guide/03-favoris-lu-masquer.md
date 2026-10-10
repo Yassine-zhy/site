@@ -286,4 +286,4 @@ Pour **tout remettre à zéro** : arrête l'appli et supprime `data/finveille.db
 | `TypeError: Object of type datetime is not JSON serializable` | `json.dumps` sur un objet contenant une date | Passe par `article.to_dict()`, qui convertit la date en texte. |
 | Il faut cliquer deux fois pour que le bouton change | Lecture des statuts **avant** l'écriture | Fais l'écriture dans un callback `on_click` : il s'exécute avant la relance du script. |
 
-➡️ Étape suivante : [sources par API : Finnhub et NewsAPI](04-sources-api.md).
+➡️ Étape suivante : [sources par API : Finnhub, NewsAPI, Marketaux, Alpha Vantage](04-sources-api.md).

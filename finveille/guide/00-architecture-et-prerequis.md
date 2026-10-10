@@ -23,7 +23,7 @@ Une *stack*, c'est l'ensemble des outils techniques d'un projet. Pour un débuta
 | Langage | **Python 3.11+** | Le langage de la data et de la finance quantitative (pandas, numpy…). Tu le réutiliseras en stage. | JavaScript : il faudrait apprendre HTML + CSS + JS + un framework. |
 | Interface web | **Streamlit** | Transforme un script Python en site web. Pas de HTML/CSS/JS à écrire. Responsive et thème clair/sombre **intégrés**. Hébergement gratuit. | Flask/Django (il faut écrire tout le HTML), React + FastAPI (deux langages), Dash (plus verbeux). |
 | Actualités sans clé | **Flux RSS** (`feedparser`) | Gratuits, sans inscription, sans quota. Presque tous les médias en publient. | Scraper les sites : fragile et souvent interdit. |
-| Actualités avec clé | **Finnhub** et **NewsAPI** | Clés gratuites. Finnhub : 60 requêtes/min, actus par entreprise. NewsAPI : recherche plein texte (100 requêtes/jour). | Marketaux (3 articles par requête en gratuit), Alpha Vantage (25 requêtes/jour) : quotas trop faibles, gardés en exercice. |
+| Actualités avec clé | **Finnhub**, **NewsAPI**, **Marketaux**, **Alpha Vantage** | Clés gratuites. Finnhub : 60 requêtes/min, actus par entreprise. NewsAPI : recherche plein texte. Marketaux et Alpha Vantage : entreprises citées et **score de sentiment**. Chacune est optionnelle. | Scraping de sites d'information : fragile et souvent interdit par leurs conditions d'utilisation. |
 | Cours de Bourse | **yfinance** | Gratuit, sans clé, couvre les Bourses du monde entier (Paris : `MC.PA`, `AIR.PA`…). | Alpha Vantage (25 requêtes/jour), Finnhub (cotations US surtout en gratuit). |
 | Stockage | **SQLite** | Inclus dans Python, une base de données dans **un seul fichier**, du vrai SQL (compétence très demandée). | Fichier JSON (fragile, pas de requêtes), PostgreSQL (serveur à installer). |
 | Résumé IA | **Résumé local** + **Gemini** ou **Groq** (offres gratuites) | Le résumé local marche toujours, sans clé ni Internet. Si tu ajoutes une clé gratuite, un vrai modèle de langage résume en français. | API payantes. |
@@ -77,9 +77,11 @@ Une *stack*, c'est l'ensemble des outils techniques d'un projet. Pour un débuta
 finveille/
 ├── app.py                  ← point d'entrée : configuration de la page + menu de navigation
 ├── ui.py                   ← éléments d'interface réutilisés (carte d'article, chargement en cache…)
+├── theme.py                ← l'identité visuelle : feuille de style, en-tête, bandeau des cours
 ├── views/                  ← une page = un fichier
 │   ├── feed.py             ←   Fil d'actualité (filtres, recherche)
-│   ├── following.py        ←   Mes suivis (entreprises, thèmes, cours de Bourse)
+│   ├── markets.py          ←   Tableaux de bord : marchés mondiaux et actualité en chiffres
+│   ├── following.py        ←   Mes suivis (entreprises, thèmes, fiches entreprises)
 │   ├── favorites.py        ←   Favoris
 │   └── settings.py         ←   Réglages (préférences, thème, export)
 ├── core/                   ← logique métier, sans Streamlit
@@ -91,6 +93,7 @@ finveille/
 │   ├── filters.py          ←   filtrer par catégorie / source / mot-clé
 │   ├── storage.py          ←   base SQLite : favoris, lus, masqués, suivis, préférences
 │   ├── market.py           ←   cours de Bourse et indicateurs (yfinance)
+│   ├── analytics.py        ←   statistiques sur le flux d'actualité (pour les tableaux de bord)
 │   └── summarizer.py       ←   résumé automatique (local ou IA)
 ├── tests/                  ← tests automatiques (pytest)
 ├── .streamlit/
@@ -181,7 +184,7 @@ streamlit run app.py
 
 Ton navigateur s'ouvre sur <http://localhost:8501>. Pour arrêter : `Ctrl + C` dans le terminal.
 
-### 4.7 Les clés API (plus tard, aux étapes 4 et 7)
+### 4.7 Les clés API (plus tard, aux étapes 4 et 8)
 
 Toutes gratuites, sans carte bancaire. Tu n'en as **pas besoin** pour démarrer :
 
@@ -189,6 +192,8 @@ Toutes gratuites, sans carte bancaire. Tu n'en as **pas besoin** pour démarrer 
 | --- | --- | --- |
 | Finnhub | actualités générales et par entreprise | <https://finnhub.io/register> |
 | NewsAPI | recherche d'articles par mot-clé | <https://newsapi.org/register> |
+| Marketaux | actualités avec entreprises citées et sentiment | <https://www.marketaux.com/register> |
+| Alpha Vantage | actualités avec score de sentiment | <https://www.alphavantage.co/support/#api-key> |
 | Google Gemini | résumé IA | <https://aistudio.google.com/apikey> |
 | Groq | résumé IA (alternative) | <https://console.groq.com/keys> |
 
@@ -214,12 +219,12 @@ Toutes gratuites, sans carte bancaire. Tu n'en as **pas besoin** pour démarrer 
 | [1](01-mvp-fil-rss.md) | **Version minimale :** un fil d'actualité à partir de flux RSS | requêtes HTTP, parsing, classes, premier écran Streamlit, cache |
 | [2](02-filtres-et-recherche.md) | Catégories, filtre par source, barre de recherche | fonctions pures, classification par mots-clés, widgets |
 | [3](03-favoris-lu-masquer.md) | Favoris, « lu », « masquer » (persistants) + plusieurs pages | SQL et SQLite, callbacks, navigation multipage |
-| [4](04-sources-api.md) | Finnhub et NewsAPI | API REST, JSON, clés secrètes, requêtes en parallèle |
-| [5](05-suivi-personnalise.md) | Suivre des entreprises et des thèmes, fil dédié | recherche de ticker, modèle de données |
-| [6](06-cours-de-bourse.md) | Cours et indicateurs des entreprises suivies | yfinance, pandas, graphiques |
-| [7](07-resume-ia.md) | Résumé automatique des articles | extraction de texte, algorithme extractif, appel à un LLM |
-| [8](08-theme-et-reglages.md) | Mode clair/sombre, responsive, page Réglages | configuration Streamlit, préférences, export CSV |
-| [9](09-tests-deploiement-portfolio.md) | Tests, mise en ligne, présentation portfolio/LinkedIn | pytest, Streamlit Community Cloud, rédaction |
+| [4](04-sources-api.md) | Finnhub, NewsAPI, Marketaux, Alpha Vantage | API REST, JSON, clés secrètes, requêtes en parallèle |
+| [5](05-identite-visuelle.md) | Une identité visuelle originale, clair/sombre | design system, typographie, CSS, accessibilité |
+| [6](06-marches-et-tableaux-de-bord.md) | Bandeau des cours, tableaux de bord marchés et actualité | yfinance, pandas, visualisation de données |
+| [7](07-suivi-personnalise.md) | Suivre des entreprises et des thèmes, fiches entreprises | recherche de ticker, indicateurs financiers |
+| [8](08-resume-ia.md) | Résumé automatique des articles | extraction de texte, algorithme extractif, appel à un LLM |
+| [9](09-reglages-tests-deploiement.md) | Réglages, tests, mise en ligne, présentation portfolio/LinkedIn | pytest, Streamlit Community Cloud, rédaction |
 
 Un mémo de débogage regroupe toutes les erreurs courantes : [debogage.md](debogage.md).
 

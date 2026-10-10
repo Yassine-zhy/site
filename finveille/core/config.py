@@ -55,3 +55,27 @@ CATEGORY_KEYWORDS = {
         "wall street", "bourse", "rally", "sell-off", "futures", "etf", "shares",
     ],
 }
+
+# --- API d'actualités (clés gratuites, à mettre dans .streamlit/secrets.toml) ----------------
+# Nom de la clé -> description et page d'inscription
+API_KEYS = {
+    "FINNHUB_API_KEY": ("Finnhub", "https://finnhub.io/register"),
+    "NEWSAPI_API_KEY": ("NewsAPI", "https://newsapi.org/register"),
+    "MARKETAUX_API_KEY": ("Marketaux", "https://www.marketaux.com/register"),
+    "ALPHAVANTAGE_API_KEY": ("Alpha Vantage", "https://www.alphavantage.co/support/#api-key"),
+}
+
+# Catégories d'actualités Finnhub -> nos catégories
+FINNHUB_CATEGORIES = {"general": "marches", "merger": "entreprises", "forex": "macro", "crypto": "crypto"}
+
+# Thèmes Alpha Vantage -> nos catégories (le premier thème reconnu l'emporte)
+ALPHAVANTAGE_TOPICS = {
+    "blockchain": "crypto",
+    "economy_macro": "macro",
+    "economy_monetary": "macro",
+    "economy_fiscal": "macro",
+    "earnings": "entreprises",
+    "ipo": "entreprises",
+    "mergers_and_acquisitions": "entreprises",
+    "financial_markets": "marches",
+}

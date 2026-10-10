@@ -23,6 +23,7 @@ class Article:
     category: str = "marches"
     image: str | None = None
     tickers: list[str] = field(default_factory=list)
+    sentiment: float | None = None  # de -1 (très négatif) à +1 (très positif), si la source le fournit
 
     @property
     def id(self) -> str:
