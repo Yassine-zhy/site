@@ -231,7 +231,7 @@ def analysis(symbol: str, name: str, profile: dict, stats: dict, articles: list)
         messages, sources = assistant.company_messages(name, symbol, profile, stats, articles)
 
         def compute() -> dict:
-            answer = complete_ai(messages, max_tokens=700)
+            answer = complete_ai(messages, max_tokens=1200)
             if answer["text"]:
                 ai_count(user)  # compté seulement quand l'IA travaille vraiment (pas pour une analyse en mémoire)
             return answer | {"sources": [s.to_dict() for s in sources]}

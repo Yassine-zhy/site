@@ -26,7 +26,9 @@ BROWSER_HEADERS = {
 }
 MAX_LLM_CHARS = 12_000  # au-delà, on coupe le texte envoyé au modèle (quota et rapidité)
 
-DEFAULT_MODELS = {"gemini": "gemini-flash-latest", "groq": "llama-3.3-70b-versatile"}
+# Gemini Flash-Lite par défaut : rapide (1 s) et doté de son propre quota gratuit. Mesuré sur une clé gratuite :
+# le modèle Flash, plus fort, n'accordait que 20 requêtes par jour ; il sert de secours (FALLBACK_MODEL).
+DEFAULT_MODELS = {"gemini": "gemini-flash-lite-latest", "groq": "llama-3.3-70b-versatile"}
 
 PROMPT = """Tu es un journaliste financier. Résume l'article ci-dessous pour un étudiant en finance.
 
@@ -128,24 +130,86 @@ def _parse_llm_answer(answer: str) -> tuple[list[str], str | None]:
     return points, why
 
 
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:{method}"
+FALLBACK_MODEL = "gemini-flash-latest"  # l'autre modèle (autre quota) prend le relais si le premier sature
+RETRY_STATUSES = {429, 500, 502, 503, 504}  # quota du modèle atteint, ou « forte demande » passagère côté Google
+
+# La « réflexion » du modèle, de la plus courte à la plus longue, avec la place à ajouter pour elle. Mesuré : sur une
+# analyse d'entreprise, Flash-Lite réfléchissait 1 148 jetons en « low » (réponse coupée) et 0 en « minimal »
+# (réponse complète en 1,6 s) ; Flash, lui, refuse « minimal ». On essaie dans l'ordre, et on retient ce qui marche.
+THINKING_LEVELS = [({"thinkingLevel": "minimal"}, 0), ({"thinkingLevel": "low"}, 2048), (None, 4096)]
+_thinking_choice: dict[str, int] = {}  # modèle → rang du premier réglage accepté
+
+
+def _gemini_request(api_key: str, model: str, body: dict, stream: bool) -> requests.Response:
+    """Une requête à un modèle Gemini, avec la réflexion la plus courte qu'il accepte.
+
+    Les modèles Gemini récents « réfléchissent » avant de répondre, et cette réflexion est prise sur le nombre
+    maximal de jetons : sans réglage, elle peut tout consommer et couper la réponse au milieu d'une phrase.
+    """
+    url = GEMINI_URL.format(model=model, method="streamGenerateContent?alt=sse" if stream else "generateContent")
+    config = body.get("generationConfig", {})
+    headers = {"x-goog-api-key": api_key}  # la clé dans l'en-tête, jamais dans l'adresse
+    start = _thinking_choice.get(model, 0)
+    for rank, (thinking, extra) in enumerate(THINKING_LEVELS[start:], start=start):
+        settings = config | {"maxOutputTokens": config.get("maxOutputTokens", 500) + extra}
+        if thinking:
+            settings["thinkingConfig"] = thinking
+        response = requests.post(url, headers=headers, json=body | {"generationConfig": settings}, stream=stream,
+                                 timeout=30)
+        refused = response.status_code == 400 and "thinking" in response.text.lower()
+        if not refused or rank == len(THINKING_LEVELS) - 1:
+            if not refused:
+                _thinking_choice[model] = rank
+            return response
+        response.close()
+    return response
+
+
+def gemini_post(api_key: str, model: str | None, body: dict, stream: bool = False) -> requests.Response:
+    """Interroge Gemini ; si le modèle est saturé (503) ou son quota gratuit épuisé (429), l'autre prend le relais.
+
+    Mesuré sur l'offre gratuite un soir de forte demande : 1 réponse sur 4 de Flash était refusée (503) et son quota
+    tombait à 20 requêtes par jour ; Flash-Lite répondait à chaque fois, en 1 seconde. Chaque modèle a son quota.
+    """
+    models = [model or DEFAULT_MODELS["gemini"]]
+    for other in (DEFAULT_MODELS["gemini"], FALLBACK_MODEL):
+        if other not in models:
+            models.append(other)
+            break
+    for index, name in enumerate(models):
+        response = _gemini_request(api_key, name, body, stream)
+        if response.status_code not in RETRY_STATUSES or index == len(models) - 1:
+            return response
+        response.close()
+    return response
+
+
+def gemini_text(payload: dict) -> str:
+    """Le texte d'une réponse Gemini : toutes les parties, sauf les « pensées » du modèle."""
+    parts = payload["candidates"][0]["content"].get("parts", [])
+    return "".join(part.get("text", "") for part in parts if not part.get("thought"))
+
+
 def summarize_gemini(title: str, text: str, api_key: str, model: str | None = None) -> str:
     """Appelle l'API Gemini de Google (offre gratuite : https://aistudio.google.com/apikey)."""
-    model = model or DEFAULT_MODELS["gemini"]
-    response = requests.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-        headers={"x-goog-api-key": api_key},  # clé dans l'en-tête, jamais dans l'URL
-        json={
-            "contents": [{"parts": [{"text": PROMPT.format(title=title, text=text[:MAX_LLM_CHARS])}]}],
-            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 500},
-        },
-        timeout=30,
-    )
+    response = gemini_post(api_key, model, {
+        "contents": [{"parts": [{"text": PROMPT.format(title=title, text=text[:MAX_LLM_CHARS])}]}],
+        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 500},
+    })
     if not response.ok:
         raise SummaryError(f"Gemini a répondu {response.status_code}")
     try:
-        return response.json()["candidates"][0]["content"]["parts"][0]["text"]
+        payload = response.json()
+        answer = gemini_text(payload)
+        finish = payload["candidates"][0].get("finishReason")
     except (KeyError, IndexError) as exc:  # réponse vide (ex. contenu filtré)
         raise SummaryError("Gemini n'a pas renvoyé de texte") from exc
+    if finish == "MAX_TOKENS":  # coupée au milieu : mieux vaut le résumé local qu'un résumé tronqué
+        raise SummaryError("Gemini : réponse incomplète")
+    if not answer.strip():
+        raise SummaryError("Gemini n'a pas renvoyé de texte")
+    return answer
 
 
 def summarize_groq(title: str, text: str, api_key: str, model: str | None = None) -> str:

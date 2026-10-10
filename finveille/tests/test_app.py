@@ -402,6 +402,29 @@ def test_assistant_avec_ia_cite_ses_sources_et_garde_la_reponse(app, db, fake_ai
     assert len(fake_ai) == 2 and [m["role"] for m in fake_ai[1]][-3:] == ["user", "assistant", "user"]
 
 
+def test_une_reponse_coupee_n_est_pas_gardee_en_memoire(app, monkeypatch):
+    calls = []
+
+    def truncated_stream(messages, keys, max_tokens=1500):
+        calls.append(1)
+
+        def pieces():
+            yield "La Fed hésite, car l'inflation sur de"
+            raise assistant.Truncated("réponse incomplète : longueur maximale atteinte")
+        return "Gemini", pieces()
+
+    monkeypatch.setattr(ui, "ai_keys", lambda: {"GEMINI_API_KEY": "cle-de-test"})
+    monkeypatch.setattr(assistant, "open_stream", truncated_stream)
+    app.run()
+    app.switch_page("views/assistant.py").run()
+    app.chat_input[0].set_value("Que fait la Fed ?").run()
+    assert not app.exception
+    assert "réponse incomplète" in " ".join(c.value for c in app.caption)
+    next(b for b in app.button if b.label == "Nouvelle conversation").click().run()
+    app.chat_input[0].set_value("Que fait la Fed ?").run()
+    assert len(calls) == 2  # pas resservie depuis la mémoire : on redemande à l'IA
+
+
 def test_assistant_quota_des_visiteurs(app, monkeypatch, fake_ai):
     monkeypatch.delenv("LOCAL_MODE")
     monkeypatch.setattr(ui, "current_user", lambda: None)

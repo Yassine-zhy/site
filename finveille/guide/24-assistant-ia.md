@@ -106,7 +106,7 @@ personnes posent une question en même temps, il ne faut ni planter, ni épuiser
 
 | Protection | Comment | Réglage (secrets) |
 | --- | --- | --- |
-| **Limiteur global** | Au plus 20 appels par minute glissante pour tout le site (`RateLimiter`, avec un verrou : plusieurs visiteurs = plusieurs fils d'exécution) | `AI_PER_MINUTE` |
+| **Limiteur global** | Au plus 10 appels par minute glissante pour tout le site (`RateLimiter`, avec un verrou : plusieurs visiteurs = plusieurs fils d'exécution) | `AI_PER_MINUTE` |
 | **Quota par personne** | 30 questions par jour pour un compte, 5 par visite sans compte | `AI_DAILY_LIMIT`, `AI_VISITOR_LIMIT` |
 | **Mémoire partagée** | La même question sur les mêmes dépêches n'est posée qu'une fois : chacune des 6 suggestions de la page coûte un appel, puis la réponse est resservie à tous les visiteurs pendant 30 minutes au plus (ou jusqu'à l'arrivée de nouvelles dépêches) | — |
 | **Contre l'effet de troupeau** | 50 visiteurs ouvrent le brief à 9 h 00 : un seul rédige l'édito, les 49 autres attendent sa réponse (`get_or_compute`, un verrou par clé) | — |
@@ -116,6 +116,21 @@ La mémoire est **bornée** (500 réponses, 30 minutes ; 300 analyses, 6 heures)
 faire tomber le serveur. Une panne est retenue 5 minutes, pour ne pas réessayer à chaque visite.
 
 ---
+
+## 5 bis. Ce que les tests avec une vraie clé ont révélé
+
+Les tests automatiques utilisent une IA simulée : rapides et gratuits, mais ils ne voient que ce qu'on a prévu.
+Le premier essai avec une vraie clé Gemini a révélé quatre problèmes, tous corrigés :
+
+| Constat (mesuré) | Correction |
+| --- | --- |
+| Les modèles récents **réfléchissent** avant de répondre, et cette réflexion compte dans la longueur maximale : 285 jetons de réflexion sur 300, réponse coupée au milieu d'une phrase ; 1 148 sur 1 200 pour une analyse d'entreprise. | Réflexion la plus courte acceptée par le modèle (« minimal », sinon « low » avec plus de place), retenue pour chaque modèle (`THINKING_LEVELS`). Réponse complète en 1,6 s au lieu de 3,6 s. |
+| « RÃ©serve fÃ©dÃ©rale » : un flux SSE est en UTF-8, mais `requests` le décode en Latin-1 quand le serveur ne précise pas l'encodage. | `response.encoding = "utf-8"` dans `_sse`. |
+| Une réponse **coupée** était gardée en mémoire et resservie à tout le monde. | La fin de flux `MAX_TOKENS` (Gemini) ou `length` (Groq) lève `Truncated` : la réponse est signalée « incomplète » et jamais mise en mémoire. |
+| Le quota gratuit du modèle Flash est tombé à **20 requêtes par jour** ; 1 réponse sur 4 était refusée pour « forte demande » (503). Flash-Lite répondait toujours, en 1 seconde. | Flash-Lite par défaut ; si un modèle répond 429 ou 503, l'autre prend le relais (chaque modèle a son propre quota). |
+
+Leçon : une intégration n'est pas finie tant qu'elle n'a pas tourné **contre le vrai service**. Et les quotas
+gratuits changent : `GEMINI_MODEL` et `AI_PER_MINUTE` se règlent dans les secrets, sans toucher au code.
 
 ## 6. Sécurité et honnêteté
 
@@ -152,7 +167,9 @@ parcours : question, sources citées, réponse en mémoire, question de suite, q
 | --- | --- | --- |
 | « Mode sans IA » alors que la clé est collée | Nom de la clé mal écrit, ou appli pas redémarrée | `GEMINI_API_KEY` / `GROQ_API_KEY` exactement ; relance Streamlit. |
 | `Gemini a répondu 400` | Clé invalide ou modèle inconnu | Recrée la clé ; retire `GEMINI_MODEL` pour revenir au modèle par défaut. |
-| `Gemini a répondu 429` / `Groq a répondu 429` | Quota gratuit dépassé | Attends une minute ; baisse `AI_PER_MINUTE` ; ajoute la seconde clé en relais. |
+| `Gemini a répondu 429` / `Groq a répondu 429` | Quota gratuit dépassé (par minute, ou par jour : parfois 20 seulement) | Attends ; baisse `AI_PER_MINUTE` ; ajoute une clé Groq en relais. Le message d'erreur de Google indique le quota en cause (`…PerDay…` ou `…PerMinute…`). |
+| `Gemini a répondu 503` | Forte demande passagère chez Google | Rien à faire : l'autre modèle Gemini prend le relais automatiquement. |
+| « réponse incomplète : longueur maximale atteinte » | La réflexion du modèle a pris toute la place | Normal s'il est rare ; sinon retire `GEMINI_MODEL` pour revenir à Flash-Lite. |
 | « l'IA est très demandée, réessaie dans 12 s » | Le limiteur global est plein | Normal en cas d'affluence ; augmente `AI_PER_MINUTE` si ton offre le permet. |
 | La réponse cite des dépêches hors sujet | La recherche par mots-clés n'a pas trouvé mieux | Reformule avec des mots précis ; ajoute des traductions (`SYNONYMS`). |
 | Des montants en dollars s'affichent en italique bizarre | `$` lu comme une formule | Passe le texte par `assistant.linkify`, qui échappe les `$`. |

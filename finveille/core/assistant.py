@@ -35,7 +35,7 @@ from core.capacity import Memory
 from core.filters import normalize
 from core.glossary import GLOSSARY
 from core.models import Article
-from core.summarizer import DEFAULT_MODELS, STOPWORDS
+from core.summarizer import DEFAULT_MODELS, STOPWORDS, gemini_post, gemini_text
 
 MAX_SOURCES = 8
 MAX_HISTORY = 6  # derniers messages de la conversation renvoyés au modèle : une mémoire courte, qui ménage le quota
@@ -46,8 +46,8 @@ SYSTEM_PROMPT = """Tu es l'assistant de FinVeille, un site de veille financière
 Nous sommes le {today}.
 
 Règles :
-- Réponds en français, de façon claire et pédagogique : 80 à 200 mots, sauf si on te demande plus. Explique les
-  termes techniques en quelques mots.
+- Réponds en français, de façon claire et pédagogique : 80 à 200 mots, sauf si on te demande plus. Va droit au but
+  (pas de « Bonjour »). Explique les termes techniques en quelques mots.
 - Appuie-toi d'abord sur les DÉPÊCHES et les COURS fournis avec la question. Après chaque fait qui en vient, cite
   la dépêche entre crochets : [1], [2]… N'utilise que les numéros fournis.
 - Si les dépêches ne suffisent pas, dis-le simplement, puis réponds avec tes connaissances générales en le
@@ -69,8 +69,9 @@ des données ci-dessous uniquement. Réponds en français, en 150 à 220 mots, e
 
 **À surveiller** : (une phrase : prochain résultat, sujet d'actualité, indicateur clé)
 
-Explique chaque ratio en quelques mots. Cite les dépêches entre crochets [n] si tu t'en sers. Pas de recommandation
-d'achat ou de vente, pas de chiffre qui ne figure pas ci-dessous.
+Explique chaque ratio en quelques mots. Les crochets servent UNIQUEMENT à citer les dépêches par leur numéro, [n] :
+écris les chiffres dans tes phrases, sans recopier les données entre crochets. Pas de recommandation d'achat ou de
+vente, pas de chiffre qui ne figure pas ci-dessous.
 
 DONNÉES :
 {data}"""
@@ -170,11 +171,27 @@ MAX_PER_SOURCE = 2  # au plus 2 dépêches d'une même source : des points de vu
 _WORD_RE = re.compile(r"[a-z0-9]+")
 _DEFINITION_RE = re.compile(r"\b(explique|expliquer|definition|definir|definis|signifie|veut dire|c est quoi|"
                             r"qu est ce|ca veut dire|comment marche|comment fonctionne)\b")
-_CITATION_RE = re.compile(r"\[(\d{1,2})\]")
+_CITATION_RE = re.compile(r"\[(\d{1,2}(?:\s*[,;]\s*\d{1,2})*)\]")  # [3], et aussi [1, 2] ou [1; 4]
 
 
 class AssistantError(Exception):
     """Une erreur sans détail sensible (jamais de clé d'API), affichable telle quelle."""
+
+
+class Truncated(AssistantError):
+    """La réponse a atteint la longueur maximale : elle s'arrête au milieu d'une phrase."""
+
+
+TRUNCATED = {"MAX_TOKENS", "length"}  # raison de fin d'une réponse coupée : Gemini, Groq
+
+
+def _finish_reason(event: dict) -> str | None:
+    for path in (("candidates", "finishReason"), ("choices", "finish_reason")):  # Gemini, puis Groq
+        try:
+            return event[path[0]][0].get(path[1])
+        except (KeyError, IndexError, TypeError, AttributeError):
+            continue
+    return None
 
 
 # --- Recherche des dépêches ----------------------------------------------------------------------
@@ -371,7 +388,7 @@ def offline_answer(prepared: Prepared) -> str:
 
 def cited(text: str, sources: list[Source]) -> list[Source]:
     """Les sources réellement citées dans la réponse ([n]), dans l'ordre des numéros."""
-    numbers = {int(n) for n in _CITATION_RE.findall(text)}
+    numbers = {int(n) for group in _CITATION_RE.findall(text) for n in re.split(r"\s*[,;]\s*", group)}
     return [s for s in sources if s.n in numbers]
 
 
@@ -379,8 +396,13 @@ def cited(text: str, sources: list[Source]) -> list[Source]:
 
 
 def _sse(response: requests.Response, extract: Callable[[dict], str | None]) -> Iterator[str]:
-    """Lit une réponse « en flux » (Server-Sent Events) : des lignes « data: {...} » qui arrivent une à une."""
-    response.encoding = response.encoding or "utf-8"
+    """Lit une réponse « en flux » (Server-Sent Events) : des lignes « data: {...} » qui arrivent une à une.
+
+    Un flux SSE est toujours en UTF-8. Mais pour ce type de contenu sans « charset », requests suppose le Latin-1 :
+    « Réserve fédérale » deviendrait « RÃ©serve fÃ©dÃ©rale ». On impose donc l'UTF-8.
+    """
+    response.encoding = "utf-8"
+    truncated = False
     with response:
         for line in response.iter_lines(decode_unicode=True):
             if not line or not line.startswith("data:"):
@@ -389,33 +411,36 @@ def _sse(response: requests.Response, extract: Callable[[dict], str | None]) -> 
             if data == "[DONE]":
                 break
             try:
-                piece = extract(json.loads(data))
-            except (ValueError, KeyError, IndexError, TypeError):
+                event = json.loads(data)
+            except ValueError:
+                continue
+            truncated = truncated or _finish_reason(event) in TRUNCATED
+            try:
+                piece = extract(event)
+            except (KeyError, IndexError, TypeError):
                 continue  # morceau sans texte (statistiques, fin de flux…)
             if piece:
                 yield piece
+    if truncated:  # après le texte reçu : l'appelant le garde, mais sait qu'il est incomplet
+        raise Truncated("réponse incomplète : longueur maximale atteinte")
 
 
-def open_gemini(messages: list[dict], api_key: str, model: str | None = None, max_tokens: int = 900) -> Iterator[str]:
+def open_gemini(messages: list[dict], api_key: str, model: str | None = None, max_tokens: int = 1500) -> Iterator[str]:
     """Pose la question à Gemini (offre gratuite : https://aistudio.google.com/apikey) et renvoie le flux du texte."""
     system = "\n\n".join(m["content"] for m in messages if m["role"] == "system")
     contents = [{"role": "model" if m["role"] == "assistant" else "user", "parts": [{"text": m["content"]}]}
                 for m in messages if m["role"] != "system"]
-    response = requests.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model or DEFAULT_MODELS['gemini']}"
-        ":streamGenerateContent?alt=sse",
-        headers={"x-goog-api-key": api_key},  # la clé dans l'en-tête, jamais dans l'adresse
-        json={"systemInstruction": {"parts": [{"text": system}]}, "contents": contents,
-              "generationConfig": {"temperature": 0.3, "maxOutputTokens": max_tokens}},
-        stream=True, timeout=TIMEOUT,
-    )
+    response = gemini_post(api_key, model, {
+        "systemInstruction": {"parts": [{"text": system}]}, "contents": contents,
+        "generationConfig": {"temperature": 0.3, "maxOutputTokens": max_tokens},
+    }, stream=True)
     if not response.ok:
         response.close()
         raise AssistantError(f"Gemini a répondu {response.status_code}")
-    return _sse(response, lambda event: event["candidates"][0]["content"]["parts"][0]["text"])
+    return _sse(response, gemini_text)
 
 
-def open_groq(messages: list[dict], api_key: str, model: str | None = None, max_tokens: int = 900) -> Iterator[str]:
+def open_groq(messages: list[dict], api_key: str, model: str | None = None, max_tokens: int = 1500) -> Iterator[str]:
     """Pose la question à Groq (offre gratuite : https://console.groq.com/keys) et renvoie le flux du texte."""
     response = requests.post(
         "https://api.groq.com/openai/v1/chat/completions",
@@ -437,7 +462,7 @@ def available_engines(keys: dict[str, str | None]) -> list[str]:
     return [name for name, key, _, _ in ENGINES if keys.get(key)]
 
 
-def open_stream(messages: list[dict], keys: dict[str, str | None], max_tokens: int = 900) -> tuple[str, Iterator[str]]:
+def open_stream(messages: list[dict], keys: dict[str, str | None], max_tokens: int = 1500) -> tuple[str, Iterator[str]]:
     """Essaie Gemini puis Groq ; renvoie (nom du moteur, flux du texte). AssistantError si aucun ne répond.
 
     Le message d'erreur ne contient que le nom de l'erreur ou le code HTTP : jamais la clé.
@@ -459,17 +484,35 @@ def open_stream(messages: list[dict], keys: dict[str, str | None], max_tokens: i
 
 
 def company_facts(profile: dict, stats: dict) -> list[str]:
-    """Les données d'une fiche entreprise, en lignes de texte lisibles par le modèle."""
-    labels = {
-        "sector": "Secteur", "industry": "Activité", "country": "Pays", "marketCap": "Capitalisation",
-        "trailingPE": "PER (12 derniers mois)", "forwardPE": "PER prévisionnel", "priceToBook": "Cours / valeur comptable",
-        "enterpriseToEbitda": "VE / EBITDA", "dividendYield": "Rendement du dividende (%)",
-        "profitMargins": "Marge nette (fraction)", "returnOnEquity": "ROE (fraction)",
-        "revenueGrowth": "Croissance du chiffre d'affaires sur un an (fraction)", "beta": "Bêta",
-        "debtToEquity": "Dette / capitaux propres (%)", "recommendationKey": "Avis moyen des analystes",
+    """Les données d'une fiche entreprise, en lignes lisibles : « ROE : 16,6 % » plutôt que « 0.16586 ».
+
+    Des chiffres bruts finissent recopiés tels quels dans la réponse ; arrondis et en pourcentages, le modèle les
+    cite proprement (et se trompe moins sur les unités)."""
+    def ratio(value):  # fraction → pourcentage
+        return f"{_fr(value * 100, 1)} %"
+
+    formats = {
+        "sector": ("Secteur", str), "industry": ("Activité", str), "country": ("Pays", str),
+        "marketCap": ("Capitalisation", lambda v: f"{_fr(v / 1e9, 1)} milliards"),
+        "trailingPE": ("PER (12 derniers mois)", lambda v: _fr(v, 1)),
+        "forwardPE": ("PER prévisionnel", lambda v: _fr(v, 1)),
+        "priceToBook": ("Cours / valeur comptable", lambda v: _fr(v, 1)),
+        "enterpriseToEbitda": ("VE / EBITDA", lambda v: _fr(v, 1)),
+        "dividendYield": ("Rendement du dividende", lambda v: f"{_fr(v, 2)} %"),
+        "profitMargins": ("Marge nette", ratio), "returnOnEquity": ("ROE", ratio),
+        "revenueGrowth": ("Croissance du chiffre d'affaires sur un an", ratio),
+        "beta": ("Bêta", lambda v: _fr(v, 2)),
+        "debtToEquity": ("Dette / capitaux propres", lambda v: f"{_fr(v, 0)} %"),
+        "recommendationKey": ("Avis moyen des analystes", str),
     }
-    lines = [f"{label} : {profile[key]}" for key, label in labels.items() if profile.get(key) not in (None, "")]
-    lines += [f"{label} : {value}" for label, value in stats.items()]
+    lines = []
+    for key, (label, show) in formats.items():
+        if profile.get(key) not in (None, ""):
+            try:
+                lines.append(f"{label} : {show(profile[key])}")
+            except (TypeError, ValueError):  # une donnée au format inattendu : on la laisse de côté
+                continue
+    lines += [f"{label} : {_fr(value, 1) if isinstance(value, float) else value}" for label, value in stats.items()]
     return lines
 
 
@@ -613,7 +656,7 @@ def count_use(usage: dict | None, today: date) -> dict:
     return {"day": today.isoformat(), "count": used + 1}
 
 
-LIMITER = RateLimiter(per_minute=20)  # réglable avec AI_PER_MINUTE dans les secrets (ui.py)
+LIMITER = RateLimiter(per_minute=10)  # réglable avec AI_PER_MINUTE dans les secrets (ui.py)
 CACHE = AnswerCache()  # réponses de l'assistant : 30 minutes
 ANALYSES = AnswerCache(max_entries=300, ttl=6 * 3600)  # analyses d'entreprises et édito du brief : 6 heures
 
@@ -625,9 +668,10 @@ def linkify(text: str, sources: list[Source]) -> str:
     text = text.replace("$", "\\$").replace("![", "[")
 
     def link(match: re.Match) -> str:
-        n = int(match.group(1))
-        if n not in urls:
+        numbers = [int(n) for n in re.split(r"\s*[,;]\s*", match.group(1))]
+        if not all(n in urls for n in numbers):
             return match.group(0)
-        return f"[[{n}]]({urls[n].replace(' ', '%20').replace('(', '%28').replace(')', '%29')})"
+        return "".join(f"[[{n}]]({urls[n].replace(' ', '%20').replace('(', '%28').replace(')', '%29')})"
+                       for n in numbers)
 
     return _CITATION_RE.sub(link, text)

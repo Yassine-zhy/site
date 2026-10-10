@@ -1,6 +1,7 @@
 """Tests de l'assistant IA : recherche des dépêches, messages pour le modèle, réponses en flux, limiteur, quotas,
 mémoire partagée, lecture automatique des indicateurs. Aucun appel réseau : les API sont simulées."""
 
+import io
 import json
 import threading
 import time
@@ -100,6 +101,10 @@ def test_cited_and_linkify():
     linked = assistant.linkify(text, sources)
     assert f"[[1]]({ARTICLES[0].url})" in linked and "[9]" in linked and "[[9]]" not in linked
     assert "\\$" in linked and "![" not in linked  # pas de formule mathématique, pas d'image
+    grouped = "Deux sources [1, 2] ; une troisième inconnue [1; 9]."
+    assert [s.n for s in assistant.cited(grouped, sources)] == [1, 2]
+    assert f"[[1]]({ARTICLES[0].url})[[2]]({ARTICLES[1].url})" in assistant.linkify(grouped, sources)
+    assert "[1; 9]" in assistant.linkify(grouped, sources)  # un numéro inconnu : on ne touche à rien
     odd = assistant.Source(1, "t", "s", "https://a.com/x (1)", NOW.isoformat())
     assert "(https://a.com/x%20%281%29)" in assistant.linkify("[1]", [odd])
 
@@ -163,6 +168,101 @@ def test_gemini_gets_the_system_prompt_apart_and_the_key_in_a_header(monkeypatch
     assert sent["body"]["systemInstruction"]["parts"][0]["text"] == "Règles"
     assert [c["role"] for c in sent["body"]["contents"]] == ["user", "model", "user"]
     assert "cle-secrete" not in sent["url"] and sent["headers"]["x-goog-api-key"] == "cle-secrete"
+
+
+def real_stream(body: bytes, content_type: str = "text/event-stream") -> requests.Response:
+    """Une vraie réponse requests (et son décodage), comme celle d'un serveur."""
+    response = requests.Response()
+    response.status_code, response.raw = 200, io.BytesIO(body)
+    response.headers["Content-Type"] = content_type
+    response.encoding = requests.utils.get_encoding_from_headers(response.headers)  # « ISO-8859-1 » par défaut
+    return response
+
+
+def test_stream_keeps_accents_even_when_the_server_announces_no_charset():
+    body = "\n".join(groq_lines("La Réserve fédérale ", "relève ses taux — à 5 %")).encode("utf-8")
+    pieces = assistant._sse(real_stream(body), lambda event: event["choices"][0]["delta"].get("content"))
+    assert "".join(pieces) == "La Réserve fédérale relève ses taux — à 5 %"
+
+
+@pytest.fixture(autouse=True)
+def fresh_thinking_memory(monkeypatch):
+    from core import summarizer
+    monkeypatch.setattr(summarizer, "_thinking_choice", {})
+
+
+def test_gemini_thinks_as_little_as_possible_and_hides_its_thoughts(monkeypatch):
+    sent = []
+
+    def fake_post(url, headers, json, stream, timeout):
+        sent.append(json["generationConfig"])
+        lines = ['data: {"candidates": [{"content": {"parts": [{"text": "brouillon", "thought": true}, '
+                 '{"text": "Réponse"}]}}]}']
+        return FakeStream(200, lines)
+
+    monkeypatch.setattr(assistant.requests, "post", fake_post)
+    assert "".join(assistant.open_gemini([{"role": "user", "content": "?"}], "cle")) == "Réponse"
+    assert sent[0]["thinkingConfig"] == {"thinkingLevel": "minimal"}  # sinon la réflexion coupe la réponse
+
+
+def test_gemini_tries_longer_thinking_when_refused_and_remembers(monkeypatch):
+    sent = []
+
+    class Refused(FakeStream):
+        text = "Thinking level MINIMAL is not supported for this model."
+
+    def fake_post(url, headers, json, stream, timeout):
+        config = json["generationConfig"]
+        sent.append(config)
+        if config.get("thinkingConfig", {}).get("thinkingLevel") == "minimal":
+            return Refused(400)
+        return FakeStream(200, gemini_lines("ok"))
+
+    monkeypatch.setattr(assistant.requests, "post", fake_post)
+    assert "".join(assistant.open_gemini([{"role": "user", "content": "?"}], "cle", max_tokens=900)) == "ok"
+    assert [c.get("thinkingConfig") for c in sent] == [{"thinkingLevel": "minimal"}, {"thinkingLevel": "low"}]
+    assert sent[1]["maxOutputTokens"] == 900 + 2048  # de la place pour réfléchir ET répondre
+    sent.clear()
+    assert "".join(assistant.open_gemini([{"role": "user", "content": "?"}], "cle")) == "ok"
+    assert [c.get("thinkingConfig") for c in sent] == [{"thinkingLevel": "low"}]  # le refus n'est pas répété
+
+
+@pytest.mark.parametrize("status", [429, 503])
+def test_gemini_falls_back_to_the_other_model_when_busy(monkeypatch, status):
+    urls = []
+
+    def fake_post(url, headers, json, stream, timeout):
+        urls.append(url)
+        return FakeStream(status) if "flash-lite" in url else FakeStream(200, gemini_lines("Réponse de secours"))
+
+    monkeypatch.setattr(assistant.requests, "post", fake_post)
+    assert "".join(assistant.open_gemini([{"role": "user", "content": "?"}], "cle")) == "Réponse de secours"
+    assert "gemini-flash-lite-latest" in urls[0] and "gemini-flash-latest" in urls[1]
+    urls.clear()  # un modèle choisi dans les secrets : le modèle par défaut prend le relais
+    assert "".join(assistant.open_gemini([{"role": "user", "content": "?"}], "cle", "gemini-pro-latest")) == "Réponse de secours"
+    assert "gemini-pro-latest" in urls[0] and len(urls) == 1
+
+
+def test_a_truncated_answer_is_flagged():
+    lines = gemini_lines("La Fed hésite, car l'inflation sur de") + [
+        'data: {"candidates": [{"content": {"parts": []}, "finishReason": "MAX_TOKENS"}]}']
+    received = []
+    with pytest.raises(assistant.Truncated):
+        for piece in assistant._sse(FakeStream(200, lines), assistant.gemini_text):
+            received.append(piece)
+    assert received == ["La Fed hésite, car l'inflation sur de"]  # le début reste affichable
+    groq = groq_lines("Début")[:-2] + ['data: {"choices": [{"delta": {}, "finish_reason": "length"}]}', "data: [DONE]"]
+    with pytest.raises(assistant.Truncated):
+        list(assistant._sse(FakeStream(200, groq), lambda e: e["choices"][0]["delta"].get("content")))
+    assert list(assistant._sse(FakeStream(200, gemini_lines("Fin normale")), assistant.gemini_text)) == ["Fin normale"]
+
+
+def test_gemini_does_not_retry_a_real_error(monkeypatch):
+    urls = []
+    monkeypatch.setattr(assistant.requests, "post", lambda url, **kwargs: urls.append(url) or FakeStream(403))
+    with pytest.raises(assistant.AssistantError, match="Gemini a répondu 403"):
+        assistant.open_gemini([{"role": "user", "content": "?"}], "cle-invalide")
+    assert len(urls) == 1  # clé refusée : inutile d'insister
 
 
 def test_open_stream_falls_back_to_groq_and_never_shows_the_key(monkeypatch):
@@ -275,10 +375,11 @@ def test_company_offline_reads_the_indicators():
 
 
 def test_company_and_digest_messages_contain_the_data():
-    messages, sources = assistant.company_messages("LVMH", "MC.PA", {"trailingPE": 22.1, "sector": "Luxe"},
-                                                   {"Période affichée": "1 an"}, ARTICLES)
+    profile = {"trailingPE": 22.14, "sector": "Luxe", "returnOnEquity": 0.16586, "marketCap": 187.3e9, "beta": "?"}
+    messages, sources = assistant.company_messages("LVMH", "MC.PA", profile, {"Période affichée": "1 an"}, ARTICLES)
     prompt = messages[0]["content"]
-    assert "LVMH (MC.PA)" in prompt and "PER (12 derniers mois) : 22.1" in prompt and "Période affichée : 1 an" in prompt
+    assert "LVMH (MC.PA)" in prompt and "PER (12 derniers mois) : 22,1" in prompt and "Période affichée : 1 an" in prompt
+    assert "ROE : 16,6 %" in prompt and "Capitalisation : 187,3 milliards" in prompt and "Bêta" not in prompt
     assert len(sources) == 6 and "[6]" in prompt
     messages, sources = assistant.digest_messages(ARTICLES, [], now=NOW)
     assert "10/10/2026" in messages[0]["content"] and len(sources) == assistant.MAX_SOURCES

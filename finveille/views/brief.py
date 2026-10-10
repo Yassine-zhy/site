@@ -80,7 +80,7 @@ if ai_enabled() and recent:
     messages, sources = assistant.digest_messages(picked[: assistant.MAX_SOURCES], list(quotes.values()), now)
 
     def write_digest() -> dict:
-        return complete_ai(messages, max_tokens=500) | {"sources": [s.to_dict() for s in sources]}
+        return complete_ai(messages, max_tokens=1000) | {"sources": [s.to_dict() for s in sources]}
 
     with st.spinner("L'IA rédige l'édito du jour…"):
         digest = assistant.ANALYSES.get_or_compute(f"digest|{now:%Y-%m-%d-%H}", write_digest)

@@ -105,8 +105,9 @@ C'est acceptable ici.
 Ajoute la clé dans `.streamlit/secrets.toml` (`GEMINI_API_KEY = "…"` ou `GROQ_API_KEY = "…"`). Sans aucune clé,
 tout fonctionne avec le résumé local.
 
-Les noms de modèles évoluent vite. Par défaut, on utilise `gemini-flash-latest`, un **alias** que Google fait toujours
-pointer vers son modèle Flash le plus récent, et `llama-3.3-70b-versatile` chez Groq. Tu peux les changer sans
+Les noms de modèles évoluent vite. Par défaut, on utilise `gemini-flash-lite-latest`, un **alias** que Google fait
+toujours pointer vers son modèle Flash-Lite le plus récent (rapide, et le quota gratuit le plus large), avec
+`gemini-flash-latest` en secours (étape 24), et `llama-3.3-70b-versatile` chez Groq. Tu peux les changer sans
 toucher au code (`GEMINI_MODEL`, `GROQ_MODEL` dans `secrets.toml`).
 
 ### Anatomie d'un appel
