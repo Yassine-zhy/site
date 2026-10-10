@@ -9,7 +9,8 @@ import streamlit as st
 
 import theme
 from core import storage
-from core.aggregator import collect_articles
+from core import market
+from core.aggregator import collect_articles, collect_followed
 from core.market import fetch_quotes
 from core.config import API_KEYS, CATEGORIES
 from core.models import Article
@@ -48,6 +49,48 @@ def load_quotes():
     try:
         return fetch_quotes()
     except Exception:  # yfinance peut lever des erreurs très variées (réseau, quota, format) : on n'affiche rien
+        return []
+
+
+@st.cache_data(ttl=900, show_spinner="Récupération de tes fils dédiés…")
+def load_followed(follows: tuple[tuple[str, str, str], ...], keys: dict[str, str | None]):
+    """Fils dédiés aux suivis. `follows` est un tuple (et pas une liste) pour pouvoir servir de clé de cache."""
+    base, _, _ = load_articles(keys)
+    rows = [{"kind": kind, "value": value, "label": label} for kind, value, label in follows]
+    return collect_followed(rows, keys, base)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def search_companies(query: str):
+    try:
+        return market.search_companies(query)
+    except Exception:  # même raison que load_quotes : yfinance peut échouer de multiples façons
+        return []
+
+
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
+def load_profile(symbol: str) -> dict:
+    """Fiche d'une entreprise, gardée 6 heures (ces données changent peu)."""
+    try:
+        return market.company_profile(symbol)
+    except Exception:
+        return {}
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def load_history(symbol: str, period: str):
+    try:
+        return market.price_history(symbol, period)
+    except Exception:
+        return None
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def load_followed_quotes(companies: tuple[tuple[str, str], ...]):
+    """Cours des entreprises suivies (même format que la page Marchés)."""
+    try:
+        return fetch_quotes([(symbol, label, "Mes entreprises", "%") for symbol, label in companies])
+    except Exception:
         return []
 
 

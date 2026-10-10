@@ -98,6 +98,19 @@ def fetch_rss(feed: dict) -> list[Article]:
     return articles[:MAX_ARTICLES_PER_FEED]
 
 
+def fetch_yahoo_ticker_news(ticker: str) -> list[Article]:
+    """Actualités d'une entreprise via le flux RSS de Yahoo Finance (gratuit, sans clé, toutes Bourses)."""
+    feed = {
+        "name": "Yahoo Finance",
+        "url": f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US",
+        "category": "entreprises",
+    }
+    articles = fetch_rss(feed)
+    for article in articles:
+        article.tickers = [ticker]
+    return articles
+
+
 # --- API d'actualités ------------------------------------------------------------------------
 # Chaque fonction interroge une API et convertit sa réponse JSON en liste d'`Article`.
 

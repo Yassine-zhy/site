@@ -12,33 +12,12 @@ PERIODS = {"1 séance": 1, "5 séances": 5, "1 mois": 21, "3 mois": 63}
 HEAT_SCALE = {1: 2.0, 5: 4.0, 21: 8.0, 63: 15.0}
 
 
-def tile(quote) -> str:
-    """Une tuile de cotation : nom, cours, variation de la séance, mini-courbe sur un mois."""
-    month = quote.history.tail(22)
-    month_change = quote.change_over(21)
-    kind = theme.direction(quote.change)
-    summary = (
-        f"{quote.name} : {theme.price(quote.last)}, {theme.signed(quote.change, quote.unit)} sur la séance, "
-        f"{theme.signed(month_change, quote.unit)} sur un mois"
-    )
-    return (
-        f'<div class="fv-tile" title="{esc(summary)}">'
-        f'<div class="fv-tile-label">{esc(quote.name)}</div>'
-        f'<div class="fv-tile-value">{theme.price(quote.last)}</div>'
-        f'<img src="{theme.sparkline_uri(month.tolist(), theme.direction(month_change))}" '
-        f'alt="Un mois : {esc(theme.signed(month_change, quote.unit))}">'
-        f'<div class="fv-tile-delta"><span class="{kind}">{theme.signed(quote.change, quote.unit)}</span></div>'
-        f'<div class="fv-tile-sub">Sur un mois : {theme.signed(month_change, quote.unit)}</div>'
-        f"</div>"
-    )
-
-
 def tiles_by_group(quotes, groups) -> str:
     blocks = []
     for group in groups:
         members = [q for q in quotes if q.group == group]
         if members:
-            blocks.append(f'<div class="fv-group">{esc(group)}</div><div class="fv-tiles">{"".join(map(tile, members))}</div>')
+            blocks.append(f'<div class="fv-group">{esc(group)}</div><div class="fv-tiles">{"".join(map(theme.quote_tile, members))}</div>')
     return "".join(blocks)
 
 
