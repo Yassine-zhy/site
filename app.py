@@ -32,5 +32,6 @@ pages = [
     st.Page("views/stats.py", title="En chiffres", icon=":material/monitoring:"),
     st.Page("views/following.py", title="Mes suivis", icon=":material/star:"),
     st.Page("views/favorites.py", title="Favoris", icon=":material/bookmark:"),
+    st.Page("views/settings.py", title="Réglages", icon=":material/settings:"),
 ]
 st.navigation(pages, position="top").run()

@@ -9,9 +9,9 @@ from core import storage
 from core.config import API_KEYS, CATEGORIES
 from core.filters import filter_articles
 from theme import esc
-from ui import NO_STATUS, api_keys, article_card, load_articles
+from ui import NO_STATUS, api_keys, article_card, flush_toast, load_articles
 
-PAGE_SIZE = 30  # nombre d'articles affichés par « page »
+PAGE_SIZE = storage.get_setting("page_size", 30)  # nombre d'articles affichés par « page » (réglable)
 
 
 def show_more():
@@ -43,7 +43,7 @@ with st.sidebar:
         options=sorted({article.source for article in articles}),
         placeholder="Toutes les sources",
     )
-    hide_read = st.toggle("Cacher les articles lus")
+    hide_read = st.toggle("Cacher les articles lus", value=storage.get_setting("hide_read", False))
     show_hidden = st.toggle("Voir les articles masqués")
     if st.button("Actualiser maintenant", icon=":material/refresh:", width="stretch"):
         load_articles.clear()
@@ -53,12 +53,9 @@ with st.sidebar:
             for error in errors:
                 st.caption(error)
 
-    st.subheader("API", divider="gray")
-    for name, (label, signup_url) in API_KEYS.items():
-        if keys[name]:
-            st.caption(f":green-badge[active] {label}")
-        else:
-            st.caption(f":gray-badge[inactive] {label} · [obtenir une clé gratuite]({signup_url})")
+    active = sum(1 for name in API_KEYS if keys[name])
+    st.caption(f"{len(API_KEYS) - active} API inactive(s) sur {len(API_KEYS)}.")
+    st.page_link("views/settings.py", label="Clés API et réglages", icon=":material/settings:")
 
 # --- Recherche et rubriques (en haut : visibles même sur mobile) ---------------------------
 query = st.text_input(
@@ -70,6 +67,7 @@ categories = st.pills(
     options=list(CATEGORIES),
     format_func=lambda key: CATEGORIES[key],
     selection_mode="multi",
+    default=storage.get_setting("default_categories", []),
     label_visibility="collapsed",
 )
 
@@ -77,6 +75,7 @@ categories = st.pills(
 # --- Le corps de la page : se met à jour tout seul toutes les 5 minutes --------------------
 @st.fragment(run_every="5min")
 def body(query, categories, sources, hide_read, show_hidden):
+    flush_toast()
     current, _, collected = load_articles(keys)  # nouvelles données dès que le cache (15 min) a expiré
     statuses = storage.get_statuses()
 

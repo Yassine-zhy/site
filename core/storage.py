@@ -160,3 +160,33 @@ def get_setting(key: str, default=None):
 def set_setting(key: str, value) -> None:
     with connect() as conn:
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, json.dumps(value)))
+
+
+def counts() -> dict[str, int]:
+    """Quelques compteurs pour la page Réglages."""
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT SUM(is_favorite) AS favorites, SUM(is_read) AS read, SUM(is_hidden) AS hidden FROM article_status"
+        ).fetchone()
+        follows = conn.execute("SELECT COUNT(*) FROM follows").fetchone()[0]
+        summaries = conn.execute("SELECT COUNT(*) FROM summaries").fetchone()[0]
+    return {
+        "favorites": row["favorites"] or 0,  # SUM renvoie NULL (None) sur une table vide
+        "read": row["read"] or 0,
+        "hidden": row["hidden"] or 0,
+        "follows": follows,
+        "summaries": summaries,
+    }
+
+
+def reset_flag(flag: str) -> None:
+    """Remet un indicateur à 0 pour tous les articles (ex. « réafficher tous les articles masqués »)."""
+    if flag not in FLAGS:
+        raise ValueError(f"Indicateur inconnu : {flag}")
+    with connect() as conn:
+        conn.execute(f"UPDATE article_status SET {flag} = 0")
+
+
+def clear_summaries() -> None:
+    with connect() as conn:
+        conn.execute("DELETE FROM summaries")

@@ -101,9 +101,19 @@ def load_followed_quotes(companies: tuple[tuple[str, str], ...]):
 
 
 def _update(article: Article, flag: str, value: bool, message: str) -> None:
-    """Callback des boutons : enregistre le changement puis affiche une petite notification."""
+    """Callback des boutons : enregistre le changement et prépare une petite notification.
+
+    On n'appelle pas st.toast ici : un callback qui affiche quelque chose pendant la relance d'un
+    fragment n'est pas pris en charge. Le message est affiché par flush_toast() au début de la page.
+    """
     storage.set_flag(article, flag, value)
-    st.toast(message)
+    st.session_state["fv_toast"] = message
+
+
+def flush_toast() -> None:
+    """Affiche la notification laissée par le dernier callback, s'il y en a une."""
+    if message := st.session_state.pop("fv_toast", None):
+        st.toast(message)
 
 
 def _toggle_summary(article_id: str) -> None:

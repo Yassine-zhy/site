@@ -58,11 +58,16 @@ if not quotes:
                "quelques minutes.", icon=":material/cloud_off:")
     st.stop()
 
-theme.section("Indices boursiers", f"séance du {theme.fr_day(quotes[0].history.index[-1])}")
-st.html(tiles_by_group(quotes, ["Europe", "Amériques", "Asie"]))
-
-theme.section("Devises, taux, matières premières, crypto")
-st.html(tiles_by_group(quotes, ["Devises", "Taux et volatilité", "Matières premières", "Crypto"]))
+# Une section dont tous les instruments manquent (panne partielle de Yahoo) est simplement sautée :
+# st.html("") lèverait une erreur.
+sections = [
+    ("Indices boursiers", ["Europe", "Amériques", "Asie"]),
+    ("Devises, taux, matières premières, crypto", ["Devises", "Taux et volatilité", "Matières premières", "Crypto"]),
+]
+for title, groups in sections:
+    if tiles := tiles_by_group(quotes, groups):
+        theme.section(title, f"séance du {theme.fr_day(quotes[0].history.index[-1])}" if title.startswith("Indices") else "")
+        st.html(tiles)
 
 theme.section("Carte des performances")
 period = st.segmented_control("Période", list(PERIODS), default="1 séance", label_visibility="collapsed")

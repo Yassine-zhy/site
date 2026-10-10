@@ -13,6 +13,7 @@ from ui import (
     NO_STATUS,
     api_keys,
     article_card,
+    flush_toast,
     load_followed,
     load_followed_quotes,
     load_history,
@@ -155,6 +156,7 @@ def news_list(articles, empty_message: str, key_prefix: str) -> None:
 
 
 # --- La page ----------------------------------------------------------------------------------
+flush_toast()
 theme.page_header("Mes suivis", "Les entreprises et les thèmes que tu suis, avec leur fil et leur fiche.")
 
 with st.container(horizontal=True, gap="small"):
