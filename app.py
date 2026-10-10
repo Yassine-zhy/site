@@ -30,6 +30,7 @@ pages = [
     st.Page("views/feed.py", title="Le fil", icon=":material/newspaper:", default=True),
     st.Page("views/markets.py", title="Marchés", icon=":material/candlestick_chart:"),
     st.Page("views/stats.py", title="En chiffres", icon=":material/monitoring:"),
+    st.Page("views/following.py", title="Mes suivis", icon=":material/star:"),
     st.Page("views/favorites.py", title="Favoris", icon=":material/bookmark:"),
 ]
 st.navigation(pages, position="top").run()

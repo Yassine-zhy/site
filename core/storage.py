@@ -1,4 +1,4 @@
-"""Stockage persistant dans une base SQLite : favoris, articles lus ou masqués.
+"""Stockage persistant dans une base SQLite : favoris, articles lus ou masqués, suivis.
 
 SQLite est une base de données complète contenue dans un seul fichier (data/finveille.db).
 Elle est fournie avec Python : rien à installer.
@@ -27,6 +27,14 @@ CREATE TABLE IF NOT EXISTS article_status (
     is_hidden    INTEGER NOT NULL DEFAULT 0,
     article_json TEXT NOT NULL,              -- l'article complet, pour retrouver un favori disparu du flux
     updated_at   TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS follows (
+    kind       TEXT NOT NULL CHECK (kind IN ('company', 'theme')),
+    value      TEXT NOT NULL,                -- symbole Yahoo (« MC.PA ») ou mot-clé (« inflation »)
+    label      TEXT NOT NULL,                -- nom affiché (« LVMH »)
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (kind, value)                -- on ne peut pas suivre deux fois la même chose
 );
 """
 
@@ -88,3 +96,29 @@ def list_favorites() -> list[Article]:
             "SELECT article_json FROM article_status WHERE is_favorite = 1 ORDER BY updated_at DESC"
         ).fetchall()
     return [Article.from_dict(json.loads(row["article_json"])) for row in rows]
+
+
+def add_follow(kind: str, value: str, label: str) -> None:
+    """Suit une entreprise (kind="company", value=symbole) ou un thème (kind="theme", value=mot-clé)."""
+    with connect() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO follows (kind, value, label, created_at) VALUES (?, ?, ?, ?)",
+            (kind, value.strip(), label.strip(), _now()),
+        )
+
+
+def remove_follow(kind: str, value: str) -> None:
+    with connect() as conn:
+        conn.execute("DELETE FROM follows WHERE kind = ? AND value = ?", (kind, value))
+
+
+def list_follows(kind: str | None = None) -> list[dict]:
+    """Les suivis, du plus ancien au plus récent : [{"kind": …, "value": …, "label": …}, …]."""
+    query = "SELECT kind, value, label FROM follows"
+    params: tuple = ()
+    if kind:
+        query += " WHERE kind = ?"
+        params = (kind,)
+    with connect() as conn:
+        rows = conn.execute(query + " ORDER BY created_at", params).fetchall()
+    return [dict(row) for row in rows]

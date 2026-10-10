@@ -17,9 +17,12 @@ from core.sources import (
     fetch_alphavantage_news,
     fetch_finnhub_news,
     fetch_marketaux_news,
+    fetch_finnhub_company_news,
     fetch_newsapi_headlines,
     fetch_rss,
+    fetch_yahoo_ticker_news,
 )
+from core.filters import matches_query
 
 # Une « tâche » = (nom affiché, fonction à appeler, arguments de la fonction)
 Task = tuple[str, Callable[..., list[Article]], tuple]
@@ -88,3 +91,52 @@ def run_tasks(tasks: list[Task]) -> tuple[list[Article], list[str]]:
 def collect_articles(keys: dict[str, str | None] | None = None) -> tuple[list[Article], list[str]]:
     """Interroge toutes les sources disponibles et renvoie (articles du plus récent au plus ancien, erreurs)."""
     return run_tasks(build_tasks(keys or {}))
+
+
+def collect_followed(
+    follows: list[dict], keys: dict[str, str | None], base: list[Article]
+) -> tuple[dict[tuple[str, str], list[Article]], list[str]]:
+    """Le fil dédié de chaque suivi : {(kind, value): articles}, plus les erreurs.
+
+    - entreprise : flux Yahoo de l'entreprise, Finnhub si la clé existe (actions américaines seulement
+      en offre gratuite), et les articles du fil principal qui la citent ;
+    - thème : articles du fil principal qui contiennent le mot-clé, et recherche NewsAPI si la clé existe.
+    """
+    tasks: list[Task] = []
+    owners: list[tuple[str, str]] = []  # owners[i] = le suivi auquel appartient tasks[i]
+    for follow in follows:
+        owner = (follow["kind"], follow["value"])
+        if follow["kind"] == "company":
+            tasks.append((f"Yahoo · {follow['label']}", fetch_yahoo_ticker_news, (follow["value"],)))
+            owners.append(owner)
+            if (key := keys.get("FINNHUB_API_KEY")) and "." not in follow["value"]:
+                tasks.append((f"Finnhub · {follow['label']}", fetch_finnhub_company_news, (key, follow["value"])))
+                owners.append(owner)
+        elif key := keys.get("NEWSAPI_API_KEY"):
+            tasks.append((f"NewsAPI · {follow['label']}", fetch_newsapi_headlines, (key, follow["value"])))
+            owners.append(owner)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(_run, tasks))
+
+    feeds: dict[tuple[str, str], list[Article]] = {(f["kind"], f["value"]): [] for f in follows}
+    errors = []
+    for owner, (found, error) in zip(owners, results):
+        feeds[owner].extend(found)
+        if error:
+            errors.append(error)
+
+    for follow in follows:
+        owner = (follow["kind"], follow["value"])
+        if follow["kind"] == "company":
+            symbol = follow["value"]
+            mentioned = [a for a in base if symbol in a.tickers or matches_query(a, follow["label"])]
+        else:
+            mentioned = [a for a in base if matches_query(a, follow["value"])]
+        found = feeds[owner] + mentioned
+        for article in found:
+            article.category = classify(article)
+        found = deduplicate(found)
+        found.sort(key=lambda article: article.published, reverse=True)
+        feeds[owner] = found
+    return feeds, errors

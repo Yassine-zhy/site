@@ -73,3 +73,44 @@ def fetch_quotes(watchlist: list[tuple[str, str, str, str]] = WATCHLIST, period:
             continue
         quotes.append(Quote(symbol, name, group, unit, float(closes.iloc[-1]), float(closes.iloc[-2]), closes))
     return quotes
+
+
+def search_companies(query: str, limit: int = 8) -> list[dict]:
+    """Cherche des actions ou des ETF par nom ou symbole : [{"symbol", "name", "exchange"}, …]."""
+    results = yf.Search(query, max_results=limit).quotes
+    return [
+        {"symbol": r["symbol"], "name": r.get("shortname") or r.get("longname") or r["symbol"],
+         "exchange": r.get("exchDisp", "")}
+        for r in results
+        if r.get("quoteType") in ("EQUITY", "ETF") and r.get("symbol")
+    ]
+
+
+# Indicateurs affichés sur la fiche : clé yfinance -> (libellé, format, explication)
+# Formats : "money" (montant), "x" (multiple), "pct" (déjà en %), "ratio" (fraction à convertir en %), "num"
+INDICATORS = {
+    "marketCap": ("Capitalisation", "money", "Valeur de l'entreprise en Bourse : cours × nombre d'actions."),
+    "trailingPE": ("PER (12 derniers mois)", "x",
+                   "Price Earnings Ratio : cours ÷ bénéfice par action. Combien d'années de bénéfices le marché paie."),
+    "forwardPE": ("PER prévisionnel", "x", "Le même ratio, calculé sur le bénéfice attendu par les analystes."),
+    "priceToBook": ("Cours / valeur comptable", "x", "Supérieur à 1 : le marché valorise l'entreprise au-dessus de ses fonds propres."),
+    "enterpriseToEbitda": ("VE / EBITDA", "x", "Valeur d'entreprise (dette comprise) ÷ excédent brut d'exploitation."),
+    "dividendYield": ("Rendement du dividende", "pct", "Dividende annuel ÷ cours de l'action."),
+    "profitMargins": ("Marge nette", "ratio", "Part du chiffre d'affaires qui reste en bénéfice net."),
+    "returnOnEquity": ("Rentabilité des capitaux propres (ROE)", "ratio", "Bénéfice net ÷ capitaux propres."),
+    "revenueGrowth": ("Croissance du chiffre d'affaires", "ratio", "Sur un an, dernier trimestre publié."),
+    "beta": ("Bêta", "num", "Sensibilité au marché : 1,2 = bouge en moyenne 20 % de plus que l'indice."),
+}
+
+
+def company_profile(symbol: str) -> dict:
+    """Fiche d'une entreprise (nom, secteur, site, indicateurs…). Dictionnaire vide si indisponible."""
+    info = yf.Ticker(symbol).info or {}
+    if not info.get("shortName") and not info.get("longName"):
+        return {}
+    return info
+
+
+def price_history(symbol: str, period: str = "6mo") -> pd.DataFrame:
+    """Historique quotidien (Open, High, Low, Close, Volume), index = dates."""
+    return yf.Ticker(symbol).history(period=period, auto_adjust=False)

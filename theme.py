@@ -224,6 +224,30 @@ CSS = """
 .fv-tone .fv-num { text-align: right; font-variant-numeric: tabular-nums; }
 .fv-tone small { display: block; color: var(--fv-muted); font-size: .7rem; }
 
+
+/* ---------- Fiche entreprise ---------- */
+.fv-firm { display: flex; align-items: center; gap: .9rem; margin: .4rem 0 .2rem; }
+.fv-firm img { width: 44px; height: 44px; border-radius: 8px; background: #fff; padding: 4px;
+  box-shadow: inset 0 0 0 1px var(--fv-rule); }
+.fv-firm h2 { margin: 0 !important; padding: 0 !important; font-family: var(--fv-serif) !important; font-weight: 700 !important;
+  font-size: clamp(1.6rem, 3vw, 2.2rem) !important; letter-spacing: -.015em; line-height: 1.1 !important; }
+.fv-firm p { margin: .15rem 0 0; font-size: .8rem; color: var(--fv-muted); }
+.fv-quote-big { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem 1rem; margin: .6rem 0 .2rem; }
+.fv-quote-big b { font-size: 2.2rem; font-weight: 600; letter-spacing: -.02em; }
+.fv-quote-big span { font-size: .95rem; font-variant-numeric: tabular-nums; }
+.fv-quote-big small { font-size: .78rem; color: var(--fv-muted); }
+.fv-ratios { margin: 0; display: grid; grid-template-columns: 1fr auto; }
+.fv-ratios dt, .fv-ratios dd { margin: 0; padding: .42rem 0; border-bottom: 1px solid var(--fv-rule); font-size: .85rem; }
+.fv-ratios dt { cursor: help; text-decoration: underline dotted color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 3px; }
+.fv-ratios dd { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.fv-range { margin: .9rem 0 .2rem; font-size: .78rem; }
+.fv-range-bar { position: relative; height: 6px; margin: .45rem 0 .3rem; border-radius: 3px;
+  background: color-mix(in srgb, currentColor 14%, transparent); }
+.fv-range-bar i { position: absolute; top: -4px; width: 3px; height: 14px; margin-left: -1.5px; border-radius: 1px;
+  background: currentColor; }
+.fv-range-ends { display: flex; justify-content: space-between; color: var(--fv-muted); font-variant-numeric: tabular-nums; }
+
 @media (prefers-reduced-motion: reduce) {
   .fv-tape { overflow-x: auto; mask-image: none; }
   .fv-tape-track { animation: none; }
@@ -391,6 +415,27 @@ def sparkline_uri(values: list[float], end_class: str, width: int = 84, height: 
     return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
 
 
+def quote_tile(quote) -> str:
+    """Une tuile de cotation : nom, cours, variation de la séance, mini-courbe sur un mois."""
+    month = quote.history.tail(22)
+    month_change = quote.change_over(21)
+    kind = direction(quote.change)
+    summary = (
+        f"{quote.name} : {price(quote.last)}, {signed(quote.change, quote.unit)} sur la séance, "
+        f"{signed(month_change, quote.unit)} sur un mois"
+    )
+    return (
+        f'<div class="fv-tile" title="{esc(summary)}">'
+        f'<div class="fv-tile-label">{esc(quote.name)}</div>'
+        f'<div class="fv-tile-value">{price(quote.last)}</div>'
+        f'<img src="{sparkline_uri(month.tolist(), direction(month_change))}" '
+        f'alt="Un mois : {esc(signed(month_change, quote.unit))}">'
+        f'<div class="fv-tile-delta"><span class="{kind}">{signed(quote.change, quote.unit)}</span></div>'
+        f'<div class="fv-tile-sub">Sur un mois : {signed(month_change, quote.unit)}</div>'
+        f"</div>"
+    )
+
+
 def ticker_tape(quotes) -> None:
     """Le bandeau défilant des cours, en haut de chaque page."""
     if not quotes:
@@ -407,3 +452,13 @@ def ticker_tape(quotes) -> None:
         f'<div class="fv-tape" role="marquee" aria-label="Cours des marchés">'
         f'<div class="fv-tape-track" style="animation-delay:{delay:.1f}s">{items}{items}</div></div>'
     )
+
+
+def compact_money(value: float, currency: str = "") -> str:
+    """« 187,3 Md€ », « 4,9 Md$ » : montants en milliards ou millions, à la française."""
+    symbol = {"EUR": "€", "USD": "$", "GBP": "£", "JPY": "¥"}.get(currency, f" {currency}" if currency else "")
+    if abs(value) >= 1e9:
+        return f"{fr_number(value / 1e9, 1)}\u202fMd{symbol}"
+    if abs(value) >= 1e6:
+        return f"{fr_number(value / 1e6, 1)}\u202fM{symbol}"
+    return f"{fr_number(value, 0)}{symbol}"
