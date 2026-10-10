@@ -100,7 +100,7 @@ def pick(*keys: str) -> dict[str, pd.Series]:
 theme.section("Inflation", "hausse des prix sur un an, en %")
 if inflation := pick("infl_ea", "infl_fr", "infl_us"):
     with st.container(key="fvchart_inflation"):
-        st.altair_chart(line_chart(inflation, target=2), width="stretch")
+        st.altair_chart(theme.french(line_chart(inflation, target=2)), width="stretch")
     st.caption("La BCE et la Fed visent toutes deux une inflation de 2 % par an à moyen terme. Au-dessus, elles "
                "ont tendance à monter leurs taux ; en dessous, à les baisser.")
 
@@ -112,7 +112,7 @@ with left:
         # Le taux de la BCE n'a une valeur qu'aux dates de décision : on prolonge le dernier palier jusqu'à aujourd'hui
         rates = {zone: macro.extend_to(series, pd.Timestamp(date.today())) for zone, series in rates.items()}
         with st.container(key="fvchart_rates"):
-            st.altair_chart(line_chart(rates, step=True), width="stretch")
+            st.altair_chart(theme.french(line_chart(rates, step=True)), width="stretch")
 
 
 def verdict(real: float) -> str:
@@ -174,7 +174,7 @@ if curves:
         with column, st.container(key=f"fvchart_curve_{'us' if zone == US else 'ea'}"):
             st.html(f'<div class="fv-chart-title"><b>{esc(zone)}</b><small>{"États AAA" if zone == EA else "Trésor"}'
                     f" · {theme.period_label(table.index[-1], 'jour')}</small></div>")
-            st.altair_chart(chart, width="stretch")
+            st.altair_chart(theme.french(chart), width="stretch")
             st.html(f'<p class="fv-note">Courbe <b>{shape}</b> : écart 10 ans − 2 ans de {theme.signed(spread, "pt")}. '
                     + ("Les taux courts dépassent les taux longs : historiquement, un signal avancé de récession."
                        if shape == "inversée" else
@@ -187,12 +187,12 @@ with left:
     theme.section("Chômage", "en % de la population active")
     if unemployment := pick("unemp_ea", "unemp_fr", "unemp_us"):
         with st.container(key="fvchart_unemployment"):
-            st.altair_chart(line_chart(unemployment, height=220), width="stretch")
+            st.altair_chart(theme.french(line_chart(unemployment, height=220)), width="stretch")
 with right:
     theme.section("Croissance du PIB", "sur un an, en volume")
     if growth := pick("gdp_ea", "gdp_us"):
         with st.container(key="fvchart_growth"):
-            st.altair_chart(line_chart(growth, height=220, step=True), width="stretch")
+            st.altair_chart(theme.french(line_chart(growth, height=220, step=True)), width="stretch")
 
 # --- Données et sources -------------------------------------------------------------------------
 with st.expander("Voir les données en tableau", icon=":material/table:"):

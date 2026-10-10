@@ -24,6 +24,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Économie** | Tableau de bord des statistiques officielles (BCE, Réserve fédérale) : inflation et inflation sous-jacente, taux directeurs et taux réels, taux à 10 ans, chômage, croissance, pour la zone euro, la France et les États-Unis ; courbes des taux avec détection d'inversion. |
 | **Comparer** | Jusqu'à 4 entreprises en base 100, rendement annualisé, volatilité, perte maximale, valorisation et matrice de corrélation. |
 | **Portefeuille virtuel** | Positions multidevises valorisées en euros, plus-values latentes, répartition, performance comparée au CAC 40, portefeuille d'exemple. |
+| **Simulateurs** | Épargne à intérêts composés (frais, règle de 72), investissement programmé rejoué sur l'historique réel d'un indice ou d'une action, crédit immobilier (mensualité, amortissement, taux d'endettement, capacité d'emprunt à 35 %), inflation et rendement réel. |
 | **Alertes** | Seuils de cours ou de variation du jour, bandeau d'alerte sur toutes les pages. |
 | **Glossaire** | 55 termes de la finance expliqués simplement, recherche, mot du jour. |
 | **En chiffres** | Tableau de bord du flux : dépêches par heure et par rubrique, entreprises les plus citées, tonalité par rubrique. |
@@ -72,7 +73,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · Altair · trafilatura · SQLite · pytest
 
-16 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+17 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 
@@ -102,10 +103,10 @@ ui.py             éléments partagés : chargement en cache, carte d'article, r
 theme.py          design : jetons de couleur clair/sombre, cartes, tuiles, tableaux, mise en forme française
 assets/           le logo (SVG)
 views/            une page par fichier (fil, brief, en chiffres, marchés, économie, comparer, suivis, portefeuille,
-                  alertes, favoris, glossaire, réglages, mon compte)
+                  alertes, favoris, simulateurs, glossaire, réglages, mon compte)
 core/             logique métier : sources, agrégation, classement, statistiques, marché, indicateurs de
-                  risque, portefeuille, alertes, brief, économie (BCE, FRED), résumé, stockage
-tests/            107 tests pytest (sources, recherche, base et comptes, résumé, indicateurs, portefeuille, alertes,
+                  risque, portefeuille, alertes, brief, économie (BCE, FRED), simulateurs, résumé, stockage
+tests/            120 tests pytest (sources, recherche, base et comptes, résumé, indicateurs, portefeuille, alertes,
                   brief, chaque page)
 guide/            le guide de construction, étape par étape
 ```

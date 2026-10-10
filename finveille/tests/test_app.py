@@ -60,7 +60,8 @@ def app(db, monkeypatch):
 @pytest.mark.parametrize("page", ["views/feed.py", "views/markets.py", "views/stats.py", "views/following.py",
                                   "views/favorites.py", "views/settings.py", "views/glossary.py", "views/compare.py",
                                   "views/portfolio.py", "views/alerts.py", "views/brief.py",
-                                  "views/account.py", "views/economy.py"])
+                                  "views/account.py", "views/economy.py",
+                                  "views/simulators.py"])
 def test_chaque_page_s_affiche(app, page):
     app.run()
     app.switch_page(page).run()
@@ -135,3 +136,12 @@ def test_les_favoris_vont_dans_le_compte_connecte(app, db, monkeypatch):
     app.switch_page("views/account.py").run()
     assert not app.exception
     assert any(b.label == "Se déconnecter" for b in app.button)
+
+
+def test_les_quatre_simulateurs(app):
+    app.run()
+    app.switch_page("views/simulators.py").run()
+    for name in ["Épargne", "Investissement programmé", "Crédit immobilier", "Inflation"]:
+        app.segmented_control(key="simulator").set_value(name).run()
+        assert not app.exception, name
+        assert any("fv-kpi" in element.value for element in app.get("html")), name  # les chiffres clés s'affichent

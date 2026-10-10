@@ -82,9 +82,9 @@ def price_chart(closes: pd.Series, currency: str, long_period: bool, markers: pd
     """
     data = closes.rename("cours").rename_axis("date").reset_index()
     base = alt.Chart(data).encode(
-        # Format de date numérique : Vega écrirait les mois en anglais (« May », « Jun »)
+        # Mois en français grâce à theme.french (voir theme.ALTAIR_LOCALE)
         x=alt.X("date:T", title=None, axis=alt.Axis(grid=False, labelAngle=0, tickCount=6, domainOpacity=0.4,
-                                                    format="%m/%Y" if long_period else "%d/%m")),
+                                                    format="%b %Y" if long_period else "%d %b")),
         y=alt.Y("cours:Q", title=None, scale=alt.Scale(zero=False),
                 axis=alt.Axis(gridOpacity=0.18, domain=False, ticks=False, tickCount=5)),
     )
@@ -173,7 +173,8 @@ def company_sheet(symbol: str, label: str, articles=()) -> None:
             )
             markers = news_markers(closes, list(articles))
             with st.container(key=f"fvchart_{symbol}"):
-                st.altair_chart(price_chart(closes, currency, period in ("1 an", "5 ans"), markers), width="stretch")
+                chart = price_chart(closes, currency, period in ("1 an", "5 ans"), markers)
+                st.altair_chart(theme.french(chart), width="stretch")
             if not markers.empty:
                 st.caption(f"◆ {len(markers)} dépêche(s) placée(s) sur la courbe : survole un losange pour lire le titre.")
 

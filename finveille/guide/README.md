@@ -20,5 +20,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 14. [Comptes utilisateurs : Google, e-mail, Facebook](14-comptes-utilisateurs.md)
 15. [Un design professionnel, et un mode sombre sans bouton invisible](15-design-professionnel.md)
 16. [Le tableau de bord économique (BCE et Réserve fédérale)](16-tableau-de-bord-economique.md)
+17. [Les simulateurs : épargne, investissement programmé, crédit, inflation](17-simulateurs.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).

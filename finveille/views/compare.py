@@ -25,7 +25,7 @@ def comparison_chart(rebased: pd.DataFrame, names: dict[str, str], colors: dict[
     color = alt.Color("entreprise:N", scale=alt.Scale(domain=list(colors), range=list(colors.values())),
                       legend=alt.Legend(title=None, orient="top"))
     interval, step = TICKS[period]
-    x = alt.X("date:T", title=None, axis=alt.Axis(grid=False, labelAngle=0, format="%m/%Y" if interval == "month" else "%Y",
+    x = alt.X("date:T", title=None, axis=alt.Axis(grid=False, labelAngle=0, format="%b %Y" if interval == "month" else "%Y",
                                                   domainOpacity=0.4, tickCount={"interval": interval, "step": step}))
     lines = alt.Chart(long).mark_line(strokeWidth=2, strokeJoin="round").encode(
         x=x, y=alt.Y("base100:Q", title=None, scale=alt.Scale(zero=False),
@@ -70,7 +70,8 @@ colors = {names[s]: theme.SERIES_COLORS[i] for i, s in enumerate(selected)}  # l
 
 theme.section("Performance", f"base 100 au début de la période · {period}")
 with st.container(key="fvchart_compare"):
-    st.altair_chart(comparison_chart(metrics.rebase(closes[selected]), names, colors, period), width="stretch")
+    chart = comparison_chart(metrics.rebase(closes[selected]), names, colors, period)
+    st.altair_chart(theme.french(chart), width="stretch")
 st.caption("Cours ajustés des dividendes et des divisions d'actions. Les devises ne sont pas converties : "
            "on compare des évolutions en %, pas des prix.")
 

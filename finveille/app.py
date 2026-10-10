@@ -75,6 +75,7 @@ pages = {
         st.Page("views/favorites.py", title="Favoris", icon=":material/bookmark:"),
     ],
     "Outils": [
+        st.Page("views/simulators.py", title="Simulateurs", icon=":material/calculate:"),
         st.Page("views/glossary.py", title="Glossaire", icon=":material/menu_book:"),
         st.Page("views/settings.py", title="Réglages", icon=":material/settings:"),
         st.Page("views/account.py", title="Mon compte", icon=":material/account_circle:"),
