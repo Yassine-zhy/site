@@ -64,7 +64,9 @@ Et quand rien ne marche : cherche le message exact entre guillemets sur un moteu
 | `no such table: …` | `storage.init_db()` doit être appelé dans `app.py` avant la navigation. |
 | `database is locked` | Toujours `with connect()` ; ferme DB Browser ou valide ses modifications. |
 | `table … has no column named …` | `CREATE TABLE IF NOT EXISTS` ne modifie pas une table existante : supprime `data/finveille.db` ou fais un `ALTER TABLE`. |
-| En ligne, les données disparaissent | Stockage éphémère de l'hébergement gratuit (étape 9). |
+| En ligne, les données disparaissent | Stockage éphémère de l'hébergement gratuit : ajoute `DATABASE_URL` (base PostgreSQL gratuite, étape 20). |
+| `syntax error at or near "OR"` (PostgreSQL) | Requête `INSERT OR …` propre à SQLite : utilise `ON CONFLICT …` (étape 20). |
+| `couldn't get a connection after 15 sec` | Adresse PostgreSQL fausse, base Supabase en pause, ou connexion directe IPv6 : *Session pooler* (étape 20). |
 
 ## Streamlit
 

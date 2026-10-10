@@ -110,4 +110,4 @@ volatility = np.sqrt(np.einsum("ij,jk,ik->i", weights, cov, weights)) * 100
 | Le nuage change à chaque affichage | Hasard sans graine | `np.random.default_rng(seed)`. |
 | `ValueError: shapes not aligned` | Poids et rendements dans un ordre différent | Construis les deux à partir des mêmes colonnes du tableau. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [une base de données en ligne](20-base-de-donnees-en-ligne.md). Retour au [sommaire du guide](README.md).

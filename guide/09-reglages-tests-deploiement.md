@@ -147,7 +147,7 @@ Chaque `git push` sur `main` met l'appli à jour automatiquement.
 
 | Point | Conséquence | Que faire |
 | --- | --- | --- |
-| **Stockage éphémère** | le fichier `data/finveille.db` est effacé quand le serveur redémarre (mise à jour, mise en veille) | Acceptable pour une démo. Pour un vrai usage : une base hébergée gratuite (Supabase, Neon, Turso) via `st.connection`. |
+| **Stockage éphémère** | le fichier `data/finveille.db` est effacé quand le serveur redémarre (mise à jour, mise en veille) | Acceptable pour une démo. Pour un vrai usage : une base PostgreSQL gratuite (Neon, Supabase), voir l'[étape 20](20-base-de-donnees-en-ligne.md). |
 | **Base partagée** | tous les visiteurs voient les **mêmes** favoris et suivis | Restreins l'appli à ton adresse e-mail (*Settings → Sharing*), ou active les comptes ([étape 14](14-comptes-utilisateurs.md)). |
 | **Mise en veille** | sans visite pendant un moment, l'appli s'endort ; la visite suivante la réveille (quelques dizaines de secondes) | Normal en gratuit. |
 | **NewsAPI** | l'offre gratuite est réservée au **développement** | En ligne, laisse sa clé vide : les autres sources suffisent. |
@@ -242,7 +242,7 @@ aux commentaires dans la journée.
 | Déploiement : `ModuleNotFoundError` dans les journaux | Dépendance absente de `requirements.txt` | Toute bibliothèque importée doit y figurer. |
 | Déploiement : `ERROR: … requires a different Python` | Python trop ancien | Choisis Python 3.12 dans *Advanced settings* (supprime et recrée l'appli si besoin). |
 | Les API sont « inactives » en ligne | Secrets non renseignés sur l'hébergeur | *Settings → Secrets* de l'appli Streamlit Cloud. |
-| En ligne, mes favoris ont disparu | Stockage éphémère | Normal en gratuit (section 4). |
+| En ligne, mes favoris ont disparu | Stockage éphémère | Normal sans base en ligne (section 4) : ajoute `DATABASE_URL` ([étape 20](20-base-de-donnees-en-ligne.md)). |
 | `git subtree split` : `fatal: … is not a valid prefix` | Mauvais nom de dossier ou de branche | Vérifie que tu es sur la branche qui contient `finveille/` (`git branch`, `ls`). |
 
 ➡️ Pour aller plus loin : [étape 10, le confort d'utilisation](10-confort.md).

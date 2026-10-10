@@ -10,7 +10,7 @@ import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 import ui
-from conftest import make_article
+from conftest import TEST_DATABASE_URL, empty_postgres, make_article
 from core import aggregator, crypto, macro, market
 from core.market import Quote
 
@@ -167,3 +167,16 @@ def test_une_partie_de_quiz_complete(app, db):
     assert any("Ton score" in element.value for element in app.get("html"))
     assert db.get_setting(db.LOCAL_USER, "quiz_best")["total"] == 10  # le meilleur score est enregistré
     assert db.get_setting(db.LOCAL_USER, "quiz_played") == 1
+
+
+@pytest.mark.skipif(not TEST_DATABASE_URL, reason="FINVEILLE_TEST_DATABASE_URL non défini")
+def test_garder_un_article_avec_postgresql(app, monkeypatch):
+    """Le même parcours que test_garder_puis_retrouver_dans_les_favoris, avec la base PostgreSQL."""
+    store = empty_postgres(monkeypatch)
+    app.run()
+    next(b for b in app.button if b.label == "Garder").click().run()
+    assert store.counts(store.LOCAL_USER)["favorites"] == 1
+    app.switch_page("views/favorites.py").run()
+    assert any(b.label == "Retirer" for b in app.button)
+    app.switch_page("views/settings.py").run()
+    assert not app.exception

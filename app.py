@@ -13,7 +13,7 @@ import streamlit as st
 
 import theme
 from core import alerts, storage
-from ui import auth_providers, current_user, load_quotes, load_symbol_quotes
+from ui import auth_providers, current_user, get_secret, load_quotes, load_symbol_quotes
 
 # Le logo : un carré bleu et une courbe (le nom « FinVeille » est ajouté à côté en CSS, voir theme.py)
 LOGO = str(Path(__file__).parent / "assets" / "logo.svg")
@@ -21,6 +21,8 @@ LOGO = str(Path(__file__).parent / "assets" / "logo.svg")
 st.set_page_config(page_title="FinVeille", page_icon=LOGO, layout="wide")
 st.logo(LOGO, size="large")
 theme.inject_css()
+if database_url := get_secret("DATABASE_URL"):  # base PostgreSQL en ligne (guide 20) ; sinon SQLite
+    storage.configure(database_url)
 storage.init_db()
 
 
