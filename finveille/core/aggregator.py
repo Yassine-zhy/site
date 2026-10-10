@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import requests
 
+from core.classifier import classify
 from core.config import RSS_FEEDS
 from core.models import Article
 from core.sources import fetch_rss
@@ -34,6 +35,9 @@ def collect_articles(feeds: list[dict] = RSS_FEEDS) -> tuple[list[Article], list
         except requests.RequestException as exc:
             # Une source en panne ne doit pas faire tomber toute l'application.
             errors.append(f"{feed['name']} : {exc}")
+
+    for article in articles:
+        article.category = classify(article)
 
     articles = deduplicate(articles)
     articles.sort(key=lambda article: article.published, reverse=True)
