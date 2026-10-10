@@ -7,7 +7,7 @@ toutes en objets `Article` : le reste de l'application n'a alors qu'un seul form
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 
 
@@ -28,3 +28,16 @@ class Article:
     def id(self) -> str:
         """Identifiant stable calculé à partir de l'URL : même URL = même article."""
         return hashlib.sha1(self.url.encode("utf-8")).hexdigest()[:16]
+
+    def to_dict(self) -> dict:
+        """Version « dictionnaire » de l'article, prête à être enregistrée en JSON."""
+        data = asdict(self)
+        data["published"] = self.published.isoformat()  # une date n'est pas du JSON : on la met en texte
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Article:
+        """Reconstruit un `Article` à partir de `to_dict()`."""
+        data = dict(data)
+        data["published"] = datetime.fromisoformat(data["published"])
+        return cls(**data)

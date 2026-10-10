@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import re
+import textwrap
 from datetime import datetime, timezone
 
 import feedparser
@@ -12,15 +13,24 @@ import requests
 from core.config import MAX_ARTICLES_PER_FEED, REQUEST_TIMEOUT, USER_AGENT
 from core.models import Article
 
+_BLOCK_RE = re.compile(r"<(script|style)\b.*?</\1>", re.IGNORECASE | re.DOTALL)  # <style>…</style>
+_CSS_RE = re.compile(r"@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}")  # règle CSS « @media … { … } »
 _TAG_RE = re.compile(r"<[^>]+>")  # une balise HTML : <p>, </a>, <img src="…">…
 _SPACES_RE = re.compile(r"\s+")  # une suite d'espaces, tabulations ou retours à la ligne
 
 
 def clean_html(text: str | None) -> str:
     """Transforme un fragment HTML en texte brut lisible."""
-    text = _TAG_RE.sub(" ", text or "")  # enlève les balises
+    text = _BLOCK_RE.sub(" ", text or "")  # enlève les blocs de code CSS/JavaScript ET leur contenu
+    text = _TAG_RE.sub(" ", text)  # enlève les autres balises (leur texte reste)
     text = html.unescape(text)  # &amp; -> &, &eacute; -> é…
+    text = _CSS_RE.sub(" ", text)  # du CSS « nu » glissé par erreur dans certains flux (ex. Nasdaq)
     return _SPACES_RE.sub(" ", text).strip()
+
+
+def shorten(text: str, width: int = 400) -> str:
+    """Coupe un texte trop long à la fin d'un mot, avec « … »."""
+    return textwrap.shorten(text, width=width, placeholder=" …")
 
 
 def _entry_date(entry) -> datetime:
@@ -65,7 +75,7 @@ def fetch_rss(feed: dict) -> list[Article]:
                 url=url,
                 source=feed["name"],
                 published=_entry_date(entry),
-                summary=clean_html(entry.get("summary"))[:500],
+                summary=shorten(clean_html(entry.get("summary"))),
                 category=feed["category"],
                 image=_entry_image(entry),
             )
