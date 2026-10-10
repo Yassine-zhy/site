@@ -27,9 +27,16 @@ QUOTES = [Quote("^FCHI", "CAC 40", "Europe", "%", 7803.3, 7729.7, HISTORY)]
 def app(db, monkeypatch):
     st.cache_data.clear()
     monkeypatch.setattr(aggregator, "build_tasks", lambda keys: [("Test", lambda: list(ARTICLES), ())])
-    monkeypatch.setattr(ui, "fetch_quotes", lambda *args, **kwargs: QUOTES)
+    def fake_quotes(watchlist=None, period="3mo"):
+        """Le bandeau (sans argument) reçoit QUOTES ; une liste de symboles reçoit un cours factice pour chacun."""
+        if watchlist is None:
+            return QUOTES
+        return [Quote(symbol, name, group, unit, 108.0, 107.0, HISTORY) for symbol, name, group, unit in watchlist]
+
+    monkeypatch.setattr(ui, "fetch_quotes", fake_quotes)
     monkeypatch.setattr(aggregator, "fetch_yahoo_ticker_news", lambda ticker: [])
-    closes = pd.DataFrame({"MC.PA": [100.0, 102, 101, 104, 108, 107], "RMS.PA": [200.0, 199, 204, 210, 205, 212]},
+    closes = pd.DataFrame({"MC.PA": [100.0, 102, 101, 104, 108, 107], "RMS.PA": [200.0, 199, 204, 210, 205, 212],
+                           "^FCHI": [7700.0, 7710, 7690, 7750, 7800, 7803]},
                           index=pd.date_range("2026-01-05", periods=6, freq="D"))
     monkeypatch.setattr(market, "closes_table", lambda symbols, period: closes[[s for s in symbols if s in closes]])
     monkeypatch.setattr(market, "company_profile", lambda symbol: {"shortName": symbol, "trailingPE": 20.0})
@@ -43,7 +50,8 @@ def app(db, monkeypatch):
 
 
 @pytest.mark.parametrize("page", ["views/feed.py", "views/markets.py", "views/stats.py", "views/following.py",
-                                  "views/favorites.py", "views/settings.py", "views/glossary.py", "views/compare.py"])
+                                  "views/favorites.py", "views/settings.py", "views/glossary.py", "views/compare.py",
+                                  "views/portfolio.py", "views/alerts.py"])
 def test_chaque_page_s_affiche(app, page):
     app.run()
     app.switch_page(page).run()
@@ -71,3 +79,17 @@ def test_les_trois_vues_des_marches(app):
     for view in ["CAC 40", "Devises", "Monde"]:
         app.segmented_control(key="markets_view").set_value(view).run()
         assert not app.exception, view
+
+
+def test_portefeuille_et_alertes_avec_des_donnees(app, db):
+    db.add_position("MC.PA", "LVMH", 10, 95.0, "EUR", "2026-01-05")
+    db.add_alert("MC.PA", "LVMH", "above", 50.0)  # déclenchée : le cours factice est 108
+    app.run()
+    assert not app.exception
+    assert any("LVMH" in element.value for element in app.get("html"))  # le bandeau d'alerte est affiché
+    app.switch_page("views/portfolio.py").run()
+    assert not app.exception
+    assert any("Mes positions" in element.value for element in app.get("html"))  # la valorisation s'affiche
+    app.switch_page("views/alerts.py").run()
+    assert not app.exception
+    assert any("Déclenchée" in element.value for element in app.get("html"))

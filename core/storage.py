@@ -48,6 +48,25 @@ CREATE TABLE IF NOT EXISTS notes (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS positions (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT, -- numéro attribué automatiquement par SQLite
+    symbol    TEXT NOT NULL,
+    label     TEXT NOT NULL,
+    quantity  REAL NOT NULL CHECK (quantity > 0),
+    price     REAL NOT NULL CHECK (price > 0),  -- prix d'achat unitaire, dans la devise de cotation
+    currency  TEXT NOT NULL,
+    bought_on TEXT NOT NULL                      -- date d'achat, format AAAA-MM-JJ
+);
+
+CREATE TABLE IF NOT EXISTS alerts (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol     TEXT NOT NULL,
+    label      TEXT NOT NULL,
+    kind       TEXT NOT NULL CHECK (kind IN ('above', 'below', 'move')),
+    threshold  REAL NOT NULL CHECK (threshold > 0),
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS summaries (
     article_id   TEXT PRIMARY KEY,
     summary_json TEXT NOT NULL,              -- le résumé (points, moteur…) au format JSON
@@ -215,3 +234,41 @@ def save_note(article_id: str, text: str) -> None:
             )
         else:
             conn.execute("DELETE FROM notes WHERE article_id = ?", (article_id,))
+
+
+def add_position(symbol: str, label: str, quantity: float, price: float, currency: str, bought_on: str) -> None:
+    with connect() as conn:
+        conn.execute(
+            "INSERT INTO positions (symbol, label, quantity, price, currency, bought_on) VALUES (?, ?, ?, ?, ?, ?)",
+            (symbol, label, quantity, price, currency, bought_on),
+        )
+
+
+def list_positions() -> list[dict]:
+    with connect() as conn:
+        rows = conn.execute("SELECT * FROM positions ORDER BY bought_on, id").fetchall()
+    return [dict(row) for row in rows]
+
+
+def delete_position(position_id: int) -> None:
+    with connect() as conn:
+        conn.execute("DELETE FROM positions WHERE id = ?", (position_id,))
+
+
+def add_alert(symbol: str, label: str, kind: str, threshold: float) -> None:
+    with connect() as conn:
+        conn.execute(
+            "INSERT INTO alerts (symbol, label, kind, threshold, created_at) VALUES (?, ?, ?, ?, ?)",
+            (symbol, label, kind, threshold, _now()),
+        )
+
+
+def list_alerts() -> list[dict]:
+    with connect() as conn:
+        rows = conn.execute("SELECT id, symbol, label, kind, threshold FROM alerts ORDER BY created_at").fetchall()
+    return [dict(row) for row in rows]
+
+
+def delete_alert(alert_id: int) -> None:
+    with connect() as conn:
+        conn.execute("DELETE FROM alerts WHERE id = ?", (alert_id,))

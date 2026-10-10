@@ -12,7 +12,7 @@ from core import storage
 from core import market
 from core.aggregator import collect_articles, collect_followed
 from core.market import fetch_quotes
-from core.config import AI_KEYS, API_KEYS, CATEGORIES
+from core.config import AI_KEYS, API_KEYS, CATEGORIES, COMPANIES
 from core.models import Article
 from core.summarizer import summarize
 from theme import esc, safe_url
@@ -130,6 +130,25 @@ def load_closes(symbols: tuple[str, ...], period: str):
         return market.closes_table(list(symbols), period)
     except Exception:
         return None
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def load_symbol_quotes(symbols: tuple[str, ...]) -> dict:
+    """Cotations d'une liste de symboles, rangées par symbole : {"MC.PA": Quote, …}."""
+    if not symbols:
+        return {}
+    try:
+        return {q.symbol: q for q in fetch_quotes([(s, s, "", "%") for s in symbols])}
+    except Exception:
+        return {}
+
+
+def company_choices() -> dict[str, str]:
+    """Les entreprises proposées dans les listes : mes suivis d'abord, puis le CAC 40 et les grandes valeurs."""
+    choices = {f["value"]: f["label"] for f in storage.list_follows("company")}
+    choices |= {symbol: name for symbol, name, _ in market.CAC40 if symbol not in choices}
+    choices |= {symbol: name for symbol, (name, _, _) in COMPANIES.items() if symbol not in choices}
+    return choices
 
 
 def _update(article: Article, flag: str, value: bool, message: str) -> None:

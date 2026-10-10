@@ -51,3 +51,25 @@ def test_notes_personnelles(db):
     assert db.get_notes() == {"abc": "Utile pour mon mémoire"}
     db.save_note("abc", "")  # une note vide supprime la note
     assert db.get_notes() == {}
+
+
+def test_positions_et_alertes(db):
+    db.add_position("MC.PA", "LVMH", 10, 400.0, "EUR", "2026-04-01")
+    db.add_alert("MC.PA", "LVMH", "below", 385.0)
+    position, alert = db.list_positions()[0], db.list_alerts()[0]
+    assert (position["label"], position["quantity"], position["currency"]) == ("LVMH", 10, "EUR")
+    assert (alert["kind"], alert["threshold"]) == ("below", 385.0)
+    db.delete_position(position["id"])
+    db.delete_alert(alert["id"])
+    assert db.list_positions() == [] and db.list_alerts() == []
+
+
+def test_la_base_refuse_une_quantite_negative(db):
+    import sqlite3
+
+    try:
+        db.add_position("MC.PA", "LVMH", -5, 400.0, "EUR", "2026-04-01")
+    except sqlite3.IntegrityError:
+        pass  # la contrainte CHECK (quantity > 0) protège les données, même si l'interface laissait passer
+    else:
+        raise AssertionError("une IntegrityError était attendue")
