@@ -80,7 +80,8 @@ finveille/
 ├── theme.py                ← l'identité visuelle : feuille de style, en-tête, bandeau des cours
 ├── views/                  ← une page = un fichier
 │   ├── feed.py             ←   Fil d'actualité (filtres, recherche)
-│   ├── markets.py          ←   Tableaux de bord : marchés mondiaux et actualité en chiffres
+│   ├── markets.py          ←   Tableau de bord des marchés mondiaux
+│   ├── stats.py            ←   Tableau de bord « l'actualité en chiffres »
 │   ├── following.py        ←   Mes suivis (entreprises, thèmes, fiches entreprises)
 │   ├── favorites.py        ←   Favoris
 │   └── settings.py         ←   Réglages (préférences, thème, export)
@@ -96,6 +97,7 @@ finveille/
 │   ├── analytics.py        ←   statistiques sur le flux d'actualité (pour les tableaux de bord)
 │   └── summarizer.py       ←   résumé automatique (local ou IA)
 ├── tests/                  ← tests automatiques (pytest)
+├── docs/screenshots/       ← captures d'écran pour le README
 ├── .streamlit/
 │   ├── config.toml         ← thème clair / sombre
 │   └── secrets.toml        ← TES clés API (jamais publié sur GitHub !)

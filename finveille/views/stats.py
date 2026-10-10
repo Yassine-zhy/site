@@ -1,6 +1,5 @@
 """Page « En chiffres » : tableau de bord du flux d'actualité."""
 
-from collections import Counter
 from datetime import datetime, timedelta, timezone
 
 import altair as alt

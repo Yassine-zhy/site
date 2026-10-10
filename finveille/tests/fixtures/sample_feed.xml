@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Flux de test</title>
+    <item>
+      <title>La BCE maintient ses taux &amp; surveille l'inflation</title>
+      <link>https://example.com/bce</link>
+      <description><![CDATA[<p>La <b>Banque centrale européenne</b> laisse ses taux inchangés.</p>]]></description>
+      <pubDate>Fri, 09 Oct 2026 14:00:00 GMT</pubDate>
+      <media:thumbnail url="https://example.com/bce.jpg" />
+    </item>
+    <item>
+      <title>Bitcoin rebounds above $80,000</title>
+      <link>https://example.com/btc</link>
+      <description>Image source: The Motley Fool</description>
+      <pubDate>Fri, 09 Oct 2026 16:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title></title>
+      <link>https://example.com/sans-titre</link>
+    </item>
+  </channel>
+</rss>

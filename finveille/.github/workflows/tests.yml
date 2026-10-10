@@ -1,0 +1,17 @@
+# Lance les tests à chaque push. Ce fichier n'est actif que si finveille/ est à la RACINE d'un dépôt
+# GitHub (voir guide/09, « Mettre le projet dans son propre dépôt ») : GitHub ne lit que .github/ à la racine.
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: pytest
