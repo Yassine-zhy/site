@@ -23,6 +23,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Assistant IA** | Des questions en français sur l'actualité, les marchés ou un terme financier ; des réponses rédigées par Gemini ou Groq (gratuits) **à partir des dépêches du moment**, qui citent leurs sources [1], [2]… (recherche par pertinence avec traductions français → anglais, puis génération : « RAG »). Réponse affichée au fil de l'eau, conversation suivie. Également : analyse pédagogique des fiches entreprises, édito du brief rédigé chaque heure. Sans clé : définitions du glossaire et dépêches pertinentes. Quotas, limiteur et mémoire partagée pour tenir la charge. |
 | **Le brief** | L'édition du jour rédigée automatiquement : la séance en une phrase, l'histoire la plus reprise de chaque rubrique, les sujets qui montent, l'agenda de mes entreprises, le mot du jour. Téléchargeable en Markdown, **envoyé par e-mail chaque matin** aux abonnés. |
 | **Comptes** | Inscription par e-mail et mot de passe (empreinte scrypt, blocage anti-force brute, code de confirmation, mot de passe oublié, connexion qui dure 30 jours), ou connexion avec Google, Facebook et autres comptes (OpenID Connect). Assistant de configuration pour l'administrateur. Chaque utilisateur a ses propres favoris, suivis, portefeuille et alertes ; export et suppression de ses données (RGPD). Sans configuration, mode local à un utilisateur. |
+| **Tenir la charge** | Mesuré avec un test de charge maison (visiteurs virtuels WebSocket) et un profileur : 200 visiteurs arrivés ensemble tous servis en 11 s, 300 visiteurs étalés sur 30 s servis en 0,12 s (médiane), contre des connexions coupées dès 100 visiteurs au départ. File d'attente d'affichage, calculs partagés entre visiteurs, caches et mémoires bornés, dernières données valides si une source tombe, réglages de production. Image Docker et publication automatique sur Hugging Face Spaces. |
 | **Base de données** | SQLite en local ; en ligne, PostgreSQL gratuit (Neon, Supabase) en une ligne de secrets, pour que les comptes survivent aux redémarrages. Mêmes requêtes SQL pour les deux, réserve de connexions, tests exécutés sur les deux bases. |
 | **Favoris, lu, masqué** | Enregistrés dans une base SQLite, conservés d'une session à l'autre ; notes personnelles ; export CSV des favoris. |
 | **Mes suivis** | Entreprises (recherche par nom) et thèmes, avec un fil dédié pour chacun. |
@@ -87,7 +88,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-24 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+25 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 
@@ -99,8 +100,17 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-L'application fonctionne **sans aucune clé**. Pour activer les API et le résumé par IA, copie
+L'application fonctionne **sans aucune clé**. Pour activer les API et l'IA, copie
 `.streamlit/secrets.toml.example` en `.streamlit/secrets.toml` et renseigne les clés gratuites voulues.
+Pour développer avec rechargement automatique à chaque modification du code :
+`streamlit run app.py --server.fileWatcherType auto` (désactivé par défaut : réglage de production, guide 25).
+
+Avec Docker (le même environnement partout, guide 25) :
+
+```bash
+docker build -t finveille .
+docker run -p 8501:8501 finveille                 # → http://localhost:8501
+```
 
 Tests :
 
@@ -115,15 +125,17 @@ pytest
 app.py            point d'entrée : thème, bandeau des cours, navigation
 ui.py             éléments partagés : chargement en cache, carte d'article, résumé
 theme.py          design : jetons de couleur clair/sombre, cartes, tuiles, tableaux, mise en forme française
-assets/           le logo (SVG)
-views/            une page par fichier (fil, brief, en chiffres, marchés, économie, crypto, comparer, suivis, portefeuille,
-                  alertes, favoris, simulateurs, quiz, glossaire, réglages, mon compte)
+assets/           le logo (SVG) : symbole, versions claire et sombre
+views/            une page par fichier (fil, brief, assistant IA, en chiffres, marchés, économie, crypto, comparer,
+                  suivis, portefeuille, alertes, favoris, simulateurs, quiz, glossaire, réglages, compte, configuration)
 core/             logique métier : sources, agrégation, classement, statistiques, marché, indicateurs de
-                  risque, portefeuille, alertes, brief, économie (BCE, FRED), crypto, simulateurs, quiz, résumé, e-mails,
-                  stockage
-tests/            164 tests pytest (dont 13 sur PostgreSQL, si une base de test est fournie) (sources, recherche, base et comptes, résumé, indicateurs, portefeuille, alertes,
-                  brief, chaque page)
+                  risque, portefeuille, alertes, brief, économie (BCE, FRED), crypto, simulateurs, quiz, résumé,
+                  assistant IA, images, comptes, e-mails, stockage, tenue de charge
+tests/            244 tests pytest, rejoués aussi sur PostgreSQL si une base de test est fournie (sources, recherche,
+                  base et comptes, IA, tenue de charge, indicateurs, portefeuille, alertes, brief, chaque page)
 scripts/          tâche planifiée : envoi du brief et des alertes par e-mail
+tools/            test de charge, générateur du logo
+deploy/           démarrage du conteneur Docker, fiche du Space Hugging Face
 guide/            le guide de construction, étape par étape
 ```
 

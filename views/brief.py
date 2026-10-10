@@ -5,15 +5,25 @@ from datetime import date, datetime, timedelta, timezone
 import streamlit as st
 
 import theme
-from core import analytics, assistant, storage
+from core import assistant, storage
 from core.brief import HEADLINE_INSTRUMENTS, Brief, front_page, market_sentence, upcoming_events
 from core.config import CATEGORIES
 from core.glossary import GLOSSARY, term_of_the_day
 from theme import esc, safe_url
-from ui import ai_enabled, api_keys, complete_ai, current_user, load_articles, load_calendar, load_quotes, load_symbol_quotes
+from ui import (
+    ai_enabled,
+    api_keys,
+    complete_ai,
+    current_user,
+    load_articles,
+    load_calendar,
+    load_quotes,
+    load_symbol_quotes,
+    load_trends,
+)
 
 now = datetime.now(timezone.utc)
-articles, _, _ = load_articles(api_keys())
+articles, _, collected = load_articles(api_keys())
 recent = [a for a in articles if a.published >= now - timedelta(hours=24)]
 quotes = {q.symbol: q for q in load_quotes()}
 
@@ -24,7 +34,7 @@ market = market_sentence({symbol: q.change for symbol, q in quotes.items()})
 headlines = front_page(recent, CATEGORIES)
 
 # --- Sujets qui montent ------------------------------------------------------------------------
-topics = analytics.rising_topics(articles, now=now)
+topics = load_trends(collected)  # calculés une fois par collecte, pour tous les visiteurs
 
 # --- Mes entreprises (suivis + portefeuille) et leur agenda --------------------------------------
 user = current_user()  # le brief est public ; « Mes entreprises » n'apparaît que pour un utilisateur connecté

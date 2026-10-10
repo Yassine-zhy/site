@@ -126,21 +126,21 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   font-size: .74rem; font-weight: 600; background: rgba(255, 255, 255, .14); color: #fff; }
 .fv-ai-status::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: #c9d4f5; }
 .fv-ai-status.is-on::before { background: #6ee7a8; box-shadow: 0 0 0 3px rgba(110, 231, 168, .25); }
-.fv-sources { margin-top: .6rem; }
-.fv-sources-title { margin: 0 0 .4rem !important; font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+.fv-cites { margin-top: .6rem; }
+.fv-cites-title { margin: 0 0 .4rem !important; font-size: .7rem; font-weight: 700; letter-spacing: .1em;
   text-transform: uppercase; color: var(--fv-muted); }
-.fv-sources-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .5rem; }
-.fv-source { display: flex; align-items: flex-start; gap: .55rem; padding: .55rem .7rem; border-radius: 10px;
+.fv-cites-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .5rem; }
+.fv-cite { display: flex; align-items: flex-start; gap: .55rem; padding: .55rem .7rem; border-radius: 10px;
   background: var(--fv-surface); border: 1px solid var(--fv-line); color: var(--fv-text) !important;
   text-decoration: none !important; transition: border-color .15s, box-shadow .15s; }
-.fv-source:hover { border-color: var(--fv-brand); box-shadow: 0 2px 10px var(--fv-shadow); }
-.fv-source-n { flex: none; display: grid; place-items: center; min-width: 1.35rem; height: 1.35rem; border-radius: 6px;
+.fv-cite:hover { border-color: var(--fv-brand); box-shadow: 0 2px 10px var(--fv-shadow); }
+.fv-cite-n { flex: none; display: grid; place-items: center; min-width: 1.35rem; height: 1.35rem; border-radius: 6px;
   font: 600 .72rem/1 var(--fv-mono); background: var(--fv-brand-soft); color: var(--fv-brand); }
-.fv-source img { flex: none; width: 16px; height: 16px; margin-top: .15rem; border-radius: 3px; }
-.fv-source-text { min-width: 0; font-size: .8rem; line-height: 1.35; }
-.fv-source-text b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+.fv-cite img { flex: none; width: 16px; height: 16px; margin-top: .15rem; border-radius: 3px; }
+.fv-cite-text { min-width: 0; font-size: .8rem; line-height: 1.35; }
+.fv-cite-text b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   font-weight: 600; }
-.fv-source-text small { display: block; margin-top: .15rem; color: var(--fv-muted); font-size: .72rem; }
+.fv-cite-text small { display: block; margin-top: .15rem; color: var(--fv-muted); font-size: .72rem; }
 [data-testid="stChatMessage"] { padding: .9rem 1rem; border-radius: 14px; background: var(--fv-surface);
   border: 1px solid var(--fv-line); }
 [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { background: var(--fv-hover); }
@@ -852,14 +852,14 @@ def sources_html(sources: list[dict], title: str = "Sources") -> str:
         except (KeyError, ValueError):
             when = ""
         items.append(
-            f'<a class="fv-source" href="{safe_url(source["url"])}" target="_blank" rel="noopener">'
-            f'<span class="fv-source-n">{int(source["n"])}</span>'
+            f'<a class="fv-cite" href="{safe_url(source["url"])}" target="_blank" rel="noopener">'
+            f'<span class="fv-cite-n">{int(source["n"])}</span>'
             f'<img src="{favicon_url(source["url"])}" alt="" loading="lazy">'
-            f'<span class="fv-source-text"><b>{esc(source["title"])}</b>'
+            f'<span class="fv-cite-text"><b>{esc(source["title"])}</b>'
             f'<small>{esc(source["source"])}{" · " + esc(when) if when else ""}</small></span></a>'
         )
-    return (f'<div class="fv-sources"><p class="fv-sources-title">{esc(title)}</p>'
-            f'<div class="fv-sources-grid">{"".join(items)}</div></div>')
+    return (f'<div class="fv-cites"><p class="fv-cites-title">{esc(title)}</p>'
+            f'<div class="fv-cites-grid">{"".join(items)}</div></div>')
 
 
 def assistant_hero_html(engine: str | None, articles: int) -> str:

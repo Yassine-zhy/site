@@ -9,7 +9,6 @@ import theme
 from core import assistant
 from ui import (
     ai_count,
-    ai_enabled,
     ai_keys,
     ai_quota,
     api_keys,

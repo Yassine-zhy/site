@@ -86,6 +86,15 @@ Et quand rien ne marche : cherche le message exact entre guillemets sur un moteu
 | Une couleur CSS ne suit pas le thème | Utilise un jeton `var(--fv-…)` défini avec `light-dark()` (étape 15). |
 | La mise en page change après une mise à jour de Streamlit | Les règles CSS qui ciblent des `data-testid` internes peuvent casser (`theme.py`). |
 
+## Charge et hébergement
+
+| Symptôme | Solution |
+| --- | --- |
+| Le site ralentit ou coupe les connexions avec beaucoup de visiteurs | Mesure (`tools/load_test.py`), profile (`py-spy`), vérifie `.streamlit/config.toml` (étape 25). |
+| Le site ne se recharge plus quand je modifie le code | `streamlit run app.py --server.fileWatcherType auto`. |
+| La mémoire du serveur grossit sans fin | Un cache sans `max_entries` : `pytest tests/test_capacity.py`. |
+| « Runtime error » sur Hugging Face | Onglet *Logs* du Space ; secrets manquants (`DATABASE_URL`…). |
+
 ## Intelligence artificielle
 
 | Symptôme | Solution |

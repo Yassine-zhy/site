@@ -1,0 +1,16 @@
+# Ce qui n'entre pas dans l'image Docker : inutile pour faire tourner le site, ou secret
+.git
+.github
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+data
+.streamlit/secrets.toml
+.env
+docs
+guide
+tests
+tools
+requirements-dev.txt

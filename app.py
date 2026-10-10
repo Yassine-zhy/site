@@ -12,7 +12,7 @@ from pathlib import Path
 import streamlit as st
 
 import theme
-from core import alerts, storage
+from core import alerts, capacity, storage
 from ui import current_user, get_secret, is_admin, load_quotes, load_symbol_quotes, local_mode, sync_cookie
 
 # Le logo : un « F » dont la barre du milieu est une courbe qui monte (tools/make_logo.py) ; le nom
@@ -22,8 +22,17 @@ LOGO = str(Path(__file__).parent / "assets" / "logo.svg")
 st.set_page_config(page_title="FinVeille", page_icon=LOGO, layout="wide")
 st.logo(LOGO, size="large")
 theme.inject_css()
+
+
+def _int_setting(name: str, default: int) -> int:
+    try:
+        return int(get_secret(name) or default)
+    except ValueError:
+        return default
+
+
 if database_url := get_secret("DATABASE_URL"):  # base PostgreSQL en ligne (guide 20) ; sinon SQLite
-    storage.configure(database_url)
+    storage.configure(database_url, pool_size=_int_setting("DB_POOL_SIZE", 10))
 storage.init_db()
 sync_cookie()  # pose ou efface le cookie « rester connecté » après une connexion ou une déconnexion
 
@@ -55,8 +64,6 @@ def tape():
         if fired := alerts.check(my_alerts, quotes):
             theme.alert_banner(fired)
 
-
-tape()
 
 # Un dictionnaire {section: pages} : dans le menu du haut, chaque section devient un menu déroulant.
 pages = {
@@ -90,4 +97,11 @@ if is_admin(current_user()):  # l'assistant de configuration n'est visible que p
     pages["Outils"].append(st.Page("views/setup.py", title="Configuration", icon=":material/admin_panel_settings:"))
 page = st.navigation(pages, position="top")
 account_bar()  # après st.navigation : st.page_link a besoin que les pages soient déclarées
-page.run()
+
+# La file d'attente (core/capacity.py) : quelques pages s'affichent à la fois, les autres attendent leur tour
+# sans ralentir tout le serveur (le menu du haut, lui, s'affiche tout de suite).
+capacity.configure(_int_setting("RENDER_SLOTS", capacity.DEFAULT_SLOTS))
+with capacity.QUEUE.slot(on_wait=lambda: st.toast(
+        "Beaucoup de visiteurs en ce moment : ta page arrive dans quelques secondes…", icon=":material/hourglass_top:")):
+    tape()
+    page.run()

@@ -1,14 +1,15 @@
 """Page « Configuration » (administrateur) : état des services et valeurs prêtes à copier pour les activer."""
 
 import secrets
+from pathlib import Path
 from urllib.parse import urlparse
 
 import streamlit as st
 
 import theme
-from core import notify, storage
+from core import assistant, capacity, notify, storage
 from theme import esc
-from ui import ai_keys, auth_providers, current_user, is_admin, local_mode, smtp_settings
+from ui import LAST_GOOD, SYMBOL_QUOTES, ai_keys, auth_providers, current_user, is_admin, local_mode, smtp_settings
 
 theme.page_header("Configuration", "Active les connexions et les services du site. Cette page n'est visible que "
                   "par l'administrateur.", eyebrow="Outils")
@@ -45,6 +46,40 @@ cards = "".join(
     for name, active, text, guide in SERVICES
 )
 st.html(f'<div class="fv-kpis">{cards}</div>')
+
+# --- La charge en ce moment (guide 25) ------------------------------------------------------------------
+
+
+def memory_mb() -> float | None:
+    """Mémoire occupée par le serveur (Linux : /proc/self/status) ; None ailleurs (Windows, macOS)."""
+    try:
+        line = next(row for row in Path("/proc/self/status").read_text().splitlines() if row.startswith("VmRSS:"))
+    except (OSError, StopIteration):
+        return None
+    return int(line.split()[1]) / 1024
+
+
+@st.fragment(run_every="10s")
+def load_panel() -> None:
+    queue, memory = capacity.QUEUE.stats(), memory_mb()
+    cards = [
+        ("Pages en cours d'affichage", f"{queue['running']} / {queue['slots']}",
+         f"{queue['waiting']} en attente · record : {queue['max_waiting']} en attente"),
+        ("Pages servies", f"{queue['served']:,}".replace(",", "\u202f"),
+         f"attente la plus longue : {theme.fr_number(queue['longest_wait'], 1)} s"),
+        ("Mémoire du serveur", f"{memory:.0f} Mo" if memory else "—", "à comparer à la limite de ton hébergeur"),
+        ("Mémoires partagées", f"{len(LAST_GOOD) + len(SYMBOL_QUOTES) + len(assistant.CACHE)}",
+         "données de secours, cours, réponses de l'IA (bornées)"),
+    ]
+    st.html('<div class="fv-kpis">' + "".join(
+        f'<div class="fv-kpi"><div class="fv-kpi-label">{esc(label)}</div><div class="fv-kpi-value">{esc(value)}</div>'
+        f'<div class="fv-kpi-sub">{esc(sub)}</div></div>' for label, value, sub in cards) + "</div>")
+
+
+theme.section("La charge en ce moment", "mis à jour toutes les 10 secondes")
+load_panel()
+st.caption("Si des visiteurs attendent souvent, augmente RENDER_SLOTS (secrets) ou passe à un hébergement plus "
+           "puissant : voir guide/25-tenir-la-charge.md.")
 
 # --- Les valeurs à copier ----------------------------------------------------------------------------
 theme.section("Les valeurs à copier", "calculées pour l'adresse de ce site")

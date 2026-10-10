@@ -46,6 +46,10 @@ def app(db, monkeypatch):
     monkeypatch.setattr(assistant, "CACHE", assistant.AnswerCache())
     monkeypatch.setattr(assistant, "ANALYSES", assistant.AnswerCache())
     monkeypatch.setattr(assistant, "LIMITER", assistant.RateLimiter(per_minute=20))
+    from core import capacity  # mémoires partagées du site (étape 25) : neuves aussi
+    monkeypatch.setattr(ui, "LAST_GOOD", capacity.Memory())
+    monkeypatch.setattr(ui, "SYMBOL_QUOTES", capacity.Memory())
+    monkeypatch.setattr(capacity, "QUEUE", capacity.RenderQueue())
     closes = pd.DataFrame({"MC.PA": [100.0, 102, 101, 104, 108, 107], "RMS.PA": [200.0, 199, 204, 210, 205, 212],
                            "TTE.PA": [60.0, 61, 60.5, 59, 60, 62], "AIR.PA": [150.0, 152, 149, 155, 157, 156],
                            "^FCHI": [7700.0, 7710, 7690, 7750, 7800, 7803]},

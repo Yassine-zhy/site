@@ -6,6 +6,24 @@
 [client]
 toolbarMode = "viewer"          # cache les outils de développement (bouton « Deploy »…)
 
+# Tenir la charge (guide 25). Mesuré avec tools/load_test.py : 200 visiteurs arrivés ensemble sont tous servis
+# en 11 s, contre des déconnexions dès 100 visiteurs avec les réglages par défaut.
+[server]
+# Ne pas surveiller les fichiers du code : cette surveillance (pour recharger l'appli quand on modifie le code)
+# occupait 90 % du temps du serveur sous charge. Pour développer avec rechargement automatique :
+#   streamlit run app.py --server.fileWatcherType auto
+fileWatcherType = "none"
+websocketPingInterval = 45      # un serveur très occupé a 45 s (au lieu de 30) pour répondre aux navigateurs
+
+[runner]
+# Par défaut, Streamlit lance un grand ménage de la mémoire (gc.collect) après CHAQUE affichage : le serveur
+# entier s'arrête pendant ce temps. Python fait déjà ce ménage tout seul, au bon moment ; et nos mémoires sont
+# bornées (core/capacity.py), elles ne peuvent pas grossir sans fin.
+postScriptGC = false
+
+[browser]
+gatherUsageStats = false        # pas de statistiques d'usage envoyées à Streamlit
+
 [theme]
 font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
 headingFont = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@600;700&display=swap"
