@@ -146,10 +146,20 @@ _ready: set[str] = set()  # bases déjà initialisées par ce processus (init_db
 _pools: dict = {}  # une réserve de connexions PostgreSQL par adresse, partagée par tous les visiteurs
 
 
-def configure(database_url: str | None) -> None:
-    """Choisit la base : PostgreSQL si une adresse est donnée, sinon SQLite. À appeler au démarrage (app.py)."""
-    global DATABASE_URL
+POOL_SIZE = 10  # connexions PostgreSQL ouvertes au plus en même temps (secret DB_POOL_SIZE)
+
+
+def configure(database_url: str | None, pool_size: int | None = None) -> None:
+    """Choisit la base : PostgreSQL si une adresse est donnée, sinon SQLite. À appeler au démarrage (app.py).
+
+    `pool_size` : taille de la réserve de connexions. Chaque visiteur n'emprunte une connexion que le temps d'une
+    requête (quelques millisecondes) : 10 connexions suffisent pour des centaines de visiteurs. Les offres
+    gratuites de Neon et Supabase en acceptent bien plus.
+    """
+    global DATABASE_URL, POOL_SIZE
     DATABASE_URL = (database_url or "").strip()
+    if pool_size:
+        POOL_SIZE = pool_size
 
 
 def backend() -> str:
@@ -181,7 +191,7 @@ def _postgres_pool():
         from psycopg_pool import ConnectionPool
 
         _pools[DATABASE_URL] = ConnectionPool(
-            DATABASE_URL, min_size=1, max_size=4, open=True, timeout=15,
+            DATABASE_URL, min_size=1, max_size=POOL_SIZE, open=True, timeout=15,
             # dict_row : les lignes sont des dictionnaires (row["is_read"]) ;
             # prepare_threshold=None : compatible avec les « poolers » de Supabase (PgBouncer)
             kwargs={"row_factory": dict_row, "prepare_threshold": None},
@@ -201,6 +211,7 @@ def connect():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=10)  # attend jusqu'à 10 s si un autre visiteur écrit au même moment
     conn.row_factory = sqlite3.Row  # accès aux colonnes par leur nom : row["is_read"]
+    conn.execute("PRAGMA synchronous=NORMAL")  # avec le journal WAL (init_db) : sûr, et bien plus rapide
     try:
         yield conn
         conn.commit()
@@ -227,6 +238,9 @@ def init_db() -> None:
             conn.executescript(schema)
             _ready.add(target)
             return
+        # Journal « WAL » : les lectures ne bloquent plus les écritures (et inversement). Indispensable quand
+        # plusieurs visiteurs utilisent la base en même temps ; le réglage est gardé dans le fichier.
+        conn.execute("PRAGMA journal_mode=WAL")
         version = conn.execute("PRAGMA user_version").fetchone()[0]
         legacy = []
         if version < 1:

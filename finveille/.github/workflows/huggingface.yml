@@ -1,0 +1,34 @@
+# Publie FinVeille sur Hugging Face Spaces à chaque push sur main (guide 25). Comme tests.yml, ce fichier n'est
+# actif que si finveille/ est à la racine de son dépôt GitHub.
+#
+# À régler une fois dans le dépôt GitHub (Settings → Secrets and variables → Actions) :
+#   - variable HF_SPACE : le nom du Space, par exemple « ton-pseudo/finveille » (sans elle, rien n'est publié) ;
+#   - secret HF_TOKEN  : un jeton « Write » créé sur https://huggingface.co/settings/tokens
+name: Hugging Face
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: vars.HF_SPACE != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Préparer le contenu du Space
+        run: |
+          cp deploy/huggingface-README.md README.md   # la « carte d'identité » du Space (en-tête YAML)
+          rm -rf docs guide tests                     # inutiles au site (et les images exigeraient Git LFS)
+      - name: Publier
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ vars.HF_SPACE }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git checkout --orphan space
+          git add -A
+          git commit -q -m "FinVeille ${GITHUB_SHA::7}"
+          git push --force "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" space:main

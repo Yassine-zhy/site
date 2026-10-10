@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import functools
 import math
 import os
+import time
 from datetime import date, datetime, timezone
 
 import streamlit as st
@@ -12,7 +14,7 @@ import streamlit.components.v1 as components
 import theme
 import requests
 
-from core import accounts, assistant, crypto, macro, market, notify, storage
+from core import accounts, analytics, assistant, capacity, crypto, macro, market, notify, storage
 from core.aggregator import collect_articles, collect_followed
 from core.market import fetch_quotes
 from core.config import AI_KEYS, API_KEYS, CATEGORIES, COMPANIES
@@ -23,12 +25,17 @@ from theme import esc, safe_url
 NO_STATUS = {flag: False for flag in storage.FLAGS}
 
 
+_NO_SECRETS_FILE = {"until": 0.0}  # sans fichier secrets.toml, Streamlit le recherche à chaque lecture : on s'en souvient
+
+
 def get_secret(name: str) -> str | None:
-    """Lit une clé dans .streamlit/secrets.toml, ou à défaut dans les variables d'environnement."""
-    try:
-        value = st.secrets.get(name)
-    except FileNotFoundError:  # pas de fichier secrets.toml : ce n'est pas une erreur
-        value = None
+    """Lit une clé dans .streamlit/secrets.toml, ou à défaut dans les variables d'environnement (Docker, guide 25)."""
+    value = None
+    if time.monotonic() >= _NO_SECRETS_FILE["until"]:
+        try:
+            value = st.secrets.get(name)
+        except FileNotFoundError:  # pas de fichier secrets.toml : ce n'est pas une erreur, on revérifie dans 1 min
+            _NO_SECRETS_FILE["until"] = time.monotonic() + 60
     return value or os.environ.get(name) or None
 
 
@@ -88,16 +95,17 @@ def _ai_stream(messages: list[dict], max_tokens: int):
 
 def stream_ai(messages: list[dict], sources: list[assistant.Source], placeholder, max_tokens: int = 900) -> dict:
     """Affiche la réponse au fur et à mesure qu'elle arrive. {"text": … ou None, "engine": …, "note": …}"""
-    engine, stream = _ai_stream(messages, max_tokens)
-    if engine is None:
-        return {"text": None, "engine": "", "note": stream}
-    text, note = "", None
-    try:
-        for piece in stream:
-            text += piece
-            placeholder.markdown(assistant.linkify(text, sources) + " ▌")
-    except requests.RequestException as error:  # coupure en cours de route : on garde le début
-        note = f"réponse interrompue ({type(error).__name__})"
+    with capacity.QUEUE.released():  # l'IA rédige : une attente réseau, on laisse sa place dans la file
+        engine, stream = _ai_stream(messages, max_tokens)
+        if engine is None:
+            return {"text": None, "engine": "", "note": stream}
+        text, note = "", None
+        try:
+            for piece in stream:
+                text += piece
+                placeholder.markdown(assistant.linkify(text, sources) + " ▌")
+        except requests.RequestException as error:  # coupure en cours de route : on garde le début
+            note = f"réponse interrompue ({type(error).__name__})"
     if not text.strip():
         return {"text": None, "engine": engine, "note": note or "réponse vide"}
     placeholder.markdown(assistant.linkify(text, sources))
@@ -106,13 +114,14 @@ def stream_ai(messages: list[dict], sources: list[assistant.Source], placeholder
 
 def complete_ai(messages: list[dict], max_tokens: int = 900) -> dict:
     """La réponse complète, sans affichage progressif (édito du brief, analyse d'entreprise)."""
-    engine, stream = _ai_stream(messages, max_tokens)
-    if engine is None:
-        return {"text": None, "engine": "", "note": stream}
-    try:
-        text = "".join(stream).strip()
-    except requests.RequestException as error:
-        return {"text": None, "engine": engine, "note": f"réponse interrompue ({type(error).__name__})"}
+    with capacity.QUEUE.released():
+        engine, stream = _ai_stream(messages, max_tokens)
+        if engine is None:
+            return {"text": None, "engine": "", "note": stream}
+        try:
+            text = "".join(stream).strip()
+        except requests.RequestException as error:
+            return {"text": None, "engine": engine, "note": f"réponse interrompue ({type(error).__name__})"}
     return {"text": text or None, "engine": engine, "note": None if text else "réponse vide"}
 
 
@@ -422,164 +431,250 @@ def setting(user: str | None, key: str, default=None):
     return storage.get_setting(user, key, default) if user else default
 
 
-@st.cache_data(ttl=900, show_spinner="Récupération des actualités…")
+# --- Chargement des données : en cache, bornées, et résistantes aux pannes (étapes 6 et 25) -----------------
+# - chaque fonction est en cache (st.cache_data) : une source n'est interrogée qu'une fois pour tous les visiteurs,
+#   et Streamlit garantit qu'un seul visiteur la recharge quand le cache expire (les autres attendent son résultat) ;
+# - max_entries borne les caches qui dépendent d'un paramètre (un symbole, une recherche…) : sans limite, des
+#   milliers de visiteurs les feraient grossir jusqu'à saturer la mémoire du serveur ;
+# - une erreur n'est jamais mise en cache : on montre la dernière réponse réussie (LAST_GOOD) et on réessaie
+#   au prochain affichage, au lieu de garder une page vide pour tout le monde pendant toute la durée du cache ;
+# - pendant l'attente du réseau, le visiteur rend sa place dans la file d'attente (@_network).
+
+LAST_GOOD = capacity.Memory(max_entries=1000, ttl=24 * 3600)
+
+
+def _network(func):
+    """Pendant un appel réseau (lent, mais sans calcul), la place dans la file d'attente est rendue."""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        with capacity.QUEUE.released():
+            return func(*args, **kwargs)
+    return wrapper
+
+
+def _resilient(name: str, fetch, *args, empty=None):
+    """Appelle `fetch(*args)` (une fonction en cache) ; en cas d'échec, la dernière réponse réussie, sinon `empty`."""
+    key = f"{name}|{args!r}"
+    try:
+        value = fetch(*args)
+    except Exception:  # réseau, quota (429), format inattendu… : rien n'est mis en cache, on réessaiera
+        found = LAST_GOOD.get(key)
+        return empty if found is None else found
+    LAST_GOOD.put(key, value)
+    return value
+
+
+def _not_empty(value):
+    """Une réponse vide est traitée comme une panne : elle ne doit pas rester en cache."""
+    if value is None or (hasattr(value, "__len__") and len(value) == 0):
+        raise LookupError("réponse vide")
+    return value
+
+
+@st.cache_data(ttl=900, max_entries=4, show_spinner="Récupération des actualités…")
+@_network
+def _articles(keys: dict[str, str | None]):
+    articles, errors = collect_articles(keys)
+    _not_empty(articles)  # toutes les sources en panne : on garde la collecte précédente
+    return articles, errors, datetime.now(timezone.utc)
+
+
 def load_articles(keys: dict[str, str | None]):
     """Appelle les sources au plus une fois toutes les 15 minutes (900 s), pour ménager les quotas des API.
 
     Renvoie (articles, erreurs, heure de la collecte).
     """
-    articles, errors = collect_articles(keys)
-    return articles, errors, datetime.now(timezone.utc)
+    return _resilient("articles", _articles, keys,
+                      empty=([], ["Aucune source ne répond pour le moment"], datetime.now(timezone.utc)))
 
 
-@st.cache_data(ttl=120, show_spinner=False)
+load_articles.clear = _articles.clear  # bouton « Actualiser » du fil
+
+
+@st.cache_data(ttl=900, max_entries=8, show_spinner=False)
+def load_trends(collected: datetime) -> list[tuple[str, int, int]]:
+    """Les sujets qui montent, calculés une fois par collecte (`collected` sert de clé) au lieu d'une fois par
+    visiteur : le calcul parcourt toutes les dépêches."""
+    articles, _, _ = load_articles(api_keys())
+    return analytics.rising_topics(articles, now=datetime.now(timezone.utc))
+
+
+@st.cache_data(ttl=120, max_entries=2, show_spinner=False)
+@_network
+def _quotes():
+    return _not_empty(fetch_quotes())
+
+
 def load_quotes():
-    """Cours des marchés, rafraîchis au plus toutes les 2 minutes. Liste vide si Yahoo ne répond pas."""
-    try:
-        return fetch_quotes()
-    except Exception:  # yfinance peut lever des erreurs très variées (réseau, quota, format) : on n'affiche rien
-        return []
+    """Cours des marchés, rafraîchis au plus toutes les 2 minutes ; les derniers connus si Yahoo ne répond pas."""
+    return _resilient("quotes", _quotes, empty=[])
 
 
-@st.cache_data(ttl=900, show_spinner="Récupération de tes fils dédiés…")
-def load_followed(follows: tuple[tuple[str, str, str], ...], keys: dict[str, str | None]):
-    """Fils dédiés aux suivis. `follows` est un tuple (et pas une liste) pour pouvoir servir de clé de cache."""
+@st.cache_data(ttl=900, max_entries=300, show_spinner="Récupération de tes fils dédiés…")
+@_network
+def _followed(follows: tuple[tuple[str, str, str], ...], keys: dict[str, str | None]):
     base, _, _ = load_articles(keys)
     rows = [{"kind": kind, "value": value, "label": label} for kind, value, label in follows]
     return collect_followed(rows, keys, base)
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
+def load_followed(follows: tuple[tuple[str, str, str], ...], keys: dict[str, str | None]):
+    """Fils dédiés aux suivis. `follows` est un tuple (et pas une liste) pour pouvoir servir de clé de cache."""
+    return _resilient("followed", _followed, follows, keys, empty=({}, ["Fils dédiés indisponibles"]))
+
+
+@st.cache_data(ttl=3600, max_entries=500, show_spinner=False)
+@_network
+def _search(query: str):
+    return market.search_companies(query)
+
+
 def search_companies(query: str):
-    try:
-        return market.search_companies(query)
-    except Exception:  # même raison que load_quotes : yfinance peut échouer de multiples façons
-        return []
+    return _resilient("search", _search, query, empty=[])
 
 
-@st.cache_data(ttl=6 * 3600, show_spinner=False)
+@st.cache_data(ttl=6 * 3600, max_entries=500, show_spinner=False)
+@_network
+def _profile(symbol: str) -> dict:
+    return _not_empty(market.company_profile(symbol))
+
+
 def load_profile(symbol: str) -> dict:
     """Fiche d'une entreprise, gardée 6 heures (ces données changent peu)."""
-    try:
-        return market.company_profile(symbol)
-    except Exception:
-        return {}
+    return _resilient("profile", _profile, symbol, empty={})
 
 
-@st.cache_data(ttl=900, show_spinner=False)
+@st.cache_data(ttl=900, max_entries=500, show_spinner=False)
+@_network
+def _history(symbol: str, period: str):
+    return _not_empty(market.price_history(symbol, period))
+
+
 def load_history(symbol: str, period: str):
-    try:
-        return market.price_history(symbol, period)
-    except Exception:
-        return None
+    return _resilient("history", _history, symbol, period)
 
 
-@st.cache_data(ttl=120, show_spinner=False)
+# Les cours sont gardés symbole par symbole : deux visiteurs qui suivent LVMH partagent le même cours, même si le
+# reste de leurs listes diffère (un cache par liste complète ne servirait presque jamais deux fois).
+SYMBOL_QUOTES = capacity.Memory(max_entries=3000, ttl=120)
+
+
+def load_symbol_quotes(symbols: tuple[str, ...], labels: dict[str, str] | None = None,
+                       group: str = "") -> dict:
+    """Cotations d'une liste de symboles, rangées par symbole : {"MC.PA": Quote, …}."""
+    found = {s: q for s in symbols if (q := SYMBOL_QUOTES.get(f"{group}|{s}")) is not None}
+    missing = [s for s in symbols if s not in found]
+    if missing:
+        try:
+            with capacity.QUEUE.released():
+                fetched = fetch_quotes([(s, (labels or {}).get(s, s), group, "%") for s in missing])
+        except Exception:
+            fetched = []
+        for quote in fetched:
+            SYMBOL_QUOTES.put(f"{group}|{quote.symbol}", quote)
+            LAST_GOOD.put(f"symbol|{group}|{quote.symbol}", quote)
+            found[quote.symbol] = quote
+        for symbol in missing:  # pas de réponse : le dernier cours connu, s'il y en a un
+            if symbol not in found and (last := LAST_GOOD.get(f"symbol|{group}|{symbol}")) is not None:
+                found[symbol] = last
+    return found
+
+
 def load_followed_quotes(companies: tuple[tuple[str, str], ...]):
     """Cours des entreprises suivies (même format que la page Marchés)."""
-    try:
-        return fetch_quotes([(symbol, label, "Mes entreprises", "%") for symbol, label in companies])
-    except Exception:
-        return []
+    labels = dict(companies)
+    quotes = load_symbol_quotes(tuple(labels), labels, "Mes entreprises")
+    return [quotes[symbol] for symbol in labels if symbol in quotes]
 
 
-@st.cache_data(ttl=300, show_spinner="Chargement des 40 valeurs du CAC 40…")
+@st.cache_data(ttl=300, max_entries=2, show_spinner="Chargement des 40 valeurs du CAC 40…")
+@_network
+def _cac40():
+    return _not_empty(fetch_quotes([(symbol, name, sector, "%") for symbol, name, sector in market.CAC40]))
+
+
 def load_cac40():
-    try:
-        return fetch_quotes([(symbol, name, sector, "%") for symbol, name, sector in market.CAC40])
-    except Exception:
-        return []
+    return _resilient("cac40", _cac40, empty=[])
 
 
-@st.cache_data(ttl=600, show_spinner=False)
+@st.cache_data(ttl=600, max_entries=2, show_spinner=False)
+@_network
+def _euro_rates() -> dict[str, float]:
+    return _not_empty(market.euro_rates())
+
+
 def load_euro_rates() -> dict[str, float]:
-    try:
-        return market.euro_rates()
-    except Exception:
-        return {}
+    return _resilient("euro_rates", _euro_rates, empty={})
 
 
-@st.cache_resource
-def _last_good() -> dict:
-    """Mémoire partagée par tous les visiteurs : la dernière réponse réussie de chaque source fragile."""
-    return {}
-
-
-@st.cache_data(ttl=300, show_spinner="Cours des cryptomonnaies (CoinGecko)…")
+@st.cache_data(ttl=300, max_entries=2, show_spinner="Cours des cryptomonnaies (CoinGecko)…")
+@_network
 def _crypto_markets() -> list:
-    return crypto.fetch_markets()
+    return _not_empty(crypto.fetch_markets())
 
 
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=300, max_entries=2, show_spinner=False)
+@_network
 def _crypto_overview() -> dict:
-    return crypto.fetch_global()
+    return _not_empty(crypto.fetch_global())
 
 
 def load_crypto() -> tuple[list, dict]:
     """Les 20 premières cryptomonnaies et les chiffres du marché, gardés 5 minutes (quota gratuit de CoinGecko).
 
-    Une erreur n'est jamais mise en cache (st.cache_data ne garde que les résultats) : on réessaiera à
-    l'affichage suivant. En attendant, on montre les derniers chiffres obtenus, s'il y en a.
+    Une erreur n'est jamais mise en cache : on réessaiera à l'affichage suivant. En attendant, on montre les
+    derniers chiffres obtenus, s'il y en a.
     """
-    memory = _last_good()
-    results = []
-    for name, fetch, empty in [("coins", _crypto_markets, []), ("overview", _crypto_overview, {})]:
-        try:
-            memory[name] = fetch()
-        except Exception:
-            pass
-        results.append(memory.get(name, empty))
-    return results[0], results[1]
+    return _resilient("crypto_markets", _crypto_markets, empty=[]), _resilient("crypto_overview", _crypto_overview,
+                                                                               empty={})
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=3600, max_entries=2, show_spinner=False)
+@_network
+def _fear_greed() -> list:
+    return _not_empty(crypto.fetch_fear_greed(365))
+
+
 def load_fear_greed() -> list:
     """L'indice peur et avidité sur un an (publié une fois par jour)."""
-    try:
-        return crypto.fetch_fear_greed(365)
-    except Exception:
-        return []
+    return _resilient("fear_greed", _fear_greed, empty=[])
 
 
-@st.cache_data(ttl=6 * 3600, show_spinner="Chargement des statistiques officielles (BCE, Réserve fédérale)…")
+@st.cache_data(ttl=6 * 3600, max_entries=10, show_spinner="Chargement des statistiques officielles (BCE, Réserve fédérale)…")
+@_network
 def load_macro(start: str) -> tuple[dict, list[str]]:
     """Les indicateurs économiques : publiés au plus une fois par jour, on les garde 6 heures."""
     return macro.fetch_all(start)
 
 
-@st.cache_data(ttl=6 * 3600, show_spinner=False)
+@st.cache_data(ttl=6 * 3600, max_entries=10, show_spinner=False)
+@_network
+def _yield_curves(start: str) -> dict:
+    return _not_empty(macro.fetch_yield_curves(start))
+
+
 def load_yield_curves(start: str) -> dict:
-    try:
-        return macro.fetch_yield_curves(start)
-    except Exception:  # une source en panne : la section est simplement masquée
-        return {}
+    return _resilient("yield_curves", _yield_curves, start, empty={})  # une source en panne : section masquée
 
 
-@st.cache_data(ttl=6 * 3600, show_spinner=False)
+@st.cache_data(ttl=6 * 3600, max_entries=500, show_spinner=False)
+@_network
+def _calendar(symbol: str) -> dict:
+    return market.company_calendar(symbol)
+
+
 def load_calendar(symbol: str) -> dict:
-    try:
-        return market.company_calendar(symbol)
-    except Exception:
-        return {}
+    return _resilient("calendar", _calendar, symbol, empty={})
 
 
-@st.cache_data(ttl=900, show_spinner="Téléchargement des historiques…")
+@st.cache_data(ttl=900, max_entries=200, show_spinner="Téléchargement des historiques…")
+@_network
+def _closes(symbols: tuple[str, ...], period: str):
+    return _not_empty(market.closes_table(list(symbols), period))
+
+
 def load_closes(symbols: tuple[str, ...], period: str):
-    try:
-        return market.closes_table(list(symbols), period)
-    except Exception:
-        return None
-
-
-@st.cache_data(ttl=120, show_spinner=False)
-def load_symbol_quotes(symbols: tuple[str, ...]) -> dict:
-    """Cotations d'une liste de symboles, rangées par symbole : {"MC.PA": Quote, …}."""
-    if not symbols:
-        return {}
-    try:
-        return {q.symbol: q for q in fetch_quotes([(s, s, "", "%") for s in symbols])}
-    except Exception:
-        return {}
+    return _resilient("closes", _closes, symbols, period)
 
 
 def company_choices(user: str | None = None) -> dict[str, str]:
@@ -629,7 +724,7 @@ def show_summary(article: Article, user: str | None) -> None:
     """Affiche le résumé de l'article ; le calcule (puis l'enregistre) s'il n'existe pas encore."""
     summary = storage.get_summary(article.id)
     if summary is None:
-        with st.spinner("Lecture et résumé de l'article…"):
+        with st.spinner("Lecture et résumé de l'article…"), capacity.QUEUE.released():
             engine = setting(user, "summary_engine", "auto")
             summary = summarize(article, ai_keys(), engine).to_dict()
         storage.save_summary(article.id, summary)

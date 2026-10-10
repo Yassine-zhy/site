@@ -24,13 +24,14 @@ import math
 import re
 import threading
 import time
-from collections import OrderedDict, deque
+from collections import deque
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timezone
 from typing import Callable, Iterator
 
 import requests
 
+from core.capacity import Memory
 from core.filters import normalize
 from core.glossary import GLOSSARY
 from core.models import Article
@@ -344,7 +345,7 @@ def prepare(question: str, history: list[dict], articles: list[Article], quotes=
     glossary = glossary_hits(question)
     lesson = bool(glossary) and is_definition(question)  # question de cours : quelques dépêches suffisent
     sources = make_sources(rank_articles(question, articles, limit=3 if lesson else MAX_SOURCES, now=now))
-    context = [f"COURS DES MARCHÉS (dernière séance) :\n" + ("\n".join(market_lines(quotes)) or "(indisponibles)"),
+    context = ["COURS DES MARCHÉS (dernière séance) :\n" + ("\n".join(market_lines(quotes)) or "(indisponibles)"),
                f"DÉPÊCHES :\n{documents_text(sources)}"]
     if glossary:
         context.append("GLOSSAIRE FINVEILLE :\n" + "\n".join(f"{term} : {text}" for term, text in glossary))
@@ -567,34 +568,12 @@ class RateLimiter:
             return 0.0
 
 
-class AnswerCache:
-    """Mémoire des réponses, partagée par tous les visiteurs : taille et durée de vie bornées (pas de fuite de
-    mémoire). La plus ancienne réponse est oubliée quand la mémoire est pleine."""
+class AnswerCache(Memory):
+    """Mémoire des réponses, partagée par tous les visiteurs, bornée en taille et en durée (core/capacity.py)."""
 
     def __init__(self, max_entries: int = 500, ttl: float = 1800):
-        self.max_entries, self.ttl = max_entries, ttl
-        self._items: OrderedDict[str, tuple[float, dict]] = OrderedDict()  # clé → (heure d'expiration, réponse)
-        self._lock = threading.Lock()
+        super().__init__(max_entries, ttl)
         self._key_locks: dict[str, threading.Lock] = {}
-
-    def get(self, key: str, now: float | None = None) -> dict | None:
-        now = time.monotonic() if now is None else now
-        with self._lock:
-            item = self._items.get(key)
-            if item is None:
-                return None
-            if now >= item[0]:
-                del self._items[key]
-                return None
-            return item[1]
-
-    def put(self, key: str, value: dict, now: float | None = None, ttl: float | None = None) -> None:
-        now = time.monotonic() if now is None else now
-        with self._lock:
-            self._items[key] = (now + (self.ttl if ttl is None else ttl), value)
-            self._items.move_to_end(key)
-            while len(self._items) > self.max_entries:
-                self._items.popitem(last=False)
 
     def get_or_compute(self, key: str, compute: Callable[[], dict], failure_ttl: float = 300) -> dict:
         """La réponse en mémoire, ou la calcule… une seule fois, même si 50 visiteurs la demandent en même temps.
@@ -615,9 +594,6 @@ class AnswerCache:
         with self._lock:
             self._key_locks.pop(key, None)
         return value
-
-    def __len__(self) -> int:
-        return len(self._items)
 
 
 def cache_key(kind: str, question: str, sources: list[Source]) -> str:

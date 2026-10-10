@@ -30,8 +30,10 @@ with left, st.container(key="fvset_feed"):
         on_change=save, args=("default_categories", "pref_categories"),
         help="Aucune rubrique sélectionnée = toutes les rubriques.",
     )
-    st.select_slider(
-        "Articles chargés à la fois", options=[15, 30, 50, 80], value=storage.get_setting(user, "page_size", 30),
+    sizes = [10, 20, 30, 50]
+    saved = storage.get_setting(user, "page_size", 20)
+    st.select_slider(  # une valeur choisie avec une ancienne version (15, 80…) est ramenée à la plus proche
+        "Articles chargés à la fois", options=sizes, value=min(sizes, key=lambda size: abs(size - saved)),
         key="pref_page_size", on_change=save, args=("page_size", "pref_page_size"),
     )
     st.segmented_control(

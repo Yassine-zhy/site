@@ -19,6 +19,7 @@ import hashlib
 import hmac
 import re
 import secrets
+import threading
 from datetime import datetime, timedelta, timezone
 
 from core import storage
@@ -31,6 +32,9 @@ CODE_MINUTES = 15
 CODE_MAX_ATTEMPTS = 5
 SCRYPT = {"n": 2**14, "r": 8, "p": 1}  # coût : environ 16 Mo de mémoire et 50 ms par calcul
 GENERIC_ERROR = "E-mail ou mot de passe incorrect."
+# scrypt utilise 16 Mo de mémoire par calcul : 100 connexions simultanées demanderaient 1,6 Go d'un coup. Au plus 4
+# calculs à la fois (les suivants attendent quelques dizaines de millisecondes) : la mémoire reste maîtrisée.
+_HASHING = threading.BoundedSemaphore(4)
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
 _COMMON = {"motdepasse", "password", "azertyuiop", "12345678", "123456789", "qwertyuiop", "finveille", "azerty123"}
 
@@ -75,7 +79,8 @@ def check_password_strength(password: str) -> None:
 def hash_password(password: str) -> str:
     """Empreinte scrypt au format « scrypt$n$r$p$sel$empreinte » (tout ce qu'il faut pour vérifier plus tard)."""
     salt = secrets.token_bytes(16)
-    digest = hashlib.scrypt(password.encode(), salt=salt, dklen=32, **SCRYPT)
+    with _HASHING:
+        digest = hashlib.scrypt(password.encode(), salt=salt, dklen=32, **SCRYPT)
     salt_text, digest_text = base64.b64encode(salt).decode(), base64.b64encode(digest).decode()
     return f"scrypt${SCRYPT['n']}${SCRYPT['r']}${SCRYPT['p']}${salt_text}${digest_text}"
 
@@ -83,8 +88,9 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, stored: str) -> bool:
     try:
         _, n, r, p, salt, digest = stored.split("$")
-        computed = hashlib.scrypt(password.encode(), salt=base64.b64decode(salt), dklen=32, n=int(n), r=int(r),
-                                  p=int(p))
+        with _HASHING:
+            computed = hashlib.scrypt(password.encode(), salt=base64.b64decode(salt), dklen=32, n=int(n), r=int(r),
+                                      p=int(p))
     except (ValueError, TypeError):
         return False
     return hmac.compare_digest(computed, base64.b64decode(digest))  # comparaison en temps constant

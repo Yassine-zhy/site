@@ -6,14 +6,14 @@ from datetime import datetime, timedelta, timezone
 import streamlit as st
 
 import theme
-from core import analytics, images, storage
+from core import analytics, capacity, images, storage
 from core.config import API_KEYS, CATEGORIES
 from core.filters import filter_articles
 from theme import esc
-from ui import NO_STATUS, api_keys, article_card, current_user, flush_toast, load_articles, setting
+from ui import NO_STATUS, api_keys, article_card, current_user, flush_toast, load_articles, load_trends, setting
 
 user = current_user()  # None : visiteur non connecté (il voit le fil, sans favoris ni « lu »)
-PAGE_SIZE = setting(user, "page_size", 30)  # nombre d'articles affichés par « page » (réglable)
+PAGE_SIZE = setting(user, "page_size", 20)  # nombre d'articles affichés par « page » (réglable)
 
 
 def show_more():
@@ -74,7 +74,7 @@ categories = st.pills(
 )
 
 # --- Tendances : les sujets qui montent, cliquables ------------------------------------------------
-if trends := analytics.rising_topics(articles, now=datetime.now(timezone.utc))[:6]:
+if trends := load_trends(fetched_at)[:6]:  # calculées une fois par collecte, pour tous les visiteurs
     with st.container(horizontal=True, vertical_alignment="center", gap="small", key="fvtrends"):
         st.html('<span class="fv-trends-label">Tendances</span>', width="content")
         for term, count, before in trends:
@@ -109,9 +109,23 @@ def pick_lead(filtered):
     return lead, 0, "la dernière dépêche"
 
 
+@st.cache_data(ttl=600, max_entries=64, show_spinner=False)
+def lead_for(ids: tuple[str, ...]) -> tuple[str, int, str]:
+    """La une d'une liste d'articles (comparer les titres deux à deux coûte cher) : calculée une seule fois pour
+    tous les visiteurs qui voient la même liste, c'est-à-dire presque tous (sans filtre)."""
+    by_id = {a.id: a for a in load_articles(keys)[0]}
+    lead, echoes, why = pick_lead([by_id[i] for i in ids if i in by_id])
+    return lead.id, echoes, why
+
+
 # --- Le corps de la page : se met à jour tout seul toutes les 5 minutes --------------------
 @st.fragment(run_every="5min")
 def body(query, categories, sources, hide_read, show_hidden, compact, pictures_on):
+    with capacity.QUEUE.slot():  # la mise à jour automatique passe aussi par la file d'attente (core/capacity.py)
+        render_body(query, categories, sources, hide_read, show_hidden, compact, pictures_on)
+
+
+def render_body(query, categories, sources, hide_read, show_hidden, compact, pictures_on):
     flush_toast()
     current, _, collected = load_articles(keys)  # nouvelles données dès que le cache (15 min) a expiré
     statuses = storage.get_statuses(user) if user else {}
@@ -132,11 +146,15 @@ def body(query, categories, sources, hide_read, show_hidden, compact, pictures_o
             theme.section("Aucun résultat")
             st.info("Aucun article ne correspond à ces filtres. Essaie un autre mot-clé ou retire un filtre.")
             return
-        lead, echoes, why = pick_lead(filtered)
+        lead_id, echoes, why = lead_for(tuple(a.id for a in filtered[:150]))
+        lead = next((a for a in filtered if a.id == lead_id), filtered[0])
         others = [a for a in filtered if a is not lead]
         tiles = pick_tiles(others) if not compact else []
         # Pour les articles mis en avant sans photo dans le flux : l'image de partage de leur page (og:image)
-        pictures = images.share_images([a.url for a in [lead, *tiles] if not a.image]) if pictures_on else {}
+        pictures = {}
+        if pictures_on:
+            with capacity.QUEUE.released():  # attente réseau : on laisse sa place dans la file
+                pictures = images.share_images([a.url for a in [lead, *tiles] if not a.image])
         theme.section("À la une", why)
         article_card(lead, statuses.get(lead.id, NO_STATUS), key_prefix="feed", lead=True, user=user,
                      echoes=echoes, show_image=pictures_on, image=pictures.get(lead.url))
