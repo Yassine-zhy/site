@@ -248,6 +248,17 @@ CSS = """
   background: currentColor; }
 .fv-range-ends { display: flex; justify-content: space-between; color: var(--fv-muted); font-variant-numeric: tabular-nums; }
 
+/* ---------- Résumé (« L'essentiel ») ---------- */
+.fv-brief { margin: .5rem 0 .2rem; padding: .7rem .95rem .6rem; border-left: 2px solid currentColor;
+  background: var(--fv-tint); border-radius: 0 3px 3px 0; }
+.fv-brief-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .2rem 1rem; margin-bottom: .35rem;
+  font-size: .7rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+.fv-brief-head small { font-size: .72rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--fv-muted); }
+.fv-brief ul { margin: 0; padding-left: 1.1rem; }
+.fv-brief li { margin: .2rem 0; font-size: .92rem; line-height: 1.45; }
+.fv-brief-why { margin: .45rem 0 0; font-size: .9rem; line-height: 1.45; }
+.fv-brief-note { margin: .45rem 0 0; font-size: .72rem; color: var(--fv-muted); }
+
 @media (prefers-reduced-motion: reduce) {
   .fv-tape { overflow-x: auto; mask-image: none; }
   .fv-tape-track { animation: none; }

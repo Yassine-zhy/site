@@ -6,3 +6,4 @@ tzdata               # fuseaux horaires (indispensable sous Windows pour zoneinf
 yfinance>=1.0        # cours de Bourse (Yahoo Finance, sans clé)
 pandas>=2.2          # tableaux de données (installé avec yfinance, cité pour mémoire)
 altair>=5.4          # graphiques (installé avec Streamlit, cité pour mémoire)
+trafilatura>=2.0     # extraire le texte principal d'une page web (pour le résumé)

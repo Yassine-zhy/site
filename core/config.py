@@ -65,6 +65,12 @@ API_KEYS = {
     "ALPHAVANTAGE_API_KEY": ("Alpha Vantage", "https://www.alphavantage.co/support/#api-key"),
 }
 
+# Clés des moteurs de résumé par IA (optionnelles ; sans elles, résumé local)
+AI_KEYS = {
+    "GEMINI_API_KEY": ("Google Gemini", "https://aistudio.google.com/apikey"),
+    "GROQ_API_KEY": ("Groq", "https://console.groq.com/keys"),
+}
+
 # Catégories d'actualités Finnhub -> nos catégories
 FINNHUB_CATEGORIES = {"general": "marches", "merger": "entreprises", "forex": "macro", "crypto": "crypto"}
 
