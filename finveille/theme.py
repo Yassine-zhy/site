@@ -259,6 +259,26 @@ CSS = """
 .fv-brief-why { margin: .45rem 0 0; font-size: .9rem; line-height: 1.45; }
 .fv-brief-note { margin: .45rem 0 0; font-size: .72rem; color: var(--fv-muted); }
 
+/* ---------- Vue compacte, notes, glossaire ---------- */
+[class*="st-key-fvcompact_"] { padding: .35rem 0 .15rem; border-bottom: 1px solid var(--fv-rule); }
+[class*="st-key-fvcompact_"] button { min-height: 1.6rem; }
+.fv-item.is-compact .fv-headline { font-size: 1.05rem !important; margin: .2rem 0 0 !important; }
+.fv-note-block { margin: .4rem 0 .1rem; padding: .45rem .8rem; border-left: 2px solid var(--fv-rule-strong);
+  font-family: var(--fv-serif); font-style: italic; font-size: .98rem; }
+.fv-note-block b { display: block; font-family: "IBM Plex Sans", sans-serif; font-style: normal; font-size: .66rem;
+  font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--fv-muted); margin-bottom: .1rem; }
+.fv-word { margin: .5rem 0 .4rem; padding: 1rem 1.2rem; border: 1px solid var(--fv-rule-strong); border-radius: 3px; }
+.fv-word small { font-size: .68rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+.fv-word h3 { margin: .25rem 0 .3rem !important; padding: 0 !important; font-family: var(--fv-serif) !important;
+  font-size: 1.7rem !important; font-weight: 700 !important; }
+.fv-word p { margin: 0; font-size: 1rem; line-height: 1.5; }
+.fv-letter { margin: 1.3rem 0 .2rem; font-family: var(--fv-serif); font-size: 1.6rem; font-weight: 700; line-height: 1;
+  border-bottom: 1px solid var(--fv-rule-strong); padding-bottom: .25rem; }
+.fv-gloss { margin: 0; }
+.fv-gloss dt { margin-top: .7rem; font-weight: 600; font-size: .95rem; }
+.fv-gloss dt small { margin-left: .5rem; font-weight: 400; font-size: .72rem; color: var(--fv-muted); }
+.fv-gloss dd { margin: .15rem 0 0; color: var(--fv-muted); font-size: .92rem; line-height: 1.5; }
+
 @media (prefers-reduced-motion: reduce) {
   .fv-tape { overflow-x: auto; mask-image: none; }
   .fv-tape-track { animation: none; }

@@ -29,6 +29,10 @@ st.select_slider(
     "Articles chargés à la fois", options=[15, 30, 50, 80], value=storage.get_setting("page_size", 30),
     key="pref_page_size", on_change=save, args=("page_size", "pref_page_size"),
 )
+st.segmented_control(
+    "Présentation du fil", options=["confort", "compact"], format_func={"confort": "Confort (avec chapeau)", "compact": "Compacte (une ligne)"}.get,
+    default=storage.get_setting("density", "confort"), key="pref_density", on_change=save, args=("density", "pref_density"),
+)
 st.toggle(
     "Cacher les articles lus par défaut", value=storage.get_setting("hide_read", False),
     key="pref_hide_read", on_change=save, args=("hide_read", "pref_hide_read"),

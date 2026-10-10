@@ -146,8 +146,16 @@ def show_summary(article: Article) -> None:
     st.html(summary_html(summary))
 
 
-def article_html(article: Article, read: bool, lead: bool = False) -> str:
-    """Le HTML d'un article : rubrique, source, heure, titre, chapeau (et photo pour la une)."""
+def _save_note(article_id: str, widget_key: str) -> None:
+    storage.save_note(article_id, st.session_state.get(widget_key, ""))
+    st.session_state["fv_toast"] = "Note enregistrée"
+
+
+def article_html(article: Article, read: bool, lead: bool = False, compact: bool = False) -> str:
+    """Le HTML d'un article : rubrique, source, heure, titre, chapeau (et photo pour la une).
+
+    En vue compacte, on n'affiche ni le chapeau ni la photo : une ligne de titre par article.
+    """
     kicker = [
         theme.category_tag(article.category, CATEGORIES.get(article.category, article.category)),
         f'<span class="fv-src"><img src="{theme.favicon_url(article.url)}" alt="" loading="lazy">'
@@ -162,9 +170,9 @@ def article_html(article: Article, read: bool, lead: bool = False) -> str:
         f'<div class="fv-kicker">{"".join(kicker)}</div>'
         f'<{heading} class="fv-headline"><a href="{safe_url(article.url)}" target="_blank" rel="noopener">'
         f"{esc(article.title)}</a></{heading}>"
-        + (f'<p class="fv-dek">{esc(article.summary)}</p>' if article.summary else "")
+        + (f'<p class="fv-dek">{esc(article.summary)}</p>' if article.summary and not compact else "")
     )
-    classes = ["fv-item"] + (["is-read"] if read else []) + (["fv-lead"] if lead else [])
+    classes = ["fv-item"] + (["is-read"] if read else []) + (["fv-lead"] if lead else []) + (["is-compact"] if compact else [])
     if lead and article.image:
         classes.append("has-img")
         figure = f'<figure><img src="{safe_url(article.image)}" alt="" loading="lazy"></figure>'
@@ -172,10 +180,20 @@ def article_html(article: Article, read: bool, lead: bool = False) -> str:
     return f'<article class="{" ".join(classes)}">{text}</article>'
 
 
-def article_card(article: Article, status: dict[str, bool], key_prefix: str, lead: bool = False) -> None:
+def article_card(
+    article: Article,
+    status: dict[str, bool],
+    key_prefix: str,
+    lead: bool = False,
+    compact: bool = False,
+    note: str | None = None,
+    with_note: bool = False,
+) -> None:
     """Affiche un article et ses boutons d'action.
 
-    `key_prefix` rend les clés des boutons uniques quand le même article apparaît sur plusieurs pages.
+    - `key_prefix` rend les clés des boutons uniques quand le même article apparaît sur plusieurs pages ;
+    - `compact` : une ligne par article (titre et informations, sans chapeau) ;
+    - `note` / `with_note` : affiche la note personnelle et le bouton pour l'écrire (page Favoris).
     """
     favorite, read, hidden = status["is_favorite"], status["is_read"], status["is_hidden"]
     key = f"{key_prefix}_{article.id}"
@@ -183,8 +201,11 @@ def article_card(article: Article, status: dict[str, bool], key_prefix: str, lea
     # La clé du conteneur devient une classe CSS (st-key-fvcard_…) que theme.CSS met en forme.
     summary_open = st.session_state.get(f"summary_{article.id}", False)
 
-    with st.container(key=f"{'fvlead' if lead else 'fvcard'}_{key}", gap="small"):
-        st.html(article_html(article, read, lead))
+    kind = "fvlead" if lead else "fvcompact" if compact else "fvcard"
+    with st.container(key=f"{kind}_{key}", gap="small"):
+        st.html(article_html(article, read, lead, compact))
+        if note:
+            st.html(f'<blockquote class="fv-note-block"><b>Ma note</b>{esc(note)}</blockquote>')
         if summary_open:
             show_summary(article)
         with st.container(horizontal=True, gap="small"):
@@ -226,3 +247,9 @@ def article_card(article: Article, status: dict[str, bool], key_prefix: str, lea
                 on_click=_update,
                 args=(article, "is_hidden", not hidden, "Article réaffiché" if hidden else "Article masqué"),
             )
+            if with_note:
+                with st.popover("Modifier la note" if note else "Annoter", icon=":material/edit_note:", type="tertiary"):
+                    st.text_area("Ma note", value=note or "", key=f"{key}_note", height=110,
+                                 placeholder="Pourquoi cet article t'intéresse, à quoi il te servira…")
+                    st.button("Enregistrer", key=f"{key}_note_save", type="primary",
+                              on_click=_save_note, args=(article.id, f"{key}_note"))
