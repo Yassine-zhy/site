@@ -148,4 +148,4 @@ Le temps de lecture est estimé à **220 mots par minute**, la vitesse moyenne d
 | La une montre une dépêche ancienne | Fenêtre de 24 h vide pour cette rubrique | La rubrique est simplement omise ; élargis la fenêtre si besoin. |
 | Le fichier téléchargé a des accents illisibles | Encodage | On encode en UTF-8 (`.encode("utf-8")`) ; ouvre-le avec un éditeur moderne (VS Code, Notepad++). |
 
-🎉 Le projet est complet. Retour au [sommaire du guide](README.md).
+Étape suivante : [comptes utilisateurs](14-comptes-utilisateurs.md). Retour au [sommaire du guide](README.md).

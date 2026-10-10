@@ -6,14 +6,15 @@ import streamlit as st
 import theme
 from core import storage
 from core.config import AI_KEYS, API_KEYS, CATEGORIES
-from ui import ai_keys, api_keys
+from ui import ai_keys, api_keys, require_user
 
-theme.page_header("Réglages", "Tes préférences sont enregistrées dans la base de données et conservées.")
+theme.page_header("Réglages", "Tes préférences sont enregistrées dans ton compte et conservées.")
+user = require_user()
 
 
 def save(setting: str, widget_key: str) -> None:
     """Callback commun : enregistre la nouvelle valeur d'un widget comme préférence."""
-    storage.set_setting(setting, st.session_state[widget_key])
+    storage.set_setting(user, setting, st.session_state[widget_key])
     st.toast("Préférence enregistrée")
 
 
@@ -21,20 +22,20 @@ def save(setting: str, widget_key: str) -> None:
 theme.section("Le fil")
 st.pills(
     "Rubriques affichées par défaut", options=list(CATEGORIES), format_func=CATEGORIES.get, selection_mode="multi",
-    default=storage.get_setting("default_categories", []), key="pref_categories",
+    default=storage.get_setting(user, "default_categories", []), key="pref_categories",
     on_change=save, args=("default_categories", "pref_categories"),
     help="Aucune rubrique sélectionnée = toutes les rubriques.",
 )
 st.select_slider(
-    "Articles chargés à la fois", options=[15, 30, 50, 80], value=storage.get_setting("page_size", 30),
+    "Articles chargés à la fois", options=[15, 30, 50, 80], value=storage.get_setting(user, "page_size", 30),
     key="pref_page_size", on_change=save, args=("page_size", "pref_page_size"),
 )
 st.segmented_control(
     "Présentation du fil", options=["confort", "compact"], format_func={"confort": "Confort (avec chapeau)", "compact": "Compacte (une ligne)"}.get,
-    default=storage.get_setting("density", "confort"), key="pref_density", on_change=save, args=("density", "pref_density"),
+    default=storage.get_setting(user, "density", "confort"), key="pref_density", on_change=save, args=("density", "pref_density"),
 )
 st.toggle(
-    "Cacher les articles lus par défaut", value=storage.get_setting("hide_read", False),
+    "Cacher les articles lus par défaut", value=storage.get_setting(user, "hide_read", False),
     key="pref_hide_read", on_change=save, args=("hide_read", "pref_hide_read"),
 )
 
@@ -42,7 +43,7 @@ st.toggle(
 theme.section("Résumé automatique")
 engines = {"auto": "Automatique : IA si une clé est disponible, sinon résumé local", "local": "Toujours le résumé local (rien n'est envoyé en ligne)"}
 st.radio(
-    "Moteur", options=list(engines), format_func=engines.get, index=list(engines).index(storage.get_setting("summary_engine", "auto")),
+    "Moteur", options=list(engines), format_func=engines.get, index=list(engines).index(storage.get_setting(user, "summary_engine", "auto")),
     key="pref_engine", on_change=save, args=("summary_engine", "pref_engine"), label_visibility="collapsed",
 )
 
@@ -67,13 +68,13 @@ for name, (label, signup_url) in (API_KEYS | AI_KEYS).items():
 
 # --- Mes données ------------------------------------------------------------------------------
 theme.section("Mes données")
-stats = storage.counts()
+stats = storage.counts(user)
 st.markdown(
     f"{stats['favorites']} favori(s) · {stats['read']} article(s) lu(s) · {stats['hidden']} masqué(s) · "
     f"{stats['follows']} suivi(s) · {stats['summaries']} résumé(s) enregistré(s)"
 )
 
-favorites = storage.list_favorites()
+favorites = storage.list_favorites(user)
 if favorites:
     table = pd.DataFrame(
         {"titre": a.title, "source": a.source, "rubrique": CATEGORIES.get(a.category, a.category),
@@ -88,11 +89,12 @@ if favorites:
 with st.popover("Réinitialiser…", icon=":material/restart_alt:"):
     st.caption("Ces actions sont définitives.")
     if st.button("Réafficher tous les articles masqués", width="stretch"):
-        storage.reset_flag("is_hidden")
+        storage.reset_flag(user, "is_hidden")
         st.toast("Tous les articles masqués sont de nouveau visibles")
     if st.button("Marquer tous les articles comme non lus", width="stretch"):
-        storage.reset_flag("is_read")
+        storage.reset_flag(user, "is_read")
         st.toast("Tous les articles sont marqués comme non lus")
-    if st.button("Effacer les résumés enregistrés", width="stretch"):
-        storage.clear_summaries()
-        st.toast("Résumés effacés")
+    if user == storage.LOCAL_USER:  # les résumés sont partagés par tous : seul le mode local peut les effacer
+        if st.button("Effacer les résumés enregistrés", width="stretch"):
+            storage.clear_summaries()
+            st.toast("Résumés effacés")

@@ -51,7 +51,8 @@ def app(db, monkeypatch):
 
 @pytest.mark.parametrize("page", ["views/feed.py", "views/markets.py", "views/stats.py", "views/following.py",
                                   "views/favorites.py", "views/settings.py", "views/glossary.py", "views/compare.py",
-                                  "views/portfolio.py", "views/alerts.py", "views/brief.py"])
+                                  "views/portfolio.py", "views/alerts.py", "views/brief.py",
+                                  "views/account.py"])
 def test_chaque_page_s_affiche(app, page):
     app.run()
     app.switch_page(page).run()
@@ -61,7 +62,7 @@ def test_chaque_page_s_affiche(app, page):
 def test_garder_puis_retrouver_dans_les_favoris(app, db):
     app.run()
     next(b for b in app.button if b.label == "Garder").click().run()
-    assert db.counts()["favorites"] == 1
+    assert db.counts(db.LOCAL_USER)["favorites"] == 1
     app.switch_page("views/favorites.py").run()
     assert any(b.label == "Retirer" for b in app.button)
 
@@ -82,8 +83,8 @@ def test_les_trois_vues_des_marches(app):
 
 
 def test_portefeuille_et_alertes_avec_des_donnees(app, db):
-    db.add_position("MC.PA", "LVMH", 10, 95.0, "EUR", "2026-01-05")
-    db.add_alert("MC.PA", "LVMH", "above", 50.0)  # déclenchée : le cours factice est 108
+    db.add_position(db.LOCAL_USER, "MC.PA", "LVMH", 10, 95.0, "EUR", "2026-01-05")
+    db.add_alert(db.LOCAL_USER, "MC.PA", "LVMH", "above", 50.0)  # déclenchée : le cours factice est 108
     app.run()
     assert not app.exception
     assert any("LVMH" in element.value for element in app.get("html"))  # le bandeau d'alerte est affiché
@@ -93,3 +94,36 @@ def test_portefeuille_et_alertes_avec_des_donnees(app, db):
     app.switch_page("views/alerts.py").run()
     assert not app.exception
     assert any("Déclenchée" in element.value for element in app.get("html"))
+
+
+# --- Comptes utilisateurs : on simule la connexion en remplaçant les fonctions de ui.py -----------
+
+
+def test_visiteur_non_connecte(app, monkeypatch):
+    monkeypatch.setattr(ui, "auth_providers", lambda: ["google", "auth0"])
+    monkeypatch.setattr(ui, "current_user", lambda: None)
+    app.run()
+    assert not app.exception
+    assert not any(b.label == "Garder" for b in app.button)  # pas d'action personnelle sans compte
+    assert any(b.label == "Résumé" for b in app.button)  # mais la lecture reste ouverte à tous
+    for page in ["views/favorites.py", "views/following.py", "views/portfolio.py", "views/alerts.py",
+                 "views/settings.py", "views/account.py"]:
+        app.switch_page(page).run()
+        assert not app.exception, page
+        assert any(b.label == "Continuer avec Google" for b in app.button), page
+        assert any(b.label == "E-mail, Google ou Facebook" for b in app.button), page
+    for page in ["views/brief.py", "views/markets.py", "views/compare.py", "views/glossary.py", "views/stats.py"]:
+        app.switch_page(page).run()  # les pages publiques s'affichent normalement
+        assert not app.exception, page
+
+
+def test_les_favoris_vont_dans_le_compte_connecte(app, db, monkeypatch):
+    monkeypatch.setattr(ui, "auth_providers", lambda: ["google"])
+    monkeypatch.setattr(ui, "current_user", lambda: "alice@example.com")
+    app.run()
+    next(b for b in app.button if b.label == "Garder").click().run()
+    assert db.counts("alice@example.com")["favorites"] == 1
+    assert db.counts(db.LOCAL_USER)["favorites"] == 0
+    app.switch_page("views/account.py").run()
+    assert not app.exception
+    assert any(b.label == "Se déconnecter" for b in app.button)

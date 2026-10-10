@@ -21,6 +21,7 @@ from ui import (
     load_followed_quotes,
     load_history,
     load_profile,
+    require_user,
     search_companies,
 )
 
@@ -29,22 +30,22 @@ SUGGESTIONS = [("company", "MC.PA", "LVMH"), ("company", "AIR.PA", "Airbus"), ("
 CHART_PERIODS = {"1 mois": "1mo", "6 mois": "6mo", "1 an": "1y", "5 ans": "5y"}
 
 
-def follow(kind: str, value: str, label: str) -> None:
-    storage.add_follow(kind, value, label)
+def follow(user: str, kind: str, value: str, label: str) -> None:
+    storage.add_follow(user, kind, value, label)
     st.toast(f"Tu suis maintenant {label}")
 
 
-def unfollow(kind: str, value: str, label: str) -> None:
-    storage.remove_follow(kind, value)
+def unfollow(user: str, kind: str, value: str, label: str) -> None:
+    storage.remove_follow(user, kind, value)
     st.session_state.pop("follow_view", None)  # revient à la vue d'ensemble
     st.toast(f"Tu ne suis plus {label}")
 
 
-def add_theme() -> None:
+def add_theme(user: str) -> None:
     """Callback du champ « thème » : la valeur saisie est lue via sa clé dans session_state."""
     value = st.session_state.get("new_theme", "").strip()
     if value:
-        follow("theme", value, value)
+        follow(user, "theme", value, value)
     st.session_state.new_theme = ""
 
 
@@ -202,18 +203,19 @@ def company_sheet(symbol: str, label: str, articles=()) -> None:
             st.write(profile["longBusinessSummary"])
 
 
-def news_list(articles, empty_message: str, key_prefix: str) -> None:
-    statuses = storage.get_statuses()
+def news_list(user: str, articles, empty_message: str, key_prefix: str) -> None:
+    statuses = storage.get_statuses(user)
     visible = [a for a in articles if not statuses.get(a.id, NO_STATUS)["is_hidden"]]
     if not visible:
         st.caption(empty_message)
     for article in visible[:20]:
-        article_card(article, statuses.get(article.id, NO_STATUS), key_prefix=key_prefix)
+        article_card(article, statuses.get(article.id, NO_STATUS), key_prefix=key_prefix, user=user)
 
 
 # --- La page ----------------------------------------------------------------------------------
 flush_toast()
 theme.page_header("Mes suivis", "Les entreprises et les thèmes que tu suis, avec leur fil et leur fiche.")
+user = require_user()
 
 with st.container(horizontal=True, gap="small"):
     with st.popover("Suivre une entreprise", icon=":material/add_business:"):
@@ -226,21 +228,21 @@ with st.container(horizontal=True, gap="small"):
                 st.button(
                     f"{result['name']} · {result['symbol']} · {result['exchange']}",
                     key=f"add_{result['symbol']}", type="tertiary",
-                    on_click=follow, args=("company", result["symbol"], result["name"]),
+                    on_click=follow, args=(user, "company", result["symbol"], result["name"]),
                 )
     with st.popover("Suivre un thème", icon=":material/tag:"):
         st.text_input("Mot-clé", key="new_theme", placeholder="inflation, BCE, intelligence artificielle…",
-                      on_change=add_theme)
+                      on_change=add_theme, args=(user,))
         st.caption("Appuie sur Entrée pour valider.")
 
-follows = storage.list_follows()
+follows = storage.list_follows(user)
 
 if not follows:
     theme.section("Pour commencer")
     st.caption("Tu ne suis rien pour l'instant. Quelques idées :")
     with st.container(horizontal=True, gap="small"):
         for kind, value, label in SUGGESTIONS:
-            st.button(label, key=f"suggest_{value}", icon=":material/add:", on_click=follow, args=(kind, value, label))
+            st.button(label, key=f"suggest_{value}", icon=":material/add:", on_click=follow, args=(user, kind, value, label))
     st.stop()
 
 keys = api_keys()
@@ -261,16 +263,16 @@ if view == "__all__":
     combined = sorted({a.id: a for items in feeds.values() for a in items}.values(),
                       key=lambda a: a.published, reverse=True)
     theme.section("Mon fil", f"{len(combined)} dépêches")
-    news_list(combined, "Aucune dépêche pour tes suivis pour le moment.", "follow_all")
+    news_list(user, combined, "Aucune dépêche pour tes suivis pour le moment.", "follow_all")
 else:
     kind, value = view.split("|", 1)
     label = labels[view]
     if kind == "company":
         company_sheet(value, label, feeds.get((kind, value), []))
     theme.section(f"Actualités · {label}", f"{len(feeds.get((kind, value), []))} dépêches")
-    news_list(feeds.get((kind, value), []), "Aucune dépêche trouvée pour le moment.", f"follow_{value}")
+    news_list(user, feeds.get((kind, value), []), "Aucune dépêche trouvée pour le moment.", f"follow_{value}")
     st.button(f"Ne plus suivre {label}", icon=":material/remove_circle:", on_click=unfollow,
-              args=(kind, value, label))
+              args=(user, kind, value, label))
 
 if errors:
     with st.expander(f"{len(errors)} source(s) indisponible(s)", icon=":material/warning:"):

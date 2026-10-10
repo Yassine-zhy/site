@@ -4,14 +4,15 @@ import streamlit as st
 
 import theme
 from core import storage
-from ui import NO_STATUS, article_card, flush_toast
+from ui import NO_STATUS, article_card, flush_toast, require_user
 
 flush_toast()
-favorites = storage.list_favorites()  # lus depuis la base : ils restent même s'ils ont quitté le flux
-statuses = storage.get_statuses()
-notes = storage.get_notes()
-
 theme.page_header("Favoris", "Les articles que tu as gardés pour plus tard.")
+user = require_user()
+favorites = storage.list_favorites(user)  # lus depuis la base : ils restent même s'ils ont quitté le flux
+statuses = storage.get_statuses(user)
+notes = storage.get_notes(user)
+
 theme.section("Gardés", f"{len(favorites)} article{'s' if len(favorites) > 1 else ''}")
 
 if not favorites:
@@ -19,4 +20,4 @@ if not favorites:
 
 for article in favorites:
     article_card(article, statuses.get(article.id, NO_STATUS), key_prefix="fav",
-                 note=notes.get(article.id), with_note=True)
+                 note=notes.get(article.id), with_note=True, user=user)

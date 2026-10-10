@@ -39,6 +39,79 @@ def ai_keys() -> dict[str, str | None]:
     return {name: get_secret(name) for name in [*AI_KEYS, "GEMINI_MODEL", "GROQ_MODEL"]}
 
 
+# --- Comptes utilisateurs ---------------------------------------------------------------------
+# Libellé et icône du bouton de connexion pour chaque service (nom de la section [auth.xxx] de secrets.toml)
+PROVIDERS = {
+    "google": ("Continuer avec Google", ":material/account_circle:"),
+    "auth0": ("E-mail, Google ou Facebook", ":material/mail:"),
+    "microsoft": ("Continuer avec Microsoft", ":material/account_circle:"),
+    None: ("Se connecter", ":material/login:"),
+}
+
+
+def auth_providers() -> list[str | None]:
+    """Les services de connexion configurés dans secrets.toml : ["google", "auth0"], [None] ou []."""
+    try:
+        auth = st.secrets.get("auth")
+    except FileNotFoundError:
+        return []
+    if not auth:
+        return []
+    providers = [name for name, value in auth.items() if hasattr(value, "keys")]  # sous-sections [auth.xxx]
+    if not providers and "client_id" in auth:
+        return [None]  # un seul service, décrit directement dans [auth]
+    return providers
+
+
+def current_user() -> str | None:
+    """Qui utilise l'application ?
+
+    - comptes non configurés (en local) : l'utilisateur unique « local » ;
+    - comptes configurés : l'e-mail (s'il est vérifié) ou l'identifiant fourni par le service de connexion ;
+    - personne de connecté : None.
+    """
+    if not auth_providers():
+        return storage.LOCAL_USER
+    if not st.user.get("is_logged_in", False):  # .get : st.user est vide tant que [auth] n'est pas chargé
+        return None
+    email = st.user.get("email")
+    # Un e-mail non vérifié (inscription par e-mail pas encore confirmée) ne doit pas donner accès aux données
+    # d'un compte Google qui a la même adresse : on utilise alors l'identifiant unique du service (« sub »).
+    user = email if email and st.user.get("email_verified", False) else st.user.get("sub") or email
+    if st.session_state.get("fv_known_user") != user:  # une fois par session : on enregistre la visite
+        storage.touch_user(user, email, st.user.get("name"))
+        st.session_state["fv_known_user"] = user
+    return user
+
+
+def login_buttons(key: str, compact: bool = False) -> None:
+    """Un bouton par service de connexion configuré."""
+    for provider in auth_providers():
+        label, icon = PROVIDERS.get(provider, (f"Continuer avec {str(provider).capitalize()}", ":material/login:"))
+        st.button(
+            "Se connecter" if compact and len(auth_providers()) == 1 else label,
+            icon=icon, key=f"{key}_{provider}", type="secondary" if compact else "primary",
+            on_click=st.login, args=(provider,) if provider else (),
+        )
+
+
+def require_user() -> str:
+    """Renvoie l'utilisateur, ou affiche une invitation à se connecter et arrête la page."""
+    user = current_user()
+    if user is None:
+        theme.section("Connexion requise")
+        st.markdown("Cette page contient tes données personnelles (favoris, suivis, portefeuille, alertes). "
+                    "Connecte-toi pour y accéder : elles seront enregistrées dans ton compte.")
+        login_buttons("require")
+        st.stop()
+    return user
+
+
+def setting(user: str | None, key: str, default=None):
+    """Une préférence de l'utilisateur, ou la valeur par défaut pour un visiteur non connecté."""
+    return storage.get_setting(user, key, default) if user else default
+
+
 @st.cache_data(ttl=900, show_spinner="Récupération des actualités…")
 def load_articles(keys: dict[str, str | None]):
     """Appelle les sources au plus une fois toutes les 15 minutes (900 s), pour ménager les quotas des API.
@@ -143,21 +216,21 @@ def load_symbol_quotes(symbols: tuple[str, ...]) -> dict:
         return {}
 
 
-def company_choices() -> dict[str, str]:
+def company_choices(user: str | None = None) -> dict[str, str]:
     """Les entreprises proposées dans les listes : mes suivis d'abord, puis le CAC 40 et les grandes valeurs."""
-    choices = {f["value"]: f["label"] for f in storage.list_follows("company")}
+    choices = {f["value"]: f["label"] for f in storage.list_follows(user, "company")} if user else {}
     choices |= {symbol: name for symbol, name, _ in market.CAC40 if symbol not in choices}
     choices |= {symbol: name for symbol, (name, _, _) in COMPANIES.items() if symbol not in choices}
     return choices
 
 
-def _update(article: Article, flag: str, value: bool, message: str) -> None:
+def _update(user: str, article: Article, flag: str, value: bool, message: str) -> None:
     """Callback des boutons : enregistre le changement et prépare une petite notification.
 
     On n'appelle pas st.toast ici : un callback qui affiche quelque chose pendant la relance d'un
     fragment n'est pas pris en charge. Le message est affiché par flush_toast() au début de la page.
     """
-    storage.set_flag(article, flag, value)
+    storage.set_flag(user, article, flag, value)
     st.session_state["fv_toast"] = message
 
 
@@ -186,19 +259,19 @@ def summary_html(summary: dict) -> str:
     )
 
 
-def show_summary(article: Article) -> None:
+def show_summary(article: Article, user: str | None) -> None:
     """Affiche le résumé de l'article ; le calcule (puis l'enregistre) s'il n'existe pas encore."""
     summary = storage.get_summary(article.id)
     if summary is None:
         with st.spinner("Lecture et résumé de l'article…"):
-            engine = storage.get_setting("summary_engine", "auto")
+            engine = setting(user, "summary_engine", "auto")
             summary = summarize(article, ai_keys(), engine).to_dict()
         storage.save_summary(article.id, summary)
     st.html(summary_html(summary))
 
 
-def _save_note(article_id: str, widget_key: str) -> None:
-    storage.save_note(article_id, st.session_state.get(widget_key, ""))
+def _save_note(user: str, article_id: str, widget_key: str) -> None:
+    storage.save_note(user, article_id, st.session_state.get(widget_key, ""))
     st.session_state["fv_toast"] = "Note enregistrée"
 
 
@@ -239,12 +312,14 @@ def article_card(
     compact: bool = False,
     note: str | None = None,
     with_note: bool = False,
+    user: str | None = None,
 ) -> None:
     """Affiche un article et ses boutons d'action.
 
     - `key_prefix` rend les clés des boutons uniques quand le même article apparaît sur plusieurs pages ;
     - `compact` : une ligne par article (titre et informations, sans chapeau) ;
-    - `note` / `with_note` : affiche la note personnelle et le bouton pour l'écrire (page Favoris).
+    - `note` / `with_note` : affiche la note personnelle et le bouton pour l'écrire (page Favoris) ;
+    - `user` : l'utilisateur connecté ; sans utilisateur, seuls « Lire » et « Résumé » sont proposés.
     """
     favorite, read, hidden = status["is_favorite"], status["is_read"], status["is_hidden"]
     key = f"{key_prefix}_{article.id}"
@@ -258,11 +333,12 @@ def article_card(
         if note:
             st.html(f'<blockquote class="fv-note-block"><b>Ma note</b>{esc(note)}</blockquote>')
         if summary_open:
-            show_summary(article)
+            show_summary(article, user)
         with st.container(horizontal=True, gap="small"):
             st.link_button(
                 "Lire", article.url, icon=":material/north_east:", key=f"{key}_open", type="tertiary",
-                on_click=_update, args=(article, "is_read", True, "Article marqué comme lu"),
+                on_click=_update if user else "ignore",
+                args=(user, article, "is_read", True, "Article marqué comme lu") if user else None,
             )
             st.button(
                 "Fermer le résumé" if summary_open else "Résumé",
@@ -273,34 +349,35 @@ def article_card(
                 on_click=_toggle_summary,
                 args=(article.id,),
             )
-            st.button(
-                "Retirer" if favorite else "Garder",
-                icon=":material/bookmark:" if favorite else ":material/bookmark_border:",
-                key=f"{key}_fav",
-                type="tertiary",
-                help="Retirer des favoris" if favorite else "Ajouter aux favoris",
-                on_click=_update,
-                args=(article, "is_favorite", not favorite, "Favori retiré" if favorite else "Ajouté aux favoris"),
-            )
-            st.button(
-                "Non lu" if read else "Lu",
-                icon=":material/radio_button_unchecked:" if read else ":material/check:",
-                key=f"{key}_read",
-                type="tertiary",
-                on_click=_update,
-                args=(article, "is_read", not read, "Marqué comme non lu" if read else "Marqué comme lu"),
-            )
-            st.button(
-                "Réafficher" if hidden else "Masquer",
-                icon=":material/visibility:" if hidden else ":material/visibility_off:",
-                key=f"{key}_hide",
-                type="tertiary",
-                on_click=_update,
-                args=(article, "is_hidden", not hidden, "Article réaffiché" if hidden else "Article masqué"),
-            )
-            if with_note:
+            if user:
+                st.button(
+                    "Retirer" if favorite else "Garder",
+                    icon=":material/bookmark:" if favorite else ":material/bookmark_border:",
+                    key=f"{key}_fav",
+                    type="tertiary",
+                    help="Retirer des favoris" if favorite else "Ajouter aux favoris",
+                    on_click=_update,
+                    args=(user, article, "is_favorite", not favorite, "Favori retiré" if favorite else "Ajouté aux favoris"),
+                )
+                st.button(
+                    "Non lu" if read else "Lu",
+                    icon=":material/radio_button_unchecked:" if read else ":material/check:",
+                    key=f"{key}_read",
+                    type="tertiary",
+                    on_click=_update,
+                    args=(user, article, "is_read", not read, "Marqué comme non lu" if read else "Marqué comme lu"),
+                )
+                st.button(
+                    "Réafficher" if hidden else "Masquer",
+                    icon=":material/visibility:" if hidden else ":material/visibility_off:",
+                    key=f"{key}_hide",
+                    type="tertiary",
+                    on_click=_update,
+                    args=(user, article, "is_hidden", not hidden, "Article réaffiché" if hidden else "Article masqué"),
+                )
+            if with_note and user:
                 with st.popover("Modifier la note" if note else "Annoter", icon=":material/edit_note:", type="tertiary"):
                     st.text_area("Ma note", value=note or "", key=f"{key}_note", height=110,
                                  placeholder="Pourquoi cet article t'intéresse, à quoi il te servira…")
                     st.button("Enregistrer", key=f"{key}_note_save", type="primary",
-                              on_click=_save_note, args=(article.id, f"{key}_note"))
+                              on_click=_save_note, args=(user, article.id, f"{key}_note"))

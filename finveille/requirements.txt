@@ -1,5 +1,5 @@
 # Bibliothèques nécessaires au projet (installation : pip install -r requirements.txt)
-streamlit>=1.65,<2   # l'interface web
+streamlit[auth]>=1.65,<2   # [auth] : connexion Google / e-mail / Facebook (Authlib + httpx)
 requests>=2.32       # télécharger des pages et interroger des API
 feedparser>=6.0      # lire les flux RSS
 tzdata               # fuseaux horaires (indispensable sous Windows pour zoneinfo)

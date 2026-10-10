@@ -11,18 +11,31 @@ import streamlit as st
 
 import theme
 from core import alerts, storage
-from ui import load_quotes, load_symbol_quotes
+from ui import auth_providers, current_user, load_quotes, load_symbol_quotes, login_buttons
 
 st.set_page_config(page_title="FinVeille", page_icon=":material/candlestick_chart:", layout="wide")
 theme.inject_css()
 storage.init_db()
 
 
+def account_bar() -> None:
+    """En haut à droite : « Se connecter », ou le nom de l'utilisateur connecté. Rien en mode local."""
+    if not auth_providers():
+        return
+    with st.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center", key="fvaccount"):
+        if current_user():
+            st.page_link("views/account.py", label=st.user.get("name") or st.user.get("email") or "Mon compte",
+                         icon=":material/account_circle:")
+        else:
+            login_buttons("bar", compact=True)
+
+
 @st.fragment(run_every="2min")
 def tape():
     """Le bandeau des cours et les alertes déclenchées, en haut de chaque page, rafraîchis toutes les 2 minutes."""
     theme.ticker_tape(load_quotes())
-    if my_alerts := storage.list_alerts():
+    user = current_user()
+    if user and (my_alerts := storage.list_alerts(user)):
         quotes = load_symbol_quotes(tuple(sorted({a["symbol"] for a in my_alerts})))
         if fired := alerts.check(my_alerts, quotes):
             theme.alert_banner(fired)
@@ -50,6 +63,9 @@ pages = {
     "Outils": [
         st.Page("views/glossary.py", title="Glossaire", icon=":material/menu_book:"),
         st.Page("views/settings.py", title="Réglages", icon=":material/settings:"),
+        st.Page("views/account.py", title="Mon compte", icon=":material/account_circle:"),
     ],
 }
-st.navigation(pages, position="top").run()
+page = st.navigation(pages, position="top")
+account_bar()  # après st.navigation : st.page_link a besoin que les pages soient déclarées
+page.run()
