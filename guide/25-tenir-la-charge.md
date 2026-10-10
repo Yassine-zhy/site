@@ -5,7 +5,8 @@
 > trouve la **vraie** cause, on corrige, on **re-mesure**. Puis on prépare un hébergement gratuit plus puissant.
 
 Fichiers créés : `core/capacity.py`, `tools/load_test.py`, `Dockerfile`, `.dockerignore`, `deploy/entrypoint.sh`,
-`deploy/huggingface-README.md`, `.github/workflows/huggingface.yml`, `tests/test_capacity.py`, ce guide. Fichiers
+`deploy/huggingface-README.md`, `deploy/publish_space.py`, `.github/workflows/huggingface.yml`,
+`tests/test_capacity.py`, `tests/test_deploy.py`, ce guide. Fichiers
 modifiés : `.streamlit/config.toml`, `app.py`, `ui.py`, `views/feed.py`, `views/brief.py`, `views/setup.py`,
 `views/settings.py`, `core/storage.py`, `core/accounts.py`, `core/assistant.py`, `tests/test_app.py`.
 
@@ -180,17 +181,35 @@ directement. Seule la connexion Google exige un vrai fichier `secrets.toml` : co
 variable `SECRETS_TOML`, `deploy/entrypoint.sh` l'écrit au démarrage. En production, le visiteur ne voit jamais le
 détail technique d'une erreur (`STREAMLIT_CLIENT_SHOW_ERROR_DETAILS=none`) : il reste dans les journaux.
 
-### Publier sur Hugging Face Spaces
+### Publier sur Hugging Face Spaces (automatique)
 
-1. Crée un compte sur <https://huggingface.co>, puis **New Space** → nom `finveille`, SDK **Docker**, modèle
-   *Blank*, matériel **CPU basic (gratuit)**.
-2. Dans le Space : *Settings → Variables and secrets* → ajoute en **secrets** `DATABASE_URL` (base Neon, étape 20),
-   tes clés d'IA, `SMTP_…`, `ADMIN_EMAILS`, et si besoin `SECRETS_TOML` (connexion Google).
-3. Sur GitHub (projet à la racine de son dépôt) : *Settings → Secrets and variables → Actions* → secret `HF_TOKEN`
-   (jeton *Write* de <https://huggingface.co/settings/tokens>) et variable `HF_SPACE` = `ton-pseudo/finveille`.
-   À chaque push sur `main`, `.github/workflows/huggingface.yml` publie le site.
-4. Ton site est en ligne à l'adresse `https://ton-pseudo-finveille.hf.space`. Pour Google, l'adresse de retour
-   devient `https://ton-pseudo-finveille.hf.space/oauth2callback` (la page *Configuration* la calcule pour toi).
+`deploy/publish_space.py` fait tout le travail sur Hugging Face : il **crée le Space** (Docker, gratuit) s'il
+n'existe pas, y **recopie tes secrets**, puis **envoie le code** (sans le guide, les tests, ni aucun fichier secret).
+GitHub Actions le lance à chaque mise à jour du code, après avoir vérifié que les tests passent. Tu n'as que deux
+choses à faire, une seule fois :
+
+1. **Un compte et un jeton Hugging Face** : inscris-toi sur <https://huggingface.co/join>, puis
+   <https://huggingface.co/settings/tokens> → *Create new token* → type **Write** → copie le jeton (`hf_…`).
+2. **Les secrets dans GitHub** : dans ton dépôt, *Settings → Secrets and variables → Actions → New repository
+   secret* :
+   - `HF_TOKEN` : le jeton de l'étape 1 (obligatoire) ;
+   - `GEMINI_API_KEY` : ta clé d'IA ; `DATABASE_URL` : ta base Neon (étape 20), sans laquelle les comptes
+     disparaissent à chaque redémarrage du Space ; et si tu veux `SMTP_…`, `ADMIN_EMAILS`, `SECRETS_TOML`.
+
+Ensuite : onglet **Actions** → *FinVeille → Hugging Face* → dernier passage → **Re-run all jobs** (ou n'importe
+quelle mise à jour du code). Au bout de 3 à 5 minutes (construction de l'image Docker), ton site est en ligne à
+l'adresse affichée à la fin du journal : `https://ton-pseudo-finveille.hf.space`.
+
+Ouvre le site par cette adresse directe, plutôt que par la page du Space sur huggingface.co : là, le site est
+affiché dans un cadre, et les navigateurs y bloquent souvent les cookies, donc la connexion aux comptes. Pour
+Google, l'adresse de retour est `https://ton-pseudo-finveille.hf.space/oauth2callback` (la page *Configuration* la
+calcule pour toi).
+
+Le workflow se trouve à la racine du dépôt (`.github/workflows/finveille-huggingface.yml`). Si FinVeille a son
+propre dépôt, c'est `finveille/.github/workflows/huggingface.yml` qui prend le relais, avec les mêmes secrets.
+
+À la main, depuis le dossier `finveille/` : `python deploy/publish_space.py --dry-run` liste ce qui serait envoyé ;
+`HF_TOKEN=hf_… python deploy/publish_space.py` publie.
 
 ---
 
@@ -225,5 +244,8 @@ détail technique d'une erreur (`STREAMLIT_CLIENT_SHOW_ERROR_DETAILS=none`) : il
 | `docker: Cannot connect to the Docker daemon` | Docker n'est pas démarré | Lance Docker Desktop (Windows, macOS) ou `sudo systemctl start docker`. |
 | Le Space Hugging Face affiche « Runtime error » | Erreur au démarrage | Onglet *Logs* du Space ; vérifie `DATABASE_URL` et les secrets. |
 | Comptes perdus après un redémarrage du Space | Disque non conservé | Configure `DATABASE_URL` (étape 20). |
+| Le workflow affiche « Secret HF_TOKEN absent » | Le jeton n'est pas dans les secrets GitHub | *Settings → Secrets and variables → Actions*, puis *Re-run all jobs*. |
+| `Invalid user token` | Jeton mal copié, ou de type « Read » | Recrée un jeton de type **Write**. |
+| Impossible de rester connecté sur la page du Space | Site affiché dans un cadre : cookies bloqués | Utilise l'adresse directe `https://ton-pseudo-finveille.hf.space`. |
 
 Retour au [sommaire du guide](README.md).
