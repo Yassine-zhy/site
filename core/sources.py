@@ -28,6 +28,7 @@ _BLOCK_RE = re.compile(r"<(script|style)\b.*?</\1>", re.IGNORECASE | re.DOTALL) 
 _CSS_RE = re.compile(r"@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}")  # règle CSS « @media … { … } »
 _TAG_RE = re.compile(r"<[^>]+>")  # une balise HTML : <p>, </a>, <img src="…">…
 _SPACES_RE = re.compile(r"\s+")  # une suite d'espaces, tabulations ou retours à la ligne
+_CREDIT_RE = re.compile(r"^Image source:.*$", re.IGNORECASE)  # crédit photo seul, sans contenu (Nasdaq)
 
 
 def clean_html(text: str | None) -> str:
@@ -36,7 +37,8 @@ def clean_html(text: str | None) -> str:
     text = _TAG_RE.sub(" ", text)  # enlève les autres balises (leur texte reste)
     text = html.unescape(text)  # &amp; -> &, &eacute; -> é…
     text = _CSS_RE.sub(" ", text)  # du CSS « nu » glissé par erreur dans certains flux (ex. Nasdaq)
-    return _SPACES_RE.sub(" ", text).strip()
+    text = _SPACES_RE.sub(" ", text).strip()
+    return _CREDIT_RE.sub("", text)
 
 
 def shorten(text: str, width: int = 400) -> str:

@@ -2,10 +2,10 @@
 
 # Les catégories du fil : clé technique -> libellé affiché
 CATEGORIES = {
-    "marches": "📈 Marchés",
-    "crypto": "🪙 Crypto",
-    "entreprises": "🏢 Entreprises",
-    "macro": "🌍 Macro",
+    "marches": "Marchés",
+    "crypto": "Crypto",
+    "entreprises": "Entreprises",
+    "macro": "Macro",
 }
 
 # Les flux RSS gratuits (aucune clé nécessaire).
