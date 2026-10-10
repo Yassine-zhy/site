@@ -8,8 +8,7 @@ from datetime import datetime, timezone
 import streamlit as st
 
 import theme
-from core import storage
-from core import market
+from core import macro, market, storage
 from core.aggregator import collect_articles, collect_followed
 from core.market import fetch_quotes
 from core.config import AI_KEYS, API_KEYS, CATEGORIES, COMPANIES
@@ -191,6 +190,20 @@ def load_euro_rates() -> dict[str, float]:
     try:
         return market.euro_rates()
     except Exception:
+        return {}
+
+
+@st.cache_data(ttl=6 * 3600, show_spinner="Chargement des statistiques officielles (BCE, Réserve fédérale)…")
+def load_macro(start: str) -> tuple[dict, list[str]]:
+    """Les indicateurs économiques : publiés au plus une fois par jour, on les garde 6 heures."""
+    return macro.fetch_all(start)
+
+
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
+def load_yield_curves(start: str) -> dict:
+    try:
+        return macro.fetch_yield_curves(start)
+    except Exception:  # une source en panne : la section est simplement masquée
         return {}
 
 

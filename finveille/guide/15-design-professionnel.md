@@ -204,4 +204,4 @@ Teste toujours avec les outils du navigateur (F12 → icône téléphone) en 390
 | Fond gris derrière un graphique dans une carte blanche | Altair peint le fond du thème | `.properties(background="transparent")`. |
 | Le logo est flou ou déformé | Image bitmap trop petite | Utilise un SVG (vectoriel : net à toutes les tailles). |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [le tableau de bord économique](16-tableau-de-bord-economique.md). Retour au [sommaire du guide](README.md).

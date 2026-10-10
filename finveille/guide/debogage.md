@@ -94,6 +94,14 @@ Et quand rien ne marche : cherche le message exact entre guillemets sur un moteu
 | `st.user has no attribute "is_logged_in"` | Utilise `st.user.get("is_logged_in", False)` (vide sans configuration, et dans les tests). |
 | Un visiteur voit les données d'un autre | Une fonction de `storage` oublie `WHERE user_id = ?`, ou une variable globale garde l'utilisateur. |
 
+## Économie (BCE, FRED)
+
+| Symptôme | Solution |
+| --- | --- |
+| `ReadTimeout` sur fred.stlouisfed.org | N'envoie pas d'en-tête `User-Agent` personnalisé (étape 16). |
+| `404 Not Found` sur la BCE | Clé de série mal recopiée, ou aucune donnée après `startPeriod`. |
+| Une statistique figée depuis des mois | La série a été remplacée : vérifie la date de la dernière valeur (exemple : `ICP` → `HICP` en 2026). |
+
 ## Portefeuille, marchés et brief
 
 | Symptôme | Solution |

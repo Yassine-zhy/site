@@ -387,6 +387,18 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   font-variant-numeric: tabular-nums; }
 .fv-convert small { display: block; margin-top: .2rem; font-size: .8rem; font-weight: 400; color: var(--fv-muted); letter-spacing: 0; }
 
+/* Tableau de bord économique */
+.fv-move { color: var(--fv-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fv-macro td { vertical-align: middle; }
+.fv-mcell { display: inline-grid; grid-template-columns: auto 64px; align-items: center; gap: 0 .7rem; text-align: right; }
+.fv-mcell b { font-size: 1.02rem; font-weight: 600; }
+.fv-mcell img { grid-row: span 2; width: 64px; height: 24px; }
+.fv-mcell small { font-size: .72rem; color: var(--fv-muted); }
+.fv-macro td:first-child small { display: block; margin-top: .15rem; font-weight: 400; font-size: .74rem; color: var(--fv-muted);
+  white-space: normal; max-width: 22rem; }
+.fv-verdict { display: inline-block; margin-top: .45rem; padding: .1rem .5rem; border-radius: 5px; font-size: .74rem; font-weight: 600;
+  background: var(--fv-brand-soft); color: var(--fv-brand); }
+
 /* =============================================================================================
    8. Fiche entreprise
    ============================================================================================= */
@@ -642,6 +654,21 @@ def direction(value: float, threshold: float = 0.005) -> str:
 def change(value: float, unit: str = "%", decimals: int = 2) -> str:
     """HTML d'une variation colorée avec sa flèche : ▲ +1,20 %."""
     return f'<span class="{direction(value)}">{signed(value, unit, decimals)}</span>'
+
+
+def move(value: float, unit: str = "pt", decimals: int = 1) -> str:
+    """Évolution « neutre » (flèche grise) : la hausse de l'inflation ou des taux n'est ni bonne ni mauvaise en soi."""
+    arrow = "▲" if value > 0.005 else "▼" if value < -0.005 else "■"
+    return f'<span class="fv-move">{arrow} {signed(value, unit, decimals)}</span>'
+
+
+def period_label(moment, frequency: str = "mois") -> str:
+    """« 8 oct. 2026 » (jour), « sept. 2026 » (mois) ou « T1 2026 » (trimestre)."""
+    if frequency == "jour":
+        return f"{moment.day} {_MONTHS_SHORT[moment.month - 1]} {moment.year}"
+    if frequency == "trimestre":
+        return f"T{(moment.month - 1) // 3 + 1} {moment.year}"
+    return f"{_MONTHS_SHORT[moment.month - 1]} {moment.year}"
 
 
 def price(value: float) -> str:
