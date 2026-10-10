@@ -36,6 +36,17 @@ CREATE TABLE IF NOT EXISTS follows (
     created_at TEXT NOT NULL,
     PRIMARY KEY (kind, value)                -- on ne peut pas suivre deux fois la même chose
 );
+
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,                  -- nom de la préférence
+    value TEXT NOT NULL                      -- sa valeur, en JSON (texte, nombre, liste…)
+);
+
+CREATE TABLE IF NOT EXISTS summaries (
+    article_id   TEXT PRIMARY KEY,
+    summary_json TEXT NOT NULL,              -- le résumé (points, moteur…) au format JSON
+    created_at   TEXT NOT NULL
+);
 """
 
 FLAGS = ("is_favorite", "is_read", "is_hidden")
@@ -122,3 +133,30 @@ def list_follows(kind: str | None = None) -> list[dict]:
     with connect() as conn:
         rows = conn.execute(query + " ORDER BY created_at", params).fetchall()
     return [dict(row) for row in rows]
+
+
+def get_summary(article_id: str) -> dict | None:
+    """Le résumé déjà calculé pour cet article (on ne paie le calcul qu'une fois), ou None."""
+    with connect() as conn:
+        row = conn.execute("SELECT summary_json FROM summaries WHERE article_id = ?", (article_id,)).fetchone()
+    return json.loads(row["summary_json"]) if row else None
+
+
+def save_summary(article_id: str, summary: dict) -> None:
+    with connect() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO summaries (article_id, summary_json, created_at) VALUES (?, ?, ?)",
+            (article_id, json.dumps(summary, ensure_ascii=False), _now()),
+        )
+
+
+def get_setting(key: str, default=None):
+    """Une préférence de l'utilisateur, ou `default` si elle n'a jamais été réglée."""
+    with connect() as conn:
+        row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+    return json.loads(row["value"]) if row else default
+
+
+def set_setting(key: str, value) -> None:
+    with connect() as conn:
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, json.dumps(value)))

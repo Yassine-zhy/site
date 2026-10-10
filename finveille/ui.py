@@ -12,8 +12,9 @@ from core import storage
 from core import market
 from core.aggregator import collect_articles, collect_followed
 from core.market import fetch_quotes
-from core.config import API_KEYS, CATEGORIES
+from core.config import AI_KEYS, API_KEYS, CATEGORIES
 from core.models import Article
+from core.summarizer import summarize
 from theme import esc, safe_url
 
 NO_STATUS = {flag: False for flag in storage.FLAGS}
@@ -31,6 +32,11 @@ def get_secret(name: str) -> str | None:
 def api_keys() -> dict[str, str | None]:
     """Toutes les clés API connues, None pour celles qui ne sont pas renseignées."""
     return {name: get_secret(name) for name in API_KEYS}
+
+
+def ai_keys() -> dict[str, str | None]:
+    """Clés (et modèles, facultatifs) des moteurs de résumé par IA."""
+    return {name: get_secret(name) for name in [*AI_KEYS, "GEMINI_MODEL", "GROQ_MODEL"]}
 
 
 @st.cache_data(ttl=900, show_spinner="Récupération des actualités…")
@@ -100,6 +106,36 @@ def _update(article: Article, flag: str, value: bool, message: str) -> None:
     st.toast(message)
 
 
+def _toggle_summary(article_id: str) -> None:
+    key = f"summary_{article_id}"
+    st.session_state[key] = not st.session_state.get(key, False)
+
+
+def summary_html(summary: dict) -> str:
+    """Le bloc « L'essentiel » : points clés, portée, moteur utilisé et avertissement."""
+    points = "".join(f"<li>{esc(point)}</li>" for point in summary["points"])
+    why = (f'<p class="fv-brief-why"><b>Pourquoi c\'est important.</b> {esc(summary["why"])}</p>'
+           if summary.get("why") else "")
+    note = f" · {esc(summary['note'])}" if summary.get("note") else ""
+    return (
+        f'<aside class="fv-brief"><div class="fv-brief-head"><span>L\'essentiel</span>'
+        f'<small>{esc(summary["engine"])} · {esc(summary["based_on"])}{note}</small></div>'
+        f"<ul>{points}</ul>{why}"
+        f'<p class="fv-brief-note">Résumé automatique : vérifie dans l\'article avant de citer un chiffre.</p></aside>'
+    )
+
+
+def show_summary(article: Article) -> None:
+    """Affiche le résumé de l'article ; le calcule (puis l'enregistre) s'il n'existe pas encore."""
+    summary = storage.get_summary(article.id)
+    if summary is None:
+        with st.spinner("Lecture et résumé de l'article…"):
+            engine = storage.get_setting("summary_engine", "auto")
+            summary = summarize(article, ai_keys(), engine).to_dict()
+        storage.save_summary(article.id, summary)
+    st.html(summary_html(summary))
+
+
 def article_html(article: Article, read: bool, lead: bool = False) -> str:
     """Le HTML d'un article : rubrique, source, heure, titre, chapeau (et photo pour la une)."""
     kicker = [
@@ -135,12 +171,25 @@ def article_card(article: Article, status: dict[str, bool], key_prefix: str, lea
     key = f"{key_prefix}_{article.id}"
 
     # La clé du conteneur devient une classe CSS (st-key-fvcard_…) que theme.CSS met en forme.
+    summary_open = st.session_state.get(f"summary_{article.id}", False)
+
     with st.container(key=f"{'fvlead' if lead else 'fvcard'}_{key}", gap="small"):
         st.html(article_html(article, read, lead))
+        if summary_open:
+            show_summary(article)
         with st.container(horizontal=True, gap="small"):
             st.link_button(
                 "Lire", article.url, icon=":material/north_east:", key=f"{key}_open", type="tertiary",
                 on_click=_update, args=(article, "is_read", True, "Article marqué comme lu"),
+            )
+            st.button(
+                "Fermer le résumé" if summary_open else "Résumé",
+                icon=":material/subject:",
+                key=f"{key}_sum",
+                type="tertiary",
+                help="Résumé automatique de l'article en quelques points",
+                on_click=_toggle_summary,
+                args=(article.id,),
             )
             st.button(
                 "Retirer" if favorite else "Garder",
