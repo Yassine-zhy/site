@@ -295,8 +295,12 @@ def _reset_forms(key: str) -> None:
 
 
 def login_panel(key: str, title: str, text: str) -> None:
-    """La carte de connexion : services configurés (Google…), puis e-mail et mot de passe, inscription, oubli."""
-    with st.container(key=f"fvbox_{key}", width=460):
+    """La carte de connexion : services configurés (Google…), puis e-mail et mot de passe, inscription, oubli.
+    À droite, une illustration de ce que le compte apporte (masquée sur téléphone)."""
+    form_column, picture_column = st.columns([5, 6], gap="large")
+    with picture_column:
+        st.html(theme.showcase_html())
+    with form_column, st.container(key=f"fvbox_{key}"):
         st.html(f'<h3 class="fv-box-title">{esc(title)}</h3><p class="fv-box-text">{esc(text)}</p>')
         if email := st.session_state.get("fv_verify_email"):
             _verify_form(key, email)
@@ -560,37 +564,51 @@ def _save_note(user: str, article_id: str, widget_key: str) -> None:
     st.session_state["fv_toast"] = "Note enregistrée"
 
 
-def article_html(article: Article, read: bool, lead: bool = False, compact: bool = False, echoes: int = 0,
-                 show_image: bool = False) -> str:
-    """Le HTML d'un article : rubrique, source, heure, titre, chapeau (et photo pour la une, si demandée).
+def article_html(article: Article, read: bool, layout: str = "row", echoes: int = 0, image: str | None = None,
+                 cover: bool = False) -> str:
+    """Le HTML d'un article, selon sa présentation :
 
-    En vue compacte, on n'affiche ni le chapeau ni la photo : une ligne de titre par article.
+    - « lead » : la une, grande image à gauche, titre et chapeau à droite ;
+    - « tile » : une vignette, image en haut, titre en dessous (les autres titres) ;
+    - « row » : une ligne du fil, avec une petite image à droite s'il y en a une ;
+    - « compact » : une ligne de titre, sans chapeau ni image.
+
+    Pour la une et les vignettes, un article sans image reçoit une couverture dessinée (theme.cover_html) ; pour
+    une ligne, seulement si `cover` est vrai (une petite couverture au logo de la source).
     """
-    kicker = [
-        theme.category_tag(article.category, CATEGORIES.get(article.category, article.category)),
-        f'<span class="fv-src"><img src="{theme.favicon_url(article.url)}" alt="" loading="lazy">'
-        f"{esc(article.source)}</span>",
-        f'<time class="fv-time" datetime="{article.published.isoformat()}">{theme.clock(article.published)}</time>',
-        f'<span class="fv-ago">{theme.time_ago(article.published)}</span>',
-    ]
+    label = CATEGORIES.get(article.category, article.category)
+    kicker = [theme.category_tag(article.category, label)]
+    if layout != "tile":
+        kicker.append(f'<span class="fv-src"><img src="{theme.favicon_url(article.url)}" alt="" loading="lazy">'
+                      f"{esc(article.source)}</span>")
+    kicker += [f'<time class="fv-time" datetime="{article.published.isoformat()}">{theme.clock(article.published)}</time>',
+               f'<span class="fv-ago">{theme.time_ago(article.published)}</span>']
     if echoes:
         kicker.append(f'<span class="fv-echo">reprise par {echoes} autre{"s" if echoes > 1 else ""} '
                       f'source{"s" if echoes > 1 else ""}</span>')
     if read:
         kicker.append('<span class="fv-flag">Lu</span>')
-    heading = "h2" if lead else "h3"
+    heading = "h2" if layout == "lead" else "h3"
+    link = f'href="{safe_url(article.url)}" target="_blank" rel="noopener"'
     text = (
         f'<div class="fv-kicker">{"".join(kicker)}</div>'
-        f'<{heading} class="fv-headline"><a href="{safe_url(article.url)}" target="_blank" rel="noopener">'
-        f"{esc(article.title)}</a></{heading}>"
-        + (f'<p class="fv-dek">{esc(article.summary)}</p>' if article.summary and not compact else "")
+        f'<{heading} class="fv-headline"><a {link}>{esc(article.title)}</a></{heading}>'
+        + (f'<p class="fv-dek">{esc(article.summary)}</p>' if article.summary and layout in ("lead", "row") else "")
+        + (f'<p class="fv-tile-src"><img src="{theme.favicon_url(article.url)}" alt="" loading="lazy">'
+           f"{esc(article.source)}</p>" if layout == "tile" else "")
     )
-    classes = ["fv-item"] + (["is-read"] if read else []) + (["fv-lead"] if lead else []) + (["is-compact"] if compact else [])
-    if lead and show_image and article.image:
-        classes.append("has-img")
-        figure = f'<figure><img src="{safe_url(article.image)}" alt="" loading="lazy"></figure>'
-        return f'<article class="{" ".join(classes)}"><div>{text}</div>{figure}</article>'
-    return f'<article class="{" ".join(classes)}">{text}</article>'
+    classes = f'fv-item layout-{layout}{" is-read" if read else ""}{" is-compact" if layout == "compact" else ""}'
+    if layout in ("lead", "tile"):
+        media = (f'<img src="{safe_url(image)}" alt="" loading="lazy">' if image
+                 else theme.cover_html(article.category, label, article.source, article.url, article.title))
+        return (f'<article class="{classes}{" fv-lead" if layout == "lead" else ""}">'
+                f'<a class="fv-media" {link} tabindex="-1">{media}</a><div class="fv-item-text">{text}</div></article>')
+    if layout == "row" and (image or cover):
+        thumb = (f'<img src="{safe_url(image)}" alt="" loading="lazy">' if image
+                 else theme.cover_html(article.category, label, article.source, article.url, article.title, mini=True))
+        return (f'<article class="{classes} has-thumb"><div class="fv-item-text">{text}</div>'
+                f'<a class="fv-thumb" {link} tabindex="-1">{thumb}</a></article>')
+    return f'<article class="{classes}">{text}</article>'
 
 
 def article_card(
@@ -603,38 +621,44 @@ def article_card(
     with_note: bool = False,
     user: str | None = None,
     echoes: int = 0,
-    show_image: bool = False,
+    show_image: bool = True,
+    tile: bool = False,
+    image: str | None = None,
 ) -> None:
     """Affiche un article et ses boutons d'action.
 
     - `key_prefix` rend les clés des boutons uniques quand le même article apparaît sur plusieurs pages ;
-    - `compact` : une ligne par article (titre et informations, sans chapeau) ;
+    - `lead` (la une), `tile` (vignette) ou `compact` (une ligne) : la présentation, sinon une ligne avec image ;
     - `note` / `with_note` : affiche la note personnelle et le bouton pour l'écrire (page Favoris) ;
     - `user` : l'utilisateur connecté ; sans utilisateur, seuls « Lire » et « Résumé » sont proposés ;
-    - `echoes`, `show_image` (la une) : nombre d'autres sources qui reprennent l'histoire, photo de l'article.
+    - `echoes` : nombre d'autres sources qui reprennent l'histoire ; `show_image`, `image` : la photo à afficher.
     """
     favorite, read, hidden = status["is_favorite"], status["is_read"], status["is_hidden"]
     key = f"{key_prefix}_{article.id}"
+    layout = "lead" if lead else "tile" if tile else "compact" if compact else "row"
+    picture = (image or article.image) if show_image and layout != "compact" else None
 
     # La clé du conteneur devient une classe CSS (st-key-fvcard_…) que theme.CSS met en forme.
     summary_open = st.session_state.get(f"summary_{article.id}", False)
 
-    kind = "fvlead" if lead else "fvcompact" if compact else "fvcard"
+    kind = {"lead": "fvlead", "tile": "fvtile", "compact": "fvcompact", "row": "fvcard"}[layout]
     with st.container(key=f"{kind}_{key}", gap="small"):
-        st.html(article_html(article, read, lead, compact, echoes, show_image))
+        st.html(article_html(article, read, layout, echoes, picture, cover=show_image and layout == "row"))
         if note:
             st.html(f'<blockquote class="fv-note-block"><b>Ma note</b>{esc(note)}</blockquote>')
         if summary_open:
             show_summary(article, user)
-        with st.container(horizontal=True, gap="small"):
+        short = layout == "tile"  # vignette étroite : des icônes seules (le texte est dans l'infobulle)
+        with st.container(horizontal=True, gap="small", key=f"fvactions_{key}"):
             st.link_button(
-                "Lire", article.url, icon=":material/north_east:", key=f"{key}_open", type="tertiary",
+                "" if short else "Lire", article.url, icon=":material/north_east:", key=f"{key}_open",
+                type="tertiary", help="Lire l'article sur le site de la source",
                 on_click=_update if user else "ignore",
                 args=(user, article, "is_read", True, "Article marqué comme lu") if user else None,
             )
             st.button(
-                "Fermer le résumé" if summary_open else "Résumé",
-                icon=":material/subject:",
+                "" if short else "Fermer le résumé" if summary_open else "Résumé",
+                icon=":material/close:" if short and summary_open else ":material/subject:",
                 key=f"{key}_sum",
                 type="tertiary",
                 help="Résumé automatique de l'article en quelques points",
@@ -643,7 +667,7 @@ def article_card(
             )
             if user:
                 st.button(
-                    "Retirer" if favorite else "Garder",
+                    "" if short else "Retirer" if favorite else "Garder",
                     icon=":material/bookmark:" if favorite else ":material/bookmark_border:",
                     key=f"{key}_fav",
                     type="tertiary",
@@ -651,6 +675,7 @@ def article_card(
                     on_click=_update,
                     args=(user, article, "is_favorite", not favorite, "Favori retiré" if favorite else "Ajouté aux favoris"),
                 )
+            if user and not short:
                 st.button(
                     "Non lu" if read else "Lu",
                     icon=":material/radio_button_unchecked:" if read else ":material/check:",

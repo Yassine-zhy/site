@@ -37,6 +37,8 @@ def app(db, monkeypatch):
 
     monkeypatch.setattr(ui, "fetch_quotes", fake_quotes)
     monkeypatch.setattr(aggregator, "fetch_yahoo_ticker_news", lambda ticker: [])
+    from core import images
+    monkeypatch.setattr(images, "share_images", lambda urls: {})  # pas de réseau pendant les tests
     closes = pd.DataFrame({"MC.PA": [100.0, 102, 101, 104, 108, 107], "RMS.PA": [200.0, 199, 204, 210, 205, 212],
                            "TTE.PA": [60.0, 61, 60.5, 59, 60, 62], "AIR.PA": [150.0, 152, 149, 155, 157, 156],
                            "^FCHI": [7700.0, 7710, 7690, 7750, 7800, 7803]},

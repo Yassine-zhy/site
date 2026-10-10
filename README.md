@@ -1,4 +1,9 @@
-# FinVeille
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+    <img src="assets/logo-light.svg" alt="FinVeille" height="56">
+  </picture>
+</h1>
 
 **La veille financière et économique mondiale, dans une interface de plateforme professionnelle, mise à jour en continu.**
 
@@ -14,7 +19,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | | |
 | --- | --- |
 | **Agrégation** | 12 flux RSS gratuits (CNBC, BBC, Le Monde, BFM Bourse, The Economist, Fed, BCE, CoinDesk…) + Finnhub, NewsAPI, Marketaux et Alpha Vantage si les clés sont renseignées. Téléchargement en parallèle, dédoublonnage. |
-| **Le fil** | « À la une » (l'histoire reprise par le plus de sources) et « En continu », rubriques Marchés / Crypto / Entreprises / Macro (classement par mots-clés), tendances cliquables, filtre par source, recherche avancée (`"expression exacte"`, `-exclure`, `source:cnbc`), vue compacte, mise à jour automatique toutes les 5 minutes. |
+| **Le fil** | Une mise en page de journal illustrée : « À la une » en grand avec sa photo, trois vignettes illustrées, puis « En continu » avec une image par article (la photo de partage de l'article, ou une couverture dessinée aux couleurs de la rubrique). L'histoire à la une est celle reprise par le plus de sources ; rubriques Marchés / Crypto / Entreprises / Macro (classement par mots-clés), tendances cliquables, filtre par source, recherche avancée (`"expression exacte"`, `-exclure`, `source:cnbc`), vue compacte, mise à jour automatique toutes les 5 minutes. |
 | **Le brief** | L'édition du jour rédigée automatiquement : la séance en une phrase, l'histoire la plus reprise de chaque rubrique, les sujets qui montent, l'agenda de mes entreprises, le mot du jour. Téléchargeable en Markdown, **envoyé par e-mail chaque matin** aux abonnés. |
 | **Comptes** | Inscription par e-mail et mot de passe (empreinte scrypt, blocage anti-force brute, code de confirmation, mot de passe oublié, connexion qui dure 30 jours), ou connexion avec Google, Facebook et autres comptes (OpenID Connect). Assistant de configuration pour l'administrateur. Chaque utilisateur a ses propres favoris, suivis, portefeuille et alertes ; export et suppression de ses données (RGPD). Sans configuration, mode local à un utilisateur. |
 | **Base de données** | SQLite en local ; en ligne, PostgreSQL gratuit (Neon, Supabase) en une ligne de secrets, pour que les comptes survivent aux redémarrages. Mêmes requêtes SQL pour les deux, réserve de connexions, tests exécutés sur les deux bases. |
@@ -47,6 +52,8 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | ![Simulateurs](docs/screenshots/simulateurs.jpg) | ![Portefeuille virtuel](docs/screenshots/portefeuille.jpg) |
 | **Fiche entreprise** | **Mobile** |
 | ![Fiche entreprise LVMH](docs/screenshots/fiche-entreprise.jpg) | ![Version mobile](docs/screenshots/mobile.jpg) |
+| **Connexion (e-mail, Google, autres comptes)** | |
+| ![Page de connexion](docs/screenshots/connexion.jpg) | |
 
 ## Architecture
 
@@ -79,7 +86,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-22 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+23 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 

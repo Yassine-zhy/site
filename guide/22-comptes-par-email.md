@@ -147,4 +147,4 @@ connexion, erreur, déconnexion, code de confirmation et mot de passe oublié av
 | Je ne retrouve pas mes données en me connectant avec Google | Compte Google et compte e-mail sont deux comptes distincts (sécurité, § 1) | Utilise toujours la même méthode de connexion. |
 | Plus besoin de se connecter du tout | `LOCAL_MODE = true` dans les secrets | Retire-le pour un site en ligne. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [un vrai logo et un fil illustré](23-logo-et-images.md). Retour au [sommaire du guide](README.md).

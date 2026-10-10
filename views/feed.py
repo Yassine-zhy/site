@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 import streamlit as st
 
 import theme
-from core import analytics, storage
+from core import analytics, images, storage
 from core.config import API_KEYS, CATEGORIES
 from core.filters import filter_articles
 from theme import esc
@@ -56,7 +56,7 @@ with st.container(horizontal=True, vertical_alignment="center", gap="small", key
         show_hidden = st.toggle("Voir les articles masqués", disabled=not user)
         compact = st.toggle("Vue compacte", value=setting(user, "density", "confort") == "compact",
                             help="Une ligne par article, sans chapeau : idéal pour parcourir vite.")
-        images = st.toggle("Photo de l'article à la une", value=setting(user, "show_images", False))
+        pictures_on = st.toggle("Photos des articles", value=setting(user, "show_images", True))
         if not user:
             st.caption("Connecte-toi pour garder des articles, les marquer comme lus ou les masquer.")
         active = sum(1 for name in API_KEYS if keys[name])
@@ -82,6 +82,18 @@ if trends := analytics.rising_topics(articles, now=datetime.now(timezone.utc))[:
                       help=f"{count} dépêches en 24 h ({'nouveau sujet' if before == 0 else f'{before} la veille'})")
 
 
+def pick_tiles(candidates, count=3):
+    """Les autres titres : de préférence des dépêches illustrées, de rubriques différentes."""
+    chosen, categories = [], set()
+    for article in candidates[:25]:
+        if article.image and article.category not in categories:
+            chosen.append(article)
+            categories.add(article.category)
+        if len(chosen) == count:
+            return chosen
+    return chosen + [a for a in candidates if a not in chosen][: count - len(chosen)]
+
+
 def pick_lead(filtered):
     """La une : l'histoire reprise par le plus de sources depuis 12 h (sinon 24 h, sinon 48 h).
 
@@ -99,7 +111,7 @@ def pick_lead(filtered):
 
 # --- Le corps de la page : se met à jour tout seul toutes les 5 minutes --------------------
 @st.fragment(run_every="5min")
-def body(query, categories, sources, hide_read, show_hidden, compact, images):
+def body(query, categories, sources, hide_read, show_hidden, compact, pictures_on):
     flush_toast()
     current, _, collected = load_articles(keys)  # nouvelles données dès que le cache (15 min) a expiré
     statuses = storage.get_statuses(user) if user else {}
@@ -121,16 +133,25 @@ def body(query, categories, sources, hide_read, show_hidden, compact, images):
             st.info("Aucun article ne correspond à ces filtres. Essaie un autre mot-clé ou retire un filtre.")
             return
         lead, echoes, why = pick_lead(filtered)
+        others = [a for a in filtered if a is not lead]
+        tiles = pick_tiles(others) if not compact else []
+        # Pour les articles mis en avant sans photo dans le flux : l'image de partage de leur page (og:image)
+        pictures = images.share_images([a.url for a in [lead, *tiles] if not a.image]) if pictures_on else {}
         theme.section("À la une", why)
         article_card(lead, statuses.get(lead.id, NO_STATUS), key_prefix="feed", lead=True, user=user,
-                     echoes=echoes, show_image=images)
+                     echoes=echoes, show_image=pictures_on, image=pictures.get(lead.url))
+        if tiles:
+            for column, article in zip(st.columns(len(tiles), gap="medium"), tiles):
+                with column:
+                    article_card(article, statuses.get(article.id, NO_STATUS), key_prefix="feed", tile=True,
+                                 user=user, show_image=pictures_on, image=pictures.get(article.url))
 
-        rest = [a for a in filtered if a is not lead]
+        rest = [a for a in others if a not in tiles]
         theme.section("En continu", f"{len(filtered)} dépêches")
         with st.container(key="fvpanel_feed"):
             for article in rest[: st.session_state.visible_count]:
                 article_card(article, statuses.get(article.id, NO_STATUS), key_prefix="feed", compact=compact,
-                             user=user)
+                             user=user, show_image=pictures_on)
         if len(rest) > st.session_state.visible_count:
             st.button("Afficher plus", on_click=show_more, width="stretch")
 
@@ -165,4 +186,4 @@ def rail_blocks(filtered, collected):
     )
 
 
-body(query, categories, sources, hide_read, show_hidden, compact, images)
+body(query, categories, sources, hide_read, show_hidden, compact, pictures_on)
