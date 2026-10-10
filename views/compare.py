@@ -8,14 +8,14 @@ import theme
 from core import metrics
 from core.market import INDICATORS
 from theme import esc
-from ui import company_choices, load_closes, load_profile
+from ui import company_choices, current_user, load_closes, load_profile
 
 PERIODS = {"6 mois": "6mo", "1 an": "1y", "3 ans": "3y", "5 ans": "5y"}
 # Un repère de date par mois (ou tous les 2, 6 ou 12 mois) : sinon le même mois peut apparaître deux fois
 TICKS = {"6 mois": ("month", 1), "1 an": ("month", 2), "3 ans": ("month", 6), "5 ans": ("year", 1)}
 RATIOS = ["trailingPE", "enterpriseToEbitda", "dividendYield", "profitMargins", "returnOnEquity", "beta"]
 
-choices = company_choices()  # mes suivis, puis le CAC 40 et les grandes valeurs connues
+choices = company_choices(current_user())  # mes suivis, puis le CAC 40 et les grandes valeurs connues
 
 
 def comparison_chart(rebased: pd.DataFrame, names: dict[str, str], colors: dict[str, str], period: str) -> alt.LayerChart:

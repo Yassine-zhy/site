@@ -9,9 +9,10 @@ from core import storage
 from core.config import API_KEYS, CATEGORIES
 from core.filters import filter_articles
 from theme import esc
-from ui import NO_STATUS, api_keys, article_card, flush_toast, load_articles
+from ui import NO_STATUS, api_keys, article_card, current_user, flush_toast, load_articles, setting
 
-PAGE_SIZE = storage.get_setting("page_size", 30)  # nombre d'articles affichés par « page » (réglable)
+user = current_user()  # None : visiteur non connecté (il voit le fil, sans favoris ni « lu »)
+PAGE_SIZE = setting(user, "page_size", 30)  # nombre d'articles affichés par « page » (réglable)
 
 
 def show_more():
@@ -43,9 +44,9 @@ with st.sidebar:
         options=sorted({article.source for article in articles}),
         placeholder="Toutes les sources",
     )
-    hide_read = st.toggle("Cacher les articles lus", value=storage.get_setting("hide_read", False))
+    hide_read = st.toggle("Cacher les articles lus", value=setting(user, "hide_read", False))
     show_hidden = st.toggle("Voir les articles masqués")
-    compact = st.toggle("Vue compacte", value=storage.get_setting("density", "confort") == "compact",
+    compact = st.toggle("Vue compacte", value=setting(user, "density", "confort") == "compact",
                         help="Une ligne par article, sans chapeau : idéal pour parcourir vite.")
     if st.button("Actualiser maintenant", icon=":material/refresh:", width="stretch"):
         load_articles.clear()
@@ -70,7 +71,7 @@ categories = st.pills(
     options=list(CATEGORIES),
     format_func=lambda key: CATEGORIES[key],
     selection_mode="multi",
-    default=storage.get_setting("default_categories", []),
+    default=setting(user, "default_categories", []),
     label_visibility="collapsed",
 )
 
@@ -80,7 +81,7 @@ categories = st.pills(
 def body(query, categories, sources, hide_read, show_hidden, compact):
     flush_toast()
     current, _, collected = load_articles(keys)  # nouvelles données dès que le cache (15 min) a expiré
-    statuses = storage.get_statuses()
+    statuses = storage.get_statuses(user) if user else {}
 
     def is_visible(article) -> bool:
         status = statuses.get(article.id, NO_STATUS)
@@ -101,12 +102,12 @@ def body(query, categories, sources, hide_read, show_hidden, compact):
         # À la une : l'article le plus récent qui a une photo (parmi les 6 premiers), sinon le premier.
         lead = next((a for a in filtered[:6] if a.image), filtered[0])
         theme.section("À la une")
-        article_card(lead, statuses.get(lead.id, NO_STATUS), key_prefix="feed", lead=True)
+        article_card(lead, statuses.get(lead.id, NO_STATUS), key_prefix="feed", lead=True, user=user)
 
         rest = [a for a in filtered if a is not lead]
         theme.section("En continu", f"{len(filtered)} dépêches")
         for article in rest[: st.session_state.visible_count]:
-            article_card(article, statuses.get(article.id, NO_STATUS), key_prefix="feed", compact=compact)
+            article_card(article, statuses.get(article.id, NO_STATUS), key_prefix="feed", compact=compact, user=user)
         if len(rest) > st.session_state.visible_count:
             st.button("Afficher plus", on_click=show_more, width="stretch")
 

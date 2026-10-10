@@ -9,19 +9,19 @@ import streamlit as st
 import theme
 from core import metrics, portfolio, storage
 from theme import esc
-from ui import company_choices, flush_toast, load_closes, load_euro_rates, load_profile, load_symbol_quotes
+from ui import company_choices, flush_toast, load_closes, load_euro_rates, load_profile, load_symbol_quotes, require_user
 
 PERIODS = {"1 mois": "1mo", "6 mois": "6mo", "1 an": "1y"}
 EXAMPLE = [("MC.PA", "LVMH", 10), ("TTE.PA", "TotalEnergies", 40), ("AIR.PA", "Airbus", 15), ("AAPL", "Apple", 8)]
 
 
-def add_position(symbol: str, label: str, quantity: float, price: float, bought_on: date) -> None:
+def add_position(user: str, symbol: str, label: str, quantity: float, price: float, bought_on: date) -> None:
     currency = load_profile(symbol).get("currency", "EUR")
-    storage.add_position(symbol, label, quantity, price, currency, bought_on.isoformat())
+    storage.add_position(user, symbol, label, quantity, price, currency, bought_on.isoformat())
     st.session_state["fv_toast"] = f"{label} ajouté au portefeuille"
 
 
-def load_example() -> None:
+def load_example(user: str) -> None:
     """Un portefeuille d'exemple acheté il y a 6 mois, au vrai cours de l'époque."""
     start = date.today() - timedelta(days=182)
     closes = load_closes(tuple(s for s, _, _ in EXAMPLE), "1y")
@@ -31,7 +31,7 @@ def load_example() -> None:
     for symbol, label, quantity in EXAMPLE:
         if symbol in closes:
             price = float(closes[symbol].asof(pd.Timestamp(start)))
-            add_position(symbol, label, quantity, round(price, 2), start)
+            add_position(user, symbol, label, quantity, round(price, 2), start)
 
 
 def logo(symbol: str) -> str:
@@ -64,9 +64,10 @@ def performance_chart(data: pd.DataFrame, period: str) -> alt.LayerChart:
 
 flush_toast()
 theme.page_header("Portefeuille", "Un portefeuille virtuel pour t'entraîner : aucun argent réel, aucune transaction.")
-choices = company_choices()
+user = require_user()
+choices = company_choices(user)
 
-positions = storage.list_positions()
+positions = storage.list_positions(user)
 
 with st.container(horizontal=True, gap="small"):
     with st.popover("Ajouter une position", icon=":material/add_chart:"):
@@ -89,21 +90,21 @@ with st.container(horizontal=True, gap="small"):
                     if price <= 0:
                         st.error(f"Aucun cours trouvé pour « {symbol} ». Vérifie le symbole sur finance.yahoo.com.")
                     else:
-                        add_position(symbol, choices.get(symbol, symbol), quantity, price, bought_on)
+                        add_position(user, symbol, choices.get(symbol, symbol), quantity, price, bought_on)
                         st.rerun()
     if positions:
         with st.popover("Retirer une position", icon=":material/remove_circle:"):
             to_remove = st.selectbox("Position", positions, format_func=lambda p: f"{p['label']} · {p['quantity']:g} "
                                      f"titres achetés le {date.fromisoformat(p['bought_on']):%d/%m/%Y}")
             if st.button("Retirer", type="primary"):
-                storage.delete_position(to_remove["id"])
+                storage.delete_position(user, to_remove["id"])
                 st.rerun()
 
 if not positions:
     theme.section("Pour commencer")
     st.caption("Ton portefeuille est vide. Ajoute une position, ou charge un exemple : 4 actions achetées il y a "
                "six mois, au cours de l'époque.")
-    st.button("Charger un portefeuille d'exemple", icon=":material/science:", on_click=load_example)
+    st.button("Charger un portefeuille d'exemple", icon=":material/science:", on_click=load_example, args=(user,))
     st.stop()
 
 symbols = tuple(sorted({p["symbol"] for p in positions}))

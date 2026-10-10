@@ -148,7 +148,7 @@ Chaque `git push` sur `main` met l'appli à jour automatiquement.
 | Point | Conséquence | Que faire |
 | --- | --- | --- |
 | **Stockage éphémère** | le fichier `data/finveille.db` est effacé quand le serveur redémarre (mise à jour, mise en veille) | Acceptable pour une démo. Pour un vrai usage : une base hébergée gratuite (Supabase, Neon, Turso) via `st.connection`. |
-| **Base partagée** | tous les visiteurs voient les **mêmes** favoris et suivis | Restreins l'appli à ton adresse e-mail (*Settings → Sharing*), ou ajoute une connexion avec `st.login`. |
+| **Base partagée** | tous les visiteurs voient les **mêmes** favoris et suivis | Restreins l'appli à ton adresse e-mail (*Settings → Sharing*), ou active les comptes ([étape 14](14-comptes-utilisateurs.md)). |
 | **Mise en veille** | sans visite pendant un moment, l'appli s'endort ; la visite suivante la réveille (quelques dizaines de secondes) | Normal en gratuit. |
 | **NewsAPI** | l'offre gratuite est réservée au **développement** | En ligne, laisse sa clé vide : les autres sources suffisent. |
 | **Collecte 24 h/24** | l'appli ne collecte que lorsqu'elle est ouverte | Piste : un script lancé chaque heure par GitHub Actions (`on: schedule`) qui enregistre les articles dans une base hébergée. |

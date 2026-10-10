@@ -10,7 +10,7 @@ from core.brief import HEADLINE_INSTRUMENTS, Brief, market_sentence
 from core.config import CATEGORIES
 from core.glossary import GLOSSARY, term_of_the_day
 from theme import esc, safe_url
-from ui import api_keys, load_articles, load_calendar, load_quotes, load_symbol_quotes
+from ui import api_keys, current_user, load_articles, load_calendar, load_quotes, load_symbol_quotes
 
 now = datetime.now(timezone.utc)
 articles, _, _ = load_articles(api_keys())
@@ -32,8 +32,9 @@ for key, label in CATEGORIES.items():
 topics = analytics.rising_topics(articles, now=now)
 
 # --- Mes entreprises (suivis + portefeuille) et leur agenda --------------------------------------
-mine = {f["value"]: f["label"] for f in storage.list_follows("company")}
-mine |= {p["symbol"]: p["label"] for p in storage.list_positions() if p["symbol"] not in mine}
+user = current_user()  # le brief est public ; « Mes entreprises » n'apparaît que pour un utilisateur connecté
+mine = {f["value"]: f["label"] for f in storage.list_follows(user, "company")} if user else {}
+mine |= {p["symbol"]: p["label"] for p in (storage.list_positions(user) if user else []) if p["symbol"] not in mine}
 my_quotes = load_symbol_quotes(tuple(sorted(mine)))
 companies = [(mine[s], q.change) for s, q in my_quotes.items() if s in mine]
 agenda = []

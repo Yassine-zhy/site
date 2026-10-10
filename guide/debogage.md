@@ -80,6 +80,17 @@ Et quand rien ne marche : cherche le message exact entre guillemets sur un moteu
 | Les données ne se rafraîchissent pas | C'est le cache : « Actualiser maintenant », ou menu ⋮ → *Clear cache*. |
 | La mise en page change après une mise à jour de Streamlit | Les règles CSS qui ciblent des `data-testid` internes peuvent casser (`theme.py`). |
 
+## Comptes et connexion
+
+| Symptôme | Solution |
+| --- | --- |
+| `No module named 'httpx'` / `'authlib'` au clic sur « Se connecter » | `pip install -r requirements.txt` (contient `streamlit[auth]`). |
+| `redirect_uri_mismatch` / `Callback URL mismatch` | `redirect_uri` doit être déclaré **à l'identique** chez Google ou Auth0. |
+| Le bouton « Se connecter » n'apparaît pas | Section `[auth]` absente de `secrets.toml` : l'appli est en mode local. |
+| Une clé API n'est plus lue après l'ajout de `[auth]` | En TOML, les clés écrites après `[auth]` lui appartiennent : place `[auth]` à la fin. |
+| `st.user has no attribute "is_logged_in"` | Utilise `st.user.get("is_logged_in", False)` (vide sans configuration, et dans les tests). |
+| Un visiteur voit les données d'un autre | Une fonction de `storage` oublie `WHERE user_id = ?`, ou une variable globale garde l'utilisateur. |
+
 ## Portefeuille, marchés et brief
 
 | Symptôme | Solution |
