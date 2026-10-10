@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import html
 from dataclasses import dataclass, field
+from datetime import date, timedelta
+
+from core import analytics
+from core.models import Article
 
 # Les instruments cités dans le brief : symbole -> (nom dans une phrase, nom court pour un tableau)
 HEADLINE_INSTRUMENTS = {
@@ -91,3 +96,72 @@ class Brief:
         lines += ["---", "Brief rédigé automatiquement par FinVeille à partir de sources publiques. "
                   "Ce n'est pas un conseil en investissement."]
         return "\n".join(lines)
+
+    def to_html(self, site_url: str = "") -> str:
+        """Le brief en HTML pour un e-mail : styles écrits dans chaque balise (les messageries ignorent souvent
+        les feuilles de style), une seule colonne de 600 pixels, lisible sur téléphone."""
+        esc = html.escape
+        font = "font-family:Arial,Helvetica,sans-serif;color:#0f1724"
+        muted = "font-family:Arial,Helvetica,sans-serif;color:#5b6677;font-size:13px"
+
+        def title(text: str) -> str:
+            return f'<h2 style="{font};font-size:16px;margin:26px 0 8px;border-top:1px solid #e4e8ee;padding-top:16px">{esc(text)}</h2>'
+
+        def items(rows: list[str]) -> str:
+            return '<ul style="padding-left:18px;margin:0">' + "".join(
+                f'<li style="{font};font-size:15px;line-height:1.5;margin:0 0 8px">{row}</li>' for row in rows) + "</ul>"
+
+        parts = [
+            '<div style="max-width:600px;margin:0 auto;padding:24px 20px;background:#ffffff">',
+            f'<p style="{font};font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#1f4ed8;margin:0">'
+            f"FinVeille · le brief</p>",
+            f'<h1 style="{font};font-size:24px;margin:6px 0 4px">{esc(self.date_label.capitalize())}</h1>',
+            title("Les marchés"),
+            f'<p style="{font};font-size:16px;line-height:1.55;margin:0">{esc(self.market or "—")}</p>',
+        ]
+        if self.headlines:
+            parts += [title("À la une"), items([
+                f'<b>{esc(rubric)}</b> · <a href="{esc(url)}" style="color:#1f4ed8">{esc(headline)}</a> '
+                f'<span style="{muted}">({esc(source)})</span>'
+                for rubric, headline, source, url in self.headlines])]
+        if self.topics:
+            parts += [title("Les sujets qui montent"),
+                      items([f"{esc(term)} <span style='{muted}'>· {count} dépêches en 24 h</span>"
+                             for term, count, _ in self.topics])]
+        if self.companies:
+            parts += [title("Mes entreprises"), items([f"{esc(name)} : <b>{esc(change)}</b>"
+                                                       for name, change in self.companies])]
+        if self.agenda:
+            parts += [title("Agenda"), items([f"<b>{esc(day)}</b> · {esc(event)}" for day, event in self.agenda])]
+        if self.word:
+            parts += [title("Le mot du jour"),
+                      f'<p style="{font};font-size:15px;line-height:1.5;margin:0"><b>{esc(self.word[0])}</b> : '
+                      f"{esc(self.word[1])}</p>"]
+        link = f' · <a href="{esc(site_url)}" style="color:#1f4ed8">Ouvrir FinVeille</a>' if site_url else ""
+        parts += [f'<p style="{muted};margin-top:28px;border-top:1px solid #e4e8ee;padding-top:12px">Brief rédigé '
+                  f"automatiquement à partir de sources publiques, sans conseil en investissement{link}. Pour ne plus "
+                  "le recevoir : Réglages → Notifications par e-mail.</p></div>"]
+        return "".join(parts)
+
+
+def front_page(recent: list[Article], categories: dict[str, str]) -> list[tuple[str, Article, int]]:
+    """Dans chaque rubrique, l'histoire reprise par le plus de sources : (rubrique, article, autres sources)."""
+    page = []
+    for key, label in categories.items():
+        ranked = analytics.most_covered([a for a in recent if a.category == key])
+        if ranked:
+            article, echoes = ranked[0]
+            page.append((label, article, echoes))
+    return page
+
+
+def upcoming_events(calendars: dict[str, dict], names: dict[str, str], today: date,
+                    days: int = 45) -> list[tuple[date, str]]:
+    """Les résultats et détachements de dividende à venir dans les `days` prochains jours, par date."""
+    agenda = []
+    for symbol, calendar in calendars.items():
+        for key, event in [("earnings", "publie ses résultats"), ("ex_dividend", "détache son dividende")]:
+            day = calendar.get(key)
+            if day and today <= day <= today + timedelta(days=days):
+                agenda.append((day, f"{names.get(symbol, symbol)} {event}"))
+    return sorted(agenda)

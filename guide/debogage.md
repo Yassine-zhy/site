@@ -105,6 +105,14 @@ Et quand rien ne marche : cherche le message exact entre guillemets sur un moteu
 | `404 Not Found` sur la BCE | Clé de série mal recopiée, ou aucune donnée après `startPeriod`. |
 | Une statistique figée depuis des mois | La série a été remplacée : vérifie la date de la dernière valeur (exemple : `ICP` → `HICP` en 2026). |
 
+## E-mails (brief et alertes)
+
+| Symptôme | Solution |
+| --- | --- |
+| `SMTPAuthenticationError: 535` (Gmail) | Utilise un mot de passe d'application, pas ton mot de passe habituel (étape 21). |
+| « 0 e-mail préparé » | Personne n'a coché la case, ou la tâche GitHub lit une autre base que le site (`DATABASE_URL`). |
+| Tester sans rien envoyer | `python -m scripts.send_notifications alerts --dry-run`. |
+
 ## Portefeuille, marchés et brief
 
 | Symptôme | Solution |

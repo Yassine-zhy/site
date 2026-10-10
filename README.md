@@ -15,7 +15,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | --- | --- |
 | **Agrégation** | 12 flux RSS gratuits (CNBC, BBC, Le Monde, BFM Bourse, The Economist, Fed, BCE, CoinDesk…) + Finnhub, NewsAPI, Marketaux et Alpha Vantage si les clés sont renseignées. Téléchargement en parallèle, dédoublonnage. |
 | **Le fil** | « À la une » (l'histoire reprise par le plus de sources) et « En continu », rubriques Marchés / Crypto / Entreprises / Macro (classement par mots-clés), tendances cliquables, filtre par source, recherche avancée (`"expression exacte"`, `-exclure`, `source:cnbc`), vue compacte, mise à jour automatique toutes les 5 minutes. |
-| **Le brief** | L'édition du jour rédigée automatiquement : la séance en une phrase, l'histoire la plus reprise de chaque rubrique, les sujets qui montent, l'agenda de mes entreprises, le mot du jour. Téléchargeable en Markdown. |
+| **Le brief** | L'édition du jour rédigée automatiquement : la séance en une phrase, l'histoire la plus reprise de chaque rubrique, les sujets qui montent, l'agenda de mes entreprises, le mot du jour. Téléchargeable en Markdown, **envoyé par e-mail chaque matin** aux abonnés. |
 | **Comptes** | Connexion avec Google, ou par e-mail et Facebook via Auth0 (OpenID Connect, aucun mot de passe stocké). Chaque utilisateur a ses propres favoris, suivis, portefeuille et alertes ; export et suppression de ses données (RGPD). Sans configuration, mode local à un utilisateur. |
 | **Base de données** | SQLite en local ; en ligne, PostgreSQL gratuit (Neon, Supabase) en une ligne de secrets, pour que les comptes survivent aux redémarrages. Mêmes requêtes SQL pour les deux, réserve de connexions, tests exécutés sur les deux bases. |
 | **Favoris, lu, masqué** | Enregistrés dans une base SQLite, conservés d'une session à l'autre ; notes personnelles ; export CSV des favoris. |
@@ -27,7 +27,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Comparer** | Jusqu'à 4 entreprises en base 100, rendement annualisé, volatilité, perte maximale, valorisation, matrice de corrélation et **frontière efficiente** de Markowitz (4 000 répartitions simulées, portefeuilles de variance minimale et de Sharpe maximal). |
 | **Portefeuille virtuel** | Positions multidevises valorisées en euros, plus-values latentes, répartition, performance comparée au CAC 40, portefeuille d'exemple. |
 | **Simulateurs** | Épargne à intérêts composés (frais, règle de 72), investissement programmé rejoué sur l'historique réel d'un indice ou d'une action, crédit immobilier (mensualité, amortissement, taux d'endettement, capacité d'emprunt à 35 %), inflation et rendement réel. |
-| **Alertes** | Seuils de cours ou de variation du jour, bandeau d'alerte sur toutes les pages. |
+| **Alertes** | Seuils de cours ou de variation du jour, bandeau d'alerte sur toutes les pages, **e-mail** dès qu'une alerte se déclenche (une fois par jour au plus). Envois par une tâche planifiée GitHub Actions et SMTP (Gmail, Brevo). |
 | **Quiz** | 10 questions tirées du glossaire (pièges de la même rubrique), correction détaillée, meilleur score enregistré dans le compte. |
 | **Glossaire** | 55 termes de la finance expliqués simplement, recherche, mot du jour. |
 | **En chiffres** | Tableau de bord du flux : dépêches par heure et par rubrique, entreprises les plus citées, tonalité par rubrique. |
@@ -77,7 +77,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-20 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+21 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 
@@ -109,9 +109,11 @@ assets/           le logo (SVG)
 views/            une page par fichier (fil, brief, en chiffres, marchés, économie, crypto, comparer, suivis, portefeuille,
                   alertes, favoris, simulateurs, quiz, glossaire, réglages, mon compte)
 core/             logique métier : sources, agrégation, classement, statistiques, marché, indicateurs de
-                  risque, portefeuille, alertes, brief, économie (BCE, FRED), crypto, simulateurs, quiz, résumé, stockage
-tests/            150 tests pytest (dont 12 sur PostgreSQL, si une base de test est fournie) (sources, recherche, base et comptes, résumé, indicateurs, portefeuille, alertes,
+                  risque, portefeuille, alertes, brief, économie (BCE, FRED), crypto, simulateurs, quiz, résumé, e-mails,
+                  stockage
+tests/            164 tests pytest (dont 13 sur PostgreSQL, si une base de test est fournie) (sources, recherche, base et comptes, résumé, indicateurs, portefeuille, alertes,
                   brief, chaque page)
+scripts/          tâche planifiée : envoi du brief et des alertes par e-mail
 guide/            le guide de construction, étape par étape
 ```
 

@@ -1,0 +1,38 @@
+# Envoie par e-mail le brief du matin et les alertes de cours déclenchées (étape 21).
+# Comme tests.yml, ce fichier n'est actif que si finveille/ est à la racine de son dépôt GitHub.
+# Secrets à créer dans GitHub (Settings → Secrets and variables → Actions) : DATABASE_URL, SMTP_HOST,
+# SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, SITE_URL (et, si tu veux, les clés API).
+name: Notifications
+
+on:
+  schedule:
+    - cron: "45 5 * * 1-5"     # le brief : 5 h 45 UTC (7 h 45 à Paris en été, 6 h 45 en hiver), du lundi au vendredi
+    - cron: "10 7-20 * * 1-5"  # les alertes : toutes les heures pendant les séances européennes et américaines
+  workflow_dispatch:           # bouton « Run workflow » pour lancer à la main
+    inputs:
+      what:
+        description: "brief ou alerts"
+        default: alerts
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      SMTP_FROM: ${{ secrets.SMTP_FROM }}
+      SITE_URL: ${{ secrets.SITE_URL }}
+      FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+      MARKETAUX_API_KEY: ${{ secrets.MARKETAUX_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      # Le premier horaire (5 h 45) envoie le brief, les autres les alertes ; à la main, on choisit.
+      - run: python -m scripts.send_notifications ${{ github.event.inputs.what || (github.event.schedule == '45 5 * * 1-5' && 'brief' || 'alerts') }}

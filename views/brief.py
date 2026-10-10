@@ -6,7 +6,7 @@ import streamlit as st
 
 import theme
 from core import analytics, storage
-from core.brief import HEADLINE_INSTRUMENTS, Brief, market_sentence
+from core.brief import HEADLINE_INSTRUMENTS, Brief, front_page, market_sentence, upcoming_events
 from core.config import CATEGORIES
 from core.glossary import GLOSSARY, term_of_the_day
 from theme import esc, safe_url
@@ -21,12 +21,7 @@ quotes = {q.symbol: q for q in load_quotes()}
 market = market_sentence({symbol: q.change for symbol, q in quotes.items()})
 
 # --- À la une : dans chaque rubrique, l'histoire reprise par le plus de sources -----------------
-headlines = []
-for key, label in CATEGORIES.items():
-    ranked = analytics.most_covered([a for a in recent if a.category == key])
-    if ranked:
-        article, echoes = ranked[0]
-        headlines.append((label, article, echoes))
+headlines = front_page(recent, CATEGORIES)
 
 # --- Sujets qui montent ------------------------------------------------------------------------
 topics = analytics.rising_topics(articles, now=now)
@@ -37,14 +32,7 @@ mine = {f["value"]: f["label"] for f in storage.list_follows(user, "company")} i
 mine |= {p["symbol"]: p["label"] for p in (storage.list_positions(user) if user else []) if p["symbol"] not in mine}
 my_quotes = load_symbol_quotes(tuple(sorted(mine)))
 companies = [(mine[s], q.change) for s, q in my_quotes.items() if s in mine]
-agenda = []
-for symbol, label in mine.items():
-    calendar = load_calendar(symbol)
-    for field, event in [("earnings", "publie ses résultats"), ("ex_dividend", "détache son dividende")]:
-        day = calendar.get(field)
-        if day and day <= date.today() + timedelta(days=45):
-            agenda.append((day, f"{label} {event}"))
-agenda.sort()
+agenda = upcoming_events({symbol: load_calendar(symbol) for symbol in mine}, mine, date.today())
 
 word = term_of_the_day()
 brief = Brief(

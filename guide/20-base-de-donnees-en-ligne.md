@@ -171,4 +171,4 @@ installe-le depuis <https://www.postgresql.org/download/>, ou avec Docker :
 | Les données disparaissent toujours | `DATABASE_URL` absent des secrets **en ligne** | Ajoute-le dans *Settings → Secrets* de Streamlit Cloud ; vérifie la ligne dans *Réglages*. |
 | `syntax error at or near "OR"` | Une requête `INSERT OR …` propre à SQLite | Utilise `ON CONFLICT …`, compris par les deux bases. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [le brief et les alertes par e-mail](21-notifications-par-email.md). Retour au [sommaire du guide](README.md).

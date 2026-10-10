@@ -134,7 +134,7 @@ Le temps de lecture est estimé à **220 mots par minute**, la vitesse moyenne d
 3. Ajoute une phrase sur la **volatilité** : « Le VIX recule à 14,8 : les marchés sont sereins. » (seuils de 15 et 30,
    voir le glossaire).
 4. **Défi :** envoie-toi le brief chaque matin par e-mail avec une tâche planifiée GitHub Actions (`on: schedule`) et
-   le module `smtplib` de Python.
+   le module `smtplib` de Python. (Solution complète à l'[étape 21](21-notifications-par-email.md).)
 
 ---
 

@@ -65,4 +65,4 @@ for alert in alerts:
                   on_click=remove, args=(user, alert["id"]))
 
 st.caption("Les alertes sont vérifiées à chaque affichage de FinVeille (et toutes les 2 minutes tant qu'une page est "
-           "ouverte). Elles ne t'envoient pas d'e-mail.")
+           "ouverte). Avec un compte, tu peux aussi les recevoir par e-mail : Réglages → Notifications par e-mail.")
