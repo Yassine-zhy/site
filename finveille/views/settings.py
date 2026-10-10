@@ -81,6 +81,25 @@ with right, st.container(key="fvset_keys"):
         else:
             st.markdown(f":gray-badge[inactive] **{label}** · [obtenir une clé gratuite]({signup_url})")
 
+# --- Notifications par e-mail -------------------------------------------------------------------
+with right, st.container(key="fvset_notify"):
+    theme.section("Notifications par e-mail")
+    email = (storage.get_user(user) or {}).get("email")
+    if not email:
+        st.caption("Disponible avec un compte (connexion Google, e-mail ou Facebook) : FinVeille t'envoie alors le "
+                   "brief chaque matin et tes alertes de cours dès qu'elles se déclenchent.")
+    else:
+        st.toggle(
+            "Recevoir le brief chaque matin (jours de Bourse)", value=storage.get_setting(user, "email_brief", False),
+            key="pref_email_brief", on_change=save, args=("email_brief", "pref_email_brief"),
+        )
+        st.toggle(
+            "Recevoir mes alertes de cours déclenchées", value=storage.get_setting(user, "email_alerts", False),
+            key="pref_email_alerts", on_change=save, args=("email_alerts", "pref_email_alerts"),
+            help="Vérifiées toutes les heures pendant les séances ; chaque alerte est envoyée au plus une fois par jour.",
+        )
+        st.caption(f"Envoyés à {email}. Désactivable à tout moment ici.")
+
 # --- Mes données ------------------------------------------------------------------------------
 with right, st.container(key="fvset_data"):
     theme.section("Mes données")

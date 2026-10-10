@@ -244,6 +244,17 @@ def get_user(user: str) -> dict | None:
     return dict(row) if row else None
 
 
+def users_with_setting(key: str, value=True) -> list[dict]:
+    """Les comptes qui ont choisi un réglage (ex. recevoir le brief par e-mail) : [{"user_id", "email", "name"}]."""
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT u.user_id, u.email, u.name FROM users u JOIN settings s ON s.user_id = u.user_id "
+            "WHERE s.key = ? AND s.value = ? ORDER BY u.user_id",
+            (key, json.dumps(value)),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
 def export_user_data(user: str) -> dict:
     """Toutes les données d'un utilisateur (droit d'accès et de portabilité du RGPD)."""
     data = {"user": get_user(user)}

@@ -180,3 +180,16 @@ def test_garder_un_article_avec_postgresql(app, monkeypatch):
     assert any(b.label == "Retirer" for b in app.button)
     app.switch_page("views/settings.py").run()
     assert not app.exception
+
+
+def test_notifications_par_e_mail_dans_les_reglages(app, db, monkeypatch):
+    monkeypatch.setattr(ui, "auth_providers", lambda: ["google"])
+    monkeypatch.setattr(ui, "current_user", lambda: "alice@example.com")
+    db.touch_user("alice@example.com", "alice@example.com", "Alice")
+    app.run()
+    app.switch_page("views/settings.py").run()
+    toggle = app.toggle(key="pref_email_brief")
+    toggle.set_value(True).run()
+    assert not app.exception
+    assert db.get_setting("alice@example.com", "email_brief") is True
+    assert [u["email"] for u in db.users_with_setting("email_brief")] == ["alice@example.com"]

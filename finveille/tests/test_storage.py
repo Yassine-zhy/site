@@ -147,3 +147,12 @@ def test_migration_d_une_base_des_etapes_precedentes(tmp_path, monkeypatch):
     assert storage.get_summary("abc") == {"points": ["Un point"]}  # table partagée : inchangée
     storage.add_follow("alice", "company", "MC.PA", "LVMH")  # la nouvelle clé primaire accepte un 2e utilisateur
     assert len(storage.list_follows("alice")) == 1
+
+
+def test_comptes_abonnes_a_un_reglage(store):
+    store.touch_user("alice@example.com", "alice@example.com", "Alice")
+    store.touch_user("bob@example.com", "bob@example.com", "Bob")
+    store.set_setting("alice@example.com", "email_brief", True)
+    store.set_setting("bob@example.com", "email_brief", False)
+    store.set_setting("local", "email_brief", True)  # pas de compte (mode local) : ignoré
+    assert [u["email"] for u in store.users_with_setting("email_brief")] == ["alice@example.com"]
