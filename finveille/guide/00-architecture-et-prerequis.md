@@ -83,6 +83,11 @@ finveille/
 │   ├── markets.py          ←   Tableau de bord des marchés mondiaux
 │   ├── stats.py            ←   Tableau de bord « l'actualité en chiffres »
 │   ├── following.py        ←   Mes suivis (entreprises, thèmes, fiches entreprises)
+│   ├── brief.py            ←   Le brief du jour
+│   ├── compare.py          ←   Comparateur d'entreprises
+│   ├── portfolio.py        ←   Portefeuille virtuel
+│   ├── alerts.py           ←   Alertes de cours
+│   ├── glossary.py         ←   Glossaire de la finance
 │   ├── favorites.py        ←   Favoris
 │   └── settings.py         ←   Réglages (préférences, thème, export)
 ├── core/                   ← logique métier, sans Streamlit
@@ -95,6 +100,11 @@ finveille/
 │   ├── storage.py          ←   base SQLite : favoris, lus, masqués, suivis, préférences
 │   ├── market.py           ←   cours de Bourse et indicateurs (yfinance)
 │   ├── analytics.py        ←   statistiques sur le flux d'actualité (pour les tableaux de bord)
+│   ├── metrics.py          ←   rendement, volatilité, perte maximale, corrélation
+│   ├── portfolio.py        ←   valorisation du portefeuille virtuel
+│   ├── alerts.py           ←   conditions des alertes de cours
+│   ├── brief.py            ←   rédaction du brief du jour
+│   ├── glossary.py         ←   les termes du glossaire
 │   └── summarizer.py       ←   résumé automatique (local ou IA)
 ├── tests/                  ← tests automatiques (pytest)
 ├── docs/screenshots/       ← captures d'écran pour le README
@@ -227,6 +237,10 @@ Toutes gratuites, sans carte bancaire. Tu n'en as **pas besoin** pour démarrer 
 | [7](07-suivi-personnalise.md) | Suivre des entreprises et des thèmes, fiches entreprises | recherche de ticker, indicateurs financiers |
 | [8](08-resume-ia.md) | Résumé automatique des articles | extraction de texte, algorithme extractif, appel à un LLM |
 | [9](09-reglages-tests-deploiement.md) | Réglages, tests, mise en ligne, présentation portfolio/LinkedIn | pytest, Streamlit Community Cloud, rédaction |
+| [10](10-confort.md) | Menu par sections, recherche avancée, vue compacte, notes, glossaire | `shlex`, `groupby`, évolution d'une fonction |
+| [11](11-marches-avances.md) | Carte du CAC 40, devises, comparateur, agenda, actus sur le graphique | volatilité, perte maximale, corrélation, pandas |
+| [12](12-portefeuille-alertes.md) | Portefeuille virtuel, alertes de cours | formulaires, contraintes SQL, valorisation multidevise |
+| [13](13-brief-du-jour.md) | Le brief du jour | génération de texte, indice de Jaccard, détection de tendances |
 
 Un mémo de débogage regroupe toutes les erreurs courantes : [debogage.md](debogage.md).
 

@@ -80,11 +80,24 @@ Et quand rien ne marche : cherche le message exact entre guillemets sur un moteu
 | Les données ne se rafraîchissent pas | C'est le cache : « Actualiser maintenant », ou menu ⋮ → *Clear cache*. |
 | La mise en page change après une mise à jour de Streamlit | Les règles CSS qui ciblent des `data-testid` internes peuvent casser (`theme.py`). |
 
+## Portefeuille, marchés et brief
+
+| Symptôme | Solution |
+| --- | --- |
+| Une action londonienne vaut 100 fois trop | Cours en pence (`GBp`) : `portfolio.to_eur` divise par 100. |
+| `sqlite3.IntegrityError: CHECK constraint failed` | Quantité, prix ou seuil ≤ 0 : la base protège les données. |
+| Un cours identique deux jours de suite | Clôture du jour pas encore publiée par Yahoo (`NaN`), le dernier cours connu est repris. |
+| `TypeError: Cannot compare tz-naive and tz-aware` | Convertis les dates avec `tz_convert` ou `tz_localize(None)` avant de comparer. |
+| Le même mois deux fois sur un axe | Impose l'intervalle des repères : `tickCount={"interval": "month", "step": 1}`. |
+| Un sujet sans intérêt dans « Les sujets qui montent » | Ajoute le mot à `_NEWS_WORDS` (`core/analytics.py`). |
+| Une recherche avec apostrophe ne trouve rien | `lexer.quotes = '"'` dans `parse_query`. |
+
 ## Python
 
 | Symptôme | Solution |
 | --- | --- |
 | `SyntaxError: unterminated f-string literal` | Guillemets ouvrants et fermants différents (`f"…'`). |
+| `assert 110.00000000000001 == 110` | Calcul en virgule flottante : arrondis avant de comparer (`round(x, 6)`). |
 | `IndentationError` | Mélange d'espaces et de tabulations, ou bloc mal aligné : VS Code → *Convert Indentation to Spaces*. |
 | `AttributeError: 'NoneType' object has no attribute …` | Une fonction a renvoyé `None` : teste le cas (`if valeur is None: …`). |
 | `IndexError: list index out of range` | Liste vide : vérifie `if liste:` avant `liste[0]`. |
