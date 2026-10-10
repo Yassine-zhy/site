@@ -14,7 +14,9 @@ couleur du texte (`color-mix(... currentColor ...)`) et s'adaptent donc tout seu
 
 from __future__ import annotations
 
+import base64
 import html
+import time as clock_module
 from datetime import datetime, time, timezone
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
@@ -151,6 +153,81 @@ CSS = """
 .fv-note { font-size: .78rem; color: var(--fv-muted); line-height: 1.45; }
 
 @media (prefers-reduced-motion: reduce) { .fv-headline a { transition: none; } }
+
+/* ---------- Bandeau défilant des cours ---------- */
+.fv-tape { overflow: hidden; margin: -1.2rem 0 1.1rem; border-block: 1px solid var(--fv-rule);
+  font-family: var(--fv-mono); font-size: .76rem;
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
+.fv-tape-track { display: inline-flex; white-space: nowrap; padding: .42rem 0; animation: fv-tape 110s linear infinite; }
+.fv-tape:hover .fv-tape-track { animation-play-state: paused; }
+.fv-tick { padding-right: 2.4rem; }
+.fv-tick b { font-family: "IBM Plex Sans", sans-serif; font-weight: 600; margin-right: .45rem; }
+@keyframes fv-tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* Hausse / baisse : la flèche porte la couleur, le chiffre reste à l'encre */
+.fv-up::before, .fv-down::before, .fv-flat::before { display: inline-block; margin-right: .25rem; font-size: .8em; }
+.fv-up::before { content: "▲"; color: var(--fv-up); }
+.fv-down::before { content: "▼"; color: var(--fv-down); }
+.fv-flat::before { content: "■"; color: var(--fv-muted); font-size: .6em; vertical-align: .12em; }
+
+/* ---------- Tuiles de cotation ---------- */
+.fv-group { margin: .9rem 0 .35rem; font-size: .78rem; font-weight: 600; color: var(--fv-muted); }
+.fv-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 0 1.4rem; }
+.fv-tile { display: grid; grid-template-columns: 1fr 84px; align-items: end; gap: .1rem .6rem;
+  grid-template-areas: "label label" "value spark" "delta spark" "sub sub";
+  padding: .6rem 0 .7rem; border-top: 1px solid var(--fv-rule-strong); }
+.fv-tile-label { grid-area: label; font-size: .8rem; font-weight: 600; }
+.fv-tile-value { grid-area: value; font-size: 1.38rem; font-weight: 600; letter-spacing: -.01em; line-height: 1.15; }
+.fv-tile-delta { grid-area: delta; font-size: .82rem; font-variant-numeric: tabular-nums; }
+.fv-tile img { grid-area: spark; width: 84px; height: 30px; }
+.fv-tile-sub { grid-area: sub; font-size: .72rem; color: var(--fv-muted); }
+
+/* ---------- Carte des performances ---------- */
+.fv-heat { display: grid; grid-template-columns: 9.5rem 1fr; gap: 3px 1rem; align-items: stretch; }
+.fv-heat-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 3px; }
+.fv-heat-label { font-size: .78rem; font-weight: 600; padding-top: .55rem; }
+.fv-cell { padding: .5rem .6rem; border-radius: 2px; font-size: .78rem; line-height: 1.3;
+  background: color-mix(in srgb, var(--c) var(--a), transparent); }
+.fv-cell b { display: block; font-weight: 600; }
+.fv-cell span { font-family: var(--fv-mono); font-size: .76rem; }
+.fv-heat-legend { display: flex; align-items: center; gap: .6rem; margin-top: .7rem; font-size: .74rem; color: var(--fv-muted); }
+.fv-heat-legend i { width: 140px; height: 8px; border-radius: 2px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--fv-down) 62%, transparent),
+  color-mix(in srgb, currentColor 6%, transparent), color-mix(in srgb, var(--fv-up) 62%, transparent)); }
+@media (max-width: 640px) { .fv-heat { grid-template-columns: 1fr; } .fv-heat-label { padding-top: .4rem; } }
+
+/* ---------- Chiffres clés, barres, tonalité ---------- */
+.fv-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0 1.4rem; }
+.fv-kpi { padding: .6rem 0 .8rem; border-top: 1px solid var(--fv-rule-strong); }
+.fv-kpi-label { font-size: .8rem; font-weight: 600; }
+.fv-kpi-value { margin-top: .15rem; font-size: 1.9rem; font-weight: 600; letter-spacing: -.015em; line-height: 1.1; }
+.fv-kpi-sub { margin-top: .15rem; font-size: .76rem; color: var(--fv-muted); }
+.fv-chart-title { display: flex; align-items: baseline; justify-content: space-between; margin: .4rem 0 -.2rem;
+  font-size: .8rem; }
+.fv-chart-title small { color: var(--fv-muted); font-variant-numeric: tabular-nums; }
+.fv-list { list-style: none; margin: 0; padding: 0; }
+.fv-list li { display: grid; grid-template-columns: 16px 9.5rem 1fr 2rem; align-items: center; gap: .6rem;
+  margin: 0; padding: .34rem 0; border-bottom: 1px solid var(--fv-rule); font-size: .84rem; }
+.fv-list li img { width: 16px; height: 16px; border-radius: 3px; }
+.fv-list .fv-track i { display: block; height: 8px; min-width: 2px; border-radius: 0 4px 4px 0; background: var(--fv-muted); }
+.fv-list .fv-num { text-align: right; font-variant-numeric: tabular-nums; }
+.fv-list small { color: var(--fv-muted); font-family: var(--fv-mono); font-size: .7rem; margin-left: .3rem; }
+.fv-tone { list-style: none; margin: 0; padding: 0; }
+.fv-tone li { display: grid; grid-template-columns: 7.5rem 1fr 3.4rem; align-items: center; gap: .7rem; margin: 0;
+  padding: .45rem 0; border-bottom: 1px solid var(--fv-rule); font-size: .82rem; }
+.fv-tone .fv-axis { position: relative; height: 10px; }
+.fv-tone .fv-axis::before { content: ""; position: absolute; left: 50%; top: -4px; bottom: -4px; width: 1px;
+  background: var(--fv-rule-strong); }
+.fv-tone .fv-axis i { position: absolute; top: 1px; height: 8px; }
+.fv-tone .fv-axis i.pos { left: 50%; background: var(--fv-up); border-radius: 0 4px 4px 0; }
+.fv-tone .fv-axis i.neg { right: 50%; background: var(--fv-down); border-radius: 4px 0 0 4px; }
+.fv-tone .fv-num { text-align: right; font-variant-numeric: tabular-nums; }
+.fv-tone small { display: block; color: var(--fv-muted); font-size: .7rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fv-tape { overflow-x: auto; mask-image: none; }
+  .fv-tape-track { animation: none; }
+}
 </style>
 """
 
@@ -188,6 +265,11 @@ def fr_number(value: float, decimals: int = 2) -> str:
 def fr_date(moment: datetime) -> str:
     """« samedi 10 octobre 2026 ». (On évite locale.setlocale, qui dépend de la configuration du système.)"""
     return f"{_DAYS[moment.weekday()]} {moment.day} {_MONTHS[moment.month - 1]} {moment.year}"
+
+
+def fr_day(moment: datetime) -> str:
+    """« 9 octobre »."""
+    return f"{moment.day} {_MONTHS[moment.month - 1]}"
 
 
 def clock(moment: datetime) -> str:
@@ -261,3 +343,67 @@ def page_header(title: str, dek: str) -> None:
 def category_tag(key: str, label: str) -> str:
     """HTML d'une étiquette de catégorie : un carré de couleur + le nom (jamais la couleur seule)."""
     return f'<span class="fv-cat" style="--c:{CATEGORY_COLORS.get(key, "#8a8780")}">{esc(label)}</span>'
+
+
+# --- Données de marché ------------------------------------------------------------------------
+
+TAPE_SECONDS = 110  # durée d'un tour complet du bandeau (doit correspondre au CSS)
+
+
+def signed(value: float, unit: str = "%", decimals: int = 2) -> str:
+    """« +0,95 % », « −1,20 % », « +3,0 pb » (vrai signe moins typographique)."""
+    if unit == "pb":
+        decimals = 1
+    sign = "+" if value > 0 else "\u2212" if value < 0 else ""
+    return f"{sign}{fr_number(abs(value), decimals)}\u202f{unit}"
+
+
+def direction(value: float, threshold: float = 0.005) -> str:
+    """Classe CSS de direction : fv-up (▲), fv-down (▼) ou fv-flat (■)."""
+    return "fv-up" if value > threshold else "fv-down" if value < -threshold else "fv-flat"
+
+
+def price(value: float) -> str:
+    """Cours avec un nombre de décimales adapté à sa grandeur (4 pour une devise, 0 au-delà de 10 000)."""
+    decimals = 4 if value < 10 else 2 if value < 10_000 else 0
+    return fr_number(value, decimals)
+
+
+def sparkline_uri(values: list[float], end_class: str, width: int = 84, height: int = 30) -> str:
+    """Mini-courbe en SVG, encodée comme une image (st.html n'accepte pas le SVG intégré).
+
+    Ligne grise neutre ; seul le dernier point porte la couleur de la direction.
+    """
+    values = [float(v) for v in values]
+    low, high = min(values), max(values)
+    span = (high - low) or 1
+    step = (width - 8) / max(len(values) - 1, 1)
+    points = [(4 + i * step, height - 4 - (v - low) / span * (height - 8)) for i, v in enumerate(values)]
+    path = " ".join(f"{x:.1f},{y:.1f}" for x, y in points)
+    end_x, end_y = points[-1]
+    end_color = {"fv-up": UP, "fv-down": DOWN}.get(end_class, "#8a8780")
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
+        f'<polyline points="{path}" fill="none" stroke="#8a8780" stroke-width="1.6" '
+        f'stroke-linejoin="round" stroke-linecap="round"/>'
+        f'<circle cx="{end_x:.1f}" cy="{end_y:.1f}" r="3.2" fill="{end_color}"/></svg>'
+    )
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+
+
+def ticker_tape(quotes) -> None:
+    """Le bandeau défilant des cours, en haut de chaque page."""
+    if not quotes:
+        return
+    items = "".join(
+        f'<span class="fv-tick"><b>{esc(q.name)}</b>{price(q.last)} '
+        f'<span class="{direction(q.change)}">{signed(q.change, q.unit)}</span></span>'
+        for q in quotes
+    )
+    # Le contenu est répété deux fois : en décalant de 50 %, la boucle est invisible.
+    # Le délai négatif, calé sur l'horloge, évite que le bandeau reparte du début à chaque rafraîchissement.
+    delay = -(clock_module.time() % TAPE_SECONDS)
+    st.html(
+        f'<div class="fv-tape" role="marquee" aria-label="Cours des marchés">'
+        f'<div class="fv-tape-track" style="animation-delay:{delay:.1f}s">{items}{items}</div></div>'
+    )

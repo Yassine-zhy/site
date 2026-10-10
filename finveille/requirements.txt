@@ -3,3 +3,6 @@ streamlit>=1.65,<2   # l'interface web
 requests>=2.32       # télécharger des pages et interroger des API
 feedparser>=6.0      # lire les flux RSS
 tzdata               # fuseaux horaires (indispensable sous Windows pour zoneinfo)
+yfinance>=1.0        # cours de Bourse (Yahoo Finance, sans clé)
+pandas>=2.2          # tableaux de données (installé avec yfinance, cité pour mémoire)
+altair>=5.4          # graphiques (installé avec Streamlit, cité pour mémoire)
