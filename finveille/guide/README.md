@@ -23,5 +23,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 17. [Les simulateurs : épargne, investissement programmé, crédit, inflation](17-simulateurs.md)
 18. [La page Crypto : classement, marché et indice « peur et avidité »](18-crypto.md)
 19. [Le quiz de la finance et la frontière efficiente](19-quiz-et-frontiere-efficiente.md)
+20. [Une base de données en ligne : les comptes survivent aux redémarrages](20-base-de-donnees-en-ligne.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).

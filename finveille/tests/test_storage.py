@@ -1,4 +1,7 @@
-"""Base SQLite : favoris, suivis, préférences, résumés, comptes (base temporaire, voir conftest.db)."""
+"""Base de données : favoris, suivis, préférences, résumés, comptes.
+
+Chaque test tourne sur SQLite, puis sur PostgreSQL si une base de test est configurée (voir conftest.store).
+"""
 
 import sqlite3
 
@@ -9,113 +12,116 @@ from conftest import make_article
 ME = "moi@example.com"
 
 
-def test_upsert_des_indicateurs(db):
+def test_upsert_des_indicateurs(store):
     article = make_article("Un article")
-    db.set_flag(ME, article, "is_favorite", True)
-    db.set_flag(ME, article, "is_read", True)  # même article : mise à jour, pas de doublon
-    assert db.get_statuses(ME)[article.id] == {"is_favorite": True, "is_read": True, "is_hidden": False}
-    assert db.counts(ME)["favorites"] == 1
+    store.set_flag(ME, article, "is_favorite", True)
+    store.set_flag(ME, article, "is_read", True)  # même article : mise à jour, pas de doublon
+    assert store.get_statuses(ME)[article.id] == {"is_favorite": True, "is_read": True, "is_hidden": False}
+    assert store.counts(ME)["favorites"] == 1
 
 
-def test_un_favori_survit_a_la_disparition_du_flux(db):
+def test_un_favori_survit_a_la_disparition_du_flux(store):
     article = make_article("Gardé pour plus tard", summary="Résumé")
-    db.set_flag(ME, article, "is_favorite", True)
-    favorite = db.list_favorites(ME)[0]
+    store.set_flag(ME, article, "is_favorite", True)
+    favorite = store.list_favorites(ME)[0]
     assert (favorite.title, favorite.summary, favorite.published) == (article.title, article.summary, article.published)
 
 
-def test_indicateur_inconnu_refuse(db):
+def test_indicateur_inconnu_refuse(store):
     with pytest.raises(ValueError):
-        db.set_flag(ME, make_article(), "is_deleted; DROP TABLE follows", True)
+        store.set_flag(ME, make_article(), "is_deleted; DROP TABLE follows", True)
 
 
-def test_suivis_sans_doublon_et_suppression(db):
-    db.add_follow(ME, "company", "MC.PA", "LVMH")
-    db.add_follow(ME, "company", "MC.PA", "LVMH")
-    db.add_follow(ME, "theme", "inflation", "inflation")
-    assert [f["value"] for f in db.list_follows(ME)] == ["MC.PA", "inflation"]
-    db.remove_follow(ME, "company", "MC.PA")
-    assert [f["value"] for f in db.list_follows(ME, "company")] == []
+def test_suivis_sans_doublon_et_suppression(store):
+    store.add_follow(ME, "company", "MC.PA", "LVMH")
+    store.add_follow(ME, "company", "MC.PA", "LVMH")
+    store.add_follow(ME, "theme", "inflation", "inflation")
+    assert [f["value"] for f in store.list_follows(ME)] == ["MC.PA", "inflation"]
+    store.remove_follow(ME, "company", "MC.PA")
+    assert [f["value"] for f in store.list_follows(ME, "company")] == []
 
 
-def test_preferences_et_resumes(db):
-    assert db.get_setting(ME, "page_size", 30) == 30
-    db.set_setting(ME, "default_categories", ["macro", "crypto"])
-    assert db.get_setting(ME, "default_categories") == ["macro", "crypto"]
-    db.save_summary("abc", {"points": ["Un point"], "engine": "Résumé local"})
-    assert db.get_summary("abc")["points"] == ["Un point"]
-    db.clear_summaries()
-    assert db.get_summary("abc") is None
+def test_preferences_et_resumes(store):
+    assert store.get_setting(ME, "page_size", 30) == 30
+    store.set_setting(ME, "default_categories", ["macro", "crypto"])
+    assert store.get_setting(ME, "default_categories") == ["macro", "crypto"]
+    store.save_summary("abc", {"points": ["Un point"], "engine": "Résumé local"})
+    assert store.get_summary("abc")["points"] == ["Un point"]
+    store.clear_summaries()
+    assert store.get_summary("abc") is None
 
 
-def test_notes_personnelles(db):
-    db.save_note(ME, "abc", "  Utile pour mon mémoire  ")
-    assert db.get_notes(ME) == {"abc": "Utile pour mon mémoire"}
-    db.save_note(ME, "abc", "")  # une note vide supprime la note
-    assert db.get_notes(ME) == {}
+def test_notes_personnelles(store):
+    store.save_note(ME, "abc", "  Utile pour mon mémoire  ")
+    assert store.get_notes(ME) == {"abc": "Utile pour mon mémoire"}
+    store.save_note(ME, "abc", "")  # une note vide supprime la note
+    assert store.get_notes(ME) == {}
 
 
-def test_positions_et_alertes(db):
-    db.add_position(ME, "MC.PA", "LVMH", 10, 400.0, "EUR", "2026-04-01")
-    db.add_alert(ME, "MC.PA", "LVMH", "below", 385.0)
-    position, alert = db.list_positions(ME)[0], db.list_alerts(ME)[0]
+def test_positions_et_alertes(store):
+    store.add_position(ME, "MC.PA", "LVMH", 10, 400.0, "EUR", "2026-04-01")
+    store.add_alert(ME, "MC.PA", "LVMH", "below", 385.0)
+    position, alert = store.list_positions(ME)[0], store.list_alerts(ME)[0]
     assert (position["label"], position["quantity"], position["currency"]) == ("LVMH", 10, "EUR")
     assert (alert["kind"], alert["threshold"]) == ("below", 385.0)
-    db.delete_position(ME, position["id"])
-    db.delete_alert(ME, alert["id"])
-    assert db.list_positions(ME) == [] and db.list_alerts(ME) == []
+    store.delete_position(ME, position["id"])
+    store.delete_alert(ME, alert["id"])
+    assert store.list_positions(ME) == [] and store.list_alerts(ME) == []
 
 
-def test_la_base_refuse_une_quantite_negative(db):
+def test_la_base_refuse_une_quantite_negative(store):
     # la contrainte CHECK (quantity > 0) protège les données, même si l'interface laissait passer
-    with pytest.raises(sqlite3.IntegrityError):
-        db.add_position(ME, "MC.PA", "LVMH", -5, 400.0, "EUR", "2026-04-01")
+    with pytest.raises(Exception) as error:
+        store.add_position(ME, "MC.PA", "LVMH", -5, 400.0, "EUR", "2026-04-01")
+    # sqlite3.IntegrityError, ou psycopg.errors.CheckViolation (une IntegrityError) avec PostgreSQL
+    assert "IntegrityError" in [cls.__name__ for cls in type(error.value).__mro__]
+    assert store.list_positions(ME) == []
 
 
 # --- Comptes utilisateurs ------------------------------------------------------------------------
 
 
-def test_chaque_utilisateur_ne_voit_que_ses_donnees(db):
+def test_chaque_utilisateur_ne_voit_que_ses_donnees(store):
     article = make_article("Une dépêche")
-    db.set_flag("alice", article, "is_favorite", True)
-    db.add_follow("alice", "company", "MC.PA", "LVMH")
-    db.save_note("alice", article.id, "Note d'Alice")
-    db.add_position("alice", "MC.PA", "LVMH", 10, 400.0, "EUR", "2026-04-01")
-    db.set_setting("alice", "page_size", 50)
+    store.set_flag("alice", article, "is_favorite", True)
+    store.add_follow("alice", "company", "MC.PA", "LVMH")
+    store.save_note("alice", article.id, "Note d'Alice")
+    store.add_position("alice", "MC.PA", "LVMH", 10, 400.0, "EUR", "2026-04-01")
+    store.set_setting("alice", "page_size", 50)
     # Bob ne voit rien de tout cela…
-    assert db.list_favorites("bob") == [] and db.list_follows("bob") == [] and db.get_notes("bob") == {}
-    assert db.list_positions("bob") == [] and db.get_setting("bob", "page_size", 30) == 30
+    assert store.list_favorites("bob") == [] and store.list_follows("bob") == [] and store.get_notes("bob") == {}
+    assert store.list_positions("bob") == [] and store.get_setting("bob", "page_size", 30) == 30
     # … et le même article peut avoir un statut différent pour chacun
-    db.set_flag("bob", article, "is_hidden", True)
-    assert db.get_statuses("alice")[article.id]["is_hidden"] is False
-    assert db.get_statuses("bob")[article.id] == {"is_favorite": False, "is_read": False, "is_hidden": True}
+    store.set_flag("bob", article, "is_hidden", True)
+    assert store.get_statuses("alice")[article.id]["is_hidden"] is False
+    assert store.get_statuses("bob")[article.id] == {"is_favorite": False, "is_read": False, "is_hidden": True}
 
 
-def test_impossible_de_supprimer_la_position_d_un_autre(db):
-    db.add_position("alice", "MC.PA", "LVMH", 10, 400.0, "EUR", "2026-04-01")
-    db.add_alert("alice", "MC.PA", "LVMH", "above", 500.0)
-    position, alert = db.list_positions("alice")[0], db.list_alerts("alice")[0]
-    db.delete_position("bob", position["id"])  # Bob devine le numéro : sans effet
-    db.delete_alert("bob", alert["id"])
-    assert len(db.list_positions("alice")) == 1 and len(db.list_alerts("alice")) == 1
+def test_impossible_de_supprimer_la_position_d_un_autre(store):
+    store.add_position("alice", "MC.PA", "LVMH", 10, 400.0, "EUR", "2026-04-01")
+    store.add_alert("alice", "MC.PA", "LVMH", "above", 500.0)
+    position, alert = store.list_positions("alice")[0], store.list_alerts("alice")[0]
+    store.delete_position("bob", position["id"])  # Bob devine le numéro : sans effet
+    store.delete_alert("bob", alert["id"])
+    assert len(store.list_positions("alice")) == 1 and len(store.list_alerts("alice")) == 1
 
 
-def test_enregistrement_export_et_suppression_d_un_compte(db):
-    db.touch_user("alice", "alice@example.com", "Alice")
-    first_visit = db.get_user("alice")["created_at"]
-    db.touch_user("alice", "alice@example.com", "Alice Martin")  # nouvelle visite : nom mis à jour
-    assert db.get_user("alice")["name"] == "Alice Martin"
-    assert db.get_user("alice")["created_at"] == first_visit  # la date d'inscription ne change pas
+def test_enregistrement_export_et_suppression_d_un_compte(store):
+    store.touch_user("alice", "alice@example.com", "Alice")
+    first_visit = store.get_user("alice")["created_at"]
+    store.touch_user("alice", "alice@example.com", "Alice Martin")  # nouvelle visite : nom mis à jour
+    assert store.get_user("alice")["name"] == "Alice Martin"
+    assert store.get_user("alice")["created_at"] == first_visit  # la date d'inscription ne change pas
 
-    db.add_follow("alice", "theme", "inflation", "inflation")
-    db.add_follow("bob", "theme", "pétrole", "pétrole")
-    export = db.export_user_data("alice")
+    store.add_follow("alice", "theme", "inflation", "inflation")
+    store.add_follow("bob", "theme", "pétrole", "pétrole")
+    export = store.export_user_data("alice")
     assert export["user"]["email"] == "alice@example.com"
     assert [f["value"] for f in export["follows"]] == ["inflation"]  # rien de Bob dans l'export d'Alice
 
-    db.delete_user_data("alice")
-    assert db.get_user("alice") is None and db.export_user_data("alice")["follows"] == []
-    assert len(db.list_follows("bob")) == 1  # les données de Bob sont intactes
+    store.delete_user_data("alice")
+    assert store.get_user("alice") is None and store.export_user_data("alice")["follows"] == []
+    assert len(store.list_follows("bob")) == 1  # les données de Bob sont intactes
 
 
 def test_migration_d_une_base_des_etapes_precedentes(tmp_path, monkeypatch):

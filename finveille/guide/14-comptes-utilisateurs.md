@@ -237,9 +237,9 @@ redirect_uri = "https://TON-APPLI.streamlit.app/oauth2callback"
 
 L'adresse doit être **exactement** la même (https, sans `/` final) que celle déclarée chez Google et Auth0.
 
-> ⚠️ **Le stockage reste éphémère** (étape 9) : sur l'offre gratuite, `data/finveille.db` est effacé au redémarrage
-> du serveur, comptes compris. Pour un vrai service, la suite logique est une base hébergée (Supabase, Neon,
-> Turso…) : grâce à `user_id`, le schéma est déjà prêt.
+> ⚠️ **Sans base en ligne, le stockage reste éphémère** (étape 9) : sur l'offre gratuite, `data/finveille.db` est
+> effacé au redémarrage du serveur, comptes compris. Ajoute une base PostgreSQL gratuite (Neon, Supabase) en une
+> ligne de secrets : voir l'[étape 20](20-base-de-donnees-en-ligne.md).
 
 ---
 

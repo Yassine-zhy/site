@@ -7,3 +7,5 @@ yfinance>=1.0        # cours de Bourse (Yahoo Finance, sans clé)
 pandas>=2.2          # tableaux de données (installé avec yfinance, cité pour mémoire)
 altair>=5.4          # graphiques (installé avec Streamlit, cité pour mémoire)
 trafilatura>=2.0     # extraire le texte principal d'une page web (pour le résumé)
+psycopg[binary]>=3.2 # base PostgreSQL en ligne (Supabase, Neon), si DATABASE_URL est renseigné
+psycopg-pool>=3.2    # réserve de connexions PostgreSQL

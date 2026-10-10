@@ -85,6 +85,9 @@ with right, st.container(key="fvset_keys"):
 with right, st.container(key="fvset_data"):
     theme.section("Mes données")
     stats = storage.counts(user)
+    where = ("une base PostgreSQL en ligne : elles sont conservées" if storage.backend() == "postgres" else
+             "un fichier SQLite sur le serveur (data/finveille.db)")
+    st.caption(f"Tes données sont enregistrées dans {where}.")
     st.markdown(
         f"{stats['favorites']} favori(s) · {stats['read']} article(s) lu(s) · {stats['hidden']} masqué(s) · "
         f"{stats['follows']} suivi(s) · {stats['summaries']} résumé(s) enregistré(s)"
