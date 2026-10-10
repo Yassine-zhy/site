@@ -677,6 +677,25 @@ def price(value: float) -> str:
     return fr_number(value, decimals)
 
 
+# Les graphiques Altair (Vega-Lite) en français : virgule décimale, espace fine pour les milliers, noms des mois.
+ALTAIR_LOCALE = {
+    "number": {"decimal": ",", "thousands": "\u202f", "grouping": [3], "currency": ["", "\u202f€"]},
+    "time": {
+        "dateTime": "%A %e %B %Y à %X", "date": "%d/%m/%Y", "time": "%H:%M:%S",
+        "periods": ["", ""],
+        "days": [d.capitalize() for d in ["dimanche"] + _DAYS[:6]],
+        "shortDays": ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."],
+        "months": _MONTHS,
+        "shortMonths": _MONTHS_SHORT,
+    },
+}
+
+
+def french(chart):
+    """Applique la mise en forme française à un graphique Altair (à appeler juste avant st.altair_chart)."""
+    return chart.configure(locale=ALTAIR_LOCALE)
+
+
 def sparkline_uri(values: list[float], end_class: str, width: int = 84, height: int = 30) -> str:
     """Mini-courbe en SVG, encodée comme une image (st.html n'accepte pas le SVG intégré).
 

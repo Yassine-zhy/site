@@ -110,6 +110,7 @@ Et quand rien ne marche : cherche le message exact entre guillemets sur un moteu
 | `sqlite3.IntegrityError: CHECK constraint failed` | Quantité, prix ou seuil ≤ 0 : la base protège les données. |
 | Un cours identique deux jours de suite | Clôture du jour pas encore publiée par Yahoo (`NaN`), le dernier cours connu est repris. |
 | `TypeError: Cannot compare tz-naive and tz-aware` | Convertis les dates avec `tz_convert` ou `tz_localize(None)` avant de comparer. |
+| `40,000` ou `Nov 2025` sur un graphique | Locale anglaise de Vega-Lite : `theme.french(chart)` (étape 17). |
 | Le même mois deux fois sur un axe | Impose l'intervalle des repères : `tickCount={"interval": "month", "step": 1}`. |
 | Un sujet sans intérêt dans « Les sujets qui montent » | Ajoute le mot à `_NEWS_WORDS` (`core/analytics.py`). |
 | Une recherche avec apostrophe ne trouve rien | `lexer.quotes = '"'` dans `parse_query`. |

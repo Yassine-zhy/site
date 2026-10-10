@@ -69,7 +69,7 @@ for index, (key, label) in enumerate(CATEGORIES.items()):
             )
             .properties(height=130, background="transparent")
         )
-        st.altair_chart(chart, width="stretch")
+        st.altair_chart(theme.french(chart), width="stretch")
 
 left, right = st.columns([1.05, 1], gap="large")
 

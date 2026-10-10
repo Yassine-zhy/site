@@ -46,7 +46,7 @@ def performance_chart(data: pd.DataFrame, period: str) -> alt.LayerChart:
     colors = alt.Scale(domain=["Mon portefeuille", "CAC 40"], range=["#3987e5", theme.NEUTRAL])
     ticks = {"interval": "week", "step": 1} if period == "1 mois" else {"interval": "month", "step": 1}
     x = alt.X("date:T", title=None, axis=alt.Axis(grid=False, labelAngle=0, domainOpacity=0.4, tickCount=ticks,
-                                                  format="%d/%m" if period == "1 mois" else "%m/%Y"))
+                                                  format="%d %b" if period == "1 mois" else "%b %Y"))
     lines = alt.Chart(long).mark_line(strokeWidth=2, strokeJoin="round").encode(
         x=x, y=alt.Y("base100:Q", title=None, scale=alt.Scale(zero=False),
                      axis=alt.Axis(gridOpacity=0.18, domain=False, ticks=False)),
@@ -168,7 +168,7 @@ else:
     value = portfolio.composition_history(positions, closes, rates)
     data = pd.DataFrame({"Mon portefeuille": metrics.rebase(value), "CAC 40": metrics.rebase(closes["^FCHI"])})
     with st.container(key="fvchart_portfolio"):
-        st.altair_chart(performance_chart(data, period), width="stretch")
+        st.altair_chart(theme.french(performance_chart(data, period)), width="stretch")
     rows = "".join(
         f"<tr><td>{name}</td><td>{theme.change(metrics.total_return(series))}</td>"
         f"<td>{theme.fr_number(metrics.annualized_volatility(series), 1)} %</td>"

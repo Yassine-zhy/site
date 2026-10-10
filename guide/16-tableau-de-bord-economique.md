@@ -148,4 +148,4 @@ en datant les mois et les trimestres de leur premier jour.
 | `ValueError: could not convert string to float: '.'` | Valeur manquante de FRED | `na_values=["."]` dans `read_csv`. |
 | Les dates trimestrielles plantent | `2026-Q1` n'est pas une date standard | Passe par `parse_period`. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [les simulateurs](17-simulateurs.md). Retour au [sommaire du guide](README.md).
