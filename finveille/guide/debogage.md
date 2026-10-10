@@ -90,6 +90,8 @@ Et quand rien ne marche : cherche le message exact entre guillemets sur un moteu
 
 | Symptôme | Solution |
 | --- | --- |
+| Déconnecté à chaque rechargement | Cookies bloqués par le navigateur : autorise-les pour le site (étape 22). |
+| « Trop de tentatives » | 5 mots de passe faux de suite : attends 15 minutes ou « Mot de passe oublié ». |
 | `No module named 'httpx'` / `'authlib'` au clic sur « Se connecter » | `pip install -r requirements.txt` (contient `streamlit[auth]`). |
 | `redirect_uri_mismatch` / `Callback URL mismatch` | `redirect_uri` doit être déclaré **à l'identique** chez Google ou Auth0. |
 | Le bouton « Se connecter » n'apparaît pas | Section `[auth]` absente de `secrets.toml` : l'appli est en mode local. |
