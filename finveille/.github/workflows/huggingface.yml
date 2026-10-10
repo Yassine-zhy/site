@@ -1,9 +1,11 @@
-# Publie FinVeille sur Hugging Face Spaces à chaque push sur main (guide 25). Comme tests.yml, ce fichier n'est
-# actif que si finveille/ est à la racine de son dépôt GitHub.
+# Met FinVeille en ligne sur Hugging Face Spaces à chaque push sur main (guide 25). Comme tests.yml, ce fichier n'est
+# actif que si finveille/ est à la racine de son propre dépôt GitHub. (Dans le dépôt actuel, c'est
+# .github/workflows/finveille-huggingface.yml, à la racine, qui s'en charge.)
 #
-# À régler une fois dans le dépôt GitHub (Settings → Secrets and variables → Actions) :
-#   - variable HF_SPACE : le nom du Space, par exemple « ton-pseudo/finveille » (sans elle, rien n'est publié) ;
-#   - secret HF_TOKEN  : un jeton « Write » créé sur https://huggingface.co/settings/tokens
+# Réglage, une seule fois : Settings → Secrets and variables → Actions → New repository secret
+#   HF_TOKEN       (obligatoire) jeton « Write » de https://huggingface.co/settings/tokens
+#   GEMINI_API_KEY, DATABASE_URL, SMTP_…, ADMIN_EMAILS… : recopiés automatiquement dans le Space
+# Le Space est créé automatiquement (« ton-pseudo/finveille », ou la variable HF_SPACE).
 name: Hugging Face
 
 on:
@@ -12,23 +14,42 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
-    if: vars.HF_SPACE != ''
+  publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Préparer le contenu du Space
+      - name: Jeton Hugging Face présent ?
+        id: token
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          cp deploy/huggingface-README.md README.md   # la « carte d'identité » du Space (en-tête YAML)
-          rm -rf docs guide tests                     # inutiles au site (et les images exigeraient Git LFS)
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::warning::Secret HF_TOKEN absent : rien n'est publié (voir guide 25)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.ok == 'true'
+      - uses: actions/setup-python@v5
+        if: steps.token.outputs.ok == 'true'
+        with:
+          python-version: "3.12"
+      - run: pip install "huggingface_hub>=0.30"
+        if: steps.token.outputs.ok == 'true'
       - name: Publier
+        if: steps.token.outputs.ok == 'true'
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ vars.HF_SPACE }}
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@users.noreply.github.com"
-          git checkout --orphan space
-          git add -A
-          git commit -q -m "FinVeille ${GITHUB_SHA::7}"
-          git push --force "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" space:main
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+          SECRETS_TOML: ${{ secrets.SECRETS_TOML }}
+        run: python deploy/publish_space.py
