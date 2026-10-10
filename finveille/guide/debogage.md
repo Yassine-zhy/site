@@ -86,6 +86,15 @@ Et quand rien ne marche : cherche le message exact entre guillemets sur un moteu
 | Une couleur CSS ne suit pas le thème | Utilise un jeton `var(--fv-…)` défini avec `light-dark()` (étape 15). |
 | La mise en page change après une mise à jour de Streamlit | Les règles CSS qui ciblent des `data-testid` internes peuvent casser (`theme.py`). |
 
+## Intelligence artificielle
+
+| Symptôme | Solution |
+| --- | --- |
+| « Mode sans IA » malgré la clé | Nom exact `GEMINI_API_KEY` / `GROQ_API_KEY`, puis redémarre l'appli. |
+| `… a répondu 429` | Quota gratuit dépassé : attends, baisse `AI_PER_MINUTE`, ajoute la seconde clé en relais (étape 24). |
+| `… a répondu 400` ou `404` | Clé invalide ou nom de modèle retiré : supprime `GEMINI_MODEL` / `GROQ_MODEL`. |
+| Sources hors sujet dans l'assistant | Ajoute des traductions dans `SYNONYMS` (`core/assistant.py`). |
+
 ## Comptes et connexion
 
 | Symptôme | Solution |
