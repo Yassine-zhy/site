@@ -44,6 +44,7 @@ Et quand rien ne marche : cherche le message exact entre guillemets sur un moteu
 | `quota dépassé (429)` / « rate limit » | Attends ; n'abaisse pas le `ttl` des caches. |
 | Alpha Vantage : « Thank you for using Alpha Vantage!… » | Quota du jour atteint (25 requêtes) ou clé invalide. |
 | Une clé apparaît dans un message | Utilise `describe_error`, et **régénère la clé** chez le fournisseur. |
+| CoinGecko : `429 Too Many Requests` | Quota gratuit dépassé : patiente ; le site réaffiche les derniers cours connus (étape 18). |
 | Yahoo : « Les cours ne sont pas disponibles » / `YFRateLimitError` / `Crumb fetch rate-limited` | Patiente ; `pip install -U yfinance` si ça persiste. |
 
 ## Données

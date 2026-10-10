@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import streamlit as st
 
 import theme
-from core import macro, market, storage
+from core import crypto, macro, market, storage
 from core.aggregator import collect_articles, collect_followed
 from core.market import fetch_quotes
 from core.config import AI_KEYS, API_KEYS, CATEGORIES, COMPANIES
@@ -191,6 +191,48 @@ def load_euro_rates() -> dict[str, float]:
         return market.euro_rates()
     except Exception:
         return {}
+
+
+@st.cache_resource
+def _last_good() -> dict:
+    """Mémoire partagée par tous les visiteurs : la dernière réponse réussie de chaque source fragile."""
+    return {}
+
+
+@st.cache_data(ttl=300, show_spinner="Cours des cryptomonnaies (CoinGecko)…")
+def _crypto_markets() -> list:
+    return crypto.fetch_markets()
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _crypto_overview() -> dict:
+    return crypto.fetch_global()
+
+
+def load_crypto() -> tuple[list, dict]:
+    """Les 20 premières cryptomonnaies et les chiffres du marché, gardés 5 minutes (quota gratuit de CoinGecko).
+
+    Une erreur n'est jamais mise en cache (st.cache_data ne garde que les résultats) : on réessaiera à
+    l'affichage suivant. En attendant, on montre les derniers chiffres obtenus, s'il y en a.
+    """
+    memory = _last_good()
+    results = []
+    for name, fetch, empty in [("coins", _crypto_markets, []), ("overview", _crypto_overview, {})]:
+        try:
+            memory[name] = fetch()
+        except Exception:
+            pass
+        results.append(memory.get(name, empty))
+    return results[0], results[1]
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_fear_greed() -> list:
+    """L'indice peur et avidité sur un an (publié une fois par jour)."""
+    try:
+        return crypto.fetch_fear_greed(365)
+    except Exception:
+        return []
 
 
 @st.cache_data(ttl=6 * 3600, show_spinner="Chargement des statistiques officielles (BCE, Réserve fédérale)…")

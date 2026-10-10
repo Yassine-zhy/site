@@ -161,4 +161,4 @@ Résultat : `40 000` et `nov. 2025`, sur toutes les pages. `configure` s'appliqu
 | `40,000` au lieu de `40 000` | Locale anglaise de Vega-Lite | `theme.french(chart)`. |
 | Le DCA achète tous les jours | On a oublié de ne garder que le premier jour du mois | `~month.duplicated()`. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [la page Crypto](18-crypto.md). Retour au [sommaire du guide](README.md).
