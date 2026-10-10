@@ -303,6 +303,21 @@ CSS = """
 .fv-agenda li span:last-child { text-align: right; font-weight: 500; }
 .fv-agenda small { display: block; font-weight: 400; color: var(--fv-muted); font-size: .72rem; }
 
+/* ---------- Portefeuille et alertes ---------- */
+.fv-alert-banner { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem 1rem; margin: -.4rem 0 1rem;
+  padding: .55rem .9rem; border: 1px solid var(--fv-rule-strong); border-left: 4px solid currentColor;
+  border-radius: 2px; font-size: .86rem; }
+.fv-alert-banner b { font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; }
+.fv-alert-banner a { margin-left: auto; color: inherit !important; font-size: .8rem; }
+.fv-status { display: inline-flex; align-items: center; gap: .4rem; font-size: .78rem; font-weight: 600; }
+.fv-status::before { content: ""; width: .55rem; height: .55rem; border-radius: 50%; border: 1.5px solid currentColor; }
+.fv-status.is-on::before { background: currentColor; }
+.fv-status.is-off { color: var(--fv-muted); font-weight: 400; }
+[class*="st-key-fvalert_"] { padding: .35rem 0; border-bottom: 1px solid var(--fv-rule); }
+.fv-alert-row { display: grid; grid-template-columns: 7.5rem 1fr auto; gap: .2rem 1rem; align-items: baseline; font-size: .9rem; }
+.fv-alert-row small { color: var(--fv-muted); font-size: .78rem; }
+@media (max-width: 640px) { .fv-alert-row { grid-template-columns: 1fr; } }
+
 @media (prefers-reduced-motion: reduce) {
   .fv-tape { overflow-x: auto; mask-image: none; }
   .fv-tape-track { animation: none; }
@@ -520,3 +535,16 @@ def compact_money(value: float, currency: str = "") -> str:
     if abs(value) >= 1e6:
         return f"{fr_number(value / 1e6, 1)}\u202fM{symbol}"
     return f"{fr_number(value, 0)}{symbol}"
+
+
+
+def alert_banner(fired) -> None:
+    """Bandeau affiché en haut de toutes les pages quand des alertes sont déclenchées."""
+    from core.alerts import describe  # import local : theme.py reste indépendant de core/ pour le reste
+
+    items = " · ".join(f"{esc(describe(alert))} (cours {price(quote.last)})" for alert, quote in fired)
+    plural = "s" if len(fired) > 1 else ""
+    st.html(
+        f'<div class="fv-alert-banner" role="alert"><b>Alerte{plural}</b><span>{items}</span>'
+        f'<a href="alerts" target="_self">Gérer mes alertes →</a></div>'
+    )
