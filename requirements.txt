@@ -1,0 +1,4 @@
+# Bibliothèques nécessaires au projet (installation : pip install -r requirements.txt)
+streamlit>=1.65,<2   # l'interface web
+requests>=2.32       # télécharger des pages et interroger des API
+feedparser>=6.0      # lire les flux RSS
