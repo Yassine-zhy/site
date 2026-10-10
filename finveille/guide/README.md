@@ -21,5 +21,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 15. [Un design professionnel, et un mode sombre sans bouton invisible](15-design-professionnel.md)
 16. [Le tableau de bord économique (BCE et Réserve fédérale)](16-tableau-de-bord-economique.md)
 17. [Les simulateurs : épargne, investissement programmé, crédit, inflation](17-simulateurs.md)
+18. [La page Crypto : classement, marché et indice « peur et avidité »](18-crypto.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).

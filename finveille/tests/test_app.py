@@ -1,5 +1,6 @@
 """Test « de fumée » : chaque page s'affiche sans erreur, avec des données factices (aucun réseau)."""
 
+import json
 from pathlib import Path
 from unittest import mock
 
@@ -10,7 +11,7 @@ from streamlit.testing.v1 import AppTest
 
 import ui
 from conftest import make_article
-from core import aggregator, macro, market
+from core import aggregator, crypto, macro, market
 from core.market import Quote
 
 ARTICLES = [
@@ -50,6 +51,14 @@ def app(db, monkeypatch):
     days = pd.date_range("2024-10-01", "2026-10-08", freq="B")
     curve = pd.DataFrame({label: 2 + years / 10 for label, years, *_ in macro.MATURITIES}, index=days)
     monkeypatch.setattr(macro, "fetch_yield_curves", lambda start: {macro.US: curve, macro.EA: curve})
+    # Crypto : les réponses d'exemple de CoinGecko et d'alternative.me
+    fixtures = Path(__file__).parent / "fixtures"
+    markets = crypto.parse_markets(json.loads((fixtures / "coingecko_markets.json").read_text()))
+    monkeypatch.setattr(crypto, "fetch_markets", lambda count=20: markets)
+    monkeypatch.setattr(crypto, "fetch_global",
+                        lambda: crypto.parse_global(json.loads((fixtures / "coingecko_global.json").read_text())))
+    monkeypatch.setattr(crypto, "fetch_fear_greed",
+                        lambda days=90: crypto.parse_fear_greed(json.loads((fixtures / "fear_greed.json").read_text())))
     with mock.patch.object(ui, "summarize") as fake_summary:
         fake_summary.return_value.to_dict.return_value = {
             "points": ["Point"], "why": None, "engine": "Résumé local", "based_on": "article complet", "note": None,
@@ -61,7 +70,7 @@ def app(db, monkeypatch):
                                   "views/favorites.py", "views/settings.py", "views/glossary.py", "views/compare.py",
                                   "views/portfolio.py", "views/alerts.py", "views/brief.py",
                                   "views/account.py", "views/economy.py",
-                                  "views/simulators.py"])
+                                  "views/simulators.py", "views/crypto.py"])
 def test_chaque_page_s_affiche(app, page):
     app.run()
     app.switch_page(page).run()

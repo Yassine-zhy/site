@@ -22,6 +22,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Fiches entreprises** | Logo, cours, graphique interactif (1 mois à 5 ans) avec les dépêches placées sur la courbe, 10 indicateurs clés expliqués (PER, VE/EBITDA, ROE, rendement, bêta…), fourchette sur 52 semaines, agenda (résultats, dividende, consensus). |
 | **Marchés** | Bandeau défilant des cours sur toutes les pages ; 20 instruments mondiaux avec mini-courbes et carte des performances ; carte du CAC 40 par secteur (40 valeurs, palmarès) ; convertisseur de devises. |
 | **Économie** | Tableau de bord des statistiques officielles (BCE, Réserve fédérale) : inflation et inflation sous-jacente, taux directeurs et taux réels, taux à 10 ans, chômage, croissance, pour la zone euro, la France et les États-Unis ; courbes des taux avec détection d'inversion. |
+| **Crypto** | Les 20 premières cryptomonnaies en euros (CoinGecko) avec variations et mini-courbes, capitalisation totale, dominance du bitcoin, indice « peur et avidité » sur un an, dépêches crypto. |
 | **Comparer** | Jusqu'à 4 entreprises en base 100, rendement annualisé, volatilité, perte maximale, valorisation et matrice de corrélation. |
 | **Portefeuille virtuel** | Positions multidevises valorisées en euros, plus-values latentes, répartition, performance comparée au CAC 40, portefeuille d'exemple. |
 | **Simulateurs** | Épargne à intérêts composés (frais, règle de 72), investissement programmé rejoué sur l'historique réel d'un indice ou d'une action, crédit immobilier (mensualité, amortissement, taux d'endettement, capacité d'emprunt à 35 %), inflation et rendement réel. |
@@ -73,7 +74,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · Altair · trafilatura · SQLite · pytest
 
-17 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+18 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 
@@ -102,11 +103,11 @@ app.py            point d'entrée : thème, bandeau des cours, navigation
 ui.py             éléments partagés : chargement en cache, carte d'article, résumé
 theme.py          design : jetons de couleur clair/sombre, cartes, tuiles, tableaux, mise en forme française
 assets/           le logo (SVG)
-views/            une page par fichier (fil, brief, en chiffres, marchés, économie, comparer, suivis, portefeuille,
+views/            une page par fichier (fil, brief, en chiffres, marchés, économie, crypto, comparer, suivis, portefeuille,
                   alertes, favoris, simulateurs, glossaire, réglages, mon compte)
 core/             logique métier : sources, agrégation, classement, statistiques, marché, indicateurs de
-                  risque, portefeuille, alertes, brief, économie (BCE, FRED), simulateurs, résumé, stockage
-tests/            120 tests pytest (sources, recherche, base et comptes, résumé, indicateurs, portefeuille, alertes,
+                  risque, portefeuille, alertes, brief, économie (BCE, FRED), crypto, simulateurs, résumé, stockage
+tests/            127 tests pytest (sources, recherche, base et comptes, résumé, indicateurs, portefeuille, alertes,
                   brief, chaque page)
 guide/            le guide de construction, étape par étape
 ```

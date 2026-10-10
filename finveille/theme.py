@@ -399,6 +399,24 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-verdict { display: inline-block; margin-top: .45rem; padding: .1rem .5rem; border-radius: 5px; font-size: .74rem; font-weight: 600;
   background: var(--fv-brand-soft); color: var(--fv-brand); }
 
+/* Cryptomonnaies : nom avec logo, jauge de l'indice peur et avidité */
+.fv-coin { display: inline-flex; align-items: center; gap: .55rem; }
+.fv-coin img { width: 20px; height: 20px; border-radius: 50%; }
+.fv-coin small { font-family: var(--fv-mono); }
+.fv-table td img.fv-spark { display: block; width: 96px; height: 28px; margin-left: auto; }
+.fv-gauge-value { display: flex; align-items: baseline; gap: .6rem; margin: .2rem 0 .8rem; }
+.fv-gauge-value b { font-family: var(--fv-mono); font-size: 2.4rem; font-weight: 500; letter-spacing: -.03em; line-height: 1; }
+.fv-gauge-value span { font-size: 1rem; font-weight: 600; }
+.fv-gauge-bar { position: relative; height: 10px; border-radius: 5px;
+  background: linear-gradient(90deg, #e5484d, #c98500 30%, #8c96a5 50%, #74b98b 70%, #1e9e4f); }
+.fv-gauge-bar i { position: absolute; top: -5px; width: 6px; height: 20px; margin-left: -3px; border-radius: 3px;
+  background: var(--fv-text); box-shadow: 0 0 0 2px var(--fv-surface); }
+.fv-gauge-scale { display: flex; justify-content: space-between; margin-top: .4rem; font-size: .72rem; color: var(--fv-muted); }
+.fv-gauge-history { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-top: 1rem; }
+.fv-gauge-history div { padding: .5rem .6rem; border: 1px solid var(--fv-line); border-radius: 8px; font-size: .74rem;
+  color: var(--fv-muted); }
+.fv-gauge-history b { display: block; font-size: .95rem; color: var(--fv-text); }
+
 /* =============================================================================================
    8. Fiche entreprise
    ============================================================================================= */
