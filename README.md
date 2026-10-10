@@ -16,7 +16,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Agrégation** | 12 flux RSS gratuits (CNBC, BBC, Le Monde, BFM Bourse, The Economist, Fed, BCE, CoinDesk…) + Finnhub, NewsAPI, Marketaux et Alpha Vantage si les clés sont renseignées. Téléchargement en parallèle, dédoublonnage. |
 | **Le fil** | « À la une » (l'histoire reprise par le plus de sources) et « En continu », rubriques Marchés / Crypto / Entreprises / Macro (classement par mots-clés), tendances cliquables, filtre par source, recherche avancée (`"expression exacte"`, `-exclure`, `source:cnbc`), vue compacte, mise à jour automatique toutes les 5 minutes. |
 | **Le brief** | L'édition du jour rédigée automatiquement : la séance en une phrase, l'histoire la plus reprise de chaque rubrique, les sujets qui montent, l'agenda de mes entreprises, le mot du jour. Téléchargeable en Markdown, **envoyé par e-mail chaque matin** aux abonnés. |
-| **Comptes** | Connexion avec Google, ou par e-mail et Facebook via Auth0 (OpenID Connect, aucun mot de passe stocké). Chaque utilisateur a ses propres favoris, suivis, portefeuille et alertes ; export et suppression de ses données (RGPD). Sans configuration, mode local à un utilisateur. |
+| **Comptes** | Inscription par e-mail et mot de passe (empreinte scrypt, blocage anti-force brute, code de confirmation, mot de passe oublié, connexion qui dure 30 jours), ou connexion avec Google, Facebook et autres comptes (OpenID Connect). Assistant de configuration pour l'administrateur. Chaque utilisateur a ses propres favoris, suivis, portefeuille et alertes ; export et suppression de ses données (RGPD). Sans configuration, mode local à un utilisateur. |
 | **Base de données** | SQLite en local ; en ligne, PostgreSQL gratuit (Neon, Supabase) en une ligne de secrets, pour que les comptes survivent aux redémarrages. Mêmes requêtes SQL pour les deux, réserve de connexions, tests exécutés sur les deux bases. |
 | **Favoris, lu, masqué** | Enregistrés dans une base SQLite, conservés d'une session à l'autre ; notes personnelles ; export CSV des favoris. |
 | **Mes suivis** | Entreprises (recherche par nom) et thèmes, avec un fil dédié pour chacun. |
@@ -79,7 +79,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-21 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+22 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 

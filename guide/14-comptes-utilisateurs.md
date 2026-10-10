@@ -1,5 +1,9 @@
 # Étape 14 — Comptes utilisateurs : Google, e-mail, Facebook
 
+> **Mise à jour (étape 22) :** FinVeille propose maintenant aussi ses propres comptes **e-mail + mot de passe**,
+> sans rien configurer. Google et Auth0 (Facebook…) restent des options, que la page *Outils → Configuration*
+> aide à activer. Voir l'[étape 22](22-comptes-par-email.md).
+
 > **Objectif :** que chaque visiteur ait **ses propres** favoris, suivis, notes, portefeuille, alertes et réglages.
 > Connexion avec **Google** en un clic, ou par **e-mail + mot de passe** et **Facebook** grâce au service Auth0.
 > FinVeille ne stocke **jamais** de mot de passe.

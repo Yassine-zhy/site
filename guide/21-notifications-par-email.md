@@ -148,4 +148,4 @@ destinataire (Bob, qui n'a rien coché, ne reçoit rien) et l'absence de doublon
 | La tâche ne se lance pas à l'heure | Retard de GitHub, ou dépôt inactif depuis 60 jours | Patiente quelques minutes ; fais un commit. |
 | `ModuleNotFoundError: No module named 'scripts'` | Script lancé depuis un autre dossier | Lance-le depuis `finveille/` avec `python -m scripts.send_notifications`. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [les comptes par e-mail](22-comptes-par-email.md). Retour au [sommaire du guide](README.md).

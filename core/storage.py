@@ -102,10 +102,40 @@ CREATE TABLE IF NOT EXISTS summaries (
     summary_json TEXT NOT NULL,
     created_at   TEXT NOT NULL
 );
+
+-- Comptes « e-mail + mot de passe » gérés par FinVeille (étape 22). Le mot de passe n'est JAMAIS stocké :
+-- seulement son empreinte, calculée avec scrypt (voir core/accounts.py).
+CREATE TABLE IF NOT EXISTS credentials (
+    email         TEXT PRIMARY KEY,
+    password_hash TEXT NOT NULL,
+    verified      INTEGER NOT NULL DEFAULT 0,   -- adresse confirmée par un code envoyé par e-mail
+    failed_logins INTEGER NOT NULL DEFAULT 0,   -- échecs de connexion consécutifs (anti « force brute »)
+    locked_until  TEXT,                          -- connexion bloquée jusqu'à cette date après trop d'échecs
+    created_at    TEXT NOT NULL
+);
+
+-- Sessions : « rester connecté » 30 jours. On garde l'empreinte du jeton, pas le jeton lui-même.
+CREATE TABLE IF NOT EXISTS sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+-- Codes à 6 chiffres envoyés par e-mail (confirmer l'adresse, réinitialiser le mot de passe)
+CREATE TABLE IF NOT EXISTS email_codes (
+    email      TEXT NOT NULL,
+    purpose    TEXT NOT NULL CHECK (purpose IN ('verify', 'reset')),
+    code_hash  TEXT NOT NULL,
+    attempts   INTEGER NOT NULL DEFAULT 0,
+    expires_at TEXT NOT NULL,
+    PRIMARY KEY (email, purpose)
+);
 """
 
 FLAGS = ("is_favorite", "is_read", "is_hidden")
 PERSONAL_TABLES = ("article_status", "follows", "settings", "notes", "positions", "alerts")
+ALL_TABLES = (*PERSONAL_TABLES, "users", "summaries", "credentials", "sessions", "email_codes")
 
 
 AUTO_ID = {
@@ -266,10 +296,104 @@ def export_user_data(user: str) -> dict:
 
 
 def delete_user_data(user: str) -> None:
-    """Efface toutes les données d'un utilisateur (droit à l'effacement du RGPD)."""
+    """Efface toutes les données d'un utilisateur (droit à l'effacement du RGPD), y compris son mot de passe."""
+    profile = get_user(user)
     with connect() as conn:
-        for table in (*PERSONAL_TABLES, "users"):
+        for table in (*PERSONAL_TABLES, "sessions", "users"):
             conn.execute(f"DELETE FROM {table} WHERE user_id = ?", (user,))
+        if user.startswith("mail:") and profile and profile.get("email"):  # compte e-mail + mot de passe
+            for table in ("credentials", "email_codes"):
+                conn.execute(f"DELETE FROM {table} WHERE email = ?", (profile["email"],))
+
+
+# --- Comptes e-mail + mot de passe (la logique est dans core/accounts.py) -----------------------------
+
+
+def get_credentials(email: str) -> dict | None:
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM credentials WHERE email = ?", (email,)).fetchone()
+    return dict(row) if row else None
+
+
+def save_credentials(email: str, password_hash: str, verified: bool) -> None:
+    """Crée le compte, ou remplace le mot de passe (et remet à zéro les échecs de connexion)."""
+    with connect() as conn:
+        conn.execute(
+            "INSERT INTO credentials (email, password_hash, verified, failed_logins, locked_until, created_at) "
+            "VALUES (?, ?, ?, 0, NULL, ?) ON CONFLICT (email) DO UPDATE SET password_hash = excluded.password_hash, "
+            "failed_logins = 0, locked_until = NULL",
+            (email, password_hash, int(verified), _now()),
+        )
+
+
+def set_verified(email: str) -> None:
+    with connect() as conn:
+        conn.execute("UPDATE credentials SET verified = 1 WHERE email = ?", (email,))
+
+
+def record_failed_login(email: str, locked_until: str | None) -> None:
+    with connect() as conn:
+        conn.execute("UPDATE credentials SET failed_logins = failed_logins + 1, locked_until = ? WHERE email = ?",
+                     (locked_until, email))
+
+
+def reset_failed_logins(email: str) -> None:
+    with connect() as conn:
+        conn.execute("UPDATE credentials SET failed_logins = 0, locked_until = NULL WHERE email = ?", (email,))
+
+
+def save_session(token_hash: str, user: str, expires_at: str) -> None:
+    with connect() as conn:
+        conn.execute("INSERT INTO sessions (token_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
+                     (token_hash, user, expires_at, _now()))
+
+
+def get_session(token_hash: str) -> dict | None:
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM sessions WHERE token_hash = ?", (token_hash,)).fetchone()
+    return dict(row) if row else None
+
+
+def delete_session(token_hash: str) -> None:
+    with connect() as conn:
+        conn.execute("DELETE FROM sessions WHERE token_hash = ?", (token_hash,))
+
+
+def delete_sessions(user: str) -> None:
+    """Déconnecte un utilisateur de tous ses appareils (après un changement de mot de passe)."""
+    with connect() as conn:
+        conn.execute("DELETE FROM sessions WHERE user_id = ?", (user,))
+
+
+def save_code(email: str, purpose: str, code_hash: str, expires_at: str) -> None:
+    with connect() as conn:
+        conn.execute(
+            "INSERT INTO email_codes (email, purpose, code_hash, attempts, expires_at) VALUES (?, ?, ?, 0, ?) "
+            "ON CONFLICT (email, purpose) DO UPDATE SET code_hash = excluded.code_hash, attempts = 0, "
+            "expires_at = excluded.expires_at",
+            (email, purpose, code_hash, expires_at),
+        )
+
+
+def get_code(email: str, purpose: str) -> dict | None:
+    with connect() as conn:
+        row = conn.execute("SELECT * FROM email_codes WHERE email = ? AND purpose = ?", (email, purpose)).fetchone()
+    return dict(row) if row else None
+
+
+def count_code_attempt(email: str, purpose: str) -> None:
+    with connect() as conn:
+        conn.execute("UPDATE email_codes SET attempts = attempts + 1 WHERE email = ? AND purpose = ?", (email, purpose))
+
+
+def delete_code(email: str, purpose: str) -> None:
+    with connect() as conn:
+        conn.execute("DELETE FROM email_codes WHERE email = ? AND purpose = ?", (email, purpose))
+
+
+def count_users() -> int:
+    with connect() as conn:
+        return conn.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
 
 
 # --- Favoris, lu, masqué -----------------------------------------------------------------------

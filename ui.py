@@ -6,9 +6,10 @@ import os
 from datetime import datetime, timezone
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 import theme
-from core import crypto, macro, market, storage
+from core import accounts, crypto, macro, market, notify, storage
 from core.aggregator import collect_articles, collect_followed
 from core.market import fetch_quotes
 from core.config import AI_KEYS, API_KEYS, CATEGORIES, COMPANIES
@@ -39,13 +40,30 @@ def ai_keys() -> dict[str, str | None]:
 
 
 # --- Comptes utilisateurs ---------------------------------------------------------------------
+# Trois façons de se connecter (étapes 14 et 22) :
+# - e-mail + mot de passe, géré par FinVeille (toujours disponible, rien à configurer) ;
+# - Google, ou d'autres comptes (Facebook…) via Auth0, avec st.login, si [auth] est configuré dans les secrets ;
+# - « mode local » (LOCAL_MODE = true) : un seul utilisateur, sans connexion, pour un usage personnel.
+COOKIE = "fv_session"  # le cookie qui garde la connexion e-mail 30 jours
+
 # Libellé et icône du bouton de connexion pour chaque service (nom de la section [auth.xxx] de secrets.toml)
 PROVIDERS = {
-    "google": ("Continuer avec Google", ":material/account_circle:"),
-    "auth0": ("E-mail, Google ou Facebook", ":material/mail:"),
+    "google": ("Continuer avec Google", None),  # le logo « G » est ajouté en CSS (theme.py)
+    "auth0": ("Facebook et autres comptes", ":material/group:"),
     "microsoft": ("Continuer avec Microsoft", ":material/account_circle:"),
-    None: ("Se connecter", ":material/login:"),
+    None: ("Se connecter avec mon compte", ":material/login:"),
 }
+SMTP_KEYS = ("SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM")
+
+
+def local_mode() -> bool:
+    """Vrai si l'appli tourne pour une seule personne, sans comptes (LOCAL_MODE = true dans les secrets)."""
+    return str(get_secret("LOCAL_MODE") or "").strip().lower() in ("1", "true", "oui", "yes")
+
+
+def smtp_settings() -> notify.SmtpSettings | None:
+    """Le service d'envoi d'e-mails (codes de confirmation, mot de passe oublié), s'il est configuré."""
+    return notify.SmtpSettings.from_env({name: get_secret(name) for name in SMTP_KEYS})
 
 
 def auth_providers() -> list[str | None]:
@@ -62,20 +80,13 @@ def auth_providers() -> list[str | None]:
     return providers
 
 
-def current_user() -> str | None:
-    """Qui utilise l'application ?
-
-    - comptes non configurés (en local) : l'utilisateur unique « local » ;
-    - comptes configurés : l'e-mail (s'il est vérifié) ou l'identifiant fourni par le service de connexion ;
-    - personne de connecté : None.
-    """
-    if not auth_providers():
-        return storage.LOCAL_USER
-    if not st.user.get("is_logged_in", False):  # .get : st.user est vide tant que [auth] n'est pas chargé
+def _oidc_user() -> str | None:
+    """L'utilisateur connecté avec Google ou Auth0 (st.login), ou None."""
+    if not auth_providers() or not st.user.get("is_logged_in", False):  # st.user est vide sans [auth]
         return None
     email = st.user.get("email")
-    # Un e-mail non vérifié (inscription par e-mail pas encore confirmée) ne doit pas donner accès aux données
-    # d'un compte Google qui a la même adresse : on utilise alors l'identifiant unique du service (« sub »).
+    # Un e-mail non vérifié ne doit pas donner accès aux données d'un compte qui a la même adresse : on utilise
+    # alors l'identifiant unique du service (« sub »).
     user = email if email and st.user.get("email_verified", False) else st.user.get("sub") or email
     if st.session_state.get("fv_known_user") != user:  # une fois par session : on enregistre la visite
         storage.touch_user(user, email, st.user.get("name"))
@@ -83,32 +94,246 @@ def current_user() -> str | None:
     return user
 
 
+def _cookie_token() -> str | None:
+    """Le jeton de session lu dans le cookie du navigateur (ou None)."""
+    try:
+        token = st.context.cookies.get(COOKIE)
+    except Exception:  # hors d'une vraie page (tests, script) : pas de cookie
+        return None
+    return token if isinstance(token, str) and token else None
+
+
+def current_user() -> str | None:
+    """Qui utilise l'application ? L'identifiant du compte connecté, LOCAL_USER en mode local, sinon None."""
+    if local_mode():
+        return storage.LOCAL_USER
+    if user := _oidc_user():
+        return user
+    if user := st.session_state.get("fv_user"):
+        return user
+    token = _cookie_token()
+    if token and st.session_state.get("fv_cookie_checked") != token:  # une seule lecture de la base par session
+        st.session_state["fv_cookie_checked"] = token
+        if user := accounts.session_user(token):
+            st.session_state["fv_user"], st.session_state["fv_token"] = user, token
+            return user
+        st.session_state["fv_cookie_set"] = ""  # jeton expiré ou inconnu : on efface le cookie
+    return None
+
+
+def sign_in(user: str) -> None:
+    """Ouvre une session de 30 jours ; le cookie est posé par sync_cookie() au prochain affichage."""
+    token = accounts.create_session(user)
+    st.session_state["fv_user"], st.session_state["fv_token"] = user, token
+    st.session_state["fv_cookie_set"] = token
+    profile = storage.get_user(user) or {}
+    storage.touch_user(user, profile.get("email"), profile.get("name"))  # date de dernière visite
+
+
+def sign_out() -> None:
+    """Callback « Se déconnecter » : ferme la session e-mail (et la session Google ou Auth0)."""
+    accounts.end_session(st.session_state.get("fv_token") or _cookie_token())
+    for key in ("fv_user", "fv_token", "fv_known_user"):
+        st.session_state.pop(key, None)
+    st.session_state["fv_cookie_set"] = ""
+    if auth_providers() and st.user.get("is_logged_in", False):
+        st.logout()
+
+
+def sync_cookie() -> None:
+    """Pose (ou efface) le cookie de session dans le navigateur, via un petit script.
+
+    Streamlit ne sait pas écrire de cookie depuis Python : on affiche un composant HTML invisible dont le script
+    écrit `document.cookie` de la page (le cadre du composant a la même origine que la page).
+    """
+    if "fv_cookie_set" not in st.session_state:
+        return
+    token = st.session_state.pop("fv_cookie_set")
+    age = accounts.SESSION_DAYS * 86400 if token else 0
+    script = (
+        "<script>const secure = window.parent.location.protocol === 'https:' ? '; Secure' : '';"
+        f"window.parent.document.cookie = '{COOKIE}={token}; path=/; max-age={age}; SameSite=Lax' + secure;</script>"
+    )
+    with st.container(key="fvcookie"):
+        components.html(script, height=0)
+
+
 def login_buttons(key: str) -> None:
-    """Un bouton par service de connexion configuré."""
-    for index, provider in enumerate(auth_providers()):
+    """Un bouton par service de connexion configuré (Google, Auth0…)."""
+    for provider in auth_providers():
         label, icon = PROVIDERS.get(provider, (f"Continuer avec {str(provider).capitalize()}", ":material/login:"))
-        st.button(label, icon=icon, key=f"{key}_{provider}", type="primary" if index == 0 else "secondary",
-                  width="stretch", on_click=st.login, args=(provider,) if provider else ())
+        st.button(label, icon=icon, key=f"{key}_{provider}", width="stretch",
+                  on_click=st.login, args=(provider,) if provider else ())
 
 
-def login_box(key: str, title: str, text: str) -> None:
-    """Une carte de connexion : titre, explication, un bouton par service, mention de confidentialité."""
-    with st.container(key=f"fvbox_{key}", width=440):
+def _attempt_allowed() -> bool:
+    """Au plus 20 tentatives (connexions, codes) par session : freine les robots, même sur plusieurs adresses."""
+    st.session_state["fv_attempts"] = st.session_state.get("fv_attempts", 0) + 1
+    if st.session_state["fv_attempts"] > 20:
+        st.error("Trop de tentatives depuis ce navigateur. Réessaie plus tard.")
+        return False
+    return True
+
+
+def _send_code(email: str, purpose: str) -> bool:
+    """Envoie un code à 6 chiffres par e-mail. Renvoie False (avec un message) si l'envoi échoue."""
+    settings = smtp_settings()
+    subject, text, html_body = notify.code_email(accounts.issue_code(email, purpose), purpose)
+    try:
+        notify.send(notify.make_message(settings.sender, email, subject, text, html_body), settings)
+    except Exception:  # serveur d'envoi injoignable : on n'affiche pas le détail (il peut contenir des secrets)
+        st.error("Impossible d'envoyer l'e-mail pour le moment. Réessaie dans quelques minutes.")
+        return False
+    return True
+
+
+def _login_form(key: str) -> None:
+    with st.form(f"{key}_login", border=False):
+        email = st.text_input("E-mail", autocomplete="email", key=f"{key}_login_email")
+        password = st.text_input("Mot de passe", type="password", autocomplete="current-password",
+                                 key=f"{key}_login_password")
+        if st.form_submit_button("Se connecter", type="primary", width="stretch") and _attempt_allowed():
+            try:
+                user = accounts.authenticate(email, password)
+            except accounts.AccountError as error:
+                if error.needs_verification and smtp_settings() and _send_code(accounts.normalize_email(email), "verify"):
+                    st.session_state["fv_verify_email"] = accounts.normalize_email(email)
+                    st.rerun()
+                st.error(str(error))
+            else:
+                sign_in(user)
+                st.rerun()
+
+
+def _signup_form(key: str) -> None:
+    with st.form(f"{key}_signup", border=False):
+        name = st.text_input("Prénom ou pseudo", max_chars=40, autocomplete="given-name", key=f"{key}_signup_name")
+        email = st.text_input("E-mail", autocomplete="email", key=f"{key}_signup_email")
+        password = st.text_input("Mot de passe", type="password", autocomplete="new-password",
+                                 help="Au moins 8 caractères, avec des lettres et des chiffres.",
+                                 key=f"{key}_signup_password")
+        confirm = st.text_input("Confirme le mot de passe", type="password", autocomplete="new-password",
+                                key=f"{key}_signup_confirm")
+        if st.form_submit_button("Créer mon compte", type="primary", width="stretch") and _attempt_allowed():
+            if password != confirm:
+                st.error("Les deux mots de passe sont différents.")
+                return
+            verify = smtp_settings() is not None  # sans service d'envoi, on ne peut pas confirmer l'adresse
+            try:
+                user = accounts.register(email, password, name, verified=not verify)
+            except accounts.AccountError as error:
+                st.error(str(error))
+                return
+            if verify:
+                st.session_state["fv_verify_email"] = accounts.normalize_email(email)
+                _send_code(accounts.normalize_email(email), "verify")
+            else:
+                sign_in(user)
+            st.rerun()
+
+
+def _verify_form(key: str, email: str) -> None:
+    st.info(f"Un code à 6 chiffres vient d'être envoyé à {email}. Saisis-le pour activer ton compte.",
+            icon=":material/mark_email_read:")
+    with st.form(f"{key}_verify", border=False):
+        code = st.text_input("Code reçu par e-mail", max_chars=6, key=f"{key}_verify_code")
+        if st.form_submit_button("Activer mon compte", type="primary", width="stretch") and _attempt_allowed():
+            try:
+                user = accounts.confirm_email(email, code)
+            except accounts.AccountError as error:
+                st.error(str(error))
+            else:
+                st.session_state.pop("fv_verify_email", None)
+                sign_in(user)
+                st.rerun()
+    left, right = st.columns(2)
+    if left.button("Renvoyer le code", key=f"{key}_resend", type="tertiary") and _attempt_allowed():
+        if _send_code(email, "verify"):
+            st.toast("Nouveau code envoyé")
+    if right.button("Annuler", key=f"{key}_cancel_verify", type="tertiary"):
+        st.session_state.pop("fv_verify_email", None)
+        st.rerun()
+
+
+def _reset_forms(key: str) -> None:
+    if smtp_settings() is None:
+        st.caption("Le site n'a pas encore de service d'envoi d'e-mails : la réinitialisation du mot de passe n'est "
+                   "pas disponible. Contacte l'administrateur du site.")
+        return
+    email = st.session_state.get("fv_reset_email")
+    if not email:
+        with st.form(f"{key}_reset_ask", border=False):
+            address = st.text_input("E-mail de ton compte", autocomplete="email", key=f"{key}_reset_email")
+            if st.form_submit_button("Recevoir un code", width="stretch") and _attempt_allowed():
+                try:
+                    address = accounts.normalize_email(address)
+                except accounts.AccountError as error:
+                    st.error(str(error))
+                    return
+                if storage.get_credentials(address):  # on n'envoie qu'aux comptes existants…
+                    _send_code(address, "reset")
+                st.session_state["fv_reset_email"] = address  # … mais on répond pareil dans tous les cas
+                st.rerun()
+        return
+    st.info(f"Si un compte existe pour {email}, un code vient d'y être envoyé.", icon=":material/mail:")
+    with st.form(f"{key}_reset", border=False):
+        code = st.text_input("Code reçu par e-mail", max_chars=6, key=f"{key}_reset_code")
+        password = st.text_input("Nouveau mot de passe", type="password", autocomplete="new-password",
+                                 key=f"{key}_reset_password")
+        if st.form_submit_button("Changer mon mot de passe", type="primary", width="stretch") and _attempt_allowed():
+            try:
+                user = accounts.reset_password(email, code, password)
+            except accounts.AccountError as error:
+                st.error(str(error))
+            else:
+                st.session_state.pop("fv_reset_email", None)
+                sign_in(user)
+                st.rerun()
+    if st.button("Utiliser une autre adresse", key=f"{key}_reset_other", type="tertiary"):
+        st.session_state.pop("fv_reset_email", None)
+        st.rerun()
+
+
+def login_panel(key: str, title: str, text: str) -> None:
+    """La carte de connexion : services configurés (Google…), puis e-mail et mot de passe, inscription, oubli."""
+    with st.container(key=f"fvbox_{key}", width=460):
         st.html(f'<h3 class="fv-box-title">{esc(title)}</h3><p class="fv-box-text">{esc(text)}</p>')
-        login_buttons(key)
-        st.caption("Aucun mot de passe n'est stocké par FinVeille : la connexion est gérée par Google ou par le "
-                   "service Auth0. Seuls ton nom et ton e-mail sont enregistrés.")
+        if email := st.session_state.get("fv_verify_email"):
+            _verify_form(key, email)
+            return
+        login_tab, signup_tab, reset_tab = st.tabs(["Se connecter", "Créer un compte", "Mot de passe oublié"])
+        with login_tab:
+            if auth_providers():
+                login_buttons(key)
+                st.html('<div class="fv-or"><span>ou avec ton e-mail</span></div>')
+            _login_form(key)
+        with signup_tab:
+            _signup_form(key)
+        with reset_tab:
+            _reset_forms(key)
+        st.caption("Ton mot de passe n'est jamais enregistré en clair (empreinte scrypt). FinVeille ne garde que ton "
+                   "nom et ton e-mail, et tu peux tout supprimer depuis « Mon compte ».")
 
 
 def require_user() -> str:
-    """Renvoie l'utilisateur, ou affiche une invitation à se connecter et arrête la page."""
+    """Renvoie l'utilisateur, ou affiche la carte de connexion et arrête la page."""
     user = current_user()
     if user is None:
-        login_box("require", "Connecte-toi pour accéder à ton espace",
-                  "Cette page contient tes données personnelles : favoris, suivis, portefeuille, alertes. "
-                  "Elles sont enregistrées dans ton compte et toi seul y as accès.")
+        login_panel("require", "Connecte-toi pour accéder à ton espace",
+                    "Cette page contient tes données personnelles : favoris, suivis, portefeuille, alertes. "
+                    "Elles sont enregistrées dans ton compte et toi seul y as accès.")
         st.stop()
     return user
+
+
+def is_admin(user: str | None) -> bool:
+    """Administrateur : e-mail listé dans ADMIN_EMAILS, ou visite depuis l'ordinateur qui fait tourner le site."""
+    host = (st.context.headers.get("Host") or "").split(":")[0]
+    if host in ("localhost", "127.0.0.1"):
+        return True
+    admins = {a.strip().lower() for a in str(get_secret("ADMIN_EMAILS") or "").split(",") if a.strip()}
+    email = ((storage.get_user(user) or {}).get("email") or "").lower() if user else ""
+    return bool(email) and email in admins
 
 
 def setting(user: str | None, key: str, default=None):

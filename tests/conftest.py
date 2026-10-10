@@ -31,7 +31,7 @@ def empty_postgres(monkeypatch):
     monkeypatch.setattr(storage, "DATABASE_URL", TEST_DATABASE_URL)
     monkeypatch.setattr(storage, "_ready", set())
     with storage.connect() as conn:
-        for table in (*storage.PERSONAL_TABLES, "users", "summaries"):
+        for table in storage.ALL_TABLES:
             conn.execute(f"DROP TABLE IF EXISTS {table}")
     storage.init_db()
     return storage

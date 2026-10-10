@@ -25,5 +25,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 19. [Le quiz de la finance et la frontière efficiente](19-quiz-et-frontiere-efficiente.md)
 20. [Une base de données en ligne : les comptes survivent aux redémarrages](20-base-de-donnees-en-ligne.md)
 21. [Le brief et les alertes par e-mail](21-notifications-par-email.md)
+22. [Les comptes par e-mail, gérés par FinVeille](22-comptes-par-email.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).

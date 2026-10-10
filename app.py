@@ -13,7 +13,7 @@ import streamlit as st
 
 import theme
 from core import alerts, storage
-from ui import auth_providers, current_user, get_secret, load_quotes, load_symbol_quotes
+from ui import current_user, get_secret, is_admin, load_quotes, load_symbol_quotes, local_mode, sync_cookie
 
 # Le logo : un carré bleu et une courbe (le nom « FinVeille » est ajouté à côté en CSS, voir theme.py)
 LOGO = str(Path(__file__).parent / "assets" / "logo.svg")
@@ -24,24 +24,23 @@ theme.inject_css()
 if database_url := get_secret("DATABASE_URL"):  # base PostgreSQL en ligne (guide 20) ; sinon SQLite
     storage.configure(database_url)
 storage.init_db()
+sync_cookie()  # pose ou efface le cookie « rester connecté » après une connexion ou une déconnexion
 
 
 def account_bar() -> None:
-    """Dans la barre du haut, à droite : « Se connecter », ou le nom de l'utilisateur connecté.
+    """Dans la barre du haut, à droite : « Se connecter », ou le prénom de l'utilisateur connecté.
 
     Rien en mode local. Le conteneur porte la clé « fvaccount » : theme.py le place dans la barre du haut.
     """
-    providers = auth_providers()
-    if not providers:
+    if local_mode():
         return
+    user = current_user()
     with st.container(horizontal=True, vertical_alignment="center", key="fvaccount"):
-        if current_user():
-            st.page_link("views/account.py", label=st.user.get("given_name") or st.user.get("name")
-                         or st.user.get("email") or "Mon compte", icon=":material/account_circle:")
-        elif len(providers) == 1:
-            st.button("Se connecter", key="bar_login", type="primary", on_click=st.login,
-                      args=(providers[0],) if providers[0] else ())
-        else:  # plusieurs services : la page « Mon compte » propose un bouton par service
+        if user:
+            name = (storage.get_user(user) or {}).get("name") or "Mon compte"
+            st.page_link("views/account.py", label=name.split()[0] if name.split() else name,
+                         icon=":material/account_circle:")
+        else:
             st.page_link("views/account.py", label="Se connecter", icon=":material/login:")
 
 
@@ -85,6 +84,8 @@ pages = {
         st.Page("views/account.py", title="Mon compte", icon=":material/account_circle:"),
     ],
 }
+if is_admin(current_user()):  # l'assistant de configuration n'est visible que par l'administrateur
+    pages["Outils"].append(st.Page("views/setup.py", title="Configuration", icon=":material/admin_panel_settings:"))
 page = st.navigation(pages, position="top")
 account_bar()  # après st.navigation : st.page_link a besoin que les pages soient déclarées
 page.run()

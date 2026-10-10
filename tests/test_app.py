@@ -27,6 +27,7 @@ QUOTES = [Quote("^FCHI", "CAC 40", "Europe", "%", 7803.3, 7729.7, HISTORY)]
 @pytest.fixture
 def app(db, monkeypatch):
     st.cache_data.clear()
+    monkeypatch.setenv("LOCAL_MODE", "true")  # par défaut : une seule personne, sans connexion (étape 22)
     monkeypatch.setattr(aggregator, "build_tasks", lambda keys: [("Test", lambda: list(ARTICLES), ())])
     def fake_quotes(watchlist=None, period="3mo"):
         """Le bandeau (sans argument) reçoit QUOTES ; une liste de symboles reçoit un cours factice pour chacun."""
@@ -119,6 +120,7 @@ def test_portefeuille_et_alertes_avec_des_donnees(app, db):
 
 
 def test_visiteur_non_connecte(app, monkeypatch):
+    monkeypatch.delenv("LOCAL_MODE")
     monkeypatch.setattr(ui, "auth_providers", lambda: ["google", "auth0"])
     monkeypatch.setattr(ui, "current_user", lambda: None)
     app.run()
@@ -130,13 +132,15 @@ def test_visiteur_non_connecte(app, monkeypatch):
         app.switch_page(page).run()
         assert not app.exception, page
         assert any(b.label == "Continuer avec Google" for b in app.button), page
-        assert any(b.label == "E-mail, Google ou Facebook" for b in app.button), page
+        assert any(b.label == "Facebook et autres comptes" for b in app.button), page
+        assert any(b.label == "Créer mon compte" for b in app.button), page  # et toujours l'inscription par e-mail
     for page in ["views/brief.py", "views/markets.py", "views/compare.py", "views/glossary.py", "views/stats.py"]:
         app.switch_page(page).run()  # les pages publiques s'affichent normalement
         assert not app.exception, page
 
 
 def test_les_favoris_vont_dans_le_compte_connecte(app, db, monkeypatch):
+    monkeypatch.delenv("LOCAL_MODE")
     monkeypatch.setattr(ui, "auth_providers", lambda: ["google"])
     monkeypatch.setattr(ui, "current_user", lambda: "alice@example.com")
     app.run()
@@ -194,3 +198,138 @@ def test_notifications_par_e_mail_dans_les_reglages(app, db, monkeypatch):
     assert not app.exception
     assert db.get_setting("alice@example.com", "email_brief") is True
     assert [u["email"] for u in db.users_with_setting("email_brief")] == ["alice@example.com"]
+
+
+
+# --- Comptes par e-mail (étape 22) ------------------------------------------------------------------
+
+
+def fill(app, values: dict) -> None:
+    for key, value in values.items():
+        app.text_input(key=key).input(value)
+
+
+def click(app, label: str):
+    next(b for b in app.button if b.label == label).click().run()
+
+
+def test_inscription_par_email_puis_espace_personnel(app, db, monkeypatch):
+    monkeypatch.delenv("LOCAL_MODE")
+    app.run()
+    app.switch_page("views/favorites.py").run()
+    assert any(b.label == "Créer mon compte" for b in app.button)  # l'espace personnel demande un compte
+    fill(app, {"require_signup_name": "Alice", "require_signup_email": "alice@example.com",
+               "require_signup_password": "Bourse2026!", "require_signup_confirm": "Bourse2026!"})
+    click(app, "Créer mon compte")
+    assert not app.exception
+    assert app.session_state["fv_user"] == "mail:alice@example.com"
+    assert db.get_user("mail:alice@example.com")["name"] == "Alice"
+    assert any("Gardés" in element.value for element in app.get("html"))  # la page Favoris s'affiche
+
+
+def test_mots_de_passe_differents(app, monkeypatch):
+    monkeypatch.delenv("LOCAL_MODE")
+    app.run()
+    app.switch_page("views/account.py").run()
+    fill(app, {"account_signup_email": "alice@example.com", "account_signup_password": "Bourse2026!",
+               "account_signup_confirm": "Bourse2027!"})
+    click(app, "Créer mon compte")
+    assert "différents" in app.error[0].value and "fv_user" not in app.session_state
+
+
+def test_connexion_puis_deconnexion(app, db, monkeypatch):
+    from core import accounts
+
+    monkeypatch.delenv("LOCAL_MODE")
+    accounts.register("bob@example.com", "Bourse2026!", "Bob")
+    app.run()
+    app.switch_page("views/account.py").run()
+    fill(app, {"account_login_email": "bob@example.com", "account_login_password": "mauvais123"})
+    click(app, "Se connecter")
+    assert app.error[0].value == accounts.GENERIC_ERROR
+    fill(app, {"account_login_email": "bob@example.com", "account_login_password": "Bourse2026!"})
+    click(app, "Se connecter")
+    assert app.session_state["fv_user"] == "mail:bob@example.com"
+    assert any(b.label == "Se déconnecter" for b in app.button)
+    click(app, "Se déconnecter")
+    assert "fv_user" not in app.session_state
+    assert any(b.label == "Créer mon compte" for b in app.button)
+
+
+def test_assistant_de_configuration_reserve_a_l_administrateur(app, db, monkeypatch):
+    monkeypatch.delenv("LOCAL_MODE")
+    monkeypatch.setenv("ADMIN_EMAILS", "alice@example.com")
+    db.touch_user("mail:alice@example.com", "alice@example.com", "Alice")
+    monkeypatch.setattr(ui, "current_user", lambda: "mail:alice@example.com")
+    app.run()
+    app.switch_page("views/setup.py").run()
+    assert not app.exception
+    assert any("oauth2callback" in element.value for element in app.code)
+    assert any("Connexion par e-mail" in element.value for element in app.get("html"))
+
+
+@pytest.fixture
+def mailbox(monkeypatch):
+    """Un faux serveur d'envoi d'e-mails : les messages « envoyés » sont rangés dans une liste."""
+    from core import notify
+
+    sent = []
+
+    class FakeSMTP:
+        def __init__(self, *args, **kwargs): pass
+        def __enter__(self): return self
+        def __exit__(self, *exc): return False
+        def starttls(self): pass
+        def login(self, user, password): pass
+        def send_message(self, message): sent.append(message)
+
+    monkeypatch.setattr(notify.smtplib, "SMTP", FakeSMTP)
+    for name, value in {"SMTP_HOST": "smtp.example.com", "SMTP_USER": "site@example.com", "SMTP_PASSWORD": "x"}.items():
+        monkeypatch.setenv(name, value)
+    return sent
+
+
+def code_in(message) -> str:
+    import re
+
+    return re.search(r"\b(\d{6})\b", message.get_body(("plain",)).get_content()).group(1)
+
+
+def test_inscription_avec_code_de_confirmation(app, db, monkeypatch, mailbox):
+    monkeypatch.delenv("LOCAL_MODE")
+    app.run()
+    app.switch_page("views/account.py").run()
+    fill(app, {"account_signup_email": "alice@example.com", "account_signup_password": "Bourse2026!",
+               "account_signup_confirm": "Bourse2026!"})
+    click(app, "Créer mon compte")
+    assert "fv_user" not in app.session_state  # pas encore connecté : l'adresse doit être confirmée
+    assert mailbox[0]["To"] == "alice@example.com"
+    fill(app, {"account_verify_code": code_in(mailbox[0])})
+    click(app, "Activer mon compte")
+    assert app.session_state["fv_user"] == "mail:alice@example.com"
+    assert db.get_credentials("alice@example.com")["verified"] == 1
+
+
+def test_mot_de_passe_oublie(app, db, monkeypatch, mailbox):
+    from core import accounts
+
+    monkeypatch.delenv("LOCAL_MODE")
+    accounts.register("bob@example.com", "Bourse2026!")
+    app.run()
+    app.switch_page("views/account.py").run()
+    fill(app, {"account_reset_email": "bob@example.com"})
+    click(app, "Recevoir un code")
+    fill(app, {"account_reset_code": code_in(mailbox[-1]), "account_reset_password": "Nouveau2027!"})
+    click(app, "Changer mon mot de passe")
+    assert app.session_state["fv_user"] == "mail:bob@example.com"
+    assert accounts.authenticate("bob@example.com", "Nouveau2027!") == "mail:bob@example.com"
+
+
+def test_mot_de_passe_oublie_ne_revele_pas_les_comptes(app, monkeypatch, mailbox):
+    monkeypatch.delenv("LOCAL_MODE")
+    app.run()
+    app.switch_page("views/account.py").run()
+    fill(app, {"account_reset_email": "inconnu@example.com"})
+    click(app, "Recevoir un code")
+    assert mailbox == []  # aucun e-mail pour une adresse inconnue…
+    assert any("Si un compte existe" in element.value for element in app.info)  # … mais la même réponse

@@ -96,6 +96,23 @@ def alerts_email(fired: list[tuple[dict, object]], site_url: str = "") -> tuple[
     return subject, text, html_body
 
 
+def code_email(code: str, purpose: str) -> tuple[str, str, str]:
+    """(objet, texte, HTML) de l'e-mail qui contient un code à 6 chiffres."""
+    action = "confirmer ton adresse" if purpose == "verify" else "choisir un nouveau mot de passe"
+    subject = f"FinVeille · ton code : {code}"
+    text = (f"Ton code pour {action} : {code}\n\nIl est valable 15 minutes. Si tu n'as rien demandé, ignore cet "
+            "e-mail : personne ne peut se connecter sans ce code.")
+    html_body = (
+        '<div style="max-width:480px;margin:0 auto;padding:24px 20px;font-family:Arial,Helvetica,sans-serif;'
+        'color:#0f1724"><p style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#1f4ed8;margin:0">'
+        f'FinVeille</p><p style="font-size:16px">Ton code pour {action} :</p>'
+        f'<p style="font-size:34px;font-weight:bold;letter-spacing:8px;margin:8px 0 16px">{html.escape(code)}</p>'
+        '<p style="color:#5b6677;font-size:13px">Il est valable 15 minutes. Si tu n\'as rien demandé, ignore cet '
+        "e-mail : personne ne peut se connecter sans ce code.</p></div>"
+    )
+    return subject, text, html_body
+
+
 def not_yet_sent(fired: list[tuple[dict, object]], sent: dict[str, str], today: str) -> list[tuple[dict, object]]:
     """Les alertes déclenchées qui n'ont pas encore été envoyées aujourd'hui (une alerte = un e-mail par jour)."""
     return [(alert, quote) for alert, quote in fired if sent.get(str(alert["id"])) != today]
