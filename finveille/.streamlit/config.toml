@@ -1,0 +1,38 @@
+# Identité visuelle de FinVeille : un quotidien financier transposé à l'écran.
+# Deux palettes complètes (papier / ardoise) ; l'utilisateur choisit dans le menu ⋮ :
+# Système, Clair ou Sombre.
+
+[client]
+toolbarMode = "viewer"          # cache les outils de développement (bouton « Deploy »…)
+
+[theme]
+font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+headingFont = "Newsreader:https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&display=swap"
+codeFont = "IBM Plex Mono:https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
+baseFontSize = 15
+baseRadius = "small"
+buttonRadius = "small"
+showWidgetBorder = true
+showSidebarBorder = true
+
+[theme.light]
+primaryColor = "#1B1A17"            # l'encre : la couleur de marque, c'est le noir
+backgroundColor = "#F4F1EA"         # papier
+secondaryBackgroundColor = "#EAE5DA"
+textColor = "#1B1A17"
+borderColor = "#D3CBBB"
+linkColor = "#1B1A17"
+
+[theme.light.sidebar]
+backgroundColor = "#ECE7DC"
+
+[theme.dark]
+primaryColor = "#ECE6D8"            # en sombre, l'encre devient crème
+backgroundColor = "#111416"         # ardoise
+secondaryBackgroundColor = "#1A1F22"
+textColor = "#E8E3D7"
+borderColor = "#2C3439"
+linkColor = "#E8E3D7"
+
+[theme.dark.sidebar]
+backgroundColor = "#0C0F11"
