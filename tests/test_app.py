@@ -11,7 +11,7 @@ from streamlit.testing.v1 import AppTest
 
 import ui
 from conftest import TEST_DATABASE_URL, empty_postgres, make_article
-from core import aggregator, crypto, macro, market
+from core import aggregator, assistant, crypto, macro, market
 from core.market import Quote
 
 ARTICLES = [
@@ -39,6 +39,13 @@ def app(db, monkeypatch):
     monkeypatch.setattr(aggregator, "fetch_yahoo_ticker_news", lambda ticker: [])
     from core import images
     monkeypatch.setattr(images, "share_images", lambda urls: {})  # pas de réseau pendant les tests
+    for name in ["GEMINI_API_KEY", "GROQ_API_KEY"]:  # sans clé d'IA par défaut, quelle que soit la machine
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(ui, "ai_keys", lambda: {})
+    # mémoires partagées de l'assistant : neuves à chaque test
+    monkeypatch.setattr(assistant, "CACHE", assistant.AnswerCache())
+    monkeypatch.setattr(assistant, "ANALYSES", assistant.AnswerCache())
+    monkeypatch.setattr(assistant, "LIMITER", assistant.RateLimiter(per_minute=20))
     closes = pd.DataFrame({"MC.PA": [100.0, 102, 101, 104, 108, 107], "RMS.PA": [200.0, 199, 204, 210, 205, 212],
                            "TTE.PA": [60.0, 61, 60.5, 59, 60, 62], "AIR.PA": [150.0, 152, 149, 155, 157, 156],
                            "^FCHI": [7700.0, 7710, 7690, 7750, 7800, 7803]},
@@ -74,7 +81,7 @@ def app(db, monkeypatch):
                                   "views/favorites.py", "views/settings.py", "views/glossary.py", "views/compare.py",
                                   "views/portfolio.py", "views/alerts.py", "views/brief.py",
                                   "views/account.py", "views/economy.py",
-                                  "views/simulators.py", "views/crypto.py", "views/quiz.py"])
+                                  "views/simulators.py", "views/crypto.py", "views/quiz.py", "views/assistant.py"])
 def test_chaque_page_s_affiche(app, page):
     app.run()
     app.switch_page(page).run()
@@ -335,3 +342,99 @@ def test_mot_de_passe_oublie_ne_revele_pas_les_comptes(app, monkeypatch, mailbox
     click(app, "Recevoir un code")
     assert mailbox == []  # aucun e-mail pour une adresse inconnue…
     assert any("Si un compte existe" in element.value for element in app.info)  # … mais la même réponse
+
+
+# --- Assistant IA (étape 24) : une « IA » simulée, sans réseau ----------------------------------------------
+
+
+@pytest.fixture
+def fake_ai(monkeypatch):
+    """Une IA qui répond toujours la même chose, en deux morceaux ; `calls` compte les questions reçues."""
+    calls = []
+
+    def open_stream(messages, keys, max_tokens=900):
+        calls.append(messages)
+        return "Groq", iter(["La Fed maintient ses taux [1]", " car l'inflation ralentit."])
+
+    monkeypatch.setattr(ui, "ai_keys", lambda: {"GROQ_API_KEY": "cle-de-test"})
+    monkeypatch.setattr(assistant, "open_stream", open_stream)
+    return calls
+
+
+def chat_texts(app) -> str:
+    return " ".join(m.value for m in app.markdown) + " ".join(h.value for h in app.get("html"))
+
+
+def test_assistant_sans_ia_cherche_dans_les_depeches(app):
+    app.run()
+    app.switch_page("views/assistant.py").run()
+    assert any("Mode sans IA" in h.value for h in app.get("html"))
+    next(b for b in app.button if b.label == "Que fait la Fed en ce moment ?").click().run()
+    assert not app.exception
+    texts = chat_texts(app)
+    assert "**Fed** :" in texts or "Fed</strong>" in texts or "Réserve fédérale" in texts  # la définition
+    assert "Fed holds rates as inflation cools" in texts  # la dépêche trouvée
+    assert any(b.label == "Nouvelle conversation" for b in app.button)
+
+
+def test_assistant_avec_ia_cite_ses_sources_et_garde_la_reponse(app, db, fake_ai):
+    app.run()
+    app.switch_page("views/assistant.py").run()
+    assert any("IA active" in h.value for h in app.get("html"))
+    app.chat_input[0].set_value("Que fait la Fed ?").run()
+    assert not app.exception
+    texts = chat_texts(app)
+    assert "La Fed maintient ses taux [[1]](" in texts  # [1] devient un lien vers la dépêche
+    assert "Sources citées" in texts and "Fed holds rates" in texts
+    assert db.get_setting(db.LOCAL_USER, "ai_usage")["count"] == 1  # une question comptée
+    assert len(fake_ai) == 1 and fake_ai[0][0]["role"] == "system"
+    # Même question dans une nouvelle conversation : réponse en mémoire, l'IA n'est pas rappelée
+    next(b for b in app.button if b.label == "Nouvelle conversation").click().run()
+    app.chat_input[0].set_value("que fait la FED").run()
+    assert len(fake_ai) == 1
+    assert "déjà préparée" in " ".join(c.value for c in app.caption)
+    # Une question de suite garde le fil de la conversation
+    app.chat_input[0].set_value("Et la BCE ?").run()
+    assert len(fake_ai) == 2 and [m["role"] for m in fake_ai[1]][-3:] == ["user", "assistant", "user"]
+
+
+def test_assistant_quota_des_visiteurs(app, monkeypatch, fake_ai):
+    monkeypatch.delenv("LOCAL_MODE")
+    monkeypatch.setattr(ui, "current_user", lambda: None)
+    monkeypatch.setenv("AI_VISITOR_LIMIT", "1")
+    app.run()
+    app.switch_page("views/assistant.py").run()
+    app.chat_input[0].set_value("Que fait la Fed ?").run()
+    app.chat_input[0].set_value("Et le bitcoin ?").run()
+    assert not app.exception
+    assert len(fake_ai) == 1  # la deuxième question n'est pas envoyée à l'IA…
+    captions = " ".join(c.value for c in app.caption)
+    assert "quota de questions" in captions and "connecte-toi" in captions
+    assert "Bitcoin rebounds" in chat_texts(app)  # … mais reçoit quand même les dépêches
+
+
+def test_edito_ia_du_brief_et_analyse_d_entreprise(app, db, fake_ai):
+    app.run()
+    app.switch_page("views/brief.py").run()
+    assert not app.exception
+    assert any(s.value == "L'édito de l'IA" or "édito" in s.value for s in app.get("html"))
+    app.switch_page("views/brief.py").run()
+    assert len(fake_ai) == 1  # un seul édito par heure pour tout le site
+    db.add_follow(db.LOCAL_USER, "company", "MC.PA", "LVMH")
+    app.switch_page("views/following.py").run()
+    app.pills(key="follow_view").set_value("company|MC.PA").run()
+    next(b for b in app.button if b.label == "Analyser cette entreprise").click().run()
+    assert not app.exception
+    assert len(fake_ai) == 2 and "MC.PA" in fake_ai[1][0]["content"]
+    assert "Rédigé par Groq" in " ".join(c.value for c in app.caption)
+
+
+def test_analyse_d_entreprise_sans_ia(app, db):
+    db.add_follow(db.LOCAL_USER, "company", "MC.PA", "LVMH")
+    app.run()
+    app.switch_page("views/following.py").run()
+    app.pills(key="follow_view").set_value("company|MC.PA").run()
+    next(b for b in app.button if b.label == "Analyser cette entreprise").click().run()
+    assert not app.exception
+    assert any("**Points forts**" in m.value for m in app.markdown)
+    assert "sans IA" in " ".join(c.value for c in app.caption)

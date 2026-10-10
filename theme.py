@@ -118,6 +118,37 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   margin-right: .55rem; vertical-align: -3px; background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PHBhdGggZmlsbD0iI0ZGQzEwNyIgZD0iTTQzLjYgMjAuNUg0MlYyMEgyNHY4aDExLjNDMzMuNyAzMi43IDI5LjIgMzYgMjQgMzZjLTYuNiAwLTEyLTUuNC0xMi0xMnM1LjQtMTIgMTItMTJjMy4xIDAgNS44IDEuMiA3LjkgMy4xbDUuNy01LjdDMzQgNi4xIDI5LjMgNCAyNCA0IDEyLjkgNCA0IDEyLjkgNCAyNHM4LjkgMjAgMjAgMjAgMjAtOC45IDIwLTIwYzAtMS4zLS4xLTIuNC0uNC0zLjV6Ii8+PHBhdGggZmlsbD0iI0ZGM0QwMCIgZD0ibTYuMyAxNC43IDYuNiA0LjhDMTQuNyAxNS4xIDE5IDEyIDI0IDEyYzMuMSAwIDUuOCAxLjIgNy45IDMuMWw1LjctNS43QzM0IDYuMSAyOS4zIDQgMjQgNCAxNi4zIDQgOS43IDguMyA2LjMgMTQuN3oiLz48cGF0aCBmaWxsPSIjNENBRjUwIiBkPSJNMjQgNDRjNS4yIDAgOS45LTIgMTMuNC01LjJsLTYuMi01LjJDMjkuMiAzNS4xIDI2LjcgMzYgMjQgMzZjLTUuMiAwLTkuNi0zLjMtMTEuMy04bC02LjUgNUM5LjUgMzkuNiAxNi4yIDQ0IDI0IDQ0eiIvPjxwYXRoIGZpbGw9IiMxOTc2RDIiIGQ9Ik00My42IDIwLjVINDJWMjBIMjR2OGgxMS4zYy0uOCAyLjItMi4yIDQuMi00LjEgNS42bDYuMiA1LjJDMzcgMzkuMiA0NCAzNCA0NCAyNGMwLTEuMy0uMS0yLjQtLjQtMy41eiIvPjwvc3ZnPg==") center / contain no-repeat; }
 
 /* Écran de connexion et assistant de configuration */
+/* L'assistant IA (views/assistant.py) */
+.fv-ai-hero { margin-top: .4rem; padding: 1.6rem 1.8rem 1.8rem; }
+.fv-ai-hero .fv-show-title { max-width: 30ch; margin-top: .8rem !important; }
+.fv-ai-hero .fv-show-list { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.fv-ai-status { display: inline-flex; align-items: center; gap: .45rem; padding: .25rem .7rem; border-radius: 99px;
+  font-size: .74rem; font-weight: 600; background: rgba(255, 255, 255, .14); color: #fff; }
+.fv-ai-status::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: #c9d4f5; }
+.fv-ai-status.is-on::before { background: #6ee7a8; box-shadow: 0 0 0 3px rgba(110, 231, 168, .25); }
+.fv-sources { margin-top: .6rem; }
+.fv-sources-title { margin: 0 0 .4rem !important; font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--fv-muted); }
+.fv-sources-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .5rem; }
+.fv-source { display: flex; align-items: flex-start; gap: .55rem; padding: .55rem .7rem; border-radius: 10px;
+  background: var(--fv-surface); border: 1px solid var(--fv-line); color: var(--fv-text) !important;
+  text-decoration: none !important; transition: border-color .15s, box-shadow .15s; }
+.fv-source:hover { border-color: var(--fv-brand); box-shadow: 0 2px 10px var(--fv-shadow); }
+.fv-source-n { flex: none; display: grid; place-items: center; min-width: 1.35rem; height: 1.35rem; border-radius: 6px;
+  font: 600 .72rem/1 var(--fv-mono); background: var(--fv-brand-soft); color: var(--fv-brand); }
+.fv-source img { flex: none; width: 16px; height: 16px; margin-top: .15rem; border-radius: 3px; }
+.fv-source-text { min-width: 0; font-size: .8rem; line-height: 1.35; }
+.fv-source-text b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  font-weight: 600; }
+.fv-source-text small { display: block; margin-top: .15rem; color: var(--fv-muted); font-size: .72rem; }
+[data-testid="stChatMessage"] { padding: .9rem 1rem; border-radius: 14px; background: var(--fv-surface);
+  border: 1px solid var(--fv-line); }
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { background: var(--fv-hover); }
+[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] a { font-weight: 600; text-decoration: none; }
+[class*="st-key-fvanalysis_"], .st-key-fvdigest { padding: 1.1rem 1.25rem; border-radius: 12px;
+  border: 1px solid var(--fv-line); border-left: 4px solid var(--fv-brand); background: var(--fv-surface); }
+.st-key-fvdigest p { font-family: var(--fv-serif); font-size: 1.08rem; line-height: 1.65; }
+
 /* L'illustration de la page de connexion (theme.showcase_html) */
 .fv-showcase { position: relative; overflow: hidden; margin-top: 1rem; padding: 2rem 2rem 2.2rem; border-radius: 16px;
   color: #fff; background: var(--curve) center bottom / 100% 45% no-repeat,
@@ -810,6 +841,41 @@ def showcase_html() -> str:
         f'<ul class="fv-show-list">{rows}</ul>'
         f'<p class="fv-show-foot">{icon("spark", "#6ee7a8")}Gratuit, sans publicité, tes données t\'appartiennent.</p></div>'
     )
+
+
+def sources_html(sources: list[dict], title: str = "Sources") -> str:
+    """Les dépêches citées par l'IA, numérotées comme dans sa réponse, avec un lien vers chacune."""
+    items = []
+    for source in sources:
+        try:
+            when = clock(datetime.fromisoformat(source["published"]))
+        except (KeyError, ValueError):
+            when = ""
+        items.append(
+            f'<a class="fv-source" href="{safe_url(source["url"])}" target="_blank" rel="noopener">'
+            f'<span class="fv-source-n">{int(source["n"])}</span>'
+            f'<img src="{favicon_url(source["url"])}" alt="" loading="lazy">'
+            f'<span class="fv-source-text"><b>{esc(source["title"])}</b>'
+            f'<small>{esc(source["source"])}{" · " + esc(when) if when else ""}</small></span></a>'
+        )
+    return (f'<div class="fv-sources"><p class="fv-sources-title">{esc(title)}</p>'
+            f'<div class="fv-sources-grid">{"".join(items)}</div></div>')
+
+
+def assistant_hero_html(engine: str | None, articles: int) -> str:
+    """L'accueil de l'assistant, avant la première question."""
+    status = (f'<span class="fv-ai-status is-on">IA active · {esc(engine)}</span>' if engine else
+              '<span class="fv-ai-status">Mode sans IA : recherche dans les dépêches et le glossaire</span>')
+    points = [
+        ("spark", f"Il lit les {articles} dépêches du moment et les cours des marchés avant de répondre."),
+        ("star", "Il cite ses sources : clique sur [1], [2]… pour vérifier dans l'article."),
+        ("mail", "Il explique les termes difficiles, comme un professeur patient."),
+    ]
+    rows = "".join(f'<li><span class="fv-show-icon">{icon(name)}</span><span>{esc(text)}</span></li>'
+                   for name, text in points)
+    return (f'<div class="fv-showcase fv-ai-hero" style="--curve:url({svg_uri(_CURVE)})">{status}'
+            '<h3 class="fv-show-title">Pose ta question sur l\'actualité, les marchés ou la finance.</h3>'
+            f'<ul class="fv-show-list">{rows}</ul></div>')
 
 
 def category_tag(key: str, label: str) -> str:

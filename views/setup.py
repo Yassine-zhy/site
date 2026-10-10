@@ -30,7 +30,8 @@ SERVICES = [
     ("Base de données en ligne", storage.backend() == "postgres", "Indispensable en ligne : les comptes survivent "
      "aux redémarrages.", "20-base-de-donnees-en-ligne.md"),
     ("Intelligence artificielle", bool(keys.get("GEMINI_API_KEY") or keys.get("GROQ_API_KEY")),
-     "Résumés et assistant IA (Gemini ou Groq, gratuits).", "08-resume-ia.md"),
+     "Résumés, assistant, analyses d'entreprises et édito du brief (Gemini ou Groq, gratuits).",
+     "24-assistant-ia.md"),
 ]
 if local_mode():
     st.warning("Le **mode local** est activé (`LOCAL_MODE = true`) : pas de comptes, une seule personne. Retire ce "

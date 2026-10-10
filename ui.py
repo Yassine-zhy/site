@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import math
 import os
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import streamlit as st
 import streamlit.components.v1 as components
 
 import theme
-from core import accounts, crypto, macro, market, notify, storage
+import requests
+
+from core import accounts, assistant, crypto, macro, market, notify, storage
 from core.aggregator import collect_articles, collect_followed
 from core.market import fetch_quotes
 from core.config import AI_KEYS, API_KEYS, CATEGORIES, COMPANIES
@@ -37,6 +40,80 @@ def api_keys() -> dict[str, str | None]:
 def ai_keys() -> dict[str, str | None]:
     """Clés (et modèles, facultatifs) des moteurs de résumé par IA."""
     return {name: get_secret(name) for name in [*AI_KEYS, "GEMINI_MODEL", "GROQ_MODEL"]}
+
+
+# --- Intelligence artificielle (étape 24) -------------------------------------------------------------
+# Les offres gratuites de Gemini et Groq limitent les appels : un quota par personne, un limiteur pour tout le site
+# et une mémoire des réponses partagée (core/assistant.py). Les trois réglages sont modifiables dans les secrets.
+
+
+def _int_secret(name: str, default: int) -> int:
+    try:
+        return int(get_secret(name) or default)
+    except ValueError:
+        return default
+
+
+def ai_enabled() -> bool:
+    return bool(assistant.available_engines(ai_keys()))
+
+
+def ai_quota(user: str | None) -> tuple[int, int]:
+    """(questions restantes, limite) : par jour pour un compte, par session pour un visiteur, large en mode local."""
+    if user is None:
+        limit = _int_secret("AI_VISITOR_LIMIT", 5)
+        return max(limit - st.session_state.get("fv_ai_used", 0), 0), limit
+    limit = _int_secret("AI_DAILY_LIMIT", 200 if local_mode() else 30)
+    return assistant.quota_left(storage.get_setting(user, "ai_usage"), limit, date.today()), limit
+
+
+def ai_count(user: str | None) -> None:
+    """Compte une question posée à l'IA (les réponses en mémoire et les réponses sans IA ne comptent pas)."""
+    if user is None:
+        st.session_state["fv_ai_used"] = st.session_state.get("fv_ai_used", 0) + 1
+    else:
+        storage.set_setting(user, "ai_usage", assistant.count_use(storage.get_setting(user, "ai_usage"), date.today()))
+
+
+def _ai_stream(messages: list[dict], max_tokens: int):
+    """Ouvre le flux de la réponse ; (moteur, flux) ou (None, raison) si l'IA ne peut pas répondre maintenant."""
+    assistant.LIMITER.per_minute = _int_secret("AI_PER_MINUTE", 20)
+    if wait := assistant.LIMITER.try_acquire():
+        return None, f"l'IA est très demandée en ce moment, réessaie dans {math.ceil(wait)} s"
+    try:
+        return assistant.open_stream(messages, ai_keys(), max_tokens)
+    except assistant.AssistantError as error:
+        return None, f"IA indisponible : {error}"
+
+
+def stream_ai(messages: list[dict], sources: list[assistant.Source], placeholder, max_tokens: int = 900) -> dict:
+    """Affiche la réponse au fur et à mesure qu'elle arrive. {"text": … ou None, "engine": …, "note": …}"""
+    engine, stream = _ai_stream(messages, max_tokens)
+    if engine is None:
+        return {"text": None, "engine": "", "note": stream}
+    text, note = "", None
+    try:
+        for piece in stream:
+            text += piece
+            placeholder.markdown(assistant.linkify(text, sources) + " ▌")
+    except requests.RequestException as error:  # coupure en cours de route : on garde le début
+        note = f"réponse interrompue ({type(error).__name__})"
+    if not text.strip():
+        return {"text": None, "engine": engine, "note": note or "réponse vide"}
+    placeholder.markdown(assistant.linkify(text, sources))
+    return {"text": text, "engine": engine, "note": note}
+
+
+def complete_ai(messages: list[dict], max_tokens: int = 900) -> dict:
+    """La réponse complète, sans affichage progressif (édito du brief, analyse d'entreprise)."""
+    engine, stream = _ai_stream(messages, max_tokens)
+    if engine is None:
+        return {"text": None, "engine": "", "note": stream}
+    try:
+        text = "".join(stream).strip()
+    except requests.RequestException as error:
+        return {"text": None, "engine": engine, "note": f"réponse interrompue ({type(error).__name__})"}
+    return {"text": text or None, "engine": engine, "note": None if text else "réponse vide"}
 
 
 # --- Comptes utilisateurs ---------------------------------------------------------------------

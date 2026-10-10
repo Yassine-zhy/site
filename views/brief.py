@@ -5,12 +5,12 @@ from datetime import date, datetime, timedelta, timezone
 import streamlit as st
 
 import theme
-from core import analytics, storage
+from core import analytics, assistant, storage
 from core.brief import HEADLINE_INSTRUMENTS, Brief, front_page, market_sentence, upcoming_events
 from core.config import CATEGORIES
 from core.glossary import GLOSSARY, term_of_the_day
 from theme import esc, safe_url
-from ui import api_keys, current_user, load_articles, load_calendar, load_quotes, load_symbol_quotes
+from ui import ai_enabled, api_keys, complete_ai, current_user, load_articles, load_calendar, load_quotes, load_symbol_quotes
 
 now = datetime.now(timezone.utc)
 articles, _, _ = load_articles(api_keys())
@@ -62,6 +62,25 @@ figures = "".join(
 )
 if figures:
     st.html(theme.table(["Instrument", "Dernier cours", "Séance"], figures))
+
+# --- L'édito de l'IA : une seule rédaction par heure pour tout le site (mémoire partagée, core/assistant.py) -----
+if ai_enabled() and recent:
+    picked = [a for _, a, _ in headlines]
+    picked += [a for a in sorted(recent, key=lambda a: a.published, reverse=True) if a not in picked]
+    messages, sources = assistant.digest_messages(picked[: assistant.MAX_SOURCES], list(quotes.values()), now)
+
+    def write_digest() -> dict:
+        return complete_ai(messages, max_tokens=500) | {"sources": [s.to_dict() for s in sources]}
+
+    with st.spinner("L'IA rédige l'édito du jour…"):
+        digest = assistant.ANALYSES.get_or_compute(f"digest|{now:%Y-%m-%d-%H}", write_digest)
+    if digest["text"]:
+        theme.section("L'édito de l'IA", "les histoires du jour, reliées entre elles")
+        used = [assistant.Source(**s) for s in digest["sources"]]
+        with st.container(key="fvdigest"):
+            st.markdown(assistant.linkify(digest["text"], used))
+        st.caption(f"Rédigé par {digest['engine']} à partir des dépêches, mis à jour chaque heure. Clique sur un "
+                   "numéro pour lire la dépêche.")
 
 left, right = st.columns([1.6, 1], gap="large")
 with left:
