@@ -45,9 +45,9 @@ with left, st.container(key="fvset_feed"):
         key="pref_hide_read", on_change=save, args=("hide_read", "pref_hide_read"),
     )
     st.toggle(
-        "Afficher la photo de l'article à la une", value=storage.get_setting(user, "show_images", False),
+        "Afficher les photos des articles", value=storage.get_setting(user, "show_images", True),
         key="pref_show_images", on_change=save, args=("show_images", "pref_show_images"),
-        help="Désactivé par défaut : un fil sans images est plus rapide à parcourir et plus sobre.",
+        help="Désactive-les pour un fil plus sobre et plus rapide à parcourir (ou sur une connexion lente).",
     )
 
 # --- Résumé et apparence ----------------------------------------------------------------------

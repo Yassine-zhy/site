@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import base64
 import html
+import random
 import time as clock_module
 from datetime import datetime, time, timezone
 from urllib.parse import urlparse
@@ -89,10 +90,13 @@ ul[class^="fv-"] > li, ol[class^="fv-"] > li { margin-left: 0; padding-left: 0; 
    2. Barre d'application : logo, menu, compte
    ============================================================================================= */
 header[data-testid="stHeader"] { background: var(--fv-surface); border-bottom: 1px solid var(--fv-line); }
-[data-testid="stLogoLink"], div:has(> img.stLogo) { display: inline-flex; align-items: center; gap: .55rem;
+/* Le nom à côté du symbole : « Fin » à l'encre, « Veille » en bleu (deux pseudo-éléments rangés après l'image) */
+[data-testid="stLogoLink"], div:has(> img.stLogo) { display: inline-flex; align-items: center;
   color: var(--fv-text) !important; text-decoration: none !important; }
-[data-testid="stLogoLink"]::after, div:has(> img.stLogo)::after { content: "FinVeille"; font: 700 1.1rem/1 var(--fv-sans);
-  letter-spacing: -.02em; white-space: nowrap; }
+[data-testid="stLogoLink"]::before, div:has(> img.stLogo)::before { content: "Fin"; order: 1; margin-left: .6rem;
+  font: 700 1.16rem/1 var(--fv-sans); letter-spacing: -.02em; color: var(--fv-text); }
+[data-testid="stLogoLink"]::after, div:has(> img.stLogo)::after { content: "Veille"; order: 2;
+  font: 700 1.16rem/1 var(--fv-sans); letter-spacing: -.02em; color: var(--fv-brand); white-space: nowrap; }
 img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 [data-testid="stTopNavSection"], [data-testid="stTopNavLink"] { border-radius: 8px; }
 [data-testid="stTopNavSection"]:hover, [data-testid="stTopNavLink"]:hover { background: var(--fv-hover); }
@@ -114,6 +118,29 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   margin-right: .55rem; vertical-align: -3px; background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PHBhdGggZmlsbD0iI0ZGQzEwNyIgZD0iTTQzLjYgMjAuNUg0MlYyMEgyNHY4aDExLjNDMzMuNyAzMi43IDI5LjIgMzYgMjQgMzZjLTYuNiAwLTEyLTUuNC0xMi0xMnM1LjQtMTIgMTItMTJjMy4xIDAgNS44IDEuMiA3LjkgMy4xbDUuNy01LjdDMzQgNi4xIDI5LjMgNCAyNCA0IDEyLjkgNCA0IDEyLjkgNCAyNHM4LjkgMjAgMjAgMjAgMjAtOC45IDIwLTIwYzAtMS4zLS4xLTIuNC0uNC0zLjV6Ii8+PHBhdGggZmlsbD0iI0ZGM0QwMCIgZD0ibTYuMyAxNC43IDYuNiA0LjhDMTQuNyAxNS4xIDE5IDEyIDI0IDEyYzMuMSAwIDUuOCAxLjIgNy45IDMuMWw1LjctNS43QzM0IDYuMSAyOS4zIDQgMjQgNCAxNi4zIDQgOS43IDguMyA2LjMgMTQuN3oiLz48cGF0aCBmaWxsPSIjNENBRjUwIiBkPSJNMjQgNDRjNS4yIDAgOS45LTIgMTMuNC01LjJsLTYuMi01LjJDMjkuMiAzNS4xIDI2LjcgMzYgMjQgMzZjLTUuMiAwLTkuNi0zLjMtMTEuMy04bC02LjUgNUM5LjUgMzkuNiAxNi4yIDQ0IDI0IDQ0eiIvPjxwYXRoIGZpbGw9IiMxOTc2RDIiIGQ9Ik00My42IDIwLjVINDJWMjBIMjR2OGgxMS4zYy0uOCAyLjItMi4yIDQuMi00LjEgNS42bDYuMiA1LjJDMzcgMzkuMiA0NCAzNCA0NCAyNGMwLTEuMy0uMS0yLjQtLjQtMy41eiIvPjwvc3ZnPg==") center / contain no-repeat; }
 
 /* Écran de connexion et assistant de configuration */
+/* L'illustration de la page de connexion (theme.showcase_html) */
+.fv-showcase { position: relative; overflow: hidden; margin-top: 1rem; padding: 2rem 2rem 2.2rem; border-radius: 16px;
+  color: #fff; background: var(--curve) center bottom / 100% 45% no-repeat,
+    radial-gradient(circle at 85% 0%, rgba(110, 231, 168, .28), transparent 45%),
+    linear-gradient(150deg, #2451de 0%, #1536b4 55%, #0d1f6b 100%); box-shadow: 0 12px 40px rgba(21, 54, 180, .25); }
+.fv-show-eyebrow { margin: 0 0 .4rem; font-size: .72rem; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: #a9c1ff; }
+.fv-show-title { margin: 0 0 1.4rem !important; padding: 0 !important; color: #fff !important; max-width: 22ch;
+  font: 600 1.7rem/1.2 var(--fv-serif) !important; letter-spacing: -.01em; }
+.stApp ul.fv-show-list { position: relative; display: grid; gap: .8rem; margin: 0 !important; padding: 0 !important;
+  list-style: none; }
+.fv-show-list li { display: flex; gap: .85rem; align-items: center; margin: 0 !important; padding: .7rem .85rem;
+  border-radius: 12px; background: rgba(255, 255, 255, .09); border: 1px solid rgba(255, 255, 255, .14);
+  backdrop-filter: blur(4px); font-size: .86rem; line-height: 1.35; color: #dfe7ff; }
+.fv-show-list b { display: block; color: #fff; font-size: .93rem; }
+.fv-show-icon { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 10px;
+  background: #fff; color: #1536b4; }
+.fv-show-icon img { width: 21px; height: 21px; }
+.fv-show-foot { position: relative; display: flex; align-items: center; gap: .5rem; margin: 1.4rem 0 0;
+  font-size: .82rem; color: #dfe7ff; }
+.fv-show-foot img { width: 18px; height: 18px; }
+@media (max-width: 640px) { .fv-showcase { display: none; } }
+
 .fv-or { display: flex; align-items: center; gap: .8rem; margin: .6rem 0 .2rem; font-size: .76rem; color: var(--fv-muted); }
 .fv-or::before, .fv-or::after { content: ""; flex: 1; border-top: 1px solid var(--fv-line); }
 .fv-avatar { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; flex: none;
@@ -249,23 +276,64 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-item.is-compact .fv-headline { font-size: 1rem !important; margin: .25rem 0 0 !important; }
 [class*="st-key-fvcard_"] button, [class*="st-key-fvcard_"] a[data-testid="stBaseLinkButton-tertiary"],
 [class*="st-key-fvcompact_"] button, [class*="st-key-fvcompact_"] a[data-testid="stBaseLinkButton-tertiary"],
-[class*="st-key-fvlead_"] button, [class*="st-key-fvlead_"] a[data-testid="stBaseLinkButton-tertiary"] {
+[class*="st-key-fvlead_"] button, [class*="st-key-fvlead_"] a[data-testid="stBaseLinkButton-tertiary"],
+[class*="st-key-fvtile_"] button, [class*="st-key-fvtile_"] a[data-testid="stBaseLinkButton-tertiary"] {
   min-height: 1.8rem; padding: .1rem .45rem; border-radius: 6px; }
 [class*="st-key-fvcard_"] button:hover, [class*="st-key-fvcompact_"] button:hover, [class*="st-key-fvlead_"] button:hover,
+[class*="st-key-fvtile_"] button:hover, [class*="st-key-fvtile_"] a[data-testid="stBaseLinkButton-tertiary"]:hover,
 [class*="st-key-fvcard_"] a[data-testid="stBaseLinkButton-tertiary"]:hover,
 [class*="st-key-fvlead_"] a[data-testid="stBaseLinkButton-tertiary"]:hover { background: var(--fv-hover); }
 [class*="st-key-fvcard_"] button p, [class*="st-key-fvcompact_"] button p, [class*="st-key-fvlead_"] button p,
 [class*="st-key-fvcard_"] a p, [class*="st-key-fvcompact_"] a p, [class*="st-key-fvlead_"] a p { font-size: .8rem; }
 
-/* La une : une carte plus grande, photo facultative */
-[class*="st-key-fvlead_"] { padding: 1.2rem 1.35rem .6rem; }
-.fv-lead .fv-headline { font-size: clamp(1.45rem, 2.6vw, 1.95rem) !important; line-height: 1.18 !important;
+/* Les images : la photo de l'article, ou une couverture dessinée (theme.cover_html) */
+.fv-media { display: block; overflow: hidden; border-radius: 10px; background: var(--fv-hover); }
+.fv-media > img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; transition: transform .35s ease; }
+.fv-media:hover > img { transform: scale(1.03); }
+.fv-cover { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: .25rem;
+  aspect-ratio: 16 / 10; padding: .9rem 1rem; color: #fff;
+  background: var(--art) center bottom / 100% 70% no-repeat,
+    linear-gradient(135deg, color-mix(in srgb, var(--c) 92%, #0b1220), color-mix(in srgb, var(--c) 42%, #0b1220)); }
+.fv-cover-logo { position: absolute; top: .8rem; left: .9rem; display: grid; place-items: center; width: 34px; height: 34px;
+  border-radius: 9px; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .18); }
+.fv-cover-logo img { width: 20px; height: 20px; }
+.fv-cover-src { font: 700 1.1rem/1.2 var(--fv-sans); letter-spacing: -.01em; text-shadow: 0 1px 2px rgba(0, 0, 0, .25); }
+.fv-cover-cat { font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; opacity: .85; }
+.fv-cover.is-mini { width: 140px; aspect-ratio: 3 / 2; padding: 0; align-items: center; justify-content: center; }
+.fv-cover.is-mini .fv-cover-logo { position: static; }
+
+/* La une : grande image à gauche, texte à droite */
+[class*="st-key-fvlead_"] { padding: 1.1rem 1.2rem .6rem; }
+.fv-item.layout-lead { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1.4rem; align-items: center; }
+.layout-lead .fv-media > img, .layout-lead .fv-cover { aspect-ratio: 4 / 3; }
+.fv-lead .fv-headline { font-size: clamp(1.4rem, 2.4vw, 1.85rem) !important; line-height: 1.18 !important;
   letter-spacing: -.012em; margin-top: .55rem !important; }
-.fv-lead .fv-dek { font-size: 1rem; -webkit-line-clamp: 4; }
-.fv-lead.has-img { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 1.4rem; align-items: start; }
-.fv-lead figure { margin: 0; }
-.fv-lead figure img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px; }
-@media (max-width: 760px) { .fv-lead.has-img { grid-template-columns: 1fr; } .fv-lead figure { order: -1; } }
+.fv-lead .fv-dek { font-size: .98rem; -webkit-line-clamp: 5; }
+@media (max-width: 760px) { .fv-item.layout-lead { grid-template-columns: 1fr; gap: .9rem; } }
+
+/* Les autres titres : vignettes avec image en haut */
+[class*="st-key-fvtile_"] { height: 100%; padding: 0 0 .35rem; gap: .25rem !important; overflow: hidden;
+  background: var(--fv-surface); border: 1px solid var(--fv-line); border-radius: var(--fv-radius);
+  box-shadow: 0 1px 2px var(--fv-shadow); transition: box-shadow .2s, border-color .2s; }
+[class*="st-key-fvtile_"]:hover { border-color: var(--fv-line-strong); box-shadow: 0 6px 18px var(--fv-shadow); }
+.layout-tile .fv-media { border-radius: 0; }
+.layout-tile .fv-item-text { padding: .7rem .9rem 0; }
+.layout-tile .fv-ago { display: none; }  /* colonne étroite : l'heure suffit… */
+.layout-tile .fv-kicker { flex-wrap: nowrap; overflow: hidden; white-space: nowrap; }  /* … sur une seule ligne */
+.layout-tile .fv-headline { font-size: 1.02rem !important; line-height: 1.3 !important; min-height: 3.9em;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.fv-tile-src { display: flex; align-items: center; gap: .4rem; margin: .3rem 0 0; font-size: .78rem; color: var(--fv-muted); }
+.fv-tile-src img { width: 14px; height: 14px; border-radius: 3px; }
+[class*="st-key-fvtile_"] [class*="st-key-fvactions_"] { padding: 0 .5rem; }
+
+/* Une ligne du fil, avec une petite image à droite */
+.fv-item.has-thumb { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 1.1rem; align-items: start; }
+.fv-thumb { display: block; overflow: hidden; border-radius: 8px; margin-top: .2rem; }
+.fv-thumb > img { display: block; width: 140px; aspect-ratio: 3 / 2; object-fit: cover; transition: transform .35s ease; }
+.fv-thumb:hover > img { transform: scale(1.04); }
+@media (max-width: 640px) { .fv-item.has-thumb { grid-template-columns: minmax(0, 1fr) 96px; }
+  .fv-thumb > img, .fv-cover.is-mini { width: 96px; } }
+@media (prefers-reduced-motion: reduce) { .fv-media > img, .fv-thumb > img { transition: none; } }
 
 /* Colonne de droite */
 .fv-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
@@ -673,6 +741,75 @@ def table(head: list[str], rows: str) -> str:
     """HTML d'un tableau dans sa carte ; défile horizontalement sur un petit écran."""
     header = "".join(f"<th>{cell}</th>" for cell in head)
     return f'<div class="fv-table-wrap"><table class="fv-table"><thead><tr>{header}</tr></thead><tbody>{rows}</tbody></table></div>'
+
+
+def cover_html(category: str, label: str, source: str, url: str, seed: str, mini: bool = False) -> str:
+    """Une couverture dessinée pour un article sans photo : un dégradé aux couleurs de la rubrique, une courbe
+    décorative propre à chaque article (tirée de son titre), le logo et le nom de la source.
+    `mini` : la petite version des lignes du fil (le logo seul, au centre)."""
+    rng = random.Random(seed)  # le même article donne toujours le même dessin
+    level, values = rng.uniform(0.45, 0.7), []
+    for _ in range(16):
+        level = min(max(level + rng.uniform(-0.09, 0.1), 0.15), 0.85)
+        values.append(level)
+    points = " ".join(f"{i * 320 / 15:.0f},{200 - v * 150:.0f}" for i, v in enumerate(values))
+    grid = "".join(f'<line x1="0" x2="320" y1="{y}" y2="{y}" stroke="#fff" stroke-opacity=".08"/>' for y in (50, 100, 150))
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" preserveAspectRatio="none">{grid}'
+           f'<polygon points="0,200 {points} 320,200" fill="#fff" fill-opacity=".09"/>'
+           f'<polyline points="{points}" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.5" '
+           f'stroke-linejoin="round"/></svg>')
+    uri = svg_uri(svg)
+    logo = f'<span class="fv-cover-logo"><img src="{favicon_url(url)}" alt="" loading="lazy"></span>'
+    text = "" if mini else f'<span class="fv-cover-cat">{esc(label)}</span><span class="fv-cover-src">{esc(source)}</span>'
+    return (f'<div class="fv-cover{" is-mini" if mini else ""}" style="--c:{CATEGORY_COLORS.get(category, BRAND)};'
+            f'--art:url({uri})">{logo}{text}</div>')
+
+
+_ICONS = {  # pictogrammes au trait (24 × 24), dessinés en SVG : aucune image à télécharger
+    "star": '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>',
+    "wallet": '<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/>',
+    "bell": '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/>',
+    "mail": '<rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/>',
+    "spark": '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>',
+}
+
+
+def svg_uri(svg: str) -> str:
+    """Une image SVG en « data URI ». st.html retire les balises <svg> de la page (sécurité) : on passe donc par
+    <img src="data:…"> ou par un fond CSS, qui ne peuvent pas exécuter de code."""
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+
+
+def icon(name: str, color: str = "#1536b4") -> str:
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="{color}" '
+           f'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{_ICONS[name]}</svg>')
+    return f'<img src="{svg_uri(svg)}" alt="">'
+
+
+_CURVE = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160" preserveAspectRatio="none">'
+          '<path d="M0 130 C40 120 60 135 95 110 S150 70 185 85 S245 60 280 45 S350 30 400 12 V160 H0Z" fill="#fff" '
+          'fill-opacity=".08"/><path d="M0 130 C40 120 60 135 95 110 S150 70 185 85 S245 60 280 45 S350 30 400 12" '
+          'fill="none" stroke="#6ee7a8" stroke-opacity=".7" stroke-width="3" vector-effect="non-scaling-stroke"/></svg>')
+
+
+def showcase_html() -> str:
+    """L'illustration de la page de connexion : le logo, ce que le compte apporte, une courbe et des cartes
+    décoratives (un dessin, pas des données réelles)."""
+    features = [
+        ("star", "Favoris et notes", "Garde les articles importants avec tes remarques."),
+        ("wallet", "Portefeuille virtuel", "Entraîne-toi à investir, sans risquer un euro."),
+        ("bell", "Alertes de cours", "Un e-mail dès qu'un seuil est franchi."),
+        ("mail", "Le brief du matin", "L'essentiel de la veille dans ta boîte, à 7 h 45."),
+    ]
+    rows = "".join(f'<li><span class="fv-show-icon">{icon(name)}</span><span><b>{esc(title)}</b>{esc(text)}</span></li>'
+                   for name, title, text in features)
+    return (
+        f'<div class="fv-showcase" style="--curve:url({svg_uri(_CURVE)})">'
+        '<p class="fv-show-eyebrow">Ton compte FinVeille</p>'
+        '<h3 class="fv-show-title">Ta veille financière, partout avec toi.</h3>'
+        f'<ul class="fv-show-list">{rows}</ul>'
+        f'<p class="fv-show-foot">{icon("spark", "#6ee7a8")}Gratuit, sans publicité, tes données t\'appartiennent.</p></div>'
+    )
 
 
 def category_tag(key: str, label: str) -> str:

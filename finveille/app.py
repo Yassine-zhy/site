@@ -15,7 +15,8 @@ import theme
 from core import alerts, storage
 from ui import current_user, get_secret, is_admin, load_quotes, load_symbol_quotes, local_mode, sync_cookie
 
-# Le logo : un carré bleu et une courbe (le nom « FinVeille » est ajouté à côté en CSS, voir theme.py)
+# Le logo : un « F » dont la barre du milieu est une courbe qui monte (tools/make_logo.py) ; le nom
+# « FinVeille » est écrit à côté en CSS, pour suivre le thème clair ou sombre (theme.py)
 LOGO = str(Path(__file__).parent / "assets" / "logo.svg")
 
 st.set_page_config(page_title="FinVeille", page_icon=LOGO, layout="wide")
