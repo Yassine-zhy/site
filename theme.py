@@ -279,6 +279,30 @@ CSS = """
 .fv-gloss dt small { margin-left: .5rem; font-weight: 400; font-size: .72rem; color: var(--fv-muted); }
 .fv-gloss dd { margin: .15rem 0 0; color: var(--fv-muted); font-size: .92rem; line-height: 1.5; }
 
+/* ---------- Tableaux, palmarès, convertisseur, agenda ---------- */
+.fv-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.fv-table th { text-align: right; font-weight: 600; font-size: .74rem; letter-spacing: .04em; padding: .45rem .5rem;
+  border-bottom: 1px solid var(--fv-rule-strong); }
+.fv-table th:first-child, .fv-table td:first-child { text-align: left; }
+.fv-table td { text-align: right; padding: .45rem .5rem; border-bottom: 1px solid var(--fv-rule);
+  font-variant-numeric: tabular-nums; }
+.fv-table td:first-child { font-weight: 600; }
+.fv-table .fv-swatch { display: inline-block; width: 14px; height: 3px; margin-right: .45rem; vertical-align: middle;
+  border-radius: 2px; background: var(--c); }
+.fv-ranking { list-style: none; margin: 0; padding: 0; }
+.fv-ranking li { display: flex; justify-content: space-between; gap: 1rem; margin: 0; padding: .38rem 0;
+  border-bottom: 1px solid var(--fv-rule); font-size: .86rem; }
+.fv-ranking li span:last-child { font-variant-numeric: tabular-nums; }
+.fv-breadth { display: flex; height: 8px; border-radius: 4px; overflow: hidden; gap: 2px; margin: .4rem 0 .3rem; }
+.fv-breadth i { display: block; }
+.fv-convert { margin: .3rem 0 .6rem; font-size: 2rem; font-weight: 600; letter-spacing: -.015em; }
+.fv-convert small { display: block; font-size: .8rem; font-weight: 400; color: var(--fv-muted); letter-spacing: 0; }
+.fv-agenda { list-style: none; margin: .2rem 0 0; padding: 0; }
+.fv-agenda li { display: flex; justify-content: space-between; gap: 1rem; margin: 0; padding: .4rem 0;
+  border-bottom: 1px solid var(--fv-rule); font-size: .85rem; }
+.fv-agenda li span:last-child { text-align: right; font-weight: 500; }
+.fv-agenda small { display: block; font-weight: 400; color: var(--fv-muted); font-size: .72rem; }
+
 @media (prefers-reduced-motion: reduce) {
   .fv-tape { overflow-x: auto; mask-image: none; }
   .fv-tape-track { animation: none; }
@@ -322,9 +346,12 @@ def fr_date(moment: datetime) -> str:
     return f"{_DAYS[moment.weekday()]} {moment.day} {_MONTHS[moment.month - 1]} {moment.year}"
 
 
-def fr_day(moment: datetime) -> str:
-    """« 9 octobre »."""
+def fr_day(moment) -> str:
+    """« 9 octobre » (accepte une date ou un datetime)."""
     return f"{moment.day} {_MONTHS[moment.month - 1]}"
+
+
+SERIES_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500"]  # 4 séries au plus, ordre fixe (palette validée)
 
 
 def clock(moment: datetime) -> str:
