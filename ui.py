@@ -84,25 +84,30 @@ def current_user() -> str | None:
     return user
 
 
-def login_buttons(key: str, compact: bool = False) -> None:
+def login_buttons(key: str) -> None:
     """Un bouton par service de connexion configuré."""
-    for provider in auth_providers():
+    for index, provider in enumerate(auth_providers()):
         label, icon = PROVIDERS.get(provider, (f"Continuer avec {str(provider).capitalize()}", ":material/login:"))
-        st.button(
-            "Se connecter" if compact and len(auth_providers()) == 1 else label,
-            icon=icon, key=f"{key}_{provider}", type="secondary" if compact else "primary",
-            on_click=st.login, args=(provider,) if provider else (),
-        )
+        st.button(label, icon=icon, key=f"{key}_{provider}", type="primary" if index == 0 else "secondary",
+                  width="stretch", on_click=st.login, args=(provider,) if provider else ())
+
+
+def login_box(key: str, title: str, text: str) -> None:
+    """Une carte de connexion : titre, explication, un bouton par service, mention de confidentialité."""
+    with st.container(key=f"fvbox_{key}", width=440):
+        st.html(f'<h3 class="fv-box-title">{esc(title)}</h3><p class="fv-box-text">{esc(text)}</p>')
+        login_buttons(key)
+        st.caption("Aucun mot de passe n'est stocké par FinVeille : la connexion est gérée par Google ou par le "
+                   "service Auth0. Seuls ton nom et ton e-mail sont enregistrés.")
 
 
 def require_user() -> str:
     """Renvoie l'utilisateur, ou affiche une invitation à se connecter et arrête la page."""
     user = current_user()
     if user is None:
-        theme.section("Connexion requise")
-        st.markdown("Cette page contient tes données personnelles (favoris, suivis, portefeuille, alertes). "
-                    "Connecte-toi pour y accéder : elles seront enregistrées dans ton compte.")
-        login_buttons("require")
+        login_box("require", "Connecte-toi pour accéder à ton espace",
+                  "Cette page contient tes données personnelles : favoris, suivis, portefeuille, alertes. "
+                  "Elles sont enregistrées dans ton compte et toi seul y as accès.")
         st.stop()
     return user
 
@@ -275,8 +280,9 @@ def _save_note(user: str, article_id: str, widget_key: str) -> None:
     st.session_state["fv_toast"] = "Note enregistrée"
 
 
-def article_html(article: Article, read: bool, lead: bool = False, compact: bool = False) -> str:
-    """Le HTML d'un article : rubrique, source, heure, titre, chapeau (et photo pour la une).
+def article_html(article: Article, read: bool, lead: bool = False, compact: bool = False, echoes: int = 0,
+                 show_image: bool = False) -> str:
+    """Le HTML d'un article : rubrique, source, heure, titre, chapeau (et photo pour la une, si demandée).
 
     En vue compacte, on n'affiche ni le chapeau ni la photo : une ligne de titre par article.
     """
@@ -287,6 +293,9 @@ def article_html(article: Article, read: bool, lead: bool = False, compact: bool
         f'<time class="fv-time" datetime="{article.published.isoformat()}">{theme.clock(article.published)}</time>',
         f'<span class="fv-ago">{theme.time_ago(article.published)}</span>',
     ]
+    if echoes:
+        kicker.append(f'<span class="fv-echo">reprise par {echoes} autre{"s" if echoes > 1 else ""} '
+                      f'source{"s" if echoes > 1 else ""}</span>')
     if read:
         kicker.append('<span class="fv-flag">Lu</span>')
     heading = "h2" if lead else "h3"
@@ -297,7 +306,7 @@ def article_html(article: Article, read: bool, lead: bool = False, compact: bool
         + (f'<p class="fv-dek">{esc(article.summary)}</p>' if article.summary and not compact else "")
     )
     classes = ["fv-item"] + (["is-read"] if read else []) + (["fv-lead"] if lead else []) + (["is-compact"] if compact else [])
-    if lead and article.image:
+    if lead and show_image and article.image:
         classes.append("has-img")
         figure = f'<figure><img src="{safe_url(article.image)}" alt="" loading="lazy"></figure>'
         return f'<article class="{" ".join(classes)}"><div>{text}</div>{figure}</article>'
@@ -313,13 +322,16 @@ def article_card(
     note: str | None = None,
     with_note: bool = False,
     user: str | None = None,
+    echoes: int = 0,
+    show_image: bool = False,
 ) -> None:
     """Affiche un article et ses boutons d'action.
 
     - `key_prefix` rend les clés des boutons uniques quand le même article apparaît sur plusieurs pages ;
     - `compact` : une ligne par article (titre et informations, sans chapeau) ;
     - `note` / `with_note` : affiche la note personnelle et le bouton pour l'écrire (page Favoris) ;
-    - `user` : l'utilisateur connecté ; sans utilisateur, seuls « Lire » et « Résumé » sont proposés.
+    - `user` : l'utilisateur connecté ; sans utilisateur, seuls « Lire » et « Résumé » sont proposés ;
+    - `echoes`, `show_image` (la une) : nombre d'autres sources qui reprennent l'histoire, photo de l'article.
     """
     favorite, read, hidden = status["is_favorite"], status["is_read"], status["is_hidden"]
     key = f"{key_prefix}_{article.id}"
@@ -329,7 +341,7 @@ def article_card(
 
     kind = "fvlead" if lead else "fvcompact" if compact else "fvcard"
     with st.container(key=f"{kind}_{key}", gap="small"):
-        st.html(article_html(article, read, lead, compact))
+        st.html(article_html(article, read, lead, compact, echoes, show_image))
         if note:
             st.html(f'<blockquote class="fv-note-block"><b>Ma note</b>{esc(note)}</blockquote>')
         if summary_open:

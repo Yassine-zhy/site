@@ -9,7 +9,8 @@ from core.filters import normalize
 from core.glossary import GLOSSARY, SECTIONS, term_of_the_day
 from theme import esc
 
-theme.page_header("Glossaire", f"{len(GLOSSARY)} termes de la finance et de l'économie, expliqués simplement.")
+theme.page_header("Glossaire", f"{len(GLOSSARY)} termes de la finance et de l'économie, expliqués simplement.",
+                  eyebrow="Outils")
 
 word = term_of_the_day()
 section_name, definition = GLOSSARY[word]
@@ -38,4 +39,4 @@ for letter, terms in groupby(entries, key=lambda term: normalize(term)[0].upper(
         f"<dt>{esc(term)}<small>{esc(GLOSSARY[term][0])}</small></dt><dd>{esc(GLOSSARY[term][1])}</dd>"
         for term in terms
     )
-    st.html(f'<div class="fv-letter">{letter}</div><dl class="fv-gloss">{items}</dl>')
+    st.html(f'<section class="fv-card"><div class="fv-letter">{letter}</div><dl class="fv-gloss">{items}</dl></section>')

@@ -1,6 +1,6 @@
 # FinVeille
 
-**La veille financière et économique mondiale, mise en page comme un quotidien et mise à jour en continu.**
+**La veille financière et économique mondiale, dans une interface de plateforme professionnelle, mise à jour en continu.**
 
 FinVeille rassemble l'actualité de 12 flux RSS et de 4 API financières, la classe par rubrique, suit les
 entreprises et les thèmes de son utilisateur, affiche les cours des marchés mondiaux et résume les articles par IA.
@@ -14,7 +14,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | | |
 | --- | --- |
 | **Agrégation** | 12 flux RSS gratuits (CNBC, BBC, Le Monde, BFM Bourse, The Economist, Fed, BCE, CoinDesk…) + Finnhub, NewsAPI, Marketaux et Alpha Vantage si les clés sont renseignées. Téléchargement en parallèle, dédoublonnage. |
-| **Le fil** | « À la une » et « En continu », rubriques Marchés / Crypto / Entreprises / Macro (classement par mots-clés), filtre par source, recherche avancée (`"expression exacte"`, `-exclure`, `source:cnbc`), vue compacte, mise à jour automatique toutes les 5 minutes. |
+| **Le fil** | « À la une » (l'histoire reprise par le plus de sources) et « En continu », rubriques Marchés / Crypto / Entreprises / Macro (classement par mots-clés), tendances cliquables, filtre par source, recherche avancée (`"expression exacte"`, `-exclure`, `source:cnbc`), vue compacte, mise à jour automatique toutes les 5 minutes. |
 | **Le brief** | L'édition du jour rédigée automatiquement : la séance en une phrase, l'histoire la plus reprise de chaque rubrique, les sujets qui montent, l'agenda de mes entreprises, le mot du jour. Téléchargeable en Markdown. |
 | **Comptes** | Connexion avec Google, ou par e-mail et Facebook via Auth0 (OpenID Connect, aucun mot de passe stocké). Chaque utilisateur a ses propres favoris, suivis, portefeuille et alertes ; export et suppression de ses données (RGPD). Sans configuration, mode local à un utilisateur. |
 | **Favoris, lu, masqué** | Enregistrés dans une base SQLite, conservés d'une session à l'autre ; notes personnelles ; export CSV des favoris. |
@@ -27,7 +27,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Glossaire** | 55 termes de la finance expliqués simplement, recherche, mot du jour. |
 | **En chiffres** | Tableau de bord du flux : dépêches par heure et par rubrique, entreprises les plus citées, tonalité par rubrique. |
 | **Résumé par IA** | « L'essentiel » en 3 points : Gemini ou Groq (offres gratuites) en français, ou résumé extractif local sans clé ; repli automatique en cas d'erreur, résumés mis en cache. |
-| **Apparence** | Thème clair (papier) et sombre (ardoise), responsive ordinateur / mobile, couleurs vérifiées pour le daltonisme. |
+| **Apparence** | Thèmes clair et sombre (bleu nuit) avec une palette propre à chacun (`light-dark()` en CSS), cartes, tableaux de données, responsive ordinateur / mobile, contrastes vérifiés par un test automatique, couleurs adaptées au daltonisme. |
 
 ## Aperçu
 
@@ -71,7 +71,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · Altair · trafilatura · SQLite · pytest
 
-14 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+15 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 
@@ -98,23 +98,28 @@ pytest
 ```
 app.py            point d'entrée : thème, bandeau des cours, navigation
 ui.py             éléments partagés : chargement en cache, carte d'article, résumé
-theme.py          identité visuelle : CSS, bandeau de titre, tuiles, mise en forme française
+theme.py          design : jetons de couleur clair/sombre, cartes, tuiles, tableaux, mise en forme française
+assets/           le logo (SVG)
 views/            une page par fichier (fil, brief, en chiffres, marchés, comparer, suivis, portefeuille,
                   alertes, favoris, glossaire, réglages, mon compte)
 core/             logique métier : sources, agrégation, classement, statistiques, marché, indicateurs de
                   risque, portefeuille, alertes, brief, résumé, stockage
-tests/            77 tests pytest (sources, recherche, base et comptes, résumé, indicateurs, portefeuille, alertes,
+tests/            80 tests pytest (sources, recherche, base et comptes, résumé, indicateurs, portefeuille, alertes,
                   brief, chaque page)
 guide/            le guide de construction, étape par étape
 ```
 
 ## Choix de conception
 
-- **Une identité éditoriale** plutôt qu'un tableau de bord générique : titres en Newsreader, interface en IBM Plex,
-  filets et rubriques en petites capitales, l'encre comme couleur de marque. La couleur est réservée aux données.
-- **Accessibilité :** palette validée pour les principales formes de daltonisme, jamais d'information portée par la
-  seule couleur (▲/▼ et signes, noms de rubrique), tableau de données à côté de chaque visualisation, animations
-  désactivées si le système le demande.
+- **Un design de plateforme financière** : barre d'application avec logo, cartes, tableaux, chiffres en police à
+  chasse fixe, une seule couleur de marque (le bleu). Interface en IBM Plex Sans, titres d'articles en Newsreader
+  pour garder une touche éditoriale. La couleur des données est réservée à la hausse, la baisse et aux rubriques.
+- **Deux vraies palettes** : Streamlit indique le thème actif au navigateur (`color-scheme`), la fonction CSS
+  `light-dark()` choisit la bonne couleur sans relancer le script.
+- **Accessibilité :** contraste WCAG vérifié par un test (texte ≥ 7:1, boutons ≥ 4,5:1, dans les deux thèmes),
+  palette validée pour les principales formes de daltonisme, jamais d'information portée par la seule couleur
+  (▲/▼ et signes, noms de rubrique), tableau de données à côté de chaque visualisation, animations désactivées si le
+  système le demande.
 - **Sécurité :** HTML systématiquement échappé, liens non web refusés, requêtes SQL paramétrées, clés dans les
   secrets et transmises par en-tête HTTP quand l'API le permet.
 

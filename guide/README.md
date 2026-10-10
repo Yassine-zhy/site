@@ -18,5 +18,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 12. [Portefeuille virtuel et alertes de cours](12-portefeuille-alertes.md)
 13. [Le brief du jour](13-brief-du-jour.md)
 14. [Comptes utilisateurs : Google, e-mail, Facebook](14-comptes-utilisateurs.md)
+15. [Un design professionnel, et un mode sombre sans bouton invisible](15-design-professionnel.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).

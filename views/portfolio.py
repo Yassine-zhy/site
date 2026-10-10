@@ -43,7 +43,7 @@ def logo(symbol: str) -> str:
 def performance_chart(data: pd.DataFrame, period: str) -> alt.LayerChart:
     """Deux courbes en base 100 : le portefeuille (en couleur) et le CAC 40 (en gris, pour comparaison)."""
     long = data.rename_axis("date").reset_index().melt("date", var_name="série", value_name="base100")
-    colors = alt.Scale(domain=["Mon portefeuille", "CAC 40"], range=["#3987e5", "#8a8780"])
+    colors = alt.Scale(domain=["Mon portefeuille", "CAC 40"], range=["#3987e5", theme.NEUTRAL])
     ticks = {"interval": "week", "step": 1} if period == "1 mois" else {"interval": "month", "step": 1}
     x = alt.X("date:T", title=None, axis=alt.Axis(grid=False, labelAngle=0, domainOpacity=0.4, tickCount=ticks,
                                                   format="%d/%m" if period == "1 mois" else "%m/%Y"))
@@ -53,17 +53,18 @@ def performance_chart(data: pd.DataFrame, period: str) -> alt.LayerChart:
         color=alt.Color("série:N", scale=colors, legend=alt.Legend(title=None, orient="top")),
     )
     hover = alt.selection_point(fields=["date"], nearest=True, on="pointerover", empty=False, clear="pointerout")
-    rule = alt.Chart(data.rename_axis("date").reset_index()).mark_rule(color="#8a8780").encode(
+    rule = alt.Chart(data.rename_axis("date").reset_index()).mark_rule(color=theme.NEUTRAL).encode(
         x=x, opacity=alt.condition(hover, alt.value(1), alt.value(0)),
         tooltip=[alt.Tooltip("date:T", title="Date", format="%d/%m/%Y"),
                  alt.Tooltip("Mon portefeuille:Q", format=".1f"), alt.Tooltip("CAC 40:Q", format=".1f")],
     ).add_params(hover)
-    baseline = alt.Chart(pd.DataFrame({"y": [100]})).mark_rule(color="#8a8780", strokeWidth=1).encode(y="y:Q")
-    return (baseline + lines + rule).properties(height=300)
+    baseline = alt.Chart(pd.DataFrame({"y": [100]})).mark_rule(color=theme.NEUTRAL, strokeWidth=1).encode(y="y:Q")
+    return (baseline + lines + rule).properties(height=300, background="transparent")
 
 
 flush_toast()
-theme.page_header("Portefeuille", "Un portefeuille virtuel pour t'entraîner : aucun argent réel, aucune transaction.")
+theme.page_header("Portefeuille", "Un portefeuille virtuel pour t'entraîner : aucun argent réel, aucune transaction.",
+                  eyebrow="Mon espace")
 user = require_user()
 choices = company_choices(user)
 
@@ -125,29 +126,26 @@ st.html(
     f'<div class="fv-kpi-sub">investi : {theme.fr_number(total["cost"], 0)} €</div></div>'
     f'<div class="fv-kpi"><div class="fv-kpi-label">Plus-value latente</div>'
     f'<div class="fv-kpi-value"><span class="{theme.direction(total["gain"])}">{theme.signed(total["gain"], "€", 0)}</span></div>'
-    f'<div class="fv-kpi-sub">{theme.signed(total["gain_pct"])} depuis l\'achat</div></div>'
+    f'<div class="fv-kpi-sub">{theme.change(total["gain_pct"])} depuis l\'achat</div></div>'
     f'<div class="fv-kpi"><div class="fv-kpi-label">Meilleure ligne</div><div class="fv-kpi-value">{esc(best.position["label"])}</div>'
-    f'<div class="fv-kpi-sub">{theme.signed(best.gain_pct)}</div></div>'
+    f'<div class="fv-kpi-sub">{theme.change(best.gain_pct)}</div></div>'
     f'<div class="fv-kpi"><div class="fv-kpi-label">Lignes</div><div class="fv-kpi-value">{len(lines)}</div>'
     f'<div class="fv-kpi-sub">{len({line.position["currency"] for line in lines})} devise(s)</div></div></div>'
 )
 
 theme.section("Mes positions")
 rows = "".join(
-    f"<tr><td>{esc(line.position['label'])} <small style='opacity:.6'>{esc(line.position['symbol'])}</small></td>"
+    f"<tr><td>{esc(line.position['label'])} <small>{esc(line.position['symbol'])}</small></td>"
     f"<td>{theme.fr_number(line.position['quantity'], 0)}</td>"
     f"<td>{theme.price(line.position['price'])} {esc(line.position['currency'])}</td>"
     f"<td>{theme.price(line.last)} {esc(line.position['currency'])}</td>"
     f"<td>{theme.fr_number(line.value, 0)} €</td>"
-    f"<td><span class='{theme.direction(line.gain)}'>{theme.signed(line.gain, '€', 0)}</span></td>"
-    f"<td>{theme.signed(line.gain_pct)}</td><td>{theme.fr_number(line.weight, 1)} %</td></tr>"
+    f"<td>{theme.change(line.gain, '€', 0)}</td>"
+    f"<td>{theme.change(line.gain_pct)}</td><td>{theme.fr_number(line.weight, 1)} %</td></tr>"
     for line in sorted(lines, key=lambda line: line.value, reverse=True)
 )
-st.html(
-    '<table class="fv-table"><thead><tr><th>Entreprise</th><th>Quantité</th><th>Prix de revient</th><th>Cours</th>'
-    "<th>Valeur</th><th>+/− value</th><th>+/− %</th><th>Poids</th></tr></thead>"
-    f"<tbody>{rows}</tbody></table>"
-)
+st.html(theme.table(["Entreprise", "Quantité", "Prix de revient", "Cours", "Valeur", "+/− value", "+/− %", "Poids"],
+                    rows))
 st.caption("Prix de revient converti en euros au taux de change actuel (simplification). Poids = part de la valeur "
            "totale.")
 
@@ -159,7 +157,7 @@ bars = "".join(
     f'<span class="fv-num">{theme.fr_number(line.weight, 0)} %</span></li>'
     for line in sorted(lines, key=lambda line: line.weight, reverse=True)
 )
-st.html(f'<ul class="fv-list">{bars}</ul>')
+st.html(theme.card(f'<ul class="fv-list">{bars}</ul>'))
 
 theme.section("Performance de la composition actuelle", "comparée au CAC 40")
 period = st.segmented_control("Période", list(PERIODS), default="6 mois", label_visibility="collapsed") or "6 mois"
@@ -169,14 +167,14 @@ if closes is None or closes.empty or "^FCHI" not in closes:
 else:
     value = portfolio.composition_history(positions, closes, rates)
     data = pd.DataFrame({"Mon portefeuille": metrics.rebase(value), "CAC 40": metrics.rebase(closes["^FCHI"])})
-    st.altair_chart(performance_chart(data, period), width="stretch")
+    with st.container(key="fvchart_portfolio"):
+        st.altair_chart(performance_chart(data, period), width="stretch")
     rows = "".join(
-        f"<tr><td>{name}</td><td>{theme.signed(metrics.total_return(series))}</td>"
+        f"<tr><td>{name}</td><td>{theme.change(metrics.total_return(series))}</td>"
         f"<td>{theme.fr_number(metrics.annualized_volatility(series), 1)} %</td>"
         f"<td>{theme.signed(metrics.max_drawdown(series))}</td></tr>"
         for name, series in [("Mon portefeuille", value), ("CAC 40", closes["^FCHI"])]
     )
-    st.html('<table class="fv-table"><thead><tr><th></th><th>Rendement</th><th>Volatilité annualisée</th>'
-            f"<th>Perte maximale</th></tr></thead><tbody>{rows}</tbody></table>")
+    st.html(theme.table(["", "Rendement", "Volatilité annualisée", "Perte maximale"], rows))
     st.caption("On simule la détention des quantités actuelles sur toute la période (cours ajustés, taux de change "
                "actuels) : c'est la performance de ta composition, pas de tes décisions d'achat.")

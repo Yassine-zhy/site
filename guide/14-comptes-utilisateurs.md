@@ -297,4 +297,4 @@ la position d'Alice même en devinant son numéro (`tests/test_storage.py`).
 | Mes anciens favoris ont disparu après connexion | Ils appartiennent à l'utilisateur « local » | Normal : ils restent visibles en mode local (sans `[auth]`). |
 | `sqlite3.OperationalError: no such column: user_id` | Base modifiée à la main entre deux versions | Supprime `data/finveille.db` (ou remets `PRAGMA user_version = 0` pour relancer la migration). |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [un design professionnel](15-design-professionnel.md). Retour au [sommaire du guide](README.md).

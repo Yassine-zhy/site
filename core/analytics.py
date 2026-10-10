@@ -90,7 +90,8 @@ _NEWS_WORDS = {
     "share", "shares", "price", "prices", "report", "reports", "update", "news", "live", "time", "back", "makes",
     "million", "millions", "billion", "billions", "trillion", "milliards", "one", "two", "three", "four", "five",
     "ten", "deux", "trois", "percent", "points", "rules", "deal", "company", "companies", "group", "inc", "corp",
-    "dollar", "dollars", "euros",
+    "dollar", "dollars", "euros", "now", "next", "big", "top", "need", "know", "look", "high", "low",
+    "these", "those", "some", "many", "much", "every", "still", "encore", "tout", "tous", "aussi",
 }
 
 

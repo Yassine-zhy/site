@@ -7,27 +7,40 @@ affiche le bandeau des cours, les alertes déclenchées et le menu de navigation
 page vit dans son propre fichier, dans le dossier views/.
 """
 
+from pathlib import Path
+
 import streamlit as st
 
 import theme
 from core import alerts, storage
-from ui import auth_providers, current_user, load_quotes, load_symbol_quotes, login_buttons
+from ui import auth_providers, current_user, load_quotes, load_symbol_quotes
 
-st.set_page_config(page_title="FinVeille", page_icon=":material/candlestick_chart:", layout="wide")
+# Le logo : un carré bleu et une courbe (le nom « FinVeille » est ajouté à côté en CSS, voir theme.py)
+LOGO = str(Path(__file__).parent / "assets" / "logo.svg")
+
+st.set_page_config(page_title="FinVeille", page_icon=LOGO, layout="wide")
+st.logo(LOGO, size="large")
 theme.inject_css()
 storage.init_db()
 
 
 def account_bar() -> None:
-    """En haut à droite : « Se connecter », ou le nom de l'utilisateur connecté. Rien en mode local."""
-    if not auth_providers():
+    """Dans la barre du haut, à droite : « Se connecter », ou le nom de l'utilisateur connecté.
+
+    Rien en mode local. Le conteneur porte la clé « fvaccount » : theme.py le place dans la barre du haut.
+    """
+    providers = auth_providers()
+    if not providers:
         return
-    with st.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center", key="fvaccount"):
+    with st.container(horizontal=True, vertical_alignment="center", key="fvaccount"):
         if current_user():
-            st.page_link("views/account.py", label=st.user.get("name") or st.user.get("email") or "Mon compte",
-                         icon=":material/account_circle:")
-        else:
-            login_buttons("bar", compact=True)
+            st.page_link("views/account.py", label=st.user.get("given_name") or st.user.get("name")
+                         or st.user.get("email") or "Mon compte", icon=":material/account_circle:")
+        elif len(providers) == 1:
+            st.button("Se connecter", key="bar_login", type="primary", on_click=st.login,
+                      args=(providers[0],) if providers[0] else ())
+        else:  # plusieurs services : la page « Mon compte » propose un bouton par service
+            st.page_link("views/account.py", label="Se connecter", icon=":material/login:")
 
 
 @st.fragment(run_every="2min")

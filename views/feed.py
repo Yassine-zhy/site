@@ -1,11 +1,12 @@
-"""Page « Fil d'actualité » : la une, le fil en continu et ses chiffres."""
+"""Page « Le fil » : la une, les tendances, le fil en continu et ses chiffres."""
 
 from collections import Counter
+from datetime import datetime, timedelta, timezone
 
 import streamlit as st
 
 import theme
-from core import storage
+from core import analytics, storage
 from core.config import API_KEYS, CATEGORIES
 from core.filters import filter_articles
 from theme import esc
@@ -20,6 +21,11 @@ def show_more():
     st.session_state.visible_count += PAGE_SIZE
 
 
+def search_for(term: str) -> None:
+    """Clic sur une tendance : on la recherche (entre guillemets si elle contient plusieurs mots)."""
+    st.session_state.feed_query = f'"{term}"' if " " in term else term
+
+
 if "visible_count" not in st.session_state:
     st.session_state.visible_count = PAGE_SIZE
 
@@ -27,58 +33,73 @@ keys = api_keys()
 articles, errors, fetched_at = load_articles(keys)
 
 
-# --- Bandeau de titre : se redessine toutes les minutes (horloges des places boursières) ------
+# --- En-tête : se redessine toutes les minutes (horloges des places boursières) -----------------
 @st.fragment(run_every="1min")
-def masthead():
+def header():
     current, _, collected = load_articles(keys)
-    theme.masthead(len(current), len({a.source for a in current}), collected)
+    theme.feed_header(len(current), len({a.source for a in current}), collected)
 
 
-masthead()
+header()
 
-# --- Barre latérale : filtres secondaires ---------------------------------------------------
-with st.sidebar:
-    st.header("Filtres")
-    sources = st.multiselect(
-        "Sources",
-        options=sorted({article.source for article in articles}),
-        placeholder="Toutes les sources",
+# --- Barre d'outils : recherche, filtres, actualisation -----------------------------------------
+with st.container(horizontal=True, vertical_alignment="center", gap="small", key="fvtoolbar"):
+    query = st.text_input(
+        "Rechercher", key="feed_query", label_visibility="collapsed", icon=":material/search:", width="stretch",
+        placeholder='Rechercher : inflation, Nvidia, "banque centrale", -crypto, source:cnbc…',
+        help='Mots-clés (tous doivent apparaître) · "expression exacte" · -mot pour exclure · source:nom pour une source',
     )
-    hide_read = st.toggle("Cacher les articles lus", value=setting(user, "hide_read", False))
-    show_hidden = st.toggle("Voir les articles masqués")
-    compact = st.toggle("Vue compacte", value=setting(user, "density", "confort") == "compact",
-                        help="Une ligne par article, sans chapeau : idéal pour parcourir vite.")
-    if st.button("Actualiser maintenant", icon=":material/refresh:", width="stretch"):
+    with st.popover("Filtres", icon=":material/tune:"):
+        sources = st.multiselect("Sources", options=sorted({a.source for a in articles}),
+                                 placeholder="Toutes les sources", key="feed_sources")
+        hide_read = st.toggle("Cacher les articles lus", value=setting(user, "hide_read", False), disabled=not user)
+        show_hidden = st.toggle("Voir les articles masqués", disabled=not user)
+        compact = st.toggle("Vue compacte", value=setting(user, "density", "confort") == "compact",
+                            help="Une ligne par article, sans chapeau : idéal pour parcourir vite.")
+        images = st.toggle("Photo de l'article à la une", value=setting(user, "show_images", False))
+        if not user:
+            st.caption("Connecte-toi pour garder des articles, les marquer comme lus ou les masquer.")
+        active = sum(1 for name in API_KEYS if keys[name])
+        st.caption(f"{active} API active(s) sur {len(API_KEYS)} · "
+                   + (f"{len(errors)} source(s) indisponible(s) : " + " ; ".join(errors) if errors else
+                      "toutes les sources répondent"))
+        st.page_link("views/settings.py", label="Clés API et réglages", icon=":material/settings:")
+    if st.button("Actualiser", icon=":material/refresh:", help="Interroger les sources maintenant"):
         load_articles.clear()
         st.rerun()
-    if errors:
-        with st.expander(f"{len(errors)} source(s) indisponible(s)", icon=":material/warning:"):
-            for error in errors:
-                st.caption(error)
 
-    active = sum(1 for name in API_KEYS if keys[name])
-    st.caption(f"{len(API_KEYS) - active} API inactive(s) sur {len(API_KEYS)}.")
-    st.page_link("views/settings.py", label="Clés API et réglages", icon=":material/settings:")
-
-# --- Recherche et rubriques (en haut : visibles même sur mobile) ---------------------------
-query = st.text_input(
-    "Rechercher", placeholder='Rechercher : inflation, Nvidia, "banque centrale", -crypto, source:cnbc…',
-    label_visibility="collapsed", icon=":material/search:",
-    help='Mots-clés (tous doivent apparaître) · "expression exacte" · -mot pour exclure · source:nom pour une source',
-)
 categories = st.pills(
-    "Rubriques",
-    options=list(CATEGORIES),
-    format_func=lambda key: CATEGORIES[key],
-    selection_mode="multi",
-    default=setting(user, "default_categories", []),
-    label_visibility="collapsed",
+    "Rubriques", options=list(CATEGORIES), format_func=lambda key: CATEGORIES[key], selection_mode="multi",
+    default=setting(user, "default_categories", []), label_visibility="collapsed",
 )
+
+# --- Tendances : les sujets qui montent, cliquables ------------------------------------------------
+if trends := analytics.rising_topics(articles, now=datetime.now(timezone.utc))[:6]:
+    with st.container(horizontal=True, vertical_alignment="center", gap="small", key="fvtrends"):
+        st.html('<span class="fv-trends-label">Tendances</span>', width="content")
+        for term, count, before in trends:
+            st.button(term, key=f"trend_{term}", type="tertiary", on_click=search_for, args=(term,),
+                      help=f"{count} dépêches en 24 h ({'nouveau sujet' if before == 0 else f'{before} la veille'})")
+
+
+def pick_lead(filtered):
+    """La une : l'histoire reprise par le plus de sources depuis 12 h (sinon 24 h, sinon 48 h).
+
+    Renvoie (article, nombre d'autres sources qui la reprennent, explication affichée sous le titre).
+    """
+    now = datetime.now(timezone.utc)
+    for hours in (12, 24, 48):
+        ranked = analytics.most_covered([a for a in filtered[:150] if a.published >= now - timedelta(hours=hours)])
+        if ranked and ranked[0][1] > 0:
+            return ranked[0][0], ranked[0][1], f"l'histoire la plus reprise depuis {hours} h"
+    # Aucune histoire reprise (nuit, week-end) : la dernière dépêche qui a un vrai chapeau
+    lead = next((a for a in filtered[:10] if len(a.summary or "") > 80), filtered[0])
+    return lead, 0, "la dernière dépêche"
 
 
 # --- Le corps de la page : se met à jour tout seul toutes les 5 minutes --------------------
 @st.fragment(run_every="5min")
-def body(query, categories, sources, hide_read, show_hidden, compact):
+def body(query, categories, sources, hide_read, show_hidden, compact, images):
     flush_toast()
     current, _, collected = load_articles(keys)  # nouvelles données dès que le cache (15 min) a expiré
     statuses = storage.get_statuses(user) if user else {}
@@ -92,22 +113,24 @@ def body(query, categories, sources, hide_read, show_hidden, compact):
     filtered = filter_articles(current, categories=categories, sources=sources, query=query)
     filtered = [article for article in filtered if is_visible(article)]
 
-    main, rail = st.columns([2.2, 1], gap="large")
+    main, rail = st.columns([2.25, 1], gap="large")
 
     with main:
         if not filtered:
             theme.section("Aucun résultat")
             st.info("Aucun article ne correspond à ces filtres. Essaie un autre mot-clé ou retire un filtre.")
             return
-        # À la une : l'article le plus récent qui a une photo (parmi les 6 premiers), sinon le premier.
-        lead = next((a for a in filtered[:6] if a.image), filtered[0])
-        theme.section("À la une")
-        article_card(lead, statuses.get(lead.id, NO_STATUS), key_prefix="feed", lead=True, user=user)
+        lead, echoes, why = pick_lead(filtered)
+        theme.section("À la une", why)
+        article_card(lead, statuses.get(lead.id, NO_STATUS), key_prefix="feed", lead=True, user=user,
+                     echoes=echoes, show_image=images)
 
         rest = [a for a in filtered if a is not lead]
         theme.section("En continu", f"{len(filtered)} dépêches")
-        for article in rest[: st.session_state.visible_count]:
-            article_card(article, statuses.get(article.id, NO_STATUS), key_prefix="feed", compact=compact, user=user)
+        with st.container(key="fvpanel_feed"):
+            for article in rest[: st.session_state.visible_count]:
+                article_card(article, statuses.get(article.id, NO_STATUS), key_prefix="feed", compact=compact,
+                             user=user)
         if len(rest) > st.session_state.visible_count:
             st.button("Afficher plus", on_click=show_more, width="stretch")
 
@@ -135,14 +158,11 @@ def rail_blocks(filtered, collected):
         for name, count in sources
     )
     st.html(
-        f"""
-        <section><h4 class="fv-rail-title">Le fil en chiffres</h4><ul class="fv-bars">{bars}</ul></section>
-        <section style="margin-top:1.6rem"><h4 class="fv-rail-title">Sources les plus actives</h4>
-          <ul class="fv-sources">{source_rows}</ul></section>
-        <p class="fv-note" style="margin-top:1.2rem">Collecte de {theme.clock(collected)}. La page vérifie
-          les nouveautés toutes les 5 minutes ; les sources sont interrogées au plus toutes les 15 minutes.</p>
-        """
+        theme.card(f'<ul class="fv-bars">{bars}</ul>', "Par rubrique", f"{total} dépêches")
+        + theme.card(f'<ul class="fv-sources">{source_rows}</ul>', "Sources les plus actives")
+        + f'<p class="fv-note" style="margin-top:.9rem">Collecte de {theme.clock(collected)}. La page vérifie les '
+        "nouveautés toutes les 5 minutes ; les sources sont interrogées au plus toutes les 15 minutes.</p>"
     )
 
 
-body(query, categories, sources, hide_read, show_hidden, compact)
+body(query, categories, sources, hide_read, show_hidden, compact, images)

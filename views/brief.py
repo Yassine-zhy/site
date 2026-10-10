@@ -58,7 +58,8 @@ brief = Brief(
 )
 
 # --- Affichage -----------------------------------------------------------------------------------
-theme.page_header("Le brief", "L'essentiel de l'actualité financière, rédigé automatiquement à partir du fil.")
+theme.page_header("Le brief", "L'essentiel de l'actualité financière, rédigé automatiquement à partir du fil.",
+                  eyebrow="Actualité")
 minutes = max(1, round(len(brief.to_markdown().split()) / 220))  # environ 220 mots lus par minute
 st.html(f'<p class="fv-edition-line">Édition du {esc(brief.date_label)} · {len(recent)} dépêches analysées · '
         f"lecture {minutes} min</p>")
@@ -68,12 +69,11 @@ if market:
     st.html(f'<p class="fv-lede">{esc(market)}</p>')
 figures = "".join(
     f"<tr><td>{esc(HEADLINE_INSTRUMENTS[s][1])}</td>"
-    f"<td>{theme.price(quotes[s].last)}</td><td><span class='{theme.direction(quotes[s].change)}'>"
-    f"{theme.signed(quotes[s].change)}</span></td></tr>"
+    f"<td>{theme.price(quotes[s].last)}</td><td>{theme.change(quotes[s].change)}</td></tr>"
     for s in HEADLINE_INSTRUMENTS if s in quotes
 )
 if figures:
-    st.html(f'<table class="fv-table"><tbody>{figures}</tbody></table>')
+    st.html(theme.table(["Instrument", "Dernier cours", "Séance"], figures))
 
 left, right = st.columns([1.6, 1], gap="large")
 with left:
@@ -86,14 +86,14 @@ with left:
             f"{f' · reprise par {echoes} autre(s) source(s)' if echoes else ''}</small></li>"
             for label, a, echoes in headlines
         )
-        st.html(f'<ul class="fv-front">{items}</ul>')
+        st.html(theme.card(f'<ul class="fv-front">{items}</ul>'))
     else:
         st.caption("Pas assez de dépêches sur les dernières 24 heures.")
     if companies:
         theme.section("Mes entreprises", "variation de la séance")
-        rows = "".join(f"<li><span>{esc(name)}</span><span class='{theme.direction(change)}'>{theme.signed(change)}</span></li>"
+        rows = "".join(f"<li><span>{esc(name)}</span>{theme.change(change)}</li>"
                        for name, change in sorted(companies, key=lambda item: item[1], reverse=True))
-        st.html(f'<ul class="fv-ranking">{rows}</ul>')
+        st.html(theme.card(f'<ul class="fv-ranking">{rows}</ul>'))
 with right:
     theme.section("Les sujets qui montent", "24 h")
     if topics:
@@ -102,13 +102,13 @@ with right:
             f"<small>{count} dépêches · {'nouveau' if before == 0 else f'{before} avant'}</small></li>"
             for term, count, before in topics
         )
-        st.html(f'<ol class="fv-topics">{items}</ol>')
+        st.html(theme.card(f'<ol class="fv-topics">{items}</ol>'))
     else:
         st.caption("Aucun sujet ne se détache pour l'instant.")
     if agenda:
         theme.section("Agenda", "45 prochains jours")
         rows = "".join(f"<li><span>{esc(event)}</span><span>{theme.fr_day(day)}</span></li>" for day, event in agenda)
-        st.html(f'<ul class="fv-agenda">{rows}</ul>')
+        st.html(theme.card(f'<ul class="fv-agenda">{rows}</ul>'))
     theme.section("Le mot du jour")
     st.html(f'<div class="fv-word"><small>{esc(GLOSSARY[word][0])}</small><h3>{esc(word)}</h3>'
             f"<p>{esc(GLOSSARY[word][1])}</p></div>")

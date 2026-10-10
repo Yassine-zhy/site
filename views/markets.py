@@ -31,10 +31,10 @@ def heatmap(quotes, sessions: int) -> str:
         for q in (q for q in quotes if q.group == group):
             change = q.change_over(sessions)
             if q.unit == "pb":  # un taux qui monte n'est ni « bon » ni « mauvais » : teinte neutre
-                color, alpha = "#8a8780", 14
+                color, alpha = theme.NEUTRAL, 22
             else:
                 color = theme.UP if change >= 0 else theme.DOWN
-                alpha = 6 + min(abs(change) / scale, 1) * 56  # de 6 % à 62 % d'opacité
+                alpha = 4 + min(abs(change) / scale, 1) * 56  # de 4 % à 60 % de couleur
             cells.append(
                 f'<div class="fv-cell" style="--c:{color};--a:{alpha:.0f}%" '
                 f'title="{esc(q.name)} : {theme.signed(change, q.unit)}">'
@@ -111,9 +111,9 @@ def cac40_view() -> None:
         f'<div class="fv-kpi-value"><span class="{theme.direction(average)}">{theme.signed(average)}</span></div>'
         f'<div class="fv-kpi-sub">moyenne simple des 40 valeurs</div></div>'
         f'<div class="fv-kpi"><div class="fv-kpi-label">Meilleure valeur</div><div class="fv-kpi-value">{esc(changes[0][1].name)}</div>'
-        f'<div class="fv-kpi-sub">{theme.signed(changes[0][0])}</div></div>'
+        f'<div class="fv-kpi-sub">{theme.change(changes[0][0])}</div></div>'
         f'<div class="fv-kpi"><div class="fv-kpi-label">Plus forte baisse</div><div class="fv-kpi-value">{esc(changes[-1][1].name)}</div>'
-        f'<div class="fv-kpi-sub">{theme.signed(changes[-1][0])}</div></div></div>'
+        f'<div class="fv-kpi-sub">{theme.change(changes[-1][0])}</div></div></div>'
     )
 
     theme.section("La carte du CAC 40", "par secteur")
@@ -124,11 +124,10 @@ def cac40_view() -> None:
         with column:
             theme.section(title)
             rows = "".join(
-                f'<li><span>{esc(q.name)} <small style="opacity:.65">{esc(q.group)}</small></span>'
-                f'<span class="{theme.direction(change)}">{theme.signed(change)}</span></li>'
+                f'<li><span>{esc(q.name)} <small>{esc(q.group)}</small></span>{theme.change(change)}</li>'
                 for change, q in items
             )
-            st.html(f'<ul class="fv-ranking">{rows}</ul>')
+            st.html(theme.card(f'<ul class="fv-ranking">{rows}</ul>'))
     data_table(quotes)
     st.caption("Composition indicative de l'indice. Moyenne simple : le vrai CAC 40 pondère chaque valeur par sa "
                "capitalisation flottante.")
@@ -146,23 +145,23 @@ def currency_view() -> None:
     source = source_col.selectbox("De", codes, index=codes.index("EUR"), format_func=lambda c: f"{c} · {CURRENCIES[c]}")
     target = target_col.selectbox("Vers", codes, index=codes.index("USD"), format_func=lambda c: f"{c} · {CURRENCIES[c]}")
     result = convert(amount, source, target, rates)
-    st.html(
+    st.html(theme.card(
         f'<div class="fv-convert">{theme.fr_number(amount)} {source} = {theme.fr_number(result)} {target}'
         f"<small>1 {source} = {theme.fr_number(convert(1, source, target, rates), 4)} {target} · dernier cours connu</small></div>"
-    )
+    ))
     theme.section("Ce que vaut un euro")
     rows = "".join(
         f"<tr><td>{esc(CURRENCIES[code])}</td><td>{code}</td><td>{theme.fr_number(rates[code], 4)}</td>"
         f"<td>{theme.fr_number(1 / rates[code], 4)}</td></tr>"
         for code in codes if code != "EUR"
     )
-    st.html(f'<table class="fv-table"><thead><tr><th>Devise</th><th>Code</th><th>1 EUR =</th><th>En euros</th></tr></thead>'
-            f"<tbody>{rows}</tbody></table>")
+    st.html(theme.table(["Devise", "Code", "1 EUR =", "En euros"], rows))
 
 
 theme.page_header(
     "Marchés",
     "Indices, CAC 40, devises, taux, matières premières et crypto : dernier cours connu (Yahoo Finance, différé).",
+    eyebrow="Marchés",
 )
 VIEWS = {"Monde": world_view, "CAC 40": cac40_view, "Devises": currency_view}
 # Un sélecteur plutôt que des onglets : seule la vue choisie télécharge ses données.
