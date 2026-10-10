@@ -84,7 +84,7 @@ def ai_count(user: str | None) -> None:
 
 def _ai_stream(messages: list[dict], max_tokens: int):
     """Ouvre le flux de la réponse ; (moteur, flux) ou (None, raison) si l'IA ne peut pas répondre maintenant."""
-    assistant.LIMITER.per_minute = _int_secret("AI_PER_MINUTE", 20)
+    assistant.LIMITER.per_minute = _int_secret("AI_PER_MINUTE", 10)
     if wait := assistant.LIMITER.try_acquire():
         return None, f"l'IA est très demandée en ce moment, réessaie dans {math.ceil(wait)} s"
     try:
@@ -93,7 +93,7 @@ def _ai_stream(messages: list[dict], max_tokens: int):
         return None, f"IA indisponible : {error}"
 
 
-def stream_ai(messages: list[dict], sources: list[assistant.Source], placeholder, max_tokens: int = 900) -> dict:
+def stream_ai(messages: list[dict], sources: list[assistant.Source], placeholder, max_tokens: int = 1500) -> dict:
     """Affiche la réponse au fur et à mesure qu'elle arrive. {"text": … ou None, "engine": …, "note": …}"""
     with capacity.QUEUE.released():  # l'IA rédige : une attente réseau, on laisse sa place dans la file
         engine, stream = _ai_stream(messages, max_tokens)
@@ -106,13 +106,15 @@ def stream_ai(messages: list[dict], sources: list[assistant.Source], placeholder
                 placeholder.markdown(assistant.linkify(text, sources) + " ▌")
         except requests.RequestException as error:  # coupure en cours de route : on garde le début
             note = f"réponse interrompue ({type(error).__name__})"
+        except assistant.Truncated as error:  # gardée à l'écran, mais jamais mise en mémoire (note)
+            note = str(error)
     if not text.strip():
         return {"text": None, "engine": engine, "note": note or "réponse vide"}
     placeholder.markdown(assistant.linkify(text, sources))
     return {"text": text, "engine": engine, "note": note}
 
 
-def complete_ai(messages: list[dict], max_tokens: int = 900) -> dict:
+def complete_ai(messages: list[dict], max_tokens: int = 1500) -> dict:
     """La réponse complète, sans affichage progressif (édito du brief, analyse d'entreprise)."""
     with capacity.QUEUE.released():
         engine, stream = _ai_stream(messages, max_tokens)
@@ -122,6 +124,8 @@ def complete_ai(messages: list[dict], max_tokens: int = 900) -> dict:
             text = "".join(stream).strip()
         except requests.RequestException as error:
             return {"text": None, "engine": engine, "note": f"réponse interrompue ({type(error).__name__})"}
+        except assistant.Truncated as error:  # un édito coupé ne doit pas rester affiché 6 heures
+            return {"text": None, "engine": engine, "note": str(error)}
     return {"text": text or None, "engine": engine, "note": None if text else "réponse vide"}
 
 
