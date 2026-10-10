@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 import pandas as pd
 import yfinance as yf
@@ -31,6 +32,33 @@ WATCHLIST = [
     ("BTC-USD", "Bitcoin", "Crypto", "%"),
     ("ETH-USD", "Ether", "Crypto", "%"),
 ]
+
+
+# Les 40 valeurs du CAC 40 (composition indicative, à mettre à jour si l'indice change) : (symbole, nom, secteur)
+CAC40 = [
+    ("MC.PA", "LVMH", "Luxe"), ("RMS.PA", "Hermès", "Luxe"), ("OR.PA", "L'Oréal", "Luxe"), ("KER.PA", "Kering", "Luxe"),
+    ("BNP.PA", "BNP Paribas", "Finance"), ("CS.PA", "AXA", "Finance"), ("ACA.PA", "Crédit Agricole", "Finance"),
+    ("GLE.PA", "Société Générale", "Finance"), ("EDEN.PA", "Edenred", "Finance"),
+    ("AIR.PA", "Airbus", "Industrie"), ("SAF.PA", "Safran", "Industrie"), ("SU.PA", "Schneider Electric", "Industrie"),
+    ("DG.PA", "Vinci", "Industrie"), ("HO.PA", "Thales", "Industrie"), ("LR.PA", "Legrand", "Industrie"),
+    ("EN.PA", "Bouygues", "Industrie"), ("BVI.PA", "Bureau Veritas", "Industrie"),
+    ("TTE.PA", "TotalEnergies", "Énergie et services publics"), ("ENGI.PA", "Engie", "Énergie et services publics"),
+    ("VIE.PA", "Veolia", "Énergie et services publics"),
+    ("SAN.PA", "Sanofi", "Santé"), ("EL.PA", "EssilorLuxottica", "Santé"), ("ERF.PA", "Eurofins", "Santé"),
+    ("AI.PA", "Air Liquide", "Matériaux"), ("SGO.PA", "Saint-Gobain", "Matériaux"), ("MT.AS", "ArcelorMittal", "Matériaux"),
+    ("CAP.PA", "Capgemini", "Technologie"), ("DSY.PA", "Dassault Systèmes", "Technologie"),
+    ("STMPA.PA", "STMicroelectronics", "Technologie"), ("TEP.PA", "Teleperformance", "Technologie"),
+    ("ORA.PA", "Orange", "Télécoms et médias"), ("PUB.PA", "Publicis", "Télécoms et médias"),
+    ("BN.PA", "Danone", "Consommation"), ("RI.PA", "Pernod Ricard", "Consommation"), ("CA.PA", "Carrefour", "Consommation"),
+    ("AC.PA", "Accor", "Consommation"),
+    ("STLAP.PA", "Stellantis", "Automobile"), ("RNO.PA", "Renault", "Automobile"), ("ML.PA", "Michelin", "Automobile"),
+    ("URW.PA", "Unibail-Rodamco-Westfield", "Immobilier"),
+]
+
+CURRENCIES = {
+    "EUR": "Euro", "USD": "Dollar américain", "GBP": "Livre sterling", "CHF": "Franc suisse",
+    "JPY": "Yen japonais", "CNY": "Yuan chinois", "CAD": "Dollar canadien",
+}
 
 
 @dataclass
@@ -114,3 +142,51 @@ def company_profile(symbol: str) -> dict:
 def price_history(symbol: str, period: str = "6mo") -> pd.DataFrame:
     """Historique quotidien (Open, High, Low, Close, Volume), index = dates."""
     return yf.Ticker(symbol).history(period=period, auto_adjust=False)
+
+
+def euro_rates() -> dict[str, float]:
+    """Combien vaut 1 euro dans chaque devise de CURRENCIES : {"USD": 1.12, "GBP": 0.85, …}."""
+    pairs = [f"EUR{code}=X" for code in CURRENCIES if code != "EUR"]
+    data = yf.download(pairs, period="5d", interval="1d", group_by="ticker", progress=False, auto_adjust=False)
+    rates = {"EUR": 1.0}
+    for code in CURRENCIES:
+        pair = f"EUR{code}=X"
+        if code != "EUR" and pair in data.columns.get_level_values(0):
+            closes = data[pair]["Close"].dropna()
+            if not closes.empty:
+                rates[code] = float(closes.iloc[-1])
+    return rates
+
+
+def convert(amount: float, source: str, target: str, rates: dict[str, float]) -> float:
+    """Convertit un montant d'une devise à l'autre en passant par l'euro (taux « croisé »)."""
+    return amount / rates[source] * rates[target]
+
+
+def company_calendar(symbol: str) -> dict:
+    """Prochains rendez-vous d'une entreprise (dates passées ignorées) et consensus des analystes."""
+    calendar = yf.Ticker(symbol).calendar or {}
+    today = date.today()
+
+    def upcoming(value):
+        return value if isinstance(value, date) and value >= today else None
+
+    earnings = [d for d in calendar.get("Earnings Date", []) if upcoming(d)]
+    return {
+        "earnings": earnings[0] if earnings else None,
+        "ex_dividend": upcoming(calendar.get("Ex-Dividend Date")),
+        "dividend": upcoming(calendar.get("Dividend Date")),
+        "eps_average": calendar.get("Earnings Average"),
+        "revenue_average": calendar.get("Revenue Average"),
+    }
+
+
+def closes_table(symbols: list[str], period: str = "1y") -> pd.DataFrame:
+    """Cours de clôture ajustés (dividendes et divisions d'actions pris en compte), une colonne par symbole.
+
+    Les Bourses n'ont pas les mêmes jours fériés : on reporte le dernier cours connu (ffill) pour aligner les dates.
+    """
+    data = yf.download(symbols, period=period, interval="1d", group_by="ticker", progress=False, auto_adjust=True)
+    available = [s for s in symbols if s in data.columns.get_level_values(0)]
+    table = pd.DataFrame({s: data[s]["Close"] for s in available})
+    return table.dropna(how="all").ffill().dropna()

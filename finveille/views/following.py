@@ -1,5 +1,7 @@
 """Page « Mes suivis » : entreprises et thèmes suivis, fils dédiés et fiches entreprises."""
 
+from datetime import date
+
 import altair as alt
 import pandas as pd
 import streamlit as st
@@ -15,6 +17,7 @@ from ui import (
     article_card,
     flush_toast,
     load_followed,
+    load_calendar,
     load_followed_quotes,
     load_history,
     load_profile,
@@ -59,8 +62,20 @@ def format_indicator(value, kind: str, currency: str) -> str:
     return theme.fr_number(value, 2)
 
 
-def price_chart(closes: pd.Series, currency: str, long_period: bool) -> alt.LayerChart:
-    """Courbe du cours de clôture, avec un réticule qui suit la souris et affiche la valeur.
+def news_markers(closes: pd.Series, articles) -> pd.DataFrame:
+    """Place chaque dépêche sur la courbe : à sa date, à la hauteur du dernier cours connu à ce moment-là."""
+    rows = []
+    for article in articles[:40]:
+        moment = pd.Timestamp(article.published)
+        moment = moment.tz_convert(closes.index.tz) if closes.index.tz else moment.tz_localize(None)
+        if closes.index[0] <= moment:
+            rows.append({"date": closes.index[closes.index.get_indexer([moment], method="pad")[0]],
+                         "cours": float(closes.asof(moment)), "titre": article.title, "source": article.source})
+    return pd.DataFrame(rows)
+
+
+def price_chart(closes: pd.Series, currency: str, long_period: bool, markers: pd.DataFrame) -> alt.LayerChart:
+    """Courbe du cours de clôture, avec un réticule et les dépêches placées sur la courbe.
 
     Pas de surface colorée sous la courbe : elle obligerait l'axe à partir de zéro et écraserait les variations.
     """
@@ -84,11 +99,46 @@ def price_chart(closes: pd.Series, currency: str, long_period: bool) -> alt.Laye
     dot = base.mark_point(color="#3987e5", filled=True, size=60).encode(
         opacity=alt.condition(hover, alt.value(1), alt.value(0))
     )
-    return (line + rule + dot).properties(height=280)
+    layers = line + rule + dot
+    if not markers.empty:
+        news = alt.Chart(markers).mark_point(shape="diamond", filled=True, size=90, color="#8a8780").encode(
+            x="date:T", y="cours:Q",
+            tooltip=[alt.Tooltip("date:T", title="Séance", format="%d/%m/%Y"),
+                     alt.Tooltip("titre:N", title="Dépêche"), alt.Tooltip("source:N", title="Source")],
+        )
+        layers = layers + news
+    return layers.properties(height=280)
 
 
-def company_sheet(symbol: str, label: str) -> None:
-    """La fiche d'une entreprise : identité, cours, graphique, indicateurs clés, présentation."""
+def agenda_html(symbol: str, currency: str) -> str:
+    """Prochains rendez-vous de l'entreprise et consensus des analystes (vide si Yahoo ne fournit rien)."""
+    calendar = load_calendar(symbol)
+    rows = []
+
+    def when(day: date) -> str:
+        delta = (day - date.today()).days
+        countdown = "aujourd'hui" if delta == 0 else f"dans {delta} jour{'s' if delta > 1 else ''}"
+        return f"{theme.fr_day(day)} {day.year}<small>{countdown}</small>"
+
+    if calendar.get("earnings"):
+        rows.append(("Prochains résultats", when(calendar["earnings"])))
+    if calendar.get("ex_dividend"):
+        rows.append(("Détachement du dividende", when(calendar["ex_dividend"])))
+    if calendar.get("dividend"):
+        rows.append(("Versement du dividende", when(calendar["dividend"])))
+    if calendar.get("eps_average") is not None:
+        rows.append(("Consensus BPA du trimestre", f"{theme.fr_number(calendar['eps_average'])}\u202f{esc(currency)}"))
+    if calendar.get("revenue_average"):
+        rows.append(("Consensus chiffre d'affaires", theme.compact_money(calendar["revenue_average"], currency)))
+    if not rows:
+        return ""
+    items = "".join(f"<li><span>{label}</span><span>{value}</span></li>" for label, value in rows)
+    return f'<h4 class="fv-rail-title" style="margin-top:1.3rem">Agenda</h4><ul class="fv-agenda">{items}</ul>'
+
+
+
+def company_sheet(symbol: str, label: str, articles=()) -> None:
+    """La fiche d'une entreprise : identité, cours, graphique annoté, indicateurs clés, agenda, présentation."""
     profile = load_profile(symbol)
     name = profile.get("longName") or profile.get("shortName") or label
     currency = profile.get("currency", "")
@@ -120,7 +170,10 @@ def company_sheet(symbol: str, label: str) -> None:
                 f'<span class="{theme.direction(day)}">{theme.signed(day)}</span>'
                 f"<small>sur la séance · {theme.signed(span)} sur {esc(period or '6 mois')}</small></div>"
             )
-            st.altair_chart(price_chart(closes, currency, period in ("1 an", "5 ans")), width="stretch")
+            markers = news_markers(closes, list(articles))
+            st.altair_chart(price_chart(closes, currency, period in ("1 an", "5 ans"), markers), width="stretch")
+            if not markers.empty:
+                st.caption(f"◆ {len(markers)} dépêche(s) placée(s) sur la courbe : survole un losange pour lire le titre.")
 
     with right:
         rows = "".join(
@@ -139,7 +192,10 @@ def company_sheet(symbol: str, label: str) -> None:
                 f'<div class="fv-range-ends"><span>{theme.price(low)}</span><span>cours {theme.price(current)}</span>'
                 f"<span>{theme.price(high)}</span></div></div>"
             )
+        if agenda := agenda_html(symbol, currency):
+            st.html(agenda)
         st.caption("Survole un indicateur pour voir sa définition. Données Yahoo Finance.")
+        st.page_link("views/glossary.py", label="Tous les termes dans le glossaire", icon=":material/menu_book:")
 
     if profile.get("longBusinessSummary"):
         with st.expander("À propos de l'entreprise"):
@@ -210,7 +266,7 @@ else:
     kind, value = view.split("|", 1)
     label = labels[view]
     if kind == "company":
-        company_sheet(value, label)
+        company_sheet(value, label, feeds.get((kind, value), []))
     theme.section(f"Actualités · {label}", f"{len(feeds.get((kind, value), []))} dépêches")
     news_list(feeds.get((kind, value), []), "Aucune dépêche trouvée pour le moment.", f"follow_{value}")
     st.button(f"Ne plus suivre {label}", icon=":material/remove_circle:", on_click=unfollow,

@@ -100,6 +100,38 @@ def load_followed_quotes(companies: tuple[tuple[str, str], ...]):
         return []
 
 
+@st.cache_data(ttl=300, show_spinner="Chargement des 40 valeurs du CAC 40…")
+def load_cac40():
+    try:
+        return fetch_quotes([(symbol, name, sector, "%") for symbol, name, sector in market.CAC40])
+    except Exception:
+        return []
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def load_euro_rates() -> dict[str, float]:
+    try:
+        return market.euro_rates()
+    except Exception:
+        return {}
+
+
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
+def load_calendar(symbol: str) -> dict:
+    try:
+        return market.company_calendar(symbol)
+    except Exception:
+        return {}
+
+
+@st.cache_data(ttl=900, show_spinner="Téléchargement des historiques…")
+def load_closes(symbols: tuple[str, ...], period: str):
+    try:
+        return market.closes_table(list(symbols), period)
+    except Exception:
+        return None
+
+
 def _update(article: Article, flag: str, value: bool, message: str) -> None:
     """Callback des boutons : enregistre le changement et prépare une petite notification.
 

@@ -10,7 +10,7 @@ from streamlit.testing.v1 import AppTest
 
 import ui
 from conftest import make_article
-from core import aggregator
+from core import aggregator, market
 from core.market import Quote
 
 ARTICLES = [
@@ -29,6 +29,12 @@ def app(db, monkeypatch):
     monkeypatch.setattr(aggregator, "build_tasks", lambda keys: [("Test", lambda: list(ARTICLES), ())])
     monkeypatch.setattr(ui, "fetch_quotes", lambda *args, **kwargs: QUOTES)
     monkeypatch.setattr(aggregator, "fetch_yahoo_ticker_news", lambda ticker: [])
+    closes = pd.DataFrame({"MC.PA": [100.0, 102, 101, 104, 108, 107], "RMS.PA": [200.0, 199, 204, 210, 205, 212]},
+                          index=pd.date_range("2026-01-05", periods=6, freq="D"))
+    monkeypatch.setattr(market, "closes_table", lambda symbols, period: closes[[s for s in symbols if s in closes]])
+    monkeypatch.setattr(market, "company_profile", lambda symbol: {"shortName": symbol, "trailingPE": 20.0})
+    monkeypatch.setattr(market, "company_calendar", lambda symbol: {})
+    monkeypatch.setattr(market, "euro_rates", lambda: {"EUR": 1.0, "USD": 1.1})
     with mock.patch.object(ui, "summarize") as fake_summary:
         fake_summary.return_value.to_dict.return_value = {
             "points": ["Point"], "why": None, "engine": "Résumé local", "based_on": "article complet", "note": None,
@@ -37,7 +43,7 @@ def app(db, monkeypatch):
 
 
 @pytest.mark.parametrize("page", ["views/feed.py", "views/markets.py", "views/stats.py", "views/following.py",
-                                  "views/favorites.py", "views/settings.py", "views/glossary.py"])
+                                  "views/favorites.py", "views/settings.py", "views/glossary.py", "views/compare.py"])
 def test_chaque_page_s_affiche(app, page):
     app.run()
     app.switch_page(page).run()
@@ -57,3 +63,11 @@ def test_resume_affiche(app):
     next(b for b in app.button if b.label == "Résumé").click().run()
     assert not app.exception
     assert any(b.label == "Fermer le résumé" for b in app.button)
+
+
+def test_les_trois_vues_des_marches(app):
+    app.run()
+    app.switch_page("views/markets.py").run()
+    for view in ["CAC 40", "Devises", "Monde"]:
+        app.segmented_control(key="markets_view").set_value(view).run()
+        assert not app.exception, view

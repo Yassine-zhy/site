@@ -34,6 +34,7 @@ pages = {
     ],
     "Marchés": [
         st.Page("views/markets.py", title="Marchés", icon=":material/candlestick_chart:"),
+        st.Page("views/compare.py", title="Comparer", icon=":material/compare_arrows:"),
     ],
     "Mon espace": [
         st.Page("views/following.py", title="Mes suivis", icon=":material/star:"),
