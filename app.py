@@ -77,6 +77,7 @@ pages = {
     ],
     "Outils": [
         st.Page("views/simulators.py", title="Simulateurs", icon=":material/calculate:"),
+        st.Page("views/quiz.py", title="Quiz", icon=":material/quiz:"),
         st.Page("views/glossary.py", title="Glossaire", icon=":material/menu_book:"),
         st.Page("views/settings.py", title="Réglages", icon=":material/settings:"),
         st.Page("views/account.py", title="Mon compte", icon=":material/account_circle:"),

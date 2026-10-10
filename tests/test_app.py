@@ -70,7 +70,7 @@ def app(db, monkeypatch):
                                   "views/favorites.py", "views/settings.py", "views/glossary.py", "views/compare.py",
                                   "views/portfolio.py", "views/alerts.py", "views/brief.py",
                                   "views/account.py", "views/economy.py",
-                                  "views/simulators.py", "views/crypto.py"])
+                                  "views/simulators.py", "views/crypto.py", "views/quiz.py"])
 def test_chaque_page_s_affiche(app, page):
     app.run()
     app.switch_page(page).run()
@@ -154,3 +154,16 @@ def test_les_quatre_simulateurs(app):
         app.segmented_control(key="simulator").set_value(name).run()
         assert not app.exception, name
         assert any("fv-kpi" in element.value for element in app.get("html")), name  # les chiffres clés s'affichent
+
+
+def test_une_partie_de_quiz_complete(app, db):
+    app.run()
+    app.switch_page("views/quiz.py").run()
+    next(b for b in app.button if b.label == "Commencer").click().run()
+    for _ in range(10):
+        next(b for b in app.button if b.key and b.key.startswith("choice_")).click().run()  # répond (au hasard)
+        assert not app.exception
+        next(b for b in app.button if b.label in ("Question suivante", "Voir mon score")).click().run()
+    assert any("Ton score" in element.value for element in app.get("html"))
+    assert db.get_setting(db.LOCAL_USER, "quiz_best")["total"] == 10  # le meilleur score est enregistré
+    assert db.get_setting(db.LOCAL_USER, "quiz_played") == 1

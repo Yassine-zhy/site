@@ -54,3 +54,43 @@ def test_agenda_ignore_les_dates_passees():
     assert calendar["earnings"] == today + timedelta(days=20)
     assert calendar["ex_dividend"] is None
     assert calendar["eps_average"] == 1.98
+
+
+# --- Frontière efficiente --------------------------------------------------------------------------
+
+
+def three_assets():
+    import numpy as np
+
+    rng = np.random.default_rng(7)
+    days = pd.bdate_range("2024-01-01", periods=500)
+    returns = {"A": (0.0006, 0.02), "B": (0.0002, 0.008), "C": (0.0009, 0.03)}
+    return pd.DataFrame({name: 100 * np.cumprod(1 + rng.normal(mu, sigma, len(days)))
+                         for name, (mu, sigma) in returns.items()}, index=days)
+
+
+def test_les_poids_des_portefeuilles_font_100_pourcent():
+    portfolios = metrics.random_portfolios(three_assets(), count=500)
+    weights = portfolios[["A", "B", "C"]]
+    assert ((weights >= 0) & (weights <= 1)).all().all()
+    assert (weights.sum(axis=1).round(9) == 1).all()
+
+
+def test_le_tirage_est_reproductible():
+    table = three_assets()
+    assert metrics.random_portfolios(table, seed=3).equals(metrics.random_portfolios(table, seed=3))
+
+
+def test_la_diversification_reduit_le_risque():
+    table = three_assets()
+    portfolios = metrics.random_portfolios(table, count=4000)
+    best = metrics.optimal_portfolios(portfolios)
+    least_risky_asset = min(metrics.annualized_volatility(table[c]) for c in table)
+    assert best["Variance minimale"]["volatilité"] < least_risky_asset  # mieux que l'actif le plus sûr seul
+    assert best["Sharpe maximal"]["sharpe"] == portfolios["sharpe"].max()
+
+
+def test_la_frontiere_monte_avec_le_risque():
+    frontier = metrics.efficient_frontier(metrics.random_portfolios(three_assets(), count=3000))
+    assert len(frontier) > 3
+    assert frontier["volatilité"].is_monotonic_increasing and frontier["rendement"].is_monotonic_increasing

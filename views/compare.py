@@ -123,3 +123,68 @@ with right:
     st.html(theme.table(["", *(esc(names[s]) for s in selected)], body))
     st.caption("Proche de 1 : les deux actions montent et baissent ensemble. Proche de 0 : elles évoluent "
                "indépendamment, ce qui diversifie un portefeuille.")
+
+# --- Optimiser la répartition : la frontière efficiente de Markowitz ---------------------------------
+theme.section("Optimiser la répartition", "frontière efficiente de Markowitz")
+risk_free = st.number_input(
+    "Taux sans risque (%)", min_value=0.0, max_value=10.0, value=2.0, step=0.25, format="%.2f",
+    help="Ce que rapporte un placement sans risque (taux de dépôt de la BCE, voir la page Économie). "
+         "Il sert au ratio de Sharpe.",
+)
+portfolios = metrics.random_portfolios(closes[selected], risk_free=risk_free)
+best = metrics.optimal_portfolios(portfolios)
+frontier = metrics.efficient_frontier(portfolios)
+assets = pd.DataFrame([{"nom": names[s], "volatilité": metrics.annualized_volatility(closes[s]),
+                        "rendement": closes[s].pct_change().mean() * metrics.TRADING_DAYS * 100} for s in selected])
+special = pd.DataFrame([{"portefeuille": label, "volatilité": row["volatilité"], "rendement": row["rendement"],
+                         "sharpe": row["sharpe"]} for label, row in best.items()])
+
+x = alt.X("volatilité:Q", title="Risque : volatilité annualisée (%)", scale=alt.Scale(zero=False),
+          axis=alt.Axis(gridOpacity=0.18, domainOpacity=0.4))
+y = alt.Y("rendement:Q", title="Rendement annuel moyen (%)", scale=alt.Scale(zero=False),
+          axis=alt.Axis(gridOpacity=0.18, domain=False))
+cloud = alt.Chart(portfolios).mark_circle(size=12, opacity=0.35, color=theme.NEUTRAL).encode(
+    x=x, y=y, tooltip=[alt.Tooltip("rendement:Q", format=".1f"), alt.Tooltip("volatilité:Q", format=".1f"),
+                       alt.Tooltip("sharpe:Q", title="Sharpe", format=".2f")]
+    + [alt.Tooltip(f"{s}:Q", title=names[s], format=".0%") for s in selected],
+)
+line = alt.Chart(frontier).mark_line(strokeWidth=2.5, color="#3987e5").encode(x=x, y=y)
+points = alt.Chart(assets).mark_circle(size=110, opacity=1).encode(
+    x=x, y=y, color=alt.Color("nom:N", scale=alt.Scale(domain=list(colors), range=list(colors.values())),
+                              legend=alt.Legend(title=None, orient="top")),
+    tooltip=[alt.Tooltip("nom:N", title="Entreprise"), alt.Tooltip("rendement:Q", format=".1f"),
+             alt.Tooltip("volatilité:Q", format=".1f")],
+)
+labels = alt.Chart(assets).mark_text(align="left", dx=8, dy=-6, fontSize=11, color=theme.NEUTRAL).encode(
+    x=x, y=y, text="nom:N")
+stars = alt.Chart(special).mark_point(size=260, filled=True, strokeWidth=1.5, stroke="white").encode(
+    x=x, y=y,
+    shape=alt.Shape("portefeuille:N", scale=alt.Scale(domain=list(best), range=["diamond", "triangle-up"]),
+                    legend=alt.Legend(title=None, orient="top", symbolSize=140)),
+    color=alt.value("#c98500"),
+    tooltip=[alt.Tooltip("portefeuille:N", title="Portefeuille"), alt.Tooltip("rendement:Q", format=".1f"),
+             alt.Tooltip("volatilité:Q", format=".1f"), alt.Tooltip("sharpe:Q", title="Sharpe", format=".2f")],
+)
+with st.container(key="fvchart_frontier"):
+    chart = (cloud + line + points + labels + stars).resolve_legend(color="independent", shape="independent")
+    st.altair_chart(theme.french(chart.properties(height=380, background="transparent")), width="stretch")
+
+rows = "".join(
+    f"<tr><td>{esc(label)}</td>" + "".join(f"<td>{theme.fr_number(row[s] * 100, 0)} %</td>" for s in selected)
+    + f"<td>{theme.change(row['rendement'])}</td><td>{theme.fr_number(row['volatilité'], 1)} %</td>"
+    f"<td>{theme.fr_number(row['sharpe'], 2)}</td></tr>"
+    for label, row in best.items()
+)
+st.html(theme.table(["Portefeuille", *(esc(names[s]) for s in selected), "Rendement", "Volatilité", "Sharpe"], rows))
+if best["Sharpe maximal"]["sharpe"] < 0:
+    st.info("Sur cette période, aucune répartition ne rapporte plus que le taux sans risque : le ratio de Sharpe est "
+            "négatif partout. Le « meilleur » portefeuille est seulement le moins mauvais. Essaie une autre période ou "
+            "d'autres entreprises.", icon=":material/info:")
+st.caption(
+    f"Chaque point gris est une répartition tirée au hasard ({theme.fr_number(len(portfolios), 0)} au total) entre "
+    "ces entreprises. La ligne bleue, la frontière efficiente, rassemble les meilleures : pour un risque donné, aucune "
+    "autre ne "
+    "rapporte plus. Le losange est le portefeuille le moins risqué, le triangle celui qui rémunère le mieux chaque "
+    "unité de risque (ratio de Sharpe). Rendements calculés sur le passé : ils ne prédisent pas l'avenir, et la "
+    "méthode suppose qu'ils se répéteront. Exercice pédagogique, pas un conseil d'investissement."
+)
