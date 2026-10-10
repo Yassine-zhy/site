@@ -318,6 +318,23 @@ CSS = """
 .fv-alert-row small { color: var(--fv-muted); font-size: .78rem; }
 @media (max-width: 640px) { .fv-alert-row { grid-template-columns: 1fr; } }
 
+/* ---------- Le brief ---------- */
+.fv-edition-line { margin: .1rem 0 .4rem; font-size: .8rem; color: var(--fv-muted); }
+.fv-lede { margin: .6rem 0 .4rem; font-family: var(--fv-serif); font-size: clamp(1.2rem, 2.2vw, 1.5rem);
+  line-height: 1.45; letter-spacing: -.005em; }
+.fv-front { list-style: none; margin: 0; padding: 0; }
+.fv-front li { margin: 0; padding: .7rem 0 .75rem; border-bottom: 1px solid var(--fv-rule); }
+.fv-front li a { color: inherit !important; text-decoration: none !important; font-family: var(--fv-serif);
+  font-weight: 600; font-size: 1.2rem; line-height: 1.25; display: block; margin: .3rem 0 .2rem; }
+.fv-front li a:hover { text-decoration: underline !important; text-decoration-thickness: 1px !important; }
+.fv-front small { color: var(--fv-muted); font-size: .76rem; }
+.fv-topics { list-style: none; margin: 0; padding: 0; counter-reset: topic; }
+.fv-topics li { display: grid; grid-template-columns: 1.6rem 1fr auto; gap: .5rem; align-items: baseline; margin: 0;
+  padding: .45rem 0; border-bottom: 1px solid var(--fv-rule); counter-increment: topic; font-size: .92rem; }
+.fv-topics li::before { content: counter(topic); font-family: var(--fv-serif); font-weight: 700; font-size: 1.1rem; }
+.fv-topics li span:first-child { font-weight: 600; }
+.fv-topics small { color: var(--fv-muted); font-size: .76rem; font-variant-numeric: tabular-nums; }
+
 @media (prefers-reduced-motion: reduce) {
   .fv-tape { overflow-x: auto; mask-image: none; }
   .fv-tape-track { animation: none; }

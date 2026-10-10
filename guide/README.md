@@ -13,5 +13,9 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 7. [Suivi personnalisé et fiches entreprises](07-suivi-personnalise.md)
 8. [Résumé automatique par IA](08-resume-ia.md)
 9. [Réglages, tests, mise en ligne et présentation portfolio](09-reglages-tests-deploiement.md)
+10. [Confort : menu par sections, recherche avancée, vue compacte, notes, glossaire](10-confort.md)
+11. [Marchés : carte du CAC 40, devises, comparateur, fiche enrichie](11-marches-avances.md)
+12. [Portefeuille virtuel et alertes de cours](12-portefeuille-alertes.md)
+13. [Le brief du jour](13-brief-du-jour.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).

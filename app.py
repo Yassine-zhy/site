@@ -34,6 +34,7 @@ tape()
 pages = {
     "Actualité": [
         st.Page("views/feed.py", title="Le fil", icon=":material/newspaper:", default=True),
+        st.Page("views/brief.py", title="Le brief", icon=":material/summarize:"),
         st.Page("views/stats.py", title="En chiffres", icon=":material/monitoring:"),
     ],
     "Marchés": [

@@ -14,19 +14,28 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | | |
 | --- | --- |
 | **Agrégation** | 12 flux RSS gratuits (CNBC, BBC, Le Monde, BFM Bourse, The Economist, Fed, BCE, CoinDesk…) + Finnhub, NewsAPI, Marketaux et Alpha Vantage si les clés sont renseignées. Téléchargement en parallèle, dédoublonnage. |
-| **Le fil** | « À la une » et « En continu », rubriques Marchés / Crypto / Entreprises / Macro (classement par mots-clés), filtre par source, recherche sans accents par mot-clé ou entreprise, mise à jour automatique toutes les 5 minutes. |
-| **Favoris, lu, masqué** | Enregistrés dans une base SQLite, conservés d'une session à l'autre ; export CSV des favoris. |
+| **Le fil** | « À la une » et « En continu », rubriques Marchés / Crypto / Entreprises / Macro (classement par mots-clés), filtre par source, recherche avancée (`"expression exacte"`, `-exclure`, `source:cnbc`), vue compacte, mise à jour automatique toutes les 5 minutes. |
+| **Le brief** | L'édition du jour rédigée automatiquement : la séance en une phrase, l'histoire la plus reprise de chaque rubrique, les sujets qui montent, l'agenda de mes entreprises, le mot du jour. Téléchargeable en Markdown. |
+| **Favoris, lu, masqué** | Enregistrés dans une base SQLite, conservés d'une session à l'autre ; notes personnelles ; export CSV des favoris. |
 | **Mes suivis** | Entreprises (recherche par nom) et thèmes, avec un fil dédié pour chacun. |
-| **Fiches entreprises** | Logo, cours, graphique interactif (1 mois à 5 ans), 10 indicateurs clés expliqués (PER, VE/EBITDA, ROE, rendement, bêta…), fourchette sur 52 semaines. |
-| **Marchés** | Bandeau défilant des cours sur toutes les pages ; tableau de bord de 20 instruments (indices, devises, taux, matières premières, crypto) avec mini-courbes et carte des performances sur 1 séance à 3 mois. |
+| **Fiches entreprises** | Logo, cours, graphique interactif (1 mois à 5 ans) avec les dépêches placées sur la courbe, 10 indicateurs clés expliqués (PER, VE/EBITDA, ROE, rendement, bêta…), fourchette sur 52 semaines, agenda (résultats, dividende, consensus). |
+| **Marchés** | Bandeau défilant des cours sur toutes les pages ; 20 instruments mondiaux avec mini-courbes et carte des performances ; carte du CAC 40 par secteur (40 valeurs, palmarès) ; convertisseur de devises. |
+| **Comparer** | Jusqu'à 4 entreprises en base 100, rendement annualisé, volatilité, perte maximale, valorisation et matrice de corrélation. |
+| **Portefeuille virtuel** | Positions multidevises valorisées en euros, plus-values latentes, répartition, performance comparée au CAC 40, portefeuille d'exemple. |
+| **Alertes** | Seuils de cours ou de variation du jour, bandeau d'alerte sur toutes les pages. |
+| **Glossaire** | 55 termes de la finance expliqués simplement, recherche, mot du jour. |
 | **En chiffres** | Tableau de bord du flux : dépêches par heure et par rubrique, entreprises les plus citées, tonalité par rubrique. |
 | **Résumé par IA** | « L'essentiel » en 3 points : Gemini ou Groq (offres gratuites) en français, ou résumé extractif local sans clé ; repli automatique en cas d'erreur, résumés mis en cache. |
 | **Apparence** | Thème clair (papier) et sombre (ardoise), responsive ordinateur / mobile, couleurs vérifiées pour le daltonisme. |
 
 ## Aperçu
 
-| Marchés | En chiffres (thème sombre) |
+| Le brief du jour | Carte du CAC 40 |
 | --- | --- |
+| ![Le brief du jour](docs/screenshots/brief.jpg) | ![Carte du CAC 40 par secteur](docs/screenshots/cac40.jpg) |
+| **Comparateur** | **Portefeuille virtuel** |
+| ![Comparateur d'entreprises](docs/screenshots/comparer.jpg) | ![Portefeuille virtuel](docs/screenshots/portefeuille.jpg) |
+| **Marchés** | **En chiffres (thème sombre)** |
 | ![Tableau de bord des marchés](docs/screenshots/marches.jpg) | ![Tableau de bord de l'actualité](docs/screenshots/en-chiffres.jpg) |
 | **Fiche entreprise** | **Mobile** |
 | ![Fiche entreprise LVMH](docs/screenshots/fiche-entreprise.jpg) | ![Version mobile](docs/screenshots/mobile.jpg) |
@@ -61,6 +70,8 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 
 Python 3.11+ · Streamlit · requests · feedparser · yfinance · pandas · Altair · trafilatura · SQLite · pytest
 
+13 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+
 ## Lancer le projet
 
 ```bash
@@ -87,9 +98,12 @@ pytest
 app.py            point d'entrée : thème, bandeau des cours, navigation
 ui.py             éléments partagés : chargement en cache, carte d'article, résumé
 theme.py          identité visuelle : CSS, bandeau de titre, tuiles, mise en forme française
-views/            une page par fichier (fil, marchés, en chiffres, suivis, favoris, réglages)
-core/             logique métier : sources, agrégation, classement, marché, résumé, stockage
-tests/            39 tests pytest (sources, classement, base, résumé, marché, pages)
+views/            une page par fichier (fil, brief, en chiffres, marchés, comparer, suivis, portefeuille,
+                  alertes, favoris, glossaire, réglages)
+core/             logique métier : sources, agrégation, classement, statistiques, marché, indicateurs de
+                  risque, portefeuille, alertes, brief, résumé, stockage
+tests/            70 tests pytest (sources, recherche, base, résumé, indicateurs, portefeuille, alertes,
+                  brief, chaque page)
 guide/            le guide de construction, étape par étape
 ```
 

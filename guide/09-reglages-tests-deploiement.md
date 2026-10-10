@@ -191,7 +191,8 @@ Une proposition à adapter avec **tes** mots (un recruteur repère vite un texte
 > la BCE…) et la classe par rubrique : marchés, entreprises, macro, crypto ;
 > → suit les entreprises qui m'intéressent, avec leur cours et leurs indicateurs clés (PER, VE/EBITDA, ROE…) ;
 > → affiche un tableau de bord des marchés mondiaux et de la tonalité de l'actualité ;
-> → résume chaque article en trois points grâce à l'IA.
+> → résume chaque article en trois points grâce à l'IA ;
+> → rédige chaque matin un « brief » de l'actualité, et gère un portefeuille virtuel avec alertes de cours.
 >
 > Ce que j'ai appris en chemin :
 > • Python, les API REST et le JSON, SQL avec SQLite ;
@@ -211,8 +212,9 @@ Une proposition à adapter avec **tes** mots (un recruteur repère vite un texte
 **Variante courte** (pour la section *Projets* du profil) :
 
 > FinVeille : application web de veille financière (Python, Streamlit, SQLite). Agrège 12 flux d'actualité et
-> 4 API, suit des entreprises (cours, PER, ROE…), tableaux de bord des marchés et de la tonalité de l'actualité,
-> résumés d'articles par IA. Tests automatisés, thème clair/sombre, accessible.
+> 4 API, suit des entreprises (cours, PER, ROE…), tableaux de bord des marchés et du CAC 40, comparateur
+> (volatilité, perte maximale, corrélation), portefeuille virtuel avec alertes, brief du jour rédigé
+> automatiquement, résumés d'articles par IA. 70 tests automatisés, thème clair/sombre, accessible.
 
 Conseils de publication : joins **2 ou 3 captures** (ou la vidéo), publie en semaine en début de matinée, et réponds
 aux commentaires dans la journée.
@@ -242,6 +244,8 @@ aux commentaires dans la journée.
 | Les API sont « inactives » en ligne | Secrets non renseignés sur l'hébergeur | *Settings → Secrets* de l'appli Streamlit Cloud. |
 | En ligne, mes favoris ont disparu | Stockage éphémère | Normal en gratuit (section 4). |
 | `git subtree split` : `fatal: … is not a valid prefix` | Mauvais nom de dossier ou de branche | Vérifie que tu es sur la branche qui contient `finveille/` (`git branch`, `ls`). |
+
+➡️ Pour aller plus loin : [étape 10, le confort d'utilisation](10-confort.md).
 
 🎉 **Bravo, tu as construit une vraie application de bout en bout.** Le mémo [debogage.md](debogage.md) regroupe
 toutes les erreurs rencontrées dans le guide.
