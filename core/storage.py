@@ -42,6 +42,12 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT NOT NULL                      -- sa valeur, en JSON (texte, nombre, liste…)
 );
 
+CREATE TABLE IF NOT EXISTS notes (
+    article_id TEXT PRIMARY KEY,             -- une note personnelle par article
+    text       TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS summaries (
     article_id   TEXT PRIMARY KEY,
     summary_json TEXT NOT NULL,              -- le résumé (points, moteur…) au format JSON
@@ -190,3 +196,22 @@ def reset_flag(flag: str) -> None:
 def clear_summaries() -> None:
     with connect() as conn:
         conn.execute("DELETE FROM summaries")
+
+
+def get_notes() -> dict[str, str]:
+    """Toutes les notes personnelles : {article_id: texte}."""
+    with connect() as conn:
+        rows = conn.execute("SELECT article_id, text FROM notes").fetchall()
+    return {row["article_id"]: row["text"] for row in rows}
+
+
+def save_note(article_id: str, text: str) -> None:
+    """Enregistre une note ; une note vide la supprime."""
+    with connect() as conn:
+        if text.strip():
+            conn.execute(
+                "INSERT OR REPLACE INTO notes (article_id, text, updated_at) VALUES (?, ?, ?)",
+                (article_id, text.strip(), _now()),
+            )
+        else:
+            conn.execute("DELETE FROM notes WHERE article_id = ?", (article_id,))

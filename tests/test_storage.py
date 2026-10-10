@@ -44,3 +44,10 @@ def test_preferences_et_resumes(db):
     assert db.get_summary("abc")["points"] == ["Un point"]
     db.clear_summaries()
     assert db.get_summary("abc") is None
+
+
+def test_notes_personnelles(db):
+    db.save_note("abc", "  Utile pour mon mémoire  ")
+    assert db.get_notes() == {"abc": "Utile pour mon mémoire"}
+    db.save_note("abc", "")  # une note vide supprime la note
+    assert db.get_notes() == {}

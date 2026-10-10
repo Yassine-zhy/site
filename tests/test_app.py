@@ -37,7 +37,7 @@ def app(db, monkeypatch):
 
 
 @pytest.mark.parametrize("page", ["views/feed.py", "views/markets.py", "views/stats.py", "views/following.py",
-                                  "views/favorites.py", "views/settings.py"])
+                                  "views/favorites.py", "views/settings.py", "views/glossary.py"])
 def test_chaque_page_s_affiche(app, page):
     app.run()
     app.switch_page(page).run()

@@ -34,3 +34,27 @@ def test_classify_garde_la_categorie_du_flux_en_cas_d_egalite():
 def test_frontiere_de_mot_fedex_n_est_pas_la_fed():
     article = make_article("FedEx delivers record parcels", category="entreprises")
     assert classify(article) == "entreprises"
+
+
+def test_recherche_avancee_expression_exclusion_et_source():
+    from core.filters import parse_query
+
+    q = parse_query('inflation "banque centrale" -crypto source:cnbc')
+    assert (q.terms, q.excluded, q.sources) == (["inflation", "banque centrale"], ["crypto"], ["cnbc"])
+
+    bce = make_article("La banque centrale relève ses taux face à l'inflation", source="CNBC Économie")
+    btc = make_article("Bitcoin : la banque centrale et l'inflation", source="CNBC Économie")
+    other = make_article("La banque centrale relève ses taux face à l'inflation", source="BBC")
+    query = 'inflation "banque centrale" -bitcoin source:cnbc'
+    assert matches_query(bce, query)
+    assert not matches_query(btc, query)  # mot exclu
+    assert not matches_query(other, query)  # mauvaise source
+    assert not matches_query(bce, '"centrale banque"')  # l'expression exacte doit être dans le bon ordre
+
+
+def test_apostrophes_et_guillemets_francais():
+    from core.filters import parse_query
+
+    assert parse_query("l'or et l'argent").terms == ["l'or", "et", "l'argent"]
+    assert parse_query("«Banque de France»").terms == ["banque de france"]
+    assert parse_query('"non fermé').terms == ["non", "ferme"]  # guillemet oublié : pas de plantage

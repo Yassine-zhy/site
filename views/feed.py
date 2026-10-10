@@ -45,6 +45,8 @@ with st.sidebar:
     )
     hide_read = st.toggle("Cacher les articles lus", value=storage.get_setting("hide_read", False))
     show_hidden = st.toggle("Voir les articles masqués")
+    compact = st.toggle("Vue compacte", value=storage.get_setting("density", "confort") == "compact",
+                        help="Une ligne par article, sans chapeau : idéal pour parcourir vite.")
     if st.button("Actualiser maintenant", icon=":material/refresh:", width="stretch"):
         load_articles.clear()
         st.rerun()
@@ -59,8 +61,9 @@ with st.sidebar:
 
 # --- Recherche et rubriques (en haut : visibles même sur mobile) ---------------------------
 query = st.text_input(
-    "Rechercher", placeholder="Rechercher un mot-clé ou une entreprise : inflation, Nvidia, BCE…",
+    "Rechercher", placeholder='Rechercher : inflation, Nvidia, "banque centrale", -crypto, source:cnbc…',
     label_visibility="collapsed", icon=":material/search:",
+    help='Mots-clés (tous doivent apparaître) · "expression exacte" · -mot pour exclure · source:nom pour une source',
 )
 categories = st.pills(
     "Rubriques",
@@ -74,7 +77,7 @@ categories = st.pills(
 
 # --- Le corps de la page : se met à jour tout seul toutes les 5 minutes --------------------
 @st.fragment(run_every="5min")
-def body(query, categories, sources, hide_read, show_hidden):
+def body(query, categories, sources, hide_read, show_hidden, compact):
     flush_toast()
     current, _, collected = load_articles(keys)  # nouvelles données dès que le cache (15 min) a expiré
     statuses = storage.get_statuses()
@@ -103,7 +106,7 @@ def body(query, categories, sources, hide_read, show_hidden):
         rest = [a for a in filtered if a is not lead]
         theme.section("En continu", f"{len(filtered)} dépêches")
         for article in rest[: st.session_state.visible_count]:
-            article_card(article, statuses.get(article.id, NO_STATUS), key_prefix="feed")
+            article_card(article, statuses.get(article.id, NO_STATUS), key_prefix="feed", compact=compact)
         if len(rest) > st.session_state.visible_count:
             st.button("Afficher plus", on_click=show_more, width="stretch")
 
@@ -141,4 +144,4 @@ def rail_blocks(filtered, collected):
     )
 
 
-body(query, categories, sources, hide_read, show_hidden)
+body(query, categories, sources, hide_read, show_hidden, compact)

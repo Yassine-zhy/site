@@ -26,12 +26,22 @@ def tape():
 
 tape()
 
-pages = [
-    st.Page("views/feed.py", title="Le fil", icon=":material/newspaper:", default=True),
-    st.Page("views/markets.py", title="Marchés", icon=":material/candlestick_chart:"),
-    st.Page("views/stats.py", title="En chiffres", icon=":material/monitoring:"),
-    st.Page("views/following.py", title="Mes suivis", icon=":material/star:"),
-    st.Page("views/favorites.py", title="Favoris", icon=":material/bookmark:"),
-    st.Page("views/settings.py", title="Réglages", icon=":material/settings:"),
-]
+# Un dictionnaire {section: pages} : dans le menu du haut, chaque section devient un menu déroulant.
+pages = {
+    "Actualité": [
+        st.Page("views/feed.py", title="Le fil", icon=":material/newspaper:", default=True),
+        st.Page("views/stats.py", title="En chiffres", icon=":material/monitoring:"),
+    ],
+    "Marchés": [
+        st.Page("views/markets.py", title="Marchés", icon=":material/candlestick_chart:"),
+    ],
+    "Mon espace": [
+        st.Page("views/following.py", title="Mes suivis", icon=":material/star:"),
+        st.Page("views/favorites.py", title="Favoris", icon=":material/bookmark:"),
+    ],
+    "Outils": [
+        st.Page("views/glossary.py", title="Glossaire", icon=":material/menu_book:"),
+        st.Page("views/settings.py", title="Réglages", icon=":material/settings:"),
+    ],
+}
 st.navigation(pages, position="top").run()
