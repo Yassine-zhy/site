@@ -6,7 +6,7 @@ import streamlit as st
 import theme
 from core.market import CURRENCIES, convert
 from theme import esc
-from ui import load_cac40, load_euro_rates, load_quotes
+from ui import hero_quotes, load_cac40, load_euro_rates, load_quotes
 
 PERIODS = {"1 séance": 1, "5 séances": 5, "1 mois": 21, "3 mois": 63}
 # Variation qui donne la couleur la plus intense dans les cartes de performances, selon la période
@@ -159,9 +159,9 @@ def currency_view() -> None:
 
 
 theme.page_header(
-    "Marchés",
+    "Les marchés mondiaux,",
     "Indices, CAC 40, devises, taux, matières premières et crypto : dernier cours connu (Yahoo Finance, différé).",
-    eyebrow="Marchés",
+    eyebrow="Marchés", accent="en un coup d'œil.", quotes=hero_quotes("^STOXX50E", "^IXIC", "^N225"),
 )
 VIEWS = {"Monde": world_view, "CAC 40": cac40_view, "Devises": currency_view}
 # Un sélecteur plutôt que des onglets : seule la vue choisie télécharge ses données.

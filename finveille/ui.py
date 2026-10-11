@@ -514,6 +514,13 @@ def load_quotes():
     return _resilient("quotes", _quotes, empty=[])
 
 
+def hero_quotes(*symbols: str) -> list:
+    """Les cours qui flottent dans l'en-tête d'une page : les données du bandeau, déjà en mémoire (aucun appel réseau
+    de plus). Un symbole absent (source en panne) est simplement omis."""
+    by_symbol = {quote.symbol: quote for quote in load_quotes()}
+    return [by_symbol[symbol] for symbol in symbols if symbol in by_symbol]
+
+
 @st.cache_data(ttl=900, max_entries=300, show_spinner="Récupération de tes fils dédiés…")
 @_network
 def _followed(follows: tuple[tuple[str, str, str], ...], keys: dict[str, str | None]):

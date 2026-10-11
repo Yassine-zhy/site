@@ -99,6 +99,7 @@ CSS = """
   --fv-hi: light-dark(rgba(255, 255, 255, 0), rgba(255, 255, 255, .05));  /* reflet du bord supérieur, en sombre */
   --fv-glow: light-dark(rgba(36, 81, 222, .10), rgba(109, 147, 255, .14));
   --fv-glow-2: light-dark(rgba(124, 58, 237, .07), rgba(167, 139, 250, .10));
+  --fv-shadow-deep: light-dark(rgba(15, 23, 42, .22), rgba(0, 0, 0, .8));  /* ombre portée des éléments qui flottent */
   --fv-elev: inset 0 1px 0 var(--fv-hi), 0 1px 2px var(--fv-shadow), 0 14px 32px -20px var(--fv-shadow);
   --fv-elev-hover: inset 0 1px 0 var(--fv-hi), 0 2px 4px var(--fv-shadow), 0 22px 44px -22px var(--fv-shadow);
   --fv-radius: var(--radius-lg);
@@ -162,8 +163,8 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 
 /* Écran de connexion et assistant de configuration */
 /* L'assistant IA (views/assistant.py) */
-.fv-ai-hero { margin-top: .4rem; padding: 1.6rem 1.8rem 1.8rem; }
-.fv-ai-hero .fv-show-title { max-width: 30ch; margin-top: .8rem !important; }
+.fv-ai-hero { margin-top: .4rem; padding: 1.4rem 1.6rem 1.5rem; }
+.fv-ai-hero .fv-show-list { margin-top: 1.1rem; }
 .fv-ai-hero .fv-show-list { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .fv-ai-status { display: inline-flex; align-items: center; gap: .45rem; padding: .25rem .7rem; border-radius: 99px;
   font-size: .74rem; font-weight: 600; background: rgba(255, 255, 255, .14); color: var(--ink-0); }
@@ -269,27 +270,77 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 /* =============================================================================================
    4. Structure des pages : en-tête, sections, cartes
    ============================================================================================= */
-/* L'en-tête de page : un bandeau léger, quadrillé comme un papier millimétré de salle de marché */
-.fv-pagehead { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
-  gap: 1rem 2rem; margin: .2rem 0 .6rem; padding: 1.6rem 1.7rem 1.5rem; overflow: hidden;
-  border: 1px solid var(--fv-line); border-radius: 20px; box-shadow: var(--fv-elev);
-  background: radial-gradient(600px 220px at 0% 0%, var(--fv-glow), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--fv-surface) 92%, transparent), var(--fv-surface)); }
-.fv-pagehead::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .55;
+/* L'en-tête de page « héros », dans le style des visuels de la marque (docs/branding) : pas de boîte, un grand
+   titre dont la fin passe en dégradé, le quadrillage de salle de marché qui s'efface, et sur les pages principales
+   des tuiles de cours qui flottent en perspective. */
+.fv-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); align-items: center;
+  gap: 1.75rem 3rem; margin: 0 0 .5rem; padding: 1.4rem 0 1.8rem; isolation: isolate; }
+.fv-hero.has-aside { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+.fv-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .7;
   background-image: linear-gradient(var(--fv-line) 1px, transparent 1px), linear-gradient(90deg, var(--fv-line) 1px, transparent 1px);
-  background-size: 28px 28px; -webkit-mask-image: linear-gradient(105deg, transparent 35%, #000 100%);
-  mask-image: linear-gradient(105deg, transparent 35%, #000 100%); }
-.fv-pagehead > * { position: relative; }
-@media (max-width: 640px) { .fv-pagehead { padding: 1.15rem 1.1rem 1.05rem; border-radius: 16px; } }
+  background-size: 32px 32px;
+  -webkit-mask-image: radial-gradient(60% 85% at 85% 45%, #000, transparent 75%);
+  mask-image: radial-gradient(60% 85% at 85% 45%, #000, transparent 75%); }
+.fv-hero.has-aside::after { content: ""; position: absolute; z-index: -1; right: 0; top: 10%; width: 45%; height: 80%;
+  pointer-events: none; background: radial-gradient(closest-side, var(--fv-glow), transparent); }
+.fv-hero-title { margin: .95rem 0 0 !important; padding: 0 !important; max-width: 20ch; text-wrap: balance;
+  font: 700 clamp(2.1rem, 4vw, 3.15rem)/1.05 var(--fv-sans) !important; letter-spacing: -.038em; color: var(--fv-text); }
+.fv-hero.is-home .fv-hero-title { font-size: clamp(2.35rem, 4.8vw, 3.75rem) !important; }
+.fv-hero-title em { display: inline-block; font-style: normal;  /* la fin du titre reste d'un seul tenant */
+  background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fv-hero-dek { margin: 1rem 0 0; max-width: 62ch; color: var(--fv-muted); font-size: 1.1rem; line-height: 1.6; }
+.fv-hero .fv-sessions { margin-top: 1.35rem; }
+.fv-hero-copy > * { animation: fv-rise var(--duration-slow) cubic-bezier(.2, .7, .2, 1) both; }
+.fv-hero-copy > :nth-child(2) { animation-delay: 60ms; }
+.fv-hero-copy > :nth-child(3) { animation-delay: 120ms; }
+.fv-hero.is-live .fv-hero-copy > * { animation: none; }  /* le fil se redessine chaque minute : pas d'entrée animée */
+@keyframes fv-rise { from { opacity: 0; transform: translateY(10px); } }
+
+/* Les tuiles flottantes : une composition décalée, inclinée comme dans la bannière */
+.fv-hero-aside { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem;
+  padding: .5rem 0 2rem; transform: perspective(1400px) rotateY(-11deg) rotateX(4deg); transform-origin: 70% 50%; }
+.fv-float { --c: var(--fv-faint); position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr);
+  align-items: end; gap: .2rem .75rem; padding: 1rem 1.1rem .95rem;
+  overflow: hidden; border: 1px solid var(--fv-line-strong); border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 13%, transparent), transparent 70%),
+    color-mix(in srgb, var(--fv-surface) 90%, transparent);
+  box-shadow: inset 0 1px 0 var(--fv-hi), 0 28px 56px -26px var(--fv-shadow-deep); backdrop-filter: blur(10px); }
+.fv-float::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: var(--c); }
+.fv-float.is-up { --c: var(--fv-up); }
+.fv-float.is-down { --c: var(--fv-down); }
+.fv-float:nth-child(2) { translate: 0 1.75rem; }
+.fv-float:nth-child(3) { grid-column: 1 / span 1; translate: 32% -.25rem; }
+.fv-float-name, .fv-float-value { grid-column: 1 / -1; }
+.fv-float-name { font-size: .8rem; font-weight: 600; color: var(--fv-muted); }
+.fv-float-value { font: 600 1.5rem/1.15 var(--fv-mono); letter-spacing: -.01em; color: var(--fv-text);
+  font-variant-numeric: tabular-nums; }
+.fv-float-delta { justify-self: start; margin-top: .25rem; padding: .1rem .5rem; border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--c) 14%, transparent); font: 600 .8rem/1.4 var(--fv-mono); }
+.fv-float-delta span { color: inherit; }
+.fv-float.is-up .fv-float-delta { color: var(--fv-up); }
+.fv-float.is-down .fv-float-delta { color: var(--fv-down); }
+.fv-float > img { justify-self: end; width: 100%; max-width: 104px; height: 34px; }
+@media (max-width: 900px) {
+  .fv-hero.has-aside { grid-template-columns: minmax(0, 1fr); }
+  .fv-hero-aside { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; padding: 0; transform: none; }
+  .fv-float, .fv-float:nth-child(2), .fv-float:nth-child(3) { translate: none; grid-column: auto; padding: .75rem .8rem .7rem; }
+  .fv-float > img { display: none; }
+  .fv-float-value { font-size: 1.05rem; }
+}
+@media (max-width: 640px) {
+  .fv-hero { padding: .5rem 0 1.1rem; }
+  .fv-hero-dek { font-size: 1rem; }
+  .fv-float-name { font-size: .72rem; }
+  .fv-float-value { font-size: .95rem; }
+  .fv-float-delta { font-size: .7rem; padding: .05rem .35rem; }
+}
 .fv-eyebrow { display: inline-flex; align-items: center; gap: .45rem; padding: .22rem .7rem .22rem .55rem;
   border: 1px solid color-mix(in srgb, var(--fv-brand) 28%, transparent); border-radius: 999px;
   background: var(--fv-brand-soft); font-size: .68rem; font-weight: 700; letter-spacing: .09em;
   text-transform: uppercase; color: var(--fv-brand); }
 .fv-eyebrow::before { content: ""; width: .45rem; height: .45rem; border-radius: 50%;
   background: linear-gradient(135deg, var(--fv-brand), var(--fv-brand-2)); }
-.fv-page-title { margin: .7rem 0 0 !important; padding: 0 !important;
-  font: 700 clamp(1.9rem, 3.6vw, 2.65rem)/1.08 var(--fv-sans) !important; letter-spacing: -.035em; color: var(--fv-text); }
-.fv-page-dek { margin: .55rem 0 0; max-width: 68ch; color: var(--fv-muted); font-size: 1.02rem; line-height: 1.55; }
 
 .fv-section { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .7rem; margin: 2rem 0 .35rem; }
 .fv-section h3 { display: inline-flex; align-items: center; gap: .55rem; margin: 0 !important; padding: 0 !important;
@@ -349,6 +400,40 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-dek { margin: 0; color: var(--fv-muted); font-size: .9rem; line-height: 1.55;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .fv-item.is-read .fv-headline a { color: var(--fv-muted) !important; font-weight: 500; }
+
+/* Le squelette de chargement : des formes grises qui ondulent doucement, à la place des articles à venir */
+.fv-skeleton { display: grid; gap: 1rem; }
+.fv-sk { display: block; height: .8rem; border-radius: 6px; animation: fv-shimmer 1.4s ease-in-out infinite;
+  background: linear-gradient(90deg, var(--fv-hover) 0%, var(--fv-line) 45%, var(--fv-hover) 90%); background-size: 300% 100%; }
+.fv-sk-title { height: 1.45rem; border-radius: 8px; }
+.fv-sk-media { height: auto; min-height: 15rem; border-radius: 12px; }
+.fv-sk-lead, .fv-sk-tile { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow); }
+.fv-sk-lead { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.5rem; padding: 1.2rem; }
+.fv-sk-stack { display: grid; align-content: start; gap: .75rem; padding-top: .3rem; }
+.fv-sk-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.fv-sk-tile { display: grid; gap: .65rem; padding-bottom: 1.1rem; overflow: hidden; }
+.fv-sk-tile .fv-sk-media { min-height: 8.5rem; border-radius: 0; }
+.fv-sk-tile > .fv-sk:not(.fv-sk-media) { margin-left: 1rem; max-width: calc(100% - 2rem); }
+@keyframes fv-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (max-width: 760px) { .fv-sk-lead, .fv-sk-tiles { grid-template-columns: minmax(0, 1fr); }
+  .fv-sk-tile:nth-child(n+2) { display: none; } .fv-sk-lead .fv-sk-media { min-height: 11rem; } }
+.fv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Les dépêches arrivent en cascade (300 à 450 ms), une seule fois : Streamlit garde les éléments déjà affichés */
+[class*="st-key-fvlead_"], [class*="st-key-fvtile_"], [class*="st-key-fvcard_"] {
+  animation: fv-rise var(--duration-slow) cubic-bezier(.2, .7, .2, 1) both; }
+[class*="st-key-fvtile_"] { animation-delay: 80ms; }
+[data-testid="stColumn"]:nth-child(2) > div > [class*="st-key-fvtile_"] { animation-delay: 140ms; }
+[data-testid="stColumn"]:nth-child(3) > div > [class*="st-key-fvtile_"] { animation-delay: 200ms; }
+
+/* Les boutons d'action d'une ligne du fil restent discrets tant qu'on ne survole pas l'article (au clavier, ils
+   s'allument dès qu'un de leurs boutons reçoit le focus ; sur écran tactile, ils restent toujours visibles) */
+@media (hover: hover) and (pointer: fine) {
+  [class*="st-key-fvcard_"] [class*="st-key-fvactions_"] { opacity: .55; transition: opacity var(--duration-fast); }
+  [class*="st-key-fvcard_"]:hover [class*="st-key-fvactions_"],
+  [class*="st-key-fvcard_"]:focus-within [class*="st-key-fvactions_"] { opacity: 1; }
+}
 
 /* Barre d'outils du fil : la recherche passe sur sa propre ligne sur un petit écran */
 .st-key-fvtoolbar { flex-wrap: wrap; row-gap: .5rem; }
@@ -753,7 +838,8 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .fv-tape-window { overflow-x: auto; mask-image: none; }
-  .fv-tape-track, .fv-tape-label::before { animation: none; }
+  .fv-tape-track, .fv-tape-label::before, .fv-sk, .fv-hero-copy > *, [class*="st-key-fvlead_"],
+  [class*="st-key-fvtile_"], [class*="st-key-fvcard_"] { animation: none; }
 }
 </style>
 """
@@ -843,22 +929,59 @@ def sessions_html(now: datetime) -> str:
     return f'<ul class="fv-sessions" aria-label="Places boursières">{items}</ul>'
 
 
-def feed_header(article_count: int, source_count: int, fetched_at: datetime) -> None:
-    """L'en-tête du fil : date, titre, volume collecté et état des places boursières."""
-    now = datetime.now(timezone.utc)
-    st.html(
-        f"""
-        <header class="fv-pagehead">
-          <div>
-            <div class="fv-eyebrow">{fr_date(now.astimezone(DISPLAY_TZ)).capitalize()} · édition continue</div>
-            <h1 class="fv-page-title">Le fil de l'actualité financière</h1>
-            <p class="fv-page-dek">{fr_number(article_count, 0)} dépêches de {source_count} sources · dernière
-              collecte à {clock(fetched_at)}</p>
-          </div>
-          {sessions_html(now)}
-        </header>
-        """
+def float_tile(quote) -> str:
+    """Une tuile de cours « flottante » de l'en-tête : nom, cours, variation de la séance, courbe sur un mois."""
+    month_change = quote.change_over(21)
+    trend = direction(quote.change).removeprefix("fv-")
+    summary = f"{quote.name} : {price(quote.last)}, {signed(quote.change, quote.unit)} sur la séance"
+    return (
+        f'<div class="fv-float is-{trend}" title="{esc(summary)}">'
+        f'<span class="fv-float-name">{esc(quote.name)}</span>'
+        f'<span class="fv-float-value">{price(quote.last)}</span>'
+        f'<span class="fv-float-delta">{change(quote.change, quote.unit)}</span>'
+        f'<img src="{sparkline_uri(quote.history.tail(22).tolist(), direction(month_change), 104, 36)}" '
+        f'alt="Un mois : {esc(signed(month_change, quote.unit))}"></div>'
     )
+
+
+def hero_html(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=(), extra: str = "",
+              classes: str = "") -> str:
+    """L'en-tête « héros » d'une page : sur-titre, grand titre (la fin `accent` en dégradé de marque), phrase
+    d'introduction, et à droite des tuiles de cours flottantes si `quotes` en contient."""
+    aside = "".join(float_tile(quote) for quote in quotes)
+    classes = " ".join(filter(None, ["fv-hero", "has-aside" if aside else "", classes]))
+    return (
+        f'<header class="{classes}"><div class="fv-hero-copy">'
+        + (f'<div class="fv-eyebrow">{esc(eyebrow)}</div>' if eyebrow else "")
+        + f'<h1 class="fv-hero-title">{esc(title)}{f" <em>{esc(accent)}</em>" if accent else ""}</h1>'
+        + f'<p class="fv-hero-dek">{dek}</p>{extra}</div>'
+        + (f'<div class="fv-hero-aside" role="group" aria-label="Les marchés en un coup d\'œil">{aside}</div>'
+           if aside else "")
+        + "</header>"
+    )
+
+
+def feed_header(article_count: int, source_count: int, fetched_at: datetime, quotes=()) -> None:
+    """L'en-tête du fil : date, titre, volume collecté, places boursières et trois cours qui flottent."""
+    now = datetime.now(timezone.utc)
+    st.html(hero_html(
+        "L'actualité financière,", f"{fr_number(article_count, 0)} dépêches de {source_count} sources, classées par "
+        f"rubrique et expliquées · dernière collecte à {clock(fetched_at)}",
+        eyebrow=f"{fr_date(now.astimezone(DISPLAY_TZ)).capitalize()} · édition continue", accent="en continu.",
+        quotes=quotes, extra=sessions_html(now), classes="is-home is-live",
+    ))
+
+
+def feed_skeleton() -> str:
+    """Le squelette du fil, affiché pendant la recherche des photos : la mise en page se devine au lieu d'un vide,
+    et rien ne saute quand les articles arrivent."""
+    def bar(width: str = "100%", kind: str = "") -> str:
+        return f'<i class="fv-sk{kind}" style="width:{width}"></i>'
+    lead = (f'<div class="fv-sk-lead">{bar(kind=" fv-sk-media")}<div class="fv-sk-stack">{bar("32%")}'
+            f'{bar("92%", " fv-sk-title")}{bar("68%", " fv-sk-title")}{bar("96%")}{bar("84%")}{bar("60%")}</div></div>')
+    tile = f'<div class="fv-sk-tile">{bar(kind=" fv-sk-media")}{bar("38%")}{bar("88%", " fv-sk-title")}{bar("55%")}</div>'
+    return (f'<div class="fv-skeleton" role="status"><span class="fv-sr">Chargement du fil…</span>'
+            f'<div class="fv-section"><h3>À la une</h3></div>{lead}<div class="fv-sk-tiles">{tile * 3}</div></div>')
 
 
 def section(title: str, note: str = "") -> None:
@@ -866,12 +989,10 @@ def section(title: str, note: str = "") -> None:
     st.html(f'<div class="fv-section"><h3>{esc(title)}</h3>{f"<small>{esc(note)}</small>" if note else ""}</div>')
 
 
-def page_header(title: str, dek: str, eyebrow: str = "") -> None:
-    """En-tête de page : rubrique du menu (en bleu), titre et phrase d'introduction."""
-    st.html(
-        f'<header class="fv-pagehead"><div>{f"<div class={chr(34)}fv-eyebrow{chr(34)}>{esc(eyebrow)}</div>" if eyebrow else ""}'
-        f'<h1 class="fv-page-title">{esc(title)}</h1><p class="fv-page-dek">{esc(dek)}</p></div></header>'
-    )
+def page_header(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=()) -> None:
+    """En-tête de page : rubrique du menu, grand titre (avec sa fin en dégradé), phrase d'introduction et,
+    sur les pages principales, quelques cours en tuiles flottantes."""
+    st.html(hero_html(title, esc(dek), eyebrow, accent, quotes))
 
 
 def card(body: str, title: str = "", note: str = "") -> str:
@@ -963,8 +1084,8 @@ def assistant_hero_html(engine: str | None, articles: int) -> str:
     ]
     rows = "".join(f'<li><span class="fv-show-icon">{icon(name)}</span><span>{esc(text)}</span></li>'
                    for name, text in points)
+    # Le grand titre est dans l'en-tête de la page : la carte ne garde que l'état de l'IA et ses trois promesses
     return (f'<div class="fv-showcase fv-ai-hero" style="--curve:url({svg_uri(_CURVE)})">{status}'
-            '<h3 class="fv-show-title">Pose ta question sur l\'actualité, les marchés ou la finance.</h3>'
             f'<ul class="fv-show-list">{rows}</ul></div>')
 
 

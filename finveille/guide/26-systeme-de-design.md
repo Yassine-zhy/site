@@ -199,4 +199,4 @@ avant 400 px ; sur GitHub, on garde une **marge de 40 px** sur chaque bord. Et o
 | Une capture d'écran montre une page vide | Prise avant la fin du chargement | Attendre un texte précis (`get_by_text("En continu")`), pas un délai fixe. |
 | Les polices des visuels sont différentes | Export avant le chargement des polices | `render.py` attend `document.fonts.ready`. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [des pages aussi belles que la bannière](27-pages-principales.md). Retour au [sommaire du guide](README.md).

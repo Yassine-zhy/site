@@ -10,7 +10,7 @@ import theme
 from core import macro
 from core.macro import EA, FR, US
 from theme import esc
-from ui import load_macro, load_yield_curves
+from ui import hero_quotes, load_macro, load_yield_curves
 
 START = f"{date.today().year - 10}-01-01"  # dix ans d'historique
 ZONES = [EA, FR, US]
@@ -25,10 +25,10 @@ ROWS = [  # (titre de la ligne, {zone: clé de l'indicateur})
 ]
 
 theme.page_header(
-    "Économie",
+    "L'économie,",
     "Inflation, taux directeurs, chômage et taux d'intérêt en zone euro, en France et aux États-Unis : les "
     "statistiques officielles de la BCE et de la Réserve fédérale, mises à jour chaque jour.",
-    eyebrow="Marchés",
+    eyebrow="Économie", accent="en chiffres officiels.", quotes=hero_quotes("EURUSD=X", "BZ=F", "GC=F"),
 )
 
 data, errors = load_macro(START)
