@@ -29,7 +29,7 @@ font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ita
 headingFont = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@600;700&display=swap"
 codeFont = "IBM Plex Mono:https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
 baseFontSize = 15
-baseRadius = "8px"
+baseRadius = "10px"
 buttonRadius = "8px"
 showWidgetBorder = true
 showSidebarBorder = true
@@ -38,10 +38,10 @@ showSidebarBorder = true
 # foncé pour que ce texte reste lisible (contraste supérieur à 4,5:1).
 [theme.light]
 primaryColor = "#1F4ED8"            # le bleu FinVeille
-backgroundColor = "#F4F6F9"         # fond de page gris bleuté très clair
+backgroundColor = "#F4F6FB"         # fond de page gris bleuté très clair
 secondaryBackgroundColor = "#FFFFFF" # champs de saisie
-textColor = "#0F1724"
-borderColor = "#D5DBE3"
+textColor = "#0B1220"
+borderColor = "#D6DDE8"
 linkColor = "#1F4ED8"
 codeBackgroundColor = "#EDF0F5"
 
@@ -50,12 +50,12 @@ backgroundColor = "#FFFFFF"
 
 [theme.dark]
 primaryColor = "#3A69EA"            # un bleu plus lumineux, toujours lisible sous un texte blanc
-backgroundColor = "#0A0D12"         # bleu nuit
-secondaryBackgroundColor = "#151B24"
-textColor = "#E6EAF0"
-borderColor = "#283241"
+backgroundColor = "#060912"         # bleu nuit profond, comme un terminal de salle de marché
+secondaryBackgroundColor = "#0F1626"
+textColor = "#E8EDF6"
+borderColor = "#24304A"
 linkColor = "#6F95FF"
-codeBackgroundColor = "#151B24"
+codeBackgroundColor = "#0F1626"
 
 [theme.dark.sidebar]
-backgroundColor = "#0E1218"
+backgroundColor = "#0A0F1A"

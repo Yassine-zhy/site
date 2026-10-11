@@ -82,16 +82,24 @@ if trends := load_trends(fetched_at)[:6]:  # calculées une fois par collecte, p
                       help=f"{count} dépêches en 24 h ({'nouveau sujet' if before == 0 else f'{before} la veille'})")
 
 
-def pick_tiles(candidates, count=3):
-    """Les autres titres : de préférence des dépêches illustrées, de rubriques différentes."""
+def pick_tiles(candidates, photo, count=3):
+    """Les autres titres : des dépêches avec une vraie photo, de rubriques différentes si possible.
+
+    Une rangée de vignettes reste homogène : avec au moins 2 photos, on ne garde que des vignettes illustrées ;
+    sinon, toutes passent en version texte (aucune image de remplacement).
+    """
+    illustrated = [a for a in candidates[:40] if photo(a)]  # photos du flux RSS sur 40, de partage sur 15
     chosen, categories = [], set()
-    for article in candidates[:25]:
-        if article.image and article.category not in categories:
+    for article in illustrated:  # d'abord une par rubrique…
+        if article.category not in categories:
             chosen.append(article)
             categories.add(article.category)
         if len(chosen) == count:
             return chosen
-    return chosen + [a for a in candidates if a not in chosen][: count - len(chosen)]
+    chosen += [a for a in illustrated if a not in chosen][: count - len(chosen)]  # … puis les autres photos
+    if len(chosen) >= 2:
+        return chosen
+    return candidates[:count]
 
 
 def pick_lead(filtered):
@@ -149,20 +157,25 @@ def render_body(query, categories, sources, hide_read, show_hidden, compact, pic
         lead_id, echoes, why = lead_for(tuple(a.id for a in filtered[:150]))
         lead = next((a for a in filtered if a.id == lead_id), filtered[0])
         others = [a for a in filtered if a is not lead]
-        tiles = pick_tiles(others) if not compact else []
-        # Pour les articles mis en avant sans photo dans le flux : l'image de partage de leur page (og:image)
+        # Les photos : celle du flux RSS, sinon l'image de partage de la page de l'article (og:image), cherchée
+        # pour la une et les candidats aux vignettes. Sans photo, l'article s'affiche sans image.
         pictures = {}
         if pictures_on:
             with capacity.QUEUE.released():  # attente réseau : on laisse sa place dans la file
-                pictures = images.share_images([a.url for a in [lead, *tiles] if not a.image])
+                pictures = images.share_images([a.url for a in [lead, *others[:15]] if not a.image])
+
+        def photo(article):
+            return (article.image or pictures.get(article.url)) if pictures_on else None
+
+        tiles = pick_tiles(others, photo) if not compact else []
         theme.section("À la une", why)
         article_card(lead, statuses.get(lead.id, NO_STATUS), key_prefix="feed", lead=True, user=user,
-                     echoes=echoes, show_image=pictures_on, image=pictures.get(lead.url))
+                     echoes=echoes, show_image=pictures_on, image=photo(lead))
         if tiles:
             for column, article in zip(st.columns(len(tiles), gap="medium"), tiles):
                 with column:
                     article_card(article, statuses.get(article.id, NO_STATUS), key_prefix="feed", tile=True,
-                                 user=user, show_image=pictures_on, image=pictures.get(article.url))
+                                 user=user, show_image=pictures_on, image=photo(article))
 
         rest = [a for a in others if a not in tiles]
         theme.section("En continu", f"{len(filtered)} dépêches")

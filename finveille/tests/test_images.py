@@ -83,25 +83,22 @@ def test_fetch_share_image_survives_network_errors(monkeypatch, fresh_images):
     assert images.fetch_share_image("https://down.com/a") is None
 
 
-def test_cover_is_deterministic_and_escaped():
-    cover = theme.cover_html("macro", "Macro", "<b>Source</b>", "https://example.com/a", "Un titre")
-    assert cover == theme.cover_html("macro", "Macro", "<b>Source</b>", "https://example.com/a", "Un titre")
-    assert cover != theme.cover_html("macro", "Macro", "<b>Source</b>", "https://example.com/a", "Un autre titre")
-    assert "&lt;b&gt;Source&lt;/b&gt;" in cover and "<b>" not in cover
-    assert "data:image/svg+xml;base64," in cover  # le dessin passe par une image : st.html retire les <svg>
-    mini = theme.cover_html("macro", "Macro", "Source", "https://example.com/a", "Un titre", mini=True)
-    assert "is-mini" in mini and "Source" not in mini  # la petite version : le logo seul
-
-
-def test_rows_get_a_cover_only_when_pictures_are_on():
+def test_no_placeholder_image_when_there_is_no_photo():
     import ui
 
     article = Article(title="Titre", url="https://example.com/a", source="Exemple", category="marches",
                       summary="Chapeau", published=datetime(2026, 10, 10, 9, 0, tzinfo=timezone.utc))
-    assert "fv-cover is-mini" in ui.article_html(article, False, "row", cover=True)
-    assert "has-thumb" not in ui.article_html(article, False, "row", cover=False)
-    with_photo = ui.article_html(article, False, "row", image="https://cdn.example.com/p.jpg", cover=True)
-    assert 'src="https://cdn.example.com/p.jpg"' in with_photo and "fv-cover" not in with_photo
+    images_in = lambda html: html.count("<img")  # noqa: E731 — le logo de la source compte pour une
+    row = ui.article_html(article, False, "row")
+    assert "has-thumb" not in row and images_in(row) == 1
+    lead = ui.article_html(article, False, "lead")
+    assert "no-media" in lead and "fv-media" not in lead and "Chapeau" in lead  # la une passe en version texte
+    tile = ui.article_html(article, False, "tile")
+    assert "no-media" in tile and "--c:" in tile and "Chapeau" in tile  # liseré de la rubrique, chapeau affiché
+    with_photo = ui.article_html(article, False, "row", image="https://cdn.example.com/p.jpg")
+    assert 'src="https://cdn.example.com/p.jpg"' in with_photo and "has-thumb" in with_photo
+    tile_photo = ui.article_html(article, False, "tile", image="https://cdn.example.com/p.jpg")
+    assert "no-media" not in tile_photo and "Chapeau" not in tile_photo  # avec photo : titre seul, plus compact
 
 
 def test_showcase_uses_images_not_inline_svg():

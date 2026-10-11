@@ -105,3 +105,4 @@ with capacity.QUEUE.slot(on_wait=lambda: st.toast(
         "Beaucoup de visiteurs en ce moment : ta page arrive dans quelques secondes…", icon=":material/hourglass_top:")):
     tape()
     page.run()
+theme.footer()
