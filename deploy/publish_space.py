@@ -103,6 +103,9 @@ def main() -> int:
                               commit_message=f"FinVeille {commit}")
     except HfHubHTTPError as error:  # le message de Hugging Face (jeton refusé, nom pris…) ne contient pas le jeton
         print(f"Hugging Face a refusé la publication : {error}")
+        if "402" in str(error):
+            print("\n→ Ton compte Hugging Face n'a pas l'abonnement PRO, désormais exigé pour un Space Docker.\n"
+                  "  Mise en ligne gratuite : Streamlit Community Cloud (guide 25, § 6).")
         return 1
     print(f"{len(files)} fichiers envoyés vers https://huggingface.co/spaces/{space}")
     print(f"Secrets recopiés : {', '.join(copied) or 'aucun'}")
