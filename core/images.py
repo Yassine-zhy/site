@@ -25,6 +25,7 @@ WANTED = ("og:image", "og:image:url", "twitter:image", "twitter:image:src")
 _GENERIC_RE = re.compile(r"default|placeholder|logo", re.IGNORECASE)  # image « par défaut » d'un site : sans intérêt
 _blocked: set[str] = set()  # sites qui refusent les robots (403) : on ne les sollicite plus
 _lock = threading.Lock()
+_fetched: dict[str, None] = {}  # articles déjà lus, du plus ancien au plus récent (même borne que le cache)
 
 
 def find_share_image(page: str) -> str | None:
@@ -71,4 +72,13 @@ def share_images(urls: list[str]) -> dict[str, str]:
     """Les images de partage de plusieurs articles, cherchées en parallèle : {adresse de l'article: image}."""
     with ThreadPoolExecutor(max_workers=6) as pool:
         found = dict(zip(urls, pool.map(fetch_share_image, urls)))
+    with _lock:
+        _fetched.update(dict.fromkeys(urls))
+        while len(_fetched) > 2048:  # on oublie les plus anciens, comme le cache de fetch_share_image
+            del _fetched[next(iter(_fetched))]
     return {url: image for url, image in found.items() if image}
+
+
+def all_known(urls: list[str]) -> bool:
+    """Vrai si toutes ces pages ont déjà été lues : share_images répondra alors tout de suite (sans attente)."""
+    return all(url in _fetched for url in urls)

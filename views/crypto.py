@@ -12,10 +12,10 @@ from theme import esc, safe_url
 from ui import api_keys, load_articles, load_crypto, load_fear_greed
 
 theme.page_header(
-    "Crypto",
+    "Les cryptomonnaies,",
     "Les 20 premières cryptomonnaies par capitalisation, la taille du marché et l'humeur des investisseurs. "
     "Cours en euros (CoinGecko), mis à jour toutes les 5 minutes.",
-    eyebrow="Marchés",
+    eyebrow="Crypto", accent="en euros.",
 )
 
 coins, overview = load_crypto()

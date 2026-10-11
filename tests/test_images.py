@@ -105,3 +105,13 @@ def test_showcase_uses_images_not_inline_svg():
     showcase = theme.showcase_html()
     assert "<svg" not in showcase and showcase.count("data:image/svg+xml") >= 5
     assert "Portefeuille virtuel" in showcase
+
+
+def test_all_known_after_a_search(monkeypatch):
+    from core import images
+
+    monkeypatch.setattr(images, "fetch_share_image", lambda url: "https://cdn.example.com/p.jpg" if url.endswith("known") else None)
+    urls = ["https://example.com/a-known", "https://example.com/other"]
+    assert not images.all_known(urls)
+    assert images.share_images(urls) == {"https://example.com/a-known": "https://cdn.example.com/p.jpg"}
+    assert images.all_known(urls)  # la prochaine fois : pas d'attente, donc pas de squelette de chargement

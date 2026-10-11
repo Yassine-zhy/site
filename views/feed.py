@@ -10,7 +10,8 @@ from core import analytics, capacity, images, storage
 from core.config import API_KEYS, CATEGORIES
 from core.filters import filter_articles
 from theme import esc
-from ui import NO_STATUS, api_keys, article_card, current_user, flush_toast, load_articles, load_trends, setting
+from ui import (NO_STATUS, api_keys, article_card, current_user, flush_toast, hero_quotes, load_articles,
+                load_trends, setting)
 
 user = current_user()  # None : visiteur non connecté (il voit le fil, sans favoris ni « lu »)
 PAGE_SIZE = setting(user, "page_size", 20)  # nombre d'articles affichés par « page » (réglable)
@@ -37,7 +38,8 @@ articles, errors, fetched_at = load_articles(keys)
 @st.fragment(run_every="1min")
 def header():
     current, _, collected = load_articles(keys)
-    theme.feed_header(len(current), len({a.source for a in current}), collected)
+    theme.feed_header(len(current), len({a.source for a in current}), collected,
+                      hero_quotes("^FCHI", "^GSPC", "BTC-USD"))
 
 
 header()
@@ -148,6 +150,8 @@ def render_body(query, categories, sources, hide_read, show_hidden, compact, pic
     filtered = [article for article in filtered if is_visible(article)]
 
     main, rail = st.columns([2.25, 1], gap="large")
+    with rail:  # la colonne de droite d'abord : ses chiffres s'affichent pendant que l'on cherche les photos
+        rail_blocks(filtered, collected)
 
     with main:
         if not filtered:
@@ -161,8 +165,13 @@ def render_body(query, categories, sources, hide_read, show_hidden, compact, pic
         # pour la une et les candidats aux vignettes. Sans photo, l'article s'affiche sans image.
         pictures = {}
         if pictures_on:
+            wanted = [a.url for a in [lead, *others[:15]] if not a.image]
+            waiting = st.empty()
+            if not images.all_known(wanted):  # vraie attente (pages jamais lues) : un squelette plutôt qu'un vide
+                waiting.html(theme.feed_skeleton())
             with capacity.QUEUE.released():  # attente réseau : on laisse sa place dans la file
-                pictures = images.share_images([a.url for a in [lead, *others[:15]] if not a.image])
+                pictures = images.share_images(wanted)
+            waiting.empty()
 
         def photo(article):
             return (article.image or pictures.get(article.url)) if pictures_on else None
@@ -185,9 +194,6 @@ def render_body(query, categories, sources, hide_read, show_hidden, compact, pic
                              user=user, show_image=pictures_on)
         if len(rest) > st.session_state.visible_count:
             st.button("Afficher plus", on_click=show_more, width="stretch")
-
-    with rail:
-        rail_blocks(filtered, collected)
 
 
 def rail_blocks(filtered, collected):
