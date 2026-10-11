@@ -15,7 +15,7 @@ theme.page_header(
     "Les cryptomonnaies,",
     "Les 20 premières cryptomonnaies par capitalisation, la taille du marché et l'humeur des investisseurs. "
     "Cours en euros (CoinGecko), mis à jour toutes les 5 minutes.",
-    eyebrow="Crypto", accent="en euros.",
+    eyebrow="Crypto", accent="en euros.", art="crypto",
 )
 
 coins, overview = load_crypto()

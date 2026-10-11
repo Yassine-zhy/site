@@ -10,7 +10,7 @@ from core import accounts, storage
 from theme import esc
 from ui import current_user, end_page, local_mode, login_panel, sign_out
 
-theme.page_header("Ton compte,", "Ton profil, ta connexion et tes données personnelles.", eyebrow="Outils", accent="tes données.")
+theme.page_header("Ton compte,", "Ton profil, ta connexion et tes données personnelles.", eyebrow="Outils", accent="tes données.", art="account")
 
 if local_mode():
     # --- Mode local : une seule personne, sans connexion -------------------------------------------

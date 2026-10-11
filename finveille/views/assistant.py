@@ -109,7 +109,7 @@ def answer(question: str) -> dict:
 
 # --- La page ----------------------------------------------------------------------------------------
 theme.page_header("Pose ta question,", "En français, sur l'actualité, les marchés ou un terme financier : l'assistant "
-                  "répond à partir des dépêches du moment.", eyebrow="Assistant IA", accent="l'IA cite ses sources.")
+                  "répond à partir des dépêches du moment.", eyebrow="Assistant IA", accent="l'IA cite ses sources.", art="assistant")
 
 # st.chat_input reste en bas de l'écran, où qu'on l'appelle : on le lit d'abord, pour savoir quoi afficher
 question = st.chat_input("Pose ta question : « Pourquoi le pétrole monte ? », « C'est quoi un ETF ? »…",

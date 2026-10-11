@@ -96,6 +96,9 @@ pages = {
 if is_admin(current_user()):  # l'assistant de configuration n'est visible que par l'administrateur
     pages["Outils"].append(st.Page("views/setup.py", title="Configuration", icon=":material/admin_panel_settings:"))
 page = st.navigation(pages, position="top")
+# La rubrique de la page ouverte, soulignée dans le menu du haut (theme.nav_active)
+theme.nav_active(next(i for i, entries in enumerate(pages.values())
+                      if any(entry.url_path == page.url_path for entry in entries)))
 account_bar()  # après st.navigation : st.page_link a besoin que les pages soient déclarées
 
 # La file d'attente (core/capacity.py) : quelques pages s'affichent à la fois, les autres attendent leur tour

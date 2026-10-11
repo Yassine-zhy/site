@@ -57,7 +57,7 @@ brief = Brief(
 
 # --- Affichage -----------------------------------------------------------------------------------
 theme.page_header("Le brief", "L'essentiel de l'actualité financière, rédigé automatiquement à partir du fil.",
-                  eyebrow="Actualité", accent="du jour.")
+                  eyebrow="Actualité", accent="du jour.", art="brief")
 minutes = max(1, round(len(brief.to_markdown().split()) / 220))  # environ 220 mots lus par minute
 st.html(f'<p class="fv-edition-line">Édition du {esc(brief.date_label)} · {len(recent)} dépêches analysées · '
         f"lecture {minutes} min</p>")

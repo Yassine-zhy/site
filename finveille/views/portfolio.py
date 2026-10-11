@@ -71,7 +71,7 @@ def performance_chart(data: pd.DataFrame, period: str) -> alt.LayerChart:
 
 flush_toast()
 theme.page_header("Ton portefeuille,", "Un portefeuille virtuel pour t'entraîner : aucun argent réel, aucune transaction.",
-                  eyebrow="Mon espace", accent="sans risquer un euro.")
+                  eyebrow="Mon espace", accent="sans risquer un euro.", art="portfolio")
 user = require_user()
 choices = company_choices(user)
 

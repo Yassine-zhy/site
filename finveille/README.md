@@ -14,6 +14,8 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 
 ![Le fil d'actualité de FinVeille, thème clair](docs/screenshots/fil-clair.jpg)
 
+▶ [Voir la démonstration animée (29 s)](docs/branding/demo.mp4) : transitions entre les pages, courbes qui se dessinent.
+
 ## Fonctionnalités
 
 | | |
@@ -39,7 +41,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Glossaire** | 55 termes de la finance expliqués simplement, recherche, mot du jour. |
 | **En chiffres** | Tableau de bord du flux : dépêches par heure et par rubrique, entreprises les plus citées, tonalité par rubrique. |
 | **Résumé par IA** | « L'essentiel » en 3 points : Gemini ou Groq (offres gratuites) en français, ou résumé extractif local sans clé ; repli automatique en cas d'erreur, résumés mis en cache. |
-| **Design** | Système de design en jetons à trois niveaux (primitifs → sémantiques → composants), thèmes clair et sombre (bleu nuit) avec `light-dark()` en CSS, en-têtes « héros » dans le style des visuels de la marque (grand titre en dégradé, cours en tuiles flottantes), squelette de chargement, tuiles de cours colorées par tendance, cartes en relief, composants communs (boutons, champs, sélecteurs). Graphiques à palette validée pour le daltonisme, étiquettes directes au bout des courbes. Accessibilité mesurée par un audit automatique de toutes les pages (`tools/ux_audit.py`). Contrastes AA mesurés, cibles tactiles de 44 px, animations coupées si l'on préfère moins de mouvement, couleurs adaptées au daltonisme. [Charte de marque](docs/brand-guidelines.md) et visuels pour LinkedIn et GitHub (guide 26). |
+| **Design** | Direction artistique « terminal de nuit » : la ligne de cours du logo en travers de chaque en-tête, une illustration dessinée par page, transitions entre les pages et au défilement (coupées si l'on préfère moins de mouvement). Système de design en jetons à trois niveaux (primitifs → sémantiques → composants), thèmes clair et sombre (bleu nuit) avec `light-dark()` en CSS, en-têtes « héros » dans le style des visuels de la marque (grand titre en dégradé, cours en tuiles flottantes), squelette de chargement, tuiles de cours colorées par tendance, cartes en relief, composants communs (boutons, champs, sélecteurs). Graphiques à palette validée pour le daltonisme, étiquettes directes au bout des courbes. Accessibilité mesurée par un audit automatique de toutes les pages (`tools/ux_audit.py`). Contrastes AA mesurés, cibles tactiles de 44 px, animations coupées si l'on préfère moins de mouvement, couleurs adaptées au daltonisme. [Charte de marque](docs/brand-guidelines.md) et visuels pour LinkedIn et GitHub (guide 26). |
 
 ## Aperçu
 
@@ -88,7 +90,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-28 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+29 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 
@@ -123,6 +125,7 @@ pytest
 
 ```
 app.py            point d'entrée : thème, bandeau des cours, navigation
+art.py            direction artistique : ligne de cours signature, illustrations des pages (SVG)
 ui.py             éléments partagés : chargement en cache, carte d'article, résumé
 theme.py          design : jetons de couleur clair/sombre, cartes, tuiles, tableaux, mise en forme française
 assets/           le logo (SVG) : symbole, versions claire et sombre

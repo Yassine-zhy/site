@@ -50,7 +50,7 @@ def comparison_chart(rebased: pd.DataFrame, names: dict[str, str], colors: dict[
 
 
 theme.page_header("Comparer", "Jusqu'à quatre entreprises côte à côte : performance, risque et valorisation.",
-                  eyebrow="Marchés", accent="pour mieux choisir.")
+                  eyebrow="Marchés", accent="pour mieux choisir.", art="compare")
 
 # Par défaut, quatre secteurs différents (luxe, énergie, aéronautique, santé) : la diversification se voit mieux
 defaults = [s for s in ["MC.PA", "TTE.PA", "AIR.PA", "SAN.PA"] if s in choices]

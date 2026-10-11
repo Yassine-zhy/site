@@ -13,7 +13,7 @@ from ui import (LAST_GOOD, SYMBOL_QUOTES, ai_keys, auth_providers, current_user,
                 smtp_settings)
 
 theme.page_header("Configuration", "Active les connexions et les services du site. Cette page n'est visible que "
-                  "par l'administrateur.", eyebrow="Outils", accent="du site.")
+                  "par l'administrateur.", eyebrow="Outils", accent="du site.", art="setup")
 user = current_user()
 if not is_admin(user):  # sécurité : la page n'apparaît pas dans le menu, mais on vérifie aussi ici
     st.error("Cette page est réservée à l'administrateur du site.")

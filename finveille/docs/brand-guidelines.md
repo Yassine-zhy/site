@@ -133,13 +133,45 @@ photo chargée, séparer le point menthe de la courbe.
 
 ---
 
-## 5. Images
+## 5. Images et direction artistique
+
+### Les photos d'articles
 
 - **Une photo seulement si c'est la vraie** : celle de l'article (image de partage). Sans photo, l'article
   passe en version texte, avec le liseré de couleur de sa rubrique. Jamais d'image de remplacement ni
-  d'illustration générée.
+  d'illustration générée à la place d'une photo d'article.
 - Les photos sont recadrées (`object-fit: cover`), coins arrondis comme les cartes, chargées en différé.
 - Les logos des sources s'affichent en 16 px à côté de leur nom.
+
+### Le concept : « le terminal de nuit »
+
+Une salle des marchés la nuit : des écrans bleu nuit, des lignes de cours qui s'allument, du verre. Tout le décor
+du site en découle (`art.py`, guide 29) :
+
+| Motif | Où | Règle |
+| --- | --- | --- |
+| **La ligne de cours** | En travers de chaque en-tête | Elle reprend la courbe du logo : monte de gauche à droite, finit par le point menthe qui pulse |
+| **Les halos** | Derrière l'en-tête | Bleu et violet, très flous, ils dérivent en 24 à 31 s ; bords toujours fondus |
+| **Le panneau de verre** | À droite de l'en-tête des pages | Une fenêtre (trois points), une grille, le motif de la page au trait dégradé bleu → violet, un accent menthe |
+| **Le quadrillage** | Derrière l'en-tête | Papier millimétré de salle de marché, effacé par un masque |
+
+Les illustrations sont **dessinées à la main en SVG** (aucune image d'autrui, aucune image générée), une par page :
+journal (brief), bulle et citation (assistant), blocs reliés (crypto), barres (en chiffres), courbes croisées
+(comparer), anneau (portefeuille), cloche et seuil (alertes), signets (favoris), cible (suivis), pièces et courbe
+(simulateurs), carte question (quiz), livre (glossaire), réglages, personne et bouclier (compte), engrenages.
+
+### Le mouvement
+
+| Moment | Effet | Durée |
+| --- | --- | --- |
+| Ouverture d'une page | Le contenu arrive en cascade (8 éléments au plus) | 500 ms, 40 ms d'écart |
+| En-tête | La ligne et les illustrations se dessinent ; le dégradé du titre balaie le texte une fois | 1,6 à 2 s |
+| Défilement | Cartes, tableaux, graphiques apparaissent en entrant à l'écran | lié au défilement |
+| Mini-courbes | Elles se tracent de gauche à droite | 1,1 s |
+| Repos | Halos qui dérivent, illustration qui flotte de 10 px, point menthe qui pulse | 3 à 31 s |
+
+Règles : le mouvement accompagne, il ne bloque jamais la lecture ; rien ne se rejoue en boucle sur un contenu qui
+se met à jour (en-tête du fil) ; **tout s'arrête** si le visiteur demande moins d'animations à son système.
 
 ---
 
