@@ -28,11 +28,25 @@ jobs:
       FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
       MARKETAUX_API_KEY: ${{ secrets.MARKETAUX_API_KEY }}
     steps:
+      # Tant que l'envoi d'e-mails n'est pas configuré, la tâche s'arrête sans erreur (pas d'alerte d'échec de GitHub)
+      - name: E-mails configurés ?
+        id: ready
+        run: |
+          if [ -z "$SMTP_HOST" ] || [ -z "$DATABASE_URL" ]; then
+            echo "::notice::Envoi d'e-mails non configuré (secrets SMTP_HOST, DATABASE_URL…) : rien à envoyer."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v4
+        if: steps.ready.outputs.ok == 'true'
       - uses: actions/setup-python@v5
+        if: steps.ready.outputs.ok == 'true'
         with:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
+        if: steps.ready.outputs.ok == 'true'
       # Le premier horaire (5 h 45) envoie le brief, les autres les alertes ; à la main, on choisit.
-      - run: python -m scripts.send_notifications ${{ github.event.inputs.what || (github.event.schedule == '45 5 * * 1-5' && 'brief' || 'alerts') }}
+      - if: steps.ready.outputs.ok == 'true'
+        run: python -m scripts.send_notifications ${{ github.event.inputs.what || (github.event.schedule == '45 5 * * 1-5' && 'brief' || 'alerts') }}
