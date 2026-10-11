@@ -76,6 +76,10 @@ On ne **copie** aucune image : la page affiche l'image depuis le site de l'édit
 
 ## 3. Une couverture dessinée quand il n'y a pas de photo
 
+> **Remplacé à l'étape 26.** Une image inventée attire l'œil sans rien apprendre au lecteur : depuis la refonte,
+> un article sans vraie photo passe en **version texte** (liseré de la couleur de sa rubrique), et `cover_html` a
+> disparu. Le piège de `st.html` ci-dessous reste valable pour toutes les icônes du site.
+
 Plutôt qu'un trou, un article sans photo reçoit une **couverture générée** (`theme.cover_html`) : un dégradé aux
 couleurs de sa rubrique, le logo de la source et une courbe décorative. La courbe est tirée au hasard… mais avec le
 **titre comme graine** :
@@ -141,7 +145,7 @@ télécharger, aucune bibliothèque d'icônes à installer.
 ## 6. Exercices
 
 1. Ajoute des **drapeaux** devant les indices de la page *Marchés* (indice : `https://flagcdn.com/24x18/fr.png`).
-2. Dans `cover_html`, remplace la courbe par des barres pour la rubrique « Macro ».
+2. Dans les tuiles de *Marchés*, remplace la mini-courbe par des barres pour les taux d'intérêt.
 3. Crée une **image de partage** pour FinVeille (1200 × 630 pixels, le logo et une phrase) et déclare-la dans le
    dépôt GitHub (*Settings → Social preview*).
 
@@ -152,7 +156,7 @@ télécharger, aucune bibliothèque d'icônes à installer.
 | Symptôme | Cause | Solution |
 | --- | --- | --- |
 | Une icône ou un dessin n'apparaît pas, sans erreur | `st.html` a retiré la balise `<svg>` | Passe par `<img src="data:image/svg+xml;base64,…">` (§ 3). |
-| Les images d'un site n'apparaissent jamais | Le site refuse les robots (403) ou n'a pas d'`og:image` | Normal : l'article reçoit une couverture dessinée. |
+| Les images d'un site n'apparaissent jamais | Le site refuse les robots (403) ou n'a pas d'`og:image` | Normal : l'article s'affiche en version texte (étape 26). |
 | La page met quelques secondes à s'afficher la première fois | Recherche des images de la une et des vignettes | Elle est mise en mémoire : les visites suivantes sont immédiates. |
 | Le logo du README est noir sur fond noir | Une seule version du logo | Utilise `<picture>` avec les deux versions (§ 1). |
 | Le nouveau logo n'apparaît pas dans l'onglet | Le navigateur garde l'ancienne icône en mémoire | Rechargement forcé : Ctrl + Maj + R. |

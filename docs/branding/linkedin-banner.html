@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>FinVeille, bannière LinkedIn</title>
+<link rel="stylesheet" href="brand.css">
+<style>
+  /* LinkedIn (profil) : 1584 × 396. La photo de profil couvre le coin bas gauche : rien d'important avant x = 400. */
+  .canvas { width: 1584px; height: 396px; }
+  .copy { position: absolute; left: 420px; top: 50%; transform: translateY(-50%); width: 560px; }
+  .brand { font-size: 26px; }
+  .headline { margin-top: 22px; font-size: 40px; }
+  .chips { margin-top: 24px; font-size: 15px; }
+  .window { left: 1010px; top: 46px; width: 760px;
+    transform: perspective(1800px) rotateY(-17deg) rotateX(5deg) rotateZ(1.5deg); transform-origin: left top; }
+  .tile { left: 968px; top: 232px; width: 236px; }
+</style>
+</head>
+<body>
+<main class="canvas">
+  <div class="copy">
+    <div class="brand"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="fvg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b6cff"/><stop offset="1" stop-color="#1536b4"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#fvg)"/><rect x="16" y="13" width="9.5" height="38" rx="3.5" fill="#fff"/><rect x="16" y="13" width="32" height="9.5" rx="3.5" fill="#fff"/><path d="M25.5 38.5 L32 33.2 L38 36.2 L46 28.5" fill="none" stroke="#fff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="46.5" cy="28" r="5" fill="#6ee7a8"/></svg><span class="wordmark">Fin<em>Veille</em></span></div>
+    <h1 class="headline">La veille financière mondiale, <em>triée et expliquée.</em></h1>
+    <div class="chips"><span class="chip">12 sources</span><span class="chip">Marchés en direct</span>
+      <span class="chip">Assistant IA</span><span class="chip">Python</span></div>
+  </div>
+  <div class="window"><div class="window-bar"><i></i><i></i><i></i><span>finveille · Marchés</span></div>
+    <img src="marches-sombre.jpg" alt=""></div>
+  <div class="tile"><div class="tile-name">S&amp;P 500</div><div class="tile-value">7 811,54</div>
+    <div class="tile-delta">▲ +0,59 %</div><svg width="96" height="34" viewBox="0 0 96 34" aria-hidden="true"><defs><linearGradient id="sp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34d17f" stop-opacity=".35"/><stop offset="1" stop-color="#34d17f" stop-opacity="0"/></linearGradient></defs><path d="M2 26 L10 30 L18 22 L24 24 L30 14 L38 18 L46 15 L54 16 L62 12 L70 8 L78 11 L86 5 L92 4 L92 34 L2 34 Z" fill="url(#sp)"/><path d="M2 26 L10 30 L18 22 L24 24 L30 14 L38 18 L46 15 L54 16 L62 12 L70 8 L78 11 L86 5 L92 4" fill="none" stroke="#34d17f" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="92" cy="4" r="3" fill="#34d17f"/></svg></div>
+</main>
+</body>
+</html>

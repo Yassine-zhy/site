@@ -276,4 +276,4 @@ propre dépôt, c'est `finveille/.github/workflows/huggingface.yml` qui prend le
 | `Invalid user token` | Jeton mal copié, ou de type « Read » | Recrée un jeton de type **Write**. |
 | Impossible de rester connecté sur la page du Space | Site affiché dans un cadre : cookies bloqués | Utilise l'adresse directe `https://ton-pseudo-finveille.hf.space`. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [refaire le design](26-systeme-de-design.md). Retour au [sommaire du guide](README.md).

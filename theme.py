@@ -85,7 +85,7 @@ CSS = """
   --fv-line-strong: light-dark(var(--ink-200), var(--night-600));
   --fv-text: light-dark(var(--ink-900), var(--night-100));
   --fv-muted: light-dark(var(--ink-500), var(--night-300));
-  --fv-faint: light-dark(var(--ink-400), var(--night-400));
+  --fv-faint: light-dark(var(--ink-400), var(--night-400));  /* décor seulement (points, filets) : 3,2 à 3,5:1, trop pâle pour du texte */
   --fv-brand: light-dark(var(--blue-600), var(--blue-400));
   --fv-brand-2: light-dark(var(--violet-500), var(--violet-300));  /* le second ton des dégradés */
   --fv-brand-soft: light-dark(var(--blue-50), var(--blue-950));
@@ -739,7 +739,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-footer-links { display: flex; flex-wrap: wrap; gap: .35rem 1.2rem; align-content: start; justify-content: flex-end; }
 .fv-footer-links a { font-size: .85rem; font-weight: 500; color: var(--fv-muted) !important; text-decoration: none !important; }
 .fv-footer-links a:hover { color: var(--fv-brand) !important; }
-.fv-footer-note { grid-column: 1 / -1; margin: .4rem 0 0; font-size: .74rem; line-height: 1.6; color: var(--fv-faint); }
+.fv-footer-note { grid-column: 1 / -1; margin: .4rem 0 0; font-size: .74rem; line-height: 1.6; color: var(--fv-muted); }
 @media (max-width: 640px) { .fv-footer { grid-template-columns: 1fr; } .fv-footer-links { justify-content: flex-start; } }
 
 /* Sur écran tactile, chaque bouton fait au moins 44 px de haut : on vise sans zoomer */
