@@ -11,23 +11,9 @@ from core import assistant, storage
 from core.config import COMPANIES
 from core.market import INDICATORS
 from theme import esc
-from ui import (
-    NO_STATUS,
-    ai_count,
-    ai_enabled,
-    ai_quota,
-    api_keys,
-    article_card,
-    complete_ai,
-    flush_toast,
-    load_followed,
-    load_calendar,
-    load_followed_quotes,
-    load_history,
-    load_profile,
-    require_user,
-    search_companies,
-)
+from ui import (NO_STATUS, ai_count, ai_enabled, ai_quota, api_keys, article_card, complete_ai, end_page,
+                flush_toast, load_calendar, load_followed, load_followed_quotes, load_history, load_profile,
+                require_user, search_companies)
 
 SUGGESTIONS = [("company", "MC.PA", "LVMH"), ("company", "AIR.PA", "Airbus"), ("company", "NVDA", "Nvidia"),
                ("company", "AAPL", "Apple"), ("theme", "inflation", "inflation"), ("theme", "BCE", "BCE")]
@@ -262,8 +248,8 @@ def news_list(user: str, articles, empty_message: str, key_prefix: str) -> None:
 
 # --- La page ----------------------------------------------------------------------------------
 flush_toast()
-theme.page_header("Mes suivis", "Les entreprises et les thèmes que tu suis, avec leur fil et leur fiche.",
-                  eyebrow="Mon espace")
+theme.page_header("Tes suivis,", "Les entreprises et les thèmes que tu suis, avec leur fil et leur fiche.",
+                  eyebrow="Mon espace", accent="en un seul fil.")
 user = require_user()
 
 with st.container(horizontal=True, gap="small"):
@@ -292,7 +278,7 @@ if not follows:
     with st.container(horizontal=True, gap="small"):
         for kind, value, label in SUGGESTIONS:
             st.button(label, key=f"suggest_{value}", icon=":material/add:", on_click=follow, args=(user, kind, value, label))
-    st.stop()
+    end_page()
 
 keys = api_keys()
 feeds, errors = load_followed(tuple((f["kind"], f["value"], f["label"]) for f in follows), keys)

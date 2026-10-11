@@ -92,6 +92,13 @@ def test_chaque_page_s_affiche(app, page):
     assert not app.exception
 
 
+def test_le_pied_de_page_reste_quand_une_page_s_arrete_tot(app):
+    app.run()
+    app.switch_page("views/quiz.py").run()  # l'accueil du quiz s'arrête avant les questions (ui.end_page)
+    assert not app.exception
+    assert any("fv-footer" in element.value for element in app.get("html"))
+
+
 def test_garder_puis_retrouver_dans_les_favoris(app, db):
     app.run()
     next(b for b in app.button if b.label == "Garder").click().run()
@@ -147,6 +154,7 @@ def test_visiteur_non_connecte(app, monkeypatch):
         assert any(b.label == "Continuer avec Google" for b in app.button), page
         assert any(b.label == "Facebook et autres comptes" for b in app.button), page
         assert any(b.label == "Créer mon compte" for b in app.button), page  # et toujours l'inscription par e-mail
+        assert any("fv-footer" in element.value for element in app.get("html")), page  # pied de page conservé
     for page in ["views/brief.py", "views/markets.py", "views/compare.py", "views/glossary.py", "views/stats.py"]:
         app.switch_page(page).run()  # les pages publiques s'affichent normalement
         assert not app.exception, page

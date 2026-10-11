@@ -409,6 +409,16 @@ def login_panel(key: str, title: str, text: str) -> None:
                    "nom et ton e-mail, et tu peux tout supprimer depuis « Mon compte ».")
 
 
+class PageEnd(Exception):
+    """Fin anticipée d'une page, à la place de st.stop() : après st.stop(), Streamlit n'affiche plus rien, pas même le
+    pied de page. app.py attrape cette exception, puis dessine le pied de page comme sur les autres pages."""
+
+
+def end_page():
+    """Arrête la page ici (connexion requise, quiz pas commencé…) ; le pied de page s'affiche quand même."""
+    raise PageEnd
+
+
 def require_user() -> str:
     """Renvoie l'utilisateur, ou affiche la carte de connexion et arrête la page."""
     user = current_user()
@@ -416,7 +426,7 @@ def require_user() -> str:
         login_panel("require", "Connecte-toi pour accéder à ton espace",
                     "Cette page contient tes données personnelles : favoris, suivis, portefeuille, alertes. "
                     "Elles sont enregistrées dans ton compte et toi seul y as accès.")
-        st.stop()
+        end_page()
     return user
 
 
@@ -770,7 +780,7 @@ def article_html(article: Article, read: bool, layout: str = "row", echoes: int 
                       f'source{"s" if echoes > 1 else ""}</span>')
     if read:
         kicker.append('<span class="fv-flag">Lu</span>')
-    heading = "h2" if layout == "lead" else "h3"
+    heading = "h3"  # sous le titre de section (h2) : la une comme les autres, sa taille vient du CSS
     link = f'href="{safe_url(article.url)}" target="_blank" rel="noopener"'
     with_dek = article.summary and (layout in ("lead", "row") or (layout == "tile" and not image))
     text = (
@@ -786,11 +796,11 @@ def article_html(article: Article, read: bool, layout: str = "row", echoes: int 
         extra = " fv-lead" if layout == "lead" else ""
         if not image:
             return f'<article class="{classes}{extra} no-media" style="--c:{color}"><div class="fv-item-text">{text}</div></article>'
-        return (f'<article class="{classes}{extra}"><a class="fv-media" {link} tabindex="-1">'
+        return (f'<article class="{classes}{extra}"><a class="fv-media" {link} tabindex="-1" aria-hidden="true">'
                 f'<img src="{safe_url(image)}" alt="" loading="lazy"></a><div class="fv-item-text">{text}</div></article>')
     if layout == "row" and image:
         return (f'<article class="{classes} has-thumb"><div class="fv-item-text">{text}</div>'
-                f'<a class="fv-thumb" {link} tabindex="-1"><img src="{safe_url(image)}" alt="" loading="lazy"></a></article>')
+                f'<a class="fv-thumb" {link} tabindex="-1" aria-hidden="true"><img src="{safe_url(image)}" alt="" loading="lazy"></a></article>')
     return f'<article class="{classes}">{text}</article>'
 
 

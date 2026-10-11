@@ -6,7 +6,7 @@ import theme
 from core import storage
 from core.alerts import KINDS, describe, is_triggered
 from theme import esc
-from ui import company_choices, flush_toast, load_symbol_quotes, require_user
+from ui import company_choices, end_page, flush_toast, load_symbol_quotes, require_user
 
 
 def remove(user: str, alert_id: int) -> None:
@@ -15,8 +15,8 @@ def remove(user: str, alert_id: int) -> None:
 
 
 flush_toast()
-theme.page_header("Alertes", "Sois prévenu quand un cours franchit un seuil : un bandeau s'affiche alors en haut "
-                  "de toutes les pages.", eyebrow="Mon espace")
+theme.page_header("Tes alertes,", "Sois prévenu quand un cours franchit un seuil : un bandeau s'affiche alors en haut "
+                  "de toutes les pages.", eyebrow="Mon espace", accent="sans surveiller l'écran.")
 user = require_user()
 choices = company_choices(user)
 
@@ -41,7 +41,7 @@ alerts = storage.list_alerts(user)
 theme.section("Mes alertes", f"{len(alerts)} alerte{'s' if len(alerts) > 1 else ''}")
 if not alerts:
     st.caption("Aucune alerte. Exemple : « LVMH en dessous de 370 », ou « CAC 40 : variation du jour d'au moins 2 % ».")
-    st.stop()
+    end_page()
 
 quotes = load_symbol_quotes(tuple(sorted({a["symbol"] for a in alerts})))
 panel = st.container(key="fvpanel_alerts")

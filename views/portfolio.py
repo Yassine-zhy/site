@@ -9,7 +9,8 @@ import streamlit as st
 import theme
 from core import metrics, portfolio, storage
 from theme import esc
-from ui import company_choices, flush_toast, load_closes, load_euro_rates, load_profile, load_symbol_quotes, require_user
+from ui import (company_choices, end_page, flush_toast, load_closes, load_euro_rates, load_profile,
+                load_symbol_quotes, require_user)
 
 PERIODS = {"1 mois": "1mo", "6 mois": "6mo", "1 an": "1y"}
 EXAMPLE = [("MC.PA", "LVMH", 10), ("TTE.PA", "TotalEnergies", 40), ("AIR.PA", "Airbus", 15), ("AAPL", "Apple", 8)]
@@ -63,8 +64,8 @@ def performance_chart(data: pd.DataFrame, period: str) -> alt.LayerChart:
 
 
 flush_toast()
-theme.page_header("Portefeuille", "Un portefeuille virtuel pour t'entraîner : aucun argent réel, aucune transaction.",
-                  eyebrow="Mon espace")
+theme.page_header("Ton portefeuille,", "Un portefeuille virtuel pour t'entraîner : aucun argent réel, aucune transaction.",
+                  eyebrow="Mon espace", accent="sans risquer un euro.")
 user = require_user()
 choices = company_choices(user)
 
@@ -106,7 +107,7 @@ if not positions:
     st.caption("Ton portefeuille est vide. Ajoute une position, ou charge un exemple : 4 actions achetées il y a "
                "six mois, au cours de l'époque.")
     st.button("Charger un portefeuille d'exemple", icon=":material/science:", on_click=load_example, args=(user,))
-    st.stop()
+    end_page()
 
 symbols = tuple(sorted({p["symbol"] for p in positions}))
 quotes = load_symbol_quotes(symbols)
@@ -114,7 +115,7 @@ rates = load_euro_rates() or {"EUR": 1.0}
 lines = portfolio.valuate(positions, {s: q.last for s, q in quotes.items()}, rates)
 if not lines:
     st.warning("Les cours ne sont pas disponibles pour le moment.", icon=":material/cloud_off:")
-    st.stop()
+    end_page()
 total = portfolio.totals(lines)
 best = max(lines, key=lambda line: line.gain_pct)
 

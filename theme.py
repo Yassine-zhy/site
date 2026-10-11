@@ -113,6 +113,8 @@ CSS = """
   --card-bg: var(--fv-surface); --card-border: var(--fv-line); --card-radius: var(--radius-lg);
   --card-shadow: var(--fv-elev); --card-shadow-hover: var(--fv-elev-hover);
   --chip-radius: var(--radius-full);
+  --control-bg: var(--fv-surface); --control-border: var(--fv-line-strong); --control-radius: var(--radius-md);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--fv-brand) 26%, transparent);
   --accent-bar: linear-gradient(180deg, var(--fv-brand), var(--fv-brand-2));
 
   /* Le fond : deux halos très doux (bleu, violet) en haut de page, qui donnent de la profondeur */
@@ -229,43 +231,90 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
    3. Composants Streamlit (boutons, champs, menus, onglets)
    ============================================================================================= */
 .stApp button, .stApp input, .stApp textarea { font-family: var(--fv-sans); }
+
+/* --- Boutons. États communs : survol, appui (léger enfoncement, sans décaler la mise en page), focus clavier --- */
 [data-testid="stBaseButton-secondary"], [data-testid="stBaseButton-secondaryFormSubmit"],
 [data-testid="stPopoverButton"], [data-testid="stBaseLinkButton-secondary"] {
-  background: var(--fv-surface); border-color: var(--fv-line-strong); border-radius: 10px;
-  box-shadow: inset 0 1px 0 var(--fv-hi), 0 1px 2px var(--fv-shadow); transition: border-color .15s, color .15s, transform .15s; }
+  background: var(--control-bg); border-color: var(--control-border); border-radius: var(--control-radius);
+  font-weight: 500; box-shadow: inset 0 1px 0 var(--fv-hi), 0 1px 2px var(--fv-shadow);
+  transition: border-color var(--duration-fast), background var(--duration-fast), color var(--duration-fast),
+    transform var(--duration-fast); }
 [data-testid="stBaseButton-secondary"]:hover, [data-testid="stBaseButton-secondaryFormSubmit"]:hover,
 [data-testid="stPopoverButton"]:hover, [data-testid="stBaseLinkButton-secondary"]:hover {
-  border-color: var(--fv-brand); color: var(--fv-brand); }
+  border-color: var(--fv-brand); color: var(--fv-brand); background: color-mix(in srgb, var(--fv-brand-soft) 60%, var(--control-bg)); }
 /* Bouton principal : dégradé bleu → violet (texte blanc lisible sur les deux teintes : contraste > 6) */
 [data-testid^="stBaseButton-primary"], [data-testid="stBaseLinkButton-primary"] { color: var(--ink-0) !important;
-  border: 0 !important; border-radius: 10px;
+  border: 0 !important; border-radius: var(--control-radius); font-weight: 600;
   background: var(--btn-primary-bg) !important;
   box-shadow: 0 1px 2px var(--fv-shadow), var(--btn-primary-glow);
   transition: filter var(--duration-fast), transform var(--duration-fast); }
-[data-testid^="stBaseButton-primary"]:hover, [data-testid="stBaseLinkButton-primary"]:hover { filter: brightness(1.08);
-  transform: translateY(-1px); }
+[data-testid^="stBaseButton-primary"]:hover, [data-testid="stBaseLinkButton-primary"]:hover { filter: brightness(1.08); }
 [data-testid^="stBaseButton-primary"] p, [data-testid="stBaseLinkButton-primary"] p { color: var(--ink-0) !important; }
+.stApp button:active:not(:disabled), .stApp a[data-testid^="stBaseLinkButton"]:active { transform: scale(.98); }
 [data-testid="stBaseButton-tertiary"], [data-testid="stBaseLinkButton-tertiary"] { color: var(--fv-muted); }
 [data-testid="stBaseButton-tertiary"]:hover, [data-testid="stBaseLinkButton-tertiary"]:hover { color: var(--fv-brand); }
-[data-testid="stPopoverBody"] { border-radius: 12px; border-color: var(--fv-line); box-shadow: 0 12px 32px var(--fv-shadow); }
-[data-testid="stExpander"] details { background: var(--fv-surface); border-color: var(--fv-line); border-radius: var(--fv-radius); }
+.stApp button:disabled { opacity: .5; cursor: not-allowed; }
+.stApp a:focus-visible, .stApp button:focus-visible, .stApp [role="radio"]:focus-visible, .stApp summary:focus-visible {
+  outline: 2px solid var(--fv-brand); outline-offset: 2px; }
+
+/* --- Champs de saisie et listes : une même surface, une bordure, un halo de marque au focus --- */
+[data-testid="stTextInputRootElement"], [data-testid="stNumberInputContainer"], [data-baseweb="select"] > div,
+[data-testid="stDateInputField"], [data-baseweb="textarea"] {
+  background: var(--control-bg) !important; border-color: var(--control-border) !important;
+  border-radius: var(--control-radius) !important; transition: border-color var(--duration-fast), box-shadow var(--duration-fast); }
+[data-testid="stTextInputRootElement"]:focus-within, [data-testid="stNumberInputContainer"]:focus-within,
+[data-baseweb="select"] > div:focus-within, [data-baseweb="textarea"]:focus-within {
+  border-color: var(--fv-brand) !important; box-shadow: var(--ring); }
+[data-baseweb="input"], [data-baseweb="base-input"], [data-testid="stNumberInputContainer"] input { background: transparent !important; }
+[data-testid="stChatInput"] > div { background: var(--control-bg); border: 1px solid var(--control-border);
+  border-radius: var(--radius-lg); box-shadow: 0 18px 40px -24px var(--fv-shadow-deep); }
+[data-testid="stChatInput"] > div:focus-within { border-color: var(--fv-brand); box-shadow: var(--ring); }
+[data-testid="stWidgetLabel"] p { font-weight: 500; color: var(--fv-text); }
+
+/* --- Sélecteur segmenté (Monde / CAC 40 / Devises…) : un rail en creux, le choix actif en relief --- */
+.stApp [role="radiogroup"]:has(> [data-variant="segmented_control"]) { display: inline-flex; flex-wrap: wrap; gap: 3px;
+  padding: 3px; border: 1px solid var(--fv-line); border-radius: calc(var(--control-radius) + 3px); background: var(--fv-sunken); }
+.stApp [data-variant="segmented_control"] { margin: 0 !important; border: 0 !important; border-radius: var(--control-radius) !important;
+  background: transparent !important; color: var(--fv-muted) !important; box-shadow: none !important;
+  transition: background var(--duration-fast), color var(--duration-fast); }
+.stApp [data-variant="segmented_control"]:hover { color: var(--fv-text) !important; }
+.stApp [data-variant="segmented_control"][aria-checked="true"] { background: var(--fv-surface) !important;
+  color: var(--fv-text) !important; box-shadow: 0 1px 3px var(--fv-shadow), inset 0 1px 0 var(--fv-hi), 0 0 0 1px var(--fv-line) !important; }
+.stApp [data-variant="segmented_control"][aria-checked="true"] p { font-weight: 600; }
+
+/* --- Pastilles (rubriques, filtres) : le choix actif se teinte de la couleur de marque --- */
+.stApp [data-variant="pills"] { border-radius: var(--chip-radius) !important; background: var(--control-bg) !important;
+  border-color: var(--fv-line-strong) !important; color: var(--fv-text) !important;
+  transition: border-color var(--duration-fast), background var(--duration-fast); }
+.stApp [data-variant="pills"]:hover { border-color: var(--fv-brand) !important; }
+.stApp [data-variant="pills"][aria-pressed="true"] { background: var(--fv-brand-soft) !important;
+  border-color: var(--fv-brand) !important; color: var(--fv-brand) !important; }
+.stApp [data-variant="pills"][aria-pressed="true"] p { font-weight: 600; }
+
+/* --- Panneaux : menus déroulants, sections repliables, formulaires, alertes, bulles --- */
+[data-testid="stPopoverBody"] { border-radius: var(--radius-lg); border-color: var(--fv-line);
+  background: var(--fv-surface); box-shadow: 0 24px 48px -20px var(--fv-shadow-deep); }
+[data-testid="stExpander"] details { background: var(--fv-surface); border-color: var(--fv-line); border-radius: var(--fv-radius);
+  box-shadow: var(--fv-elev); }
+[data-testid="stExpander"] summary p { font-weight: 600; }
 [data-testid="stExpander"] summary:hover { color: var(--fv-brand); }
 [data-testid="stForm"] { background: var(--fv-surface); border-color: var(--fv-line); border-radius: var(--fv-radius);
   box-shadow: var(--fv-elev); }
-[data-testid="stTextInputRootElement"], [data-testid="stNumberInputContainer"], [data-baseweb="select"] > div,
-[data-testid="stDateInputField"] { border-radius: 10px !important; }
-[data-testid="stTextInputRootElement"]:focus-within { box-shadow: 0 0 0 3px var(--fv-brand-soft); }
-.stApp a:focus-visible, .stApp button:focus-visible { outline: 2px solid var(--fv-brand); outline-offset: 2px; }
-[data-testid="stBaseButton-pills"], [data-testid="stBaseButton-pillsActive"] { border-radius: 999px; }
-[data-testid="stBaseButton-pills"] { background: var(--fv-surface); }
-[data-testid="stBaseButton-pillsActive"] { background: var(--fv-brand-soft); border-color: var(--fv-brand);
-  color: var(--fv-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fv-brand) 12%, transparent); }
-[data-testid="stBaseButton-segmented_controlActive"] { background: var(--fv-brand-soft); color: var(--fv-brand); }
-[data-testid="stBaseButton-segmented_control"] { background: var(--fv-surface); }
+[data-testid="stAlertContainer"] { border-radius: var(--fv-radius); border: 1px solid color-mix(in srgb, currentColor 22%, transparent); }
+[data-testid="stToast"] { background: var(--fv-surface); border: 1px solid var(--fv-line); border-radius: var(--radius-lg);
+  box-shadow: 0 24px 48px -20px var(--fv-shadow-deep); }
 [data-testid="stSidebar"] { border-right: 1px solid var(--fv-line); }
-[data-testid="stCaptionContainer"] { color: var(--fv-muted); }
-[data-testid="stAlertContainer"] { border-radius: var(--fv-radius); }
 [data-testid="stDataFrame"] { border-radius: var(--fv-radius); }
+/* Streamlit pâlit les légendes (opacité 60 %) : 2,5:1 seulement. La couleur secondaire suffit (5,7 à 7,3:1). */
+[data-testid="stCaptionContainer"] { color: var(--fv-muted); opacity: 1; }
+/* La valeur au-dessus d'un curseur : le bleu de Streamlit n'atteint que 4,2:1 sur le fond sombre ; celui de la
+   marque, 6,5:1 */
+[data-testid="stSliderThumbValue"] p { color: var(--fv-brand) !important; font-weight: 600; }
+/* Le code dans le texte (noms de fichiers, réglages) : lisible dans les deux thèmes */
+.stApp :not(pre) > code { padding: .1em .4em; border: 1px solid var(--fv-line); border-radius: var(--radius-sm);
+  background: var(--fv-hover) !important; color: var(--fv-text) !important; font: .86em var(--fv-mono); }
+/* Les badges de Streamlit (actif / inactif) : texte à pleine couleur sur leur teinte */
+.stApp .stMarkdownBadge { color: var(--fv-text) !important; font-weight: 600; }
 
 /* =============================================================================================
    4. Structure des pages : en-tête, sections, cartes
@@ -342,11 +391,12 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-eyebrow::before { content: ""; width: .45rem; height: .45rem; border-radius: 50%;
   background: linear-gradient(135deg, var(--fv-brand), var(--fv-brand-2)); }
 
-.fv-section { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .7rem; margin: 2rem 0 .35rem; }
-.fv-section h3 { display: inline-flex; align-items: center; gap: .55rem; margin: 0 !important; padding: 0 !important;
-  font: 650 1.18rem/1.3 var(--fv-sans) !important; letter-spacing: -.015em; color: var(--fv-text); }
-.fv-section h3::before { content: ""; width: 4px; height: 1.05em; border-radius: 2px; background: var(--accent-bar); }
-.fv-section small { font-size: .82rem; color: var(--fv-muted); }
+.fv-section { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .8rem; margin: 2.4rem 0 .5rem; }
+/* Plan de la page : titre h1 (l'en-tête), sections h2, articles et titres de cartes h3 (aucun niveau sauté) */
+.fv-section h2 { display: inline-flex; align-items: center; gap: .55rem; margin: 0 !important; padding: 0 !important;
+  font: 700 1.3rem/1.3 var(--fv-sans) !important; letter-spacing: -.02em; color: var(--fv-text); }
+.fv-section h2::before { content: ""; width: 4px; height: 1.05em; border-radius: 2px; background: var(--accent-bar); }
+.fv-section small { font-size: .86rem; color: var(--fv-muted); }
 
 /* Une carte : en HTML (.fv-card) ou un st.container(key="fvpanel_…") (Streamlit ajoute la classe st-key-…) */
 .fv-card, [class*="st-key-fvpanel_"], [class*="st-key-fvlead_"], [class*="st-key-fvbox_"], [class*="st-key-fvchart_"] {
@@ -354,8 +404,9 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   border: 1px solid var(--card-border); border-radius: var(--card-radius); box-shadow: var(--card-shadow); }
 .fv-card { padding: 1.15rem 1.25rem; }
 .fv-card + .fv-card { margin-top: .9rem; }
-.fv-card-title { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin: 0 0 .8rem;
-  font-size: .95rem; font-weight: 650; letter-spacing: -.01em; }
+.fv-card-title { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+  margin: 0 0 .8rem !important; padding: 0 !important; font: 650 .95rem/1.3 var(--fv-sans) !important;
+  letter-spacing: -.01em; color: var(--fv-text); }
 .fv-card-title small { font-weight: 400; font-size: .76rem; color: var(--fv-muted); }
 [class*="st-key-fvpanel_"] { gap: 0 !important; padding: .2rem 0; overflow: hidden; }
 [class*="st-key-fvbox_"] { padding: 1.3rem 1.4rem 1rem; margin-top: 1rem; }
@@ -427,13 +478,6 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 [data-testid="stColumn"]:nth-child(2) > div > [class*="st-key-fvtile_"] { animation-delay: 140ms; }
 [data-testid="stColumn"]:nth-child(3) > div > [class*="st-key-fvtile_"] { animation-delay: 200ms; }
 
-/* Les boutons d'action d'une ligne du fil restent discrets tant qu'on ne survole pas l'article (au clavier, ils
-   s'allument dès qu'un de leurs boutons reçoit le focus ; sur écran tactile, ils restent toujours visibles) */
-@media (hover: hover) and (pointer: fine) {
-  [class*="st-key-fvcard_"] [class*="st-key-fvactions_"] { opacity: .55; transition: opacity var(--duration-fast); }
-  [class*="st-key-fvcard_"]:hover [class*="st-key-fvactions_"],
-  [class*="st-key-fvcard_"]:focus-within [class*="st-key-fvactions_"] { opacity: 1; }
-}
 
 /* Barre d'outils du fil : la recherche passe sur sa propre ligne sur un petit écran */
 .st-key-fvtoolbar { flex-wrap: wrap; row-gap: .5rem; }
@@ -550,7 +594,8 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 @keyframes fv-pulse { 50% { box-shadow: 0 0 0 6px transparent; } }
 .fv-tape-window { flex: 1; overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); }
 .fv-tape-track { display: inline-flex; white-space: nowrap; padding: .55rem 0; animation: fv-tape 110s linear infinite; }
-.fv-tape:hover .fv-tape-track { animation-play-state: paused; }
+/* Un contenu qui bouge doit pouvoir s'arrêter : survol, focus clavier ou doigt posé (et « moins d'animations ») */
+.fv-tape:hover .fv-tape-track, .fv-tape:focus-within .fv-tape-track, .fv-tape:active .fv-tape-track { animation-play-state: paused; }
 .fv-tick { display: inline-flex; align-items: baseline; gap: .45rem; padding: 0 1.15rem; font-family: var(--fv-mono);
   font-size: .76rem; border-right: 1px solid var(--fv-line); }
 .fv-tick b { font-family: var(--fv-sans); font-weight: 600; font-size: .78rem; color: var(--fv-text); }
@@ -611,15 +656,17 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 /* =============================================================================================
    7. Chiffres clés, listes, tonalité, tableaux
    ============================================================================================= */
-.fv-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .7rem; margin-top: .3rem; }
-.fv-kpi { position: relative; padding: 1rem 1.1rem .95rem; background: var(--fv-surface); border: 1px solid var(--fv-line);
-  border-radius: var(--fv-radius); box-shadow: var(--fv-elev); min-width: 0; overflow: hidden; }
-.fv-kpi::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; opacity: .75;
-  background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2), transparent); }
-.fv-kpi-label { font-size: .78rem; font-weight: 500; color: var(--fv-muted); }
-.fv-kpi-value { margin-top: .35rem; font-size: 1.7rem; font-weight: 650; letter-spacing: -.015em; line-height: 1.15;
+/* Les chiffres clés, dans le style des tuiles de la marque : léger voile de couleur, liseré dégradé en haut */
+.fv-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .9rem; margin-top: .4rem; }
+.fv-kpi { position: relative; padding: 1.15rem 1.2rem 1.05rem; border: 1px solid var(--fv-line); border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--fv-brand) 7%, transparent), transparent 60%), var(--fv-surface);
+  box-shadow: inset 0 1px 0 var(--fv-hi), 0 18px 40px -26px var(--fv-shadow-deep); min-width: 0; overflow: hidden; }
+.fv-kpi::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+  background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2)); }
+.fv-kpi-label { font-size: .8rem; font-weight: 600; color: var(--fv-muted); }
+.fv-kpi-value { margin-top: .4rem; font-size: 1.85rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.12;
   font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fv-kpi-sub { margin-top: .25rem; font-size: .76rem; color: var(--fv-muted); }
+.fv-kpi-sub { margin-top: .3rem; font-size: .8rem; color: var(--fv-muted); }
 .fv-breadth { display: flex; height: 6px; border-radius: 3px; overflow: hidden; gap: 2px; margin: .5rem 0 .3rem; }
 .fv-breadth i { display: block; }
 .fv-chart-title { display: flex; align-items: center; justify-content: space-between; margin: .5rem 0 -.1rem; font-size: .8rem; }
@@ -829,12 +876,19 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 
 /* Sur écran tactile, chaque bouton fait au moins 44 px de haut : on vise sans zoomer */
 @media (pointer: coarse) {
-  [class*="st-key-fvcard_"] button, [class*="st-key-fvcard_"] a[data-testid="stBaseLinkButton-tertiary"],
-  [class*="st-key-fvcompact_"] button, [class*="st-key-fvlead_"] button, [class*="st-key-fvtile_"] button,
-  [class*="st-key-fvtile_"] a[data-testid="stBaseLinkButton-tertiary"], .st-key-fvtrends button { min-height: 44px; }
-  .fv-footer-links a { padding: .55rem 0; }
+  .stApp button, .stApp a[data-testid^="stBaseLinkButton"], .stApp [data-testid="stPopoverButton"],
+  [data-testid="stSidebarNavLink"], [data-testid="stLogoLink"], [data-testid="stTextInputRootElement"],
+  [data-testid="stNumberInputContainer"], [data-baseweb="select"] > div { min-height: 44px; }
+  [data-testid="stMainMenuButton"], [data-testid="stExpandSidebarButton"], [data-testid="stBaseButton-headerNoPadding"],
+  [data-testid="stBaseButton-elementToolbar"], [data-testid="stNumberInputStepDown"], [data-testid="stNumberInputStepUp"],
+  [data-testid="stChatInputSubmitButton"] { min-width: 44px; min-height: 44px; }
+  [data-testid="stTooltipHoverTarget"] { padding: .7rem; margin: -.7rem; }  /* la bulle d'aide « ? » : zone élargie */
+  .fv-footer-links a { display: inline-flex; align-items: center; min-height: 44px; }
+  .fv-headline a { padding-block: .9rem; }  /* zone de toucher agrandie, sans rien déplacer (lien en ligne) */
+  ul[class^="fv-"] li > a { display: inline-flex; align-items: center; min-height: 44px; }  /* listes de dépêches */
+  [data-testid="stPageLink-NavLink"] { min-height: 44px; }
 }
-.stApp button, .stApp a[href], .stApp [role="tab"], .stApp summary { cursor: pointer; }
+.stApp button, .stApp a[href], .stApp [role="tab"], .stApp summary { cursor: pointer; touch-action: manipulation; }
 
 @media (prefers-reduced-motion: reduce) {
   .fv-tape-window { overflow-x: auto; mask-image: none; }
@@ -981,12 +1035,12 @@ def feed_skeleton() -> str:
             f'{bar("92%", " fv-sk-title")}{bar("68%", " fv-sk-title")}{bar("96%")}{bar("84%")}{bar("60%")}</div></div>')
     tile = f'<div class="fv-sk-tile">{bar(kind=" fv-sk-media")}{bar("38%")}{bar("88%", " fv-sk-title")}{bar("55%")}</div>'
     return (f'<div class="fv-skeleton" role="status"><span class="fv-sr">Chargement du fil…</span>'
-            f'<div class="fv-section"><h3>À la une</h3></div>{lead}<div class="fv-sk-tiles">{tile * 3}</div></div>')
+            f'<div class="fv-section"><h2>À la une</h2></div>{lead}<div class="fv-sk-tiles">{tile * 3}</div></div>')
 
 
 def section(title: str, note: str = "") -> None:
     """Titre de section, avec une précision facultative en gris."""
-    st.html(f'<div class="fv-section"><h3>{esc(title)}</h3>{f"<small>{esc(note)}</small>" if note else ""}</div>')
+    st.html(f'<div class="fv-section"><h2>{esc(title)}</h2>{f"<small>{esc(note)}</small>" if note else ""}</div>')
 
 
 def page_header(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=()) -> None:
@@ -997,7 +1051,7 @@ def page_header(title: str, dek: str, eyebrow: str = "", accent: str = "", quote
 
 def card(body: str, title: str = "", note: str = "") -> str:
     """HTML d'une carte (fond blanc en clair, bleu nuit en sombre), avec un titre facultatif."""
-    head = f'<h4 class="fv-card-title">{esc(title)}<small>{esc(note)}</small></h4>' if title else ""
+    head = f'<h3 class="fv-card-title">{esc(title)}<small>{esc(note)}</small></h3>' if title else ""
     return f'<section class="fv-card">{head}{body}</section>'
 
 
@@ -1153,8 +1207,19 @@ ALTAIR_LOCALE = {
 
 
 def french(chart):
-    """Applique la mise en forme française à un graphique Altair (à appeler juste avant st.altair_chart)."""
-    return chart.configure(locale=ALTAIR_LOCALE)
+    """Mise en forme française et style FinVeille d'un graphique Altair (à appeler juste avant st.altair_chart).
+
+    Les couleurs du texte et des grilles restent celles du thème Streamlit (elles suivent le clair et le sombre) ;
+    on ne règle ici que ce qui vaut pour les deux : la police du site, pas de cadre ni de traits d'axe, une grille
+    en pointillés discrets, des légendes en pastilles rondes.
+    """
+    return (
+        chart.configure(locale=ALTAIR_LOCALE, font="IBM Plex Sans")
+        .configure_axis(domain=False, ticks=False, labelPadding=8, gridDash=[2, 4], labelFontSize=12,
+                        titleFontSize=12, titleFontWeight=500, titlePadding=10)
+        .configure_view(stroke=None)
+        .configure_legend(symbolType="circle", symbolSize=80, labelFontSize=12, titleFontWeight=600)
+    )
 
 
 def sparkline_uri(values: list[float], end_class: str, width: int = 84, height: int = 30) -> str:

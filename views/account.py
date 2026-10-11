@@ -8,9 +8,9 @@ import streamlit as st
 import theme
 from core import accounts, storage
 from theme import esc
-from ui import current_user, local_mode, login_panel, sign_out
+from ui import current_user, end_page, local_mode, login_panel, sign_out
 
-theme.page_header("Mon compte", "Ton profil, ta connexion et tes données personnelles.", eyebrow="Outils")
+theme.page_header("Ton compte,", "Ton profil, ta connexion et tes données personnelles.", eyebrow="Outils", accent="tes données.")
 
 if local_mode():
     # --- Mode local : une seule personne, sans connexion -------------------------------------------
@@ -26,7 +26,7 @@ else:
     if user is None:
         login_panel("account", "Crée ton compte ou connecte-toi",
                     "Gratuit. Retrouve tes favoris, tes suivis, ton portefeuille et tes alertes sur tous tes appareils.")
-        st.stop()
+        end_page()
 
     # --- Profil ----------------------------------------------------------------------------------
     theme.section("Profil")

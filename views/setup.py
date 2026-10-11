@@ -9,14 +9,15 @@ import streamlit as st
 import theme
 from core import assistant, capacity, notify, storage
 from theme import esc
-from ui import LAST_GOOD, SYMBOL_QUOTES, ai_keys, auth_providers, current_user, is_admin, local_mode, smtp_settings
+from ui import (LAST_GOOD, SYMBOL_QUOTES, ai_keys, auth_providers, current_user, end_page, is_admin, local_mode,
+                smtp_settings)
 
 theme.page_header("Configuration", "Active les connexions et les services du site. Cette page n'est visible que "
-                  "par l'administrateur.", eyebrow="Outils")
+                  "par l'administrateur.", eyebrow="Outils", accent="du site.")
 user = current_user()
 if not is_admin(user):  # sécurité : la page n'apparaît pas dans le menu, mais on vérifie aussi ici
     st.error("Cette page est réservée à l'administrateur du site.")
-    st.stop()
+    end_page()
 
 providers = auth_providers()
 keys = ai_keys()

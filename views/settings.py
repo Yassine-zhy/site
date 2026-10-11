@@ -8,7 +8,7 @@ from core import storage
 from core.config import AI_KEYS, API_KEYS, CATEGORIES
 from ui import ai_keys, api_keys, require_user
 
-theme.page_header("Réglages", "Tes préférences sont enregistrées dans ton compte et conservées.", eyebrow="Outils")
+theme.page_header("Ton FinVeille,", "Tes préférences sont enregistrées dans ton compte et conservées.", eyebrow="Réglages", accent="à ta façon.")
 user = require_user()
 
 
