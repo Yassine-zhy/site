@@ -31,5 +31,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 25. [Tenir la charge : beaucoup de visiteurs, sans crash (et Docker)](25-tenir-la-charge.md)
 26. [Refaire le design : un système de jetons, une charte, des visuels](26-systeme-de-design.md)
 27. [Des pages aussi belles que la bannière](27-pages-principales.md)
+28. [Tout le site au même niveau : composants, audit, graphiques](28-refonte-complete.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).

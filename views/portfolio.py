@@ -44,15 +44,19 @@ def logo(symbol: str) -> str:
 def performance_chart(data: pd.DataFrame, period: str) -> alt.LayerChart:
     """Deux courbes en base 100 : le portefeuille (en couleur) et le CAC 40 (en gris, pour comparaison)."""
     long = data.rename_axis("date").reset_index().melt("date", var_name="série", value_name="base100")
-    colors = alt.Scale(domain=["Mon portefeuille", "CAC 40"], range=["#3987e5", theme.NEUTRAL])
+    colors = alt.Scale(domain=["Mon portefeuille", "CAC 40"], range=[theme.SERIES_COLORS[0], theme.REFERENCE])
     ticks = {"interval": "week", "step": 1} if period == "1 mois" else {"interval": "month", "step": 1}
     x = alt.X("date:T", title=None, axis=alt.Axis(grid=False, labelAngle=0, domainOpacity=0.4, tickCount=ticks,
                                                   format="%d %b" if period == "1 mois" else "%b %Y"))
+    color = alt.Color("série:N", scale=colors, legend=alt.Legend(title=None, orient="top"))
     lines = alt.Chart(long).mark_line(strokeWidth=2, strokeJoin="round").encode(
         x=x, y=alt.Y("base100:Q", title=None, scale=alt.Scale(zero=False),
                      axis=alt.Axis(gridOpacity=0.18, domain=False, ticks=False)),
-        color=alt.Color("série:N", scale=colors, legend=alt.Legend(title=None, orient="top")),
+        color=color,
     )
+    ends = long.dropna().sort_values("date").groupby("série").tail(1)
+    span = float(long["base100"].max() - long["base100"].min()) or 1.0
+    labels = theme.end_labels(ends, x, "base100", "série", color, lambda v: theme.fr_number(v, 0), span)
     hover = alt.selection_point(fields=["date"], nearest=True, on="pointerover", empty=False, clear="pointerout")
     rule = alt.Chart(data.rename_axis("date").reset_index()).mark_rule(color=theme.NEUTRAL).encode(
         x=x, opacity=alt.condition(hover, alt.value(1), alt.value(0)),
@@ -60,7 +64,9 @@ def performance_chart(data: pd.DataFrame, period: str) -> alt.LayerChart:
                  alt.Tooltip("Mon portefeuille:Q", format=".1f"), alt.Tooltip("CAC 40:Q", format=".1f")],
     ).add_params(hover)
     baseline = alt.Chart(pd.DataFrame({"y": [100]})).mark_rule(color=theme.NEUTRAL, strokeWidth=1).encode(y="y:Q")
-    return (baseline + lines + rule).properties(height=300, background="transparent")
+    points = theme.hover_points(long, x, "base100:Q", color, hover)
+    return (baseline + lines + labels + rule + points).properties(
+        height=300, background="transparent", padding={"left": 5, "top": 5, "bottom": 5, "right": 190})
 
 
 flush_toast()

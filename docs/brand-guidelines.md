@@ -173,6 +173,10 @@ Nombres à la française : `3,52 %`, `2 512,0 Md€`, `+1,13 %`, espace insécab
 | Tuile de cours | Liseré haut vert ou rouge selon la tendance, mini-courbe 96 × 34 |
 | Pastille | Rayon complet, capitales 11 px, fond `--fv-brand-soft` |
 | Bouton principal | Dégradé de marque, texte blanc, un seul par écran |
+| Chiffre clé | Voile de marque, liseré dégradé de 3 px en haut, valeur 1,85 rem |
+| Sélecteur segmenté | Rail en creux, choix actif en relief à la couleur du texte |
+| Champ de saisie | Surface, bordure, halo de marque au focus |
+| Graphique | Couleurs `SERIES_COLORS` en ordre fixe, série de comparaison en gris, texte à l'encre, étiquettes au bout des courbes |
 | Cible tactile | 44 px de haut au minimum sur écran tactile |
 | Animation | 150 à 450 ms ; coupée si l'utilisateur demande moins de mouvement |
 

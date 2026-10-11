@@ -11,7 +11,7 @@ from core.macro import real_rate
 from theme import esc
 from ui import company_choices, current_user, load_closes, load_macro
 
-BLUE, ORANGE = "#3987e5", "#d95926"  # palette validée (couleurs des séries)
+BLUE, ORANGE = theme.SERIES_COLORS[0], theme.SERIES_COLORS[1]  # palette validée (couleurs des séries, theme.py)
 DCA_ASSETS = {
     "^FCHI": "CAC 40",
     "^GSPC": "S&P 500",
@@ -65,7 +65,8 @@ def savings_view() -> None:
     ])
     long = plan.melt("année", value_vars=["versé", "intérêts"], var_name="part", value_name="montant")
     long["ordre"] = long["part"].map({"versé": 0, "intérêts": 1})  # les sommes versées en bas, les intérêts au-dessus
-    layer = alt.Chart(long).mark_area(opacity=0.85).encode(
+    # Deux aires empilées, chacune bordée de son trait de 2 px (méthode dataviz : formes nettes, séparées)
+    layer = alt.Chart(long).mark_area(opacity=0.85, line={"strokeWidth": 2}).encode(
         order=alt.Order("ordre:Q", sort="ascending"),
         x=alt.X("année:Q", title="Années", axis=alt.Axis(tickMinStep=1, grid=False, domainOpacity=0.4)),
         y=alt.Y("montant:Q", title=None, stack="zero", axis=alt.Axis(format=",.0f", gridOpacity=0.18, domain=False)),
@@ -120,16 +121,22 @@ def dca_view() -> None:
     year_step = 1 if date.today().year - start_year <= 12 else 2 if date.today().year - start_year <= 25 else 5
     long = monthly_table.reset_index(names="date").melt("date", value_vars=["investi", "valeur"],
                                                         var_name="série", value_name="montant")
-    layer = alt.Chart(long).mark_line(strokeWidth=2).encode(
-        x=alt.X("date:T", title=None, axis=alt.Axis(format="%Y", grid=False, labelAngle=0, domainOpacity=0.4,
-                                                    tickCount={"interval": "year", "step": year_step})),
-        y=alt.Y("montant:Q", title=None, axis=alt.Axis(format=",.0f", gridOpacity=0.18, domain=False)),
-        color=alt.Color("série:N", scale=alt.Scale(domain=["investi", "valeur"], range=[theme.NEUTRAL, BLUE]),
-                        legend=alt.Legend(title=None, orient="top", labelExpr="datum.label == 'investi' ? "
-                                          "'Sommes investies' : 'Valeur du placement'")),
+    x = alt.X("date:T", title=None, axis=alt.Axis(format="%Y", grid=False, labelAngle=0, domainOpacity=0.4,
+                                                  tickCount={"interval": "year", "step": year_step}))
+    color = alt.Color("série:N", scale=alt.Scale(domain=["investi", "valeur"], range=[theme.REFERENCE, BLUE]),
+                      legend=alt.Legend(title=None, orient="top", labelExpr="datum.label == 'investi' ? "
+                                        "'Sommes investies' : 'Valeur du placement'"))
+    lines = alt.Chart(long).mark_line(strokeWidth=2).encode(
+        x=x, y=alt.Y("montant:Q", title=None, axis=alt.Axis(format=",.0f", gridOpacity=0.18, domain=False)),
+        color=color,
         tooltip=[alt.Tooltip("date:T", title="Mois", format="%m/%Y"), alt.Tooltip("série:N", title="Série"),
                  alt.Tooltip("montant:Q", title="Montant", format=",.0f")],
-    ).properties(height=300)
+    )
+    ends = long.sort_values("date").groupby("série").tail(1).assign(
+        nom=lambda frame: frame["série"].map({"investi": "Investi", "valeur": "Valeur"}))
+    span = float(long["montant"].max() - long["montant"].min()) or 1.0
+    labels = theme.end_labels(ends, x, "montant", "nom", color, lambda v: f"{theme.fr_number(v, 0)} €", span)
+    layer = (lines + labels).properties(height=300, padding={"left": 5, "top": 5, "bottom": 5, "right": 150})
     chart(layer, "dca")
     st.caption("Investissement programmé (« DCA ») : on investit la même somme chaque mois, quel que soit le cours. "
                "On achète plus de parts quand c'est bas, moins quand c'est haut, et on évite de devoir choisir le bon "
@@ -170,12 +177,14 @@ def loan_view() -> None:
     kpis(items)
 
     long = table.melt("année", value_vars=["capital", "intérêts", "assurance"], var_name="part", value_name="montant")
-    layer = alt.Chart(long).mark_bar().encode(
+    # Segments empilés séparés par un trait de 2 px de la couleur du fond
+    layer = alt.Chart(long).mark_bar(stroke=theme.chart_surface(), strokeWidth=2, cornerRadius=2).encode(
         x=alt.X("année:O", title="Année du crédit", axis=alt.Axis(labelAngle=0)),
         y=alt.Y("montant:Q", title=None, stack="zero", axis=alt.Axis(format=",.0f", gridOpacity=0.18, domain=False)),
         color=alt.Color("part:N", scale=alt.Scale(domain=["capital", "intérêts", "assurance"],
-                                                  range=[BLUE, ORANGE, theme.NEUTRAL]),
-                        legend=alt.Legend(title=None, orient="top")),
+                                                  range=[BLUE, ORANGE, theme.REFERENCE]),
+                        legend=alt.Legend(title=None, orient="top", labelExpr="upper(slice(datum.label, 0, 1)) + "
+                                          "slice(datum.label, 1)")),
         order=alt.Order("part:N", sort="ascending"),
         tooltip=[alt.Tooltip("année:O", title="Année"), alt.Tooltip("part:N", title="Part"),
                  alt.Tooltip("montant:Q", title="Payé dans l'année (€)", format=",.0f")],
@@ -224,13 +233,15 @@ def inflation_view() -> None:
         ("Rendement réel du placement", theme.change(real), f"{theme.fr_number(nominal, 2)} % − inflation "
                                                              f"{theme.fr_number(inflation, 1)} % (Fisher)"),
     ])
-    layer = alt.Chart(table).mark_line(strokeWidth=2, color=ORANGE).encode(
+    base = alt.Chart(table).encode(
         x=alt.X("année:Q", title="Années", axis=alt.Axis(tickMinStep=1, grid=False, domainOpacity=0.4)),
         y=alt.Y("pouvoir d'achat:Q", title=None, scale=alt.Scale(zero=True),
                 axis=alt.Axis(format=",.0f", gridOpacity=0.18, domain=False)),
         tooltip=[alt.Tooltip("année:Q", title="Année"),
                  alt.Tooltip("pouvoir d'achat:Q", title="Pouvoir d'achat (€)", format=",.0f")],
-    ).properties(height=260)
+    )
+    layer = (base.mark_area(color=theme.area_fill(ORANGE)) + base.mark_line(strokeWidth=2, color=ORANGE)
+             ).properties(height=260)
     chart(layer, "inflation")
     st.caption("Un placement dont le rendement est inférieur à l'inflation fait perdre du pouvoir d'achat, même si "
                "son solde augmente : c'est le rendement réel qui compte.")

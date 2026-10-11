@@ -39,7 +39,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Glossaire** | 55 termes de la finance expliqués simplement, recherche, mot du jour. |
 | **En chiffres** | Tableau de bord du flux : dépêches par heure et par rubrique, entreprises les plus citées, tonalité par rubrique. |
 | **Résumé par IA** | « L'essentiel » en 3 points : Gemini ou Groq (offres gratuites) en français, ou résumé extractif local sans clé ; repli automatique en cas d'erreur, résumés mis en cache. |
-| **Design** | Système de design en jetons à trois niveaux (primitifs → sémantiques → composants), thèmes clair et sombre (bleu nuit) avec `light-dark()` en CSS, en-têtes « héros » dans le style des visuels de la marque (grand titre en dégradé, cours en tuiles flottantes), squelette de chargement, tuiles de cours colorées par tendance, cartes en relief. Contrastes AA mesurés, cibles tactiles de 44 px, animations coupées si l'on préfère moins de mouvement, couleurs adaptées au daltonisme. [Charte de marque](docs/brand-guidelines.md) et visuels pour LinkedIn et GitHub (guide 26). |
+| **Design** | Système de design en jetons à trois niveaux (primitifs → sémantiques → composants), thèmes clair et sombre (bleu nuit) avec `light-dark()` en CSS, en-têtes « héros » dans le style des visuels de la marque (grand titre en dégradé, cours en tuiles flottantes), squelette de chargement, tuiles de cours colorées par tendance, cartes en relief, composants communs (boutons, champs, sélecteurs). Graphiques à palette validée pour le daltonisme, étiquettes directes au bout des courbes. Accessibilité mesurée par un audit automatique de toutes les pages (`tools/ux_audit.py`). Contrastes AA mesurés, cibles tactiles de 44 px, animations coupées si l'on préfère moins de mouvement, couleurs adaptées au daltonisme. [Charte de marque](docs/brand-guidelines.md) et visuels pour LinkedIn et GitHub (guide 26). |
 
 ## Aperçu
 
@@ -88,7 +88,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-27 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+28 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 
@@ -131,10 +131,10 @@ views/            une page par fichier (fil, brief, assistant IA, en chiffres, m
 core/             logique métier : sources, agrégation, classement, statistiques, marché, indicateurs de
                   risque, portefeuille, alertes, brief, économie (BCE, FRED), crypto, simulateurs, quiz, résumé,
                   assistant IA, images, comptes, e-mails, stockage, tenue de charge
-tests/            256 tests pytest, rejoués aussi sur PostgreSQL si une base de test est fournie (sources, recherche,
+tests/            257 tests pytest, rejoués aussi sur PostgreSQL si une base de test est fournie (sources, recherche,
                   base et comptes, IA, tenue de charge, indicateurs, portefeuille, alertes, brief, chaque page)
 scripts/          tâche planifiée : envoi du brief et des alertes par e-mail
-tools/            test de charge, générateur du logo
+tools/            test de charge, audit d'accessibilité, générateur du logo
 deploy/           démarrage du conteneur Docker, fiche du Space Hugging Face
 docs/             charte de marque, captures d'écran, visuels (bannière LinkedIn, aperçu GitHub)
 guide/            le guide de construction, étape par étape

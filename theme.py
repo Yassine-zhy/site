@@ -939,7 +939,11 @@ def fr_day(moment) -> str:
     return f"{moment.day} {_MONTHS[moment.month - 1]}"
 
 
-SERIES_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500"]  # 4 séries au plus, ordre fixe (palette validée)
+# Couleurs des séries des graphiques : ordre fixe, jamais recyclé (4 séries au plus, au-delà : « Autres »).
+# Validées par le script de la méthode dataviz sur les deux fonds de carte (#ffffff et #0c111d) : séparation pour
+# les daltoniens ΔE 8,4 (cible 8), vision normale ΔE 19,8 (plancher 15), contraste ≥ 3:1 sur les deux fonds.
+SERIES_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500"]
+REFERENCE = NEUTRAL  # la série de comparaison (CAC 40, sommes versées…) : en gris, elle ne vole pas la vedette
 
 
 def clock(moment: datetime) -> str:
@@ -1204,6 +1208,68 @@ ALTAIR_LOCALE = {
         "shortMonths": _MONTHS_SHORT,
     },
 }
+
+
+def chart_mode() -> str:
+    """« dark » ou « light » : le thème que le navigateur du visiteur a signalé (pour les couleurs des graphiques,
+    où light-dark() n'existe pas). Clair par défaut."""
+    try:
+        return "dark" if st.context.theme.type == "dark" else "light"
+    except Exception:  # hors d'une session Streamlit (tests)
+        return "light"
+
+
+def chart_ink(strong: bool = False) -> str:
+    """Couleur du texte dans un graphique : un jeton de texte, jamais la couleur d'une série."""
+    dark = chart_mode() == "dark"
+    if strong:
+        return "#e8edf6" if dark else "#0b1220"
+    return "#96a2b9" if dark else "#566176"
+
+
+def chart_surface() -> str:
+    """Le fond des cartes qui contiennent les graphiques : pour les anneaux et les espaces de 2 px entre les formes."""
+    return "#0c111d" if chart_mode() == "dark" else "#ffffff"
+
+
+def _rgba(color: str, alpha: float) -> str:
+    red, green, blue = (int(color.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({red},{green},{blue},{alpha})"
+
+
+def area_fill(color: str):
+    """Le voile dégradé sous une courbe seule, comme les mini-courbes des tuiles : la couleur s'efface vers le bas."""
+    import altair as alt
+
+    return alt.Gradient(gradient="linear", x1=1, x2=1, y1=1, y2=0,
+                        stops=[alt.GradientStop(color=_rgba(color, 0), offset=0),
+                               alt.GradientStop(color=_rgba(color, 0.26), offset=1)])
+
+
+def end_labels(ends, x, value: str, series: str, color, fmt, span: float):
+    """Étiquettes directes au bout des courbes : un point de la couleur de la série (cerclé du fond) et, à côté, le
+    nom et la dernière valeur, à la couleur du texte. Deux étiquettes trop proches sont écartées l'une de l'autre
+    (au moins 8 % de la hauteur) pour ne jamais se chevaucher ; le point, lui, reste sur sa courbe."""
+    import altair as alt
+
+    ends = ends.sort_values(value).reset_index(drop=True)
+    gap, positions = span * 0.08, []
+    for current in ends[value]:
+        positions.append(max(current, positions[-1] + gap) if positions else current)
+    ends = ends.assign(label_y=positions, label=[f"{name}  {fmt(v)}" for name, v in zip(ends[series], ends[value])])
+    dots = alt.Chart(ends).mark_circle(size=70, opacity=1, stroke=chart_surface(), strokeWidth=2).encode(
+        x=x, y=f"{value}:Q", color=color)
+    text = alt.Chart(ends).mark_text(align="left", dx=10, fontSize=12, fontWeight=600, color=chart_ink(strong=True)
+                                     ).encode(x=x, y="label_y:Q", text="label:N")
+    return dots + text
+
+
+def hover_points(data, x, y, color, hover):
+    """Au survol, un point sur chaque courbe à la date visée (il complète le réticule et la bulle d'aide)."""
+    import altair as alt
+
+    return alt.Chart(data).mark_circle(size=60, stroke=chart_surface(), strokeWidth=2).encode(
+        x=x, y=y, color=color, opacity=alt.condition(hover, alt.value(1), alt.value(0)))
 
 
 def french(chart):
