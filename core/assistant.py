@@ -331,6 +331,19 @@ class Prepared:
     messages: list[dict]
 
 
+_DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+_MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre",
+           "décembre"]
+
+
+def fr_today(now: datetime) -> str:
+    """« dimanche 11 octobre 2026 » (heure de Paris). Avec « 11/10/2026 » seulement, le modèle devinait le jour de
+    la semaine, et se trompait (« ce vendredi 11 octobre »)."""
+    from zoneinfo import ZoneInfo
+    local = now.astimezone(ZoneInfo("Europe/Paris"))
+    return f"{_DAYS[local.weekday()]} {local.day} {_MONTHS[local.month - 1]} {local.year}"
+
+
 def _fr(value: float, decimals: int = 2) -> str:
     return f"{value:,.{decimals}f}".replace(",", " ").replace(".", ",")
 
@@ -366,7 +379,7 @@ def prepare(question: str, history: list[dict], articles: list[Article], quotes=
                f"DÉPÊCHES :\n{documents_text(sources)}"]
     if glossary:
         context.append("GLOSSAIRE FINVEILLE :\n" + "\n".join(f"{term} : {text}" for term, text in glossary))
-    messages = [{"role": "system", "content": SYSTEM_PROMPT.format(today=now.strftime("%d/%m/%Y"))}]
+    messages = [{"role": "system", "content": SYSTEM_PROMPT.format(today=fr_today(now))}]
     messages += [{"role": turn["role"], "content": turn["content"]} for turn in history[-MAX_HISTORY:]]
     messages.append({"role": "user", "content": "\n\n".join(context) + f"\n\nQUESTION : {question}"})
     return Prepared(question, sources, glossary, messages)
@@ -578,7 +591,7 @@ def company_offline(name: str, profile: dict, stats: dict) -> str:
 
 def digest_messages(articles: list[Article], quotes, now: datetime | None = None) -> tuple[list[dict], list[Source]]:
     sources = make_sources(articles[:MAX_SOURCES])
-    prompt = DIGEST_PROMPT.format(today=(now or datetime.now(timezone.utc)).strftime("%d/%m/%Y"),
+    prompt = DIGEST_PROMPT.format(today=fr_today(now or datetime.now(timezone.utc)),
                                   market="\n".join(market_lines(quotes)) or "(indisponibles)",
                                   documents=documents_text(sources))
     return [{"role": "user", "content": prompt}], sources

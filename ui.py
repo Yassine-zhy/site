@@ -740,17 +740,16 @@ def _save_note(user: str, article_id: str, widget_key: str) -> None:
     st.session_state["fv_toast"] = "Note enregistrée"
 
 
-def article_html(article: Article, read: bool, layout: str = "row", echoes: int = 0, image: str | None = None,
-                 cover: bool = False) -> str:
+def article_html(article: Article, read: bool, layout: str = "row", echoes: int = 0, image: str | None = None) -> str:
     """Le HTML d'un article, selon sa présentation :
 
-    - « lead » : la une, grande image à gauche, titre et chapeau à droite ;
-    - « tile » : une vignette, image en haut, titre en dessous (les autres titres) ;
-    - « row » : une ligne du fil, avec une petite image à droite s'il y en a une ;
-    - « compact » : une ligne de titre, sans chapeau ni image.
+    - « lead » : la une, grande photo à gauche, titre et chapeau à droite ;
+    - « tile » : une vignette, photo en haut, titre en dessous (les autres titres) ;
+    - « row » : une ligne du fil, avec une petite photo à droite s'il y en a une ;
+    - « compact » : une ligne de titre, sans chapeau ni photo.
 
-    Pour la une et les vignettes, un article sans image reçoit une couverture dessinée (theme.cover_html) ; pour
-    une ligne, seulement si `cover` est vrai (une petite couverture au logo de la source).
+    Sans vraie photo, rien n'est dessiné à la place : la une et les vignettes passent en version texte, avec un
+    liseré à la couleur de la rubrique.
     """
     label = CATEGORIES.get(article.category, article.category)
     kicker = [theme.category_tag(article.category, label)]
@@ -766,24 +765,25 @@ def article_html(article: Article, read: bool, layout: str = "row", echoes: int 
         kicker.append('<span class="fv-flag">Lu</span>')
     heading = "h2" if layout == "lead" else "h3"
     link = f'href="{safe_url(article.url)}" target="_blank" rel="noopener"'
+    with_dek = article.summary and (layout in ("lead", "row") or (layout == "tile" and not image))
     text = (
         f'<div class="fv-kicker">{"".join(kicker)}</div>'
         f'<{heading} class="fv-headline"><a {link}>{esc(article.title)}</a></{heading}>'
-        + (f'<p class="fv-dek">{esc(article.summary)}</p>' if article.summary and layout in ("lead", "row") else "")
+        + (f'<p class="fv-dek">{esc(article.summary)}</p>' if with_dek else "")
         + (f'<p class="fv-tile-src"><img src="{theme.favicon_url(article.url)}" alt="" loading="lazy">'
            f"{esc(article.source)}</p>" if layout == "tile" else "")
     )
     classes = f'fv-item layout-{layout}{" is-read" if read else ""}{" is-compact" if layout == "compact" else ""}'
+    color = theme.CATEGORY_COLORS.get(article.category, theme.BRAND)
     if layout in ("lead", "tile"):
-        media = (f'<img src="{safe_url(image)}" alt="" loading="lazy">' if image
-                 else theme.cover_html(article.category, label, article.source, article.url, article.title))
-        return (f'<article class="{classes}{" fv-lead" if layout == "lead" else ""}">'
-                f'<a class="fv-media" {link} tabindex="-1">{media}</a><div class="fv-item-text">{text}</div></article>')
-    if layout == "row" and (image or cover):
-        thumb = (f'<img src="{safe_url(image)}" alt="" loading="lazy">' if image
-                 else theme.cover_html(article.category, label, article.source, article.url, article.title, mini=True))
+        extra = " fv-lead" if layout == "lead" else ""
+        if not image:
+            return f'<article class="{classes}{extra} no-media" style="--c:{color}"><div class="fv-item-text">{text}</div></article>'
+        return (f'<article class="{classes}{extra}"><a class="fv-media" {link} tabindex="-1">'
+                f'<img src="{safe_url(image)}" alt="" loading="lazy"></a><div class="fv-item-text">{text}</div></article>')
+    if layout == "row" and image:
         return (f'<article class="{classes} has-thumb"><div class="fv-item-text">{text}</div>'
-                f'<a class="fv-thumb" {link} tabindex="-1">{thumb}</a></article>')
+                f'<a class="fv-thumb" {link} tabindex="-1"><img src="{safe_url(image)}" alt="" loading="lazy"></a></article>')
     return f'<article class="{classes}">{text}</article>'
 
 
@@ -819,7 +819,7 @@ def article_card(
 
     kind = {"lead": "fvlead", "tile": "fvtile", "compact": "fvcompact", "row": "fvcard"}[layout]
     with st.container(key=f"{kind}_{key}", gap="small"):
-        st.html(article_html(article, read, layout, echoes, picture, cover=show_image and layout == "row"))
+        st.html(article_html(article, read, layout, echoes, picture))
         if note:
             st.html(f'<blockquote class="fv-note-block"><b>Ma note</b>{esc(note)}</blockquote>')
         if summary_open:

@@ -77,7 +77,7 @@ def test_prepare_builds_numbered_documents_and_short_history():
     history = [{"role": "user" if n % 2 == 0 else "assistant", "content": f"message {n}"} for n in range(10)]
     prepared = assistant.prepare("Que fait la Fed ?" + " " * 600, history, ARTICLES, quotes, now=NOW)
     system, *previous, last = prepared.messages
-    assert system["role"] == "system" and "10/10/2026" in system["content"]
+    assert system["role"] == "system" and "samedi 10 octobre 2026" in system["content"]  # le jour, pas à deviner
     assert [m["content"] for m in previous] == [f"message {n}" for n in range(4, 10)]  # les 6 derniers
     assert "[1] Fed officials see another rate hike coming — CNBC, " in last["content"]
     assert "CAC 40 : 7 803,30 (+0,95 % sur la séance)" in last["content"]
@@ -382,4 +382,4 @@ def test_company_and_digest_messages_contain_the_data():
     assert "ROE : 16,6 %" in prompt and "Capitalisation : 187,3 milliards" in prompt and "Bêta" not in prompt
     assert len(sources) == 6 and "[6]" in prompt
     messages, sources = assistant.digest_messages(ARTICLES, [], now=NOW)
-    assert "10/10/2026" in messages[0]["content"] and len(sources) == assistant.MAX_SOURCES
+    assert "samedi 10 octobre 2026" in messages[0]["content"] and len(sources) == assistant.MAX_SOURCES
