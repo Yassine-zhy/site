@@ -174,9 +174,9 @@ et réglages de charge) et `finveille/requirements.txt`, à côté du fichier de
 
 1. Va sur <https://share.streamlit.io> → **Continue with GitHub** (autorise l'accès à tes dépôts).
 2. **Create app** → *Deploy a public app from GitHub*, puis :
-   - *Repository* : `ton-pseudo/site-bu` ;
-   - *Branch* : la branche du projet ;
-   - *Main file path* : `finveille/app.py` ;
+   - *Repository* : `ton-pseudo/finveille` (le dépôt public du projet) ;
+   - *Branch* : `main` ;
+   - *Main file path* : `app.py` (ou `finveille/app.py` si le projet est dans un sous-dossier d'un autre dépôt) ;
    - *App URL* : par exemple `finveille` (→ `https://finveille.streamlit.app`, si le nom est libre).
 3. **Advanced settings** : *Python version* 3.12 ; dans *Secrets*, colle au format TOML :
 
@@ -270,6 +270,7 @@ propre dépôt, c'est `finveille/.github/workflows/huggingface.yml` qui prend le
 | Le Space Hugging Face affiche « Runtime error » | Erreur au démarrage | Onglet *Logs* du Space ; vérifie `DATABASE_URL` et les secrets. |
 | Comptes perdus après un redémarrage du Space | Disque non conservé | Configure `DATABASE_URL` (étape 20). |
 | Le workflow affiche « Secret HF_TOKEN absent » | Le jeton n'est pas dans les secrets GitHub | *Settings → Secrets and variables → Actions*, puis *Re-run all jobs*. |
+| Streamlit : « This repository does not exist » | Dépôt **privé** : Streamlit n'a pas l'autorisation de le lire | Dépôt public, ou autorise l'accès aux dépôts privés dans les réglages de ton compte Streamlit. |
 | `402 Payment Required … requires a PRO subscription` | Hugging Face réserve les Spaces Docker à l'abonnement PRO | Mets le site en ligne sur Streamlit Community Cloud (gratuit, § 6). |
 | « Mode sans IA » sur le site en ligne | `GEMINI_API_KEY` absent des *Secrets* de l'hébergeur | Streamlit Cloud : ⋮ → *Settings* → *Secrets*. |
 | `Invalid user token` | Jeton mal copié, ou de type « Read » | Recrée un jeton de type **Write**. |
