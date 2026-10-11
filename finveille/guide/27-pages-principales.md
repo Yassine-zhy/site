@@ -118,6 +118,10 @@ fil… » (`role="status"`).
   }
   ```
 
+  > **Retiré à l'étape 28.** L'audit d'accessibilité a mesuré ces boutons pâlis à 3,0:1 (sombre) et 2,4:1 (clair),
+  > sous le minimum de 4,5:1 : un visiteur qui ne survole pas l'article les lit mal. La lisibilité passe avant
+  > l'effet : ils restent désormais à pleine couleur (gris secondaire, 6 à 7:1).
+
 - **Les dépêches arrivent en cascade** (300 à 450 ms, la une puis les vignettes une à une). L'animation ne se joue
   qu'une fois : Streamlit garde les éléments déjà affichés d'une exécution à l'autre.
 - **L'en-tête du fil n'est pas animé** (classe `is-live`) : il se redessine chaque minute pour les horloges des
@@ -148,4 +152,4 @@ fil… » (`role="status"`).
 | Le squelette clignote à chaque clic | Il s'affiche même quand les photos sont en mémoire | Ne l'afficher que si `images.all_known(...)` est faux. |
 | Un test Playwright trouve le texte trop tôt | `get_by_text` ignore la casse : « en continu. » (titre) répond pour « En continu » | `get_by_text("En continu", exact=True)`. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [tout le site au même niveau](28-refonte-complete.md). Retour au [sommaire du guide](README.md).

@@ -32,10 +32,10 @@ def comparison_chart(rebased: pd.DataFrame, names: dict[str, str], colors: dict[
                      axis=alt.Axis(gridOpacity=0.18, domain=False, ticks=False)),
         color=color,
     )
-    # Étiquette directe au bout de chaque courbe (en plus de la légende)
-    ends = alt.Chart(long).transform_window(rank="rank()", sort=[alt.SortField("date", order="descending")],
-                                            groupby=["entreprise"]).transform_filter("datum.rank == 1")
-    end_dots = ends.mark_circle(size=70).encode(x=x, y="base100:Q", color=color)
+    # Étiquettes directes au bout de chaque courbe (nom + dernière valeur), en plus de la légende
+    ends = long.dropna().sort_values("date").groupby("entreprise").tail(1)
+    span = float(long["base100"].max() - long["base100"].min()) or 1.0
+    labels = theme.end_labels(ends, x, "base100", "entreprise", color, lambda v: theme.fr_number(v, 0), span)
     baseline = alt.Chart(pd.DataFrame({"y": [100]})).mark_rule(color=theme.NEUTRAL, strokeWidth=1).encode(y="y:Q")
     hover = alt.selection_point(fields=["date"], nearest=True, on="pointerover", empty=False, clear="pointerout")
     rule = alt.Chart(wide).mark_rule(color=theme.NEUTRAL).encode(
@@ -44,7 +44,9 @@ def comparison_chart(rebased: pd.DataFrame, names: dict[str, str], colors: dict[
         tooltip=[alt.Tooltip("date:T", title="Date", format="%d/%m/%Y")]
         + [alt.Tooltip(f"{name}:Q", title=name, format=".1f") for name in colors],
     ).add_params(hover)
-    return (baseline + lines + end_dots + rule).properties(height=340, background="transparent")
+    points = theme.hover_points(long, x, "base100:Q", color, hover)
+    return (baseline + lines + labels + rule + points).properties(height=340, background="transparent",
+                                                                   padding={"left": 5, "top": 5, "bottom": 5, "right": 150})
 
 
 theme.page_header("Comparer", "Jusqu'à quatre entreprises côte à côte : performance, risque et valorisation.",
@@ -153,20 +155,23 @@ cloud = alt.Chart(portfolios).mark_circle(size=12, opacity=0.35, color=theme.NEU
                        alt.Tooltip("sharpe:Q", title="Sharpe", format=".2f")]
     + [alt.Tooltip(f"{s}:Q", title=names[s], format=".0%") for s in selected],
 )
-line = alt.Chart(frontier).mark_line(strokeWidth=2.5, color="#3987e5").encode(x=x, y=y)
-points = alt.Chart(assets).mark_circle(size=110, opacity=1).encode(
+# La frontière et les deux portefeuilles remarquables sont à l'encre du texte : les couleurs des séries sont
+# réservées aux entreprises (une couleur, un sens)
+ink = theme.chart_ink(strong=True)
+line = alt.Chart(frontier).mark_line(strokeWidth=2.5, color=ink).encode(x=x, y=y)
+points = alt.Chart(assets).mark_circle(size=110, opacity=1, stroke=theme.chart_surface(), strokeWidth=2).encode(
     x=x, y=y, color=alt.Color("nom:N", scale=alt.Scale(domain=list(colors), range=list(colors.values())),
                               legend=alt.Legend(title=None, orient="top")),
     tooltip=[alt.Tooltip("nom:N", title="Entreprise"), alt.Tooltip("rendement:Q", format=".1f"),
              alt.Tooltip("volatilité:Q", format=".1f")],
 )
-labels = alt.Chart(assets).mark_text(align="left", dx=8, dy=-6, fontSize=11, color=theme.NEUTRAL).encode(
-    x=x, y=y, text="nom:N")
-stars = alt.Chart(special).mark_point(size=260, filled=True, strokeWidth=1.5, stroke="white").encode(
+labels = alt.Chart(assets).mark_text(align="left", dx=9, dy=-7, fontSize=12, fontWeight=600,
+                                     color=theme.chart_ink()).encode(x=x, y=y, text="nom:N")
+stars = alt.Chart(special).mark_point(size=260, filled=True, strokeWidth=2, stroke=theme.chart_surface()).encode(
     x=x, y=y,
     shape=alt.Shape("portefeuille:N", scale=alt.Scale(domain=list(best), range=["diamond", "triangle-up"]),
-                    legend=alt.Legend(title=None, orient="top", symbolSize=180, symbolFillColor="#c98500")),
-    color=alt.value("#c98500"),
+                    legend=alt.Legend(title=None, orient="top", symbolSize=180, symbolFillColor=ink)),
+    color=alt.value(ink),
     tooltip=[alt.Tooltip("portefeuille:N", title="Portefeuille"), alt.Tooltip("rendement:Q", format=".1f"),
              alt.Tooltip("volatilité:Q", format=".1f"), alt.Tooltip("sharpe:Q", title="Sharpe", format=".2f")],
 )

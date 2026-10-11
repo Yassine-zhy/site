@@ -68,18 +68,21 @@ def news_markers(closes: pd.Series, articles) -> pd.DataFrame:
 def price_chart(closes: pd.Series, currency: str, long_period: bool, markers: pd.DataFrame) -> alt.LayerChart:
     """Courbe du cours de clôture, avec un réticule et les dépêches placées sur la courbe.
 
-    Pas de surface colorée sous la courbe : elle obligerait l'axe à partir de zéro et écraserait les variations.
+    Sous la courbe, un voile dégradé qui descend jusqu'au bas du graphique (y2 = « height ») : l'axe ne part pas de
+    zéro, les variations restent bien visibles.
     """
     data = closes.rename("cours").rename_axis("date").reset_index()
     base = alt.Chart(data).encode(
         # Mois en français grâce à theme.french (voir theme.ALTAIR_LOCALE)
         x=alt.X("date:T", title=None, axis=alt.Axis(grid=False, labelAngle=0, tickCount=6, domainOpacity=0.4,
                                                     format="%b %Y" if long_period else "%d %b")),
-        y=alt.Y("cours:Q", title=None, scale=alt.Scale(zero=False),
+        y=alt.Y("cours:Q", title=None, scale=alt.Scale(zero=False), stack=None,  # le voile ne force pas le zéro
                 axis=alt.Axis(gridOpacity=0.18, domain=False, ticks=False, tickCount=5)),
     )
     hover = alt.selection_point(fields=["date"], nearest=True, on="pointerover", empty=False, clear="pointerout")
-    line = base.mark_line(color="#3987e5", strokeWidth=2, strokeJoin="round")
+    blue = theme.SERIES_COLORS[0]
+    area = base.mark_area(color=theme.area_fill(blue)).encode(y2=alt.value("height"))
+    line = base.mark_line(color=blue, strokeWidth=2, strokeJoin="round")
     rule = (
         base.mark_rule(color=theme.NEUTRAL, strokeWidth=1)
         .encode(opacity=alt.condition(hover, alt.value(1), alt.value(0)),
@@ -87,10 +90,10 @@ def price_chart(closes: pd.Series, currency: str, long_period: bool, markers: pd
                          alt.Tooltip("cours:Q", title=f"Clôture ({currency})", format=",.2f")])
         .add_params(hover)
     )
-    dot = base.mark_point(color="#3987e5", filled=True, size=60).encode(
+    dot = base.mark_circle(color=blue, size=70, stroke=theme.chart_surface(), strokeWidth=2).encode(
         opacity=alt.condition(hover, alt.value(1), alt.value(0))
     )
-    layers = line + rule + dot
+    layers = area + line + rule + dot
     if not markers.empty:
         news = alt.Chart(markers).mark_point(shape="diamond", filled=True, size=90, color=theme.NEUTRAL).encode(
             x="date:T", y="cours:Q",

@@ -14,7 +14,7 @@ from ui import end_page, hero_quotes, load_macro, load_yield_curves
 
 START = f"{date.today().year - 10}-01-01"  # dix ans d'historique
 ZONES = [EA, FR, US]
-ZONE_COLORS = {EA: "#3987e5", FR: "#199e70", US: "#d95926"}  # palette validée, une couleur fixe par zone
+ZONE_COLORS = {EA: theme.SERIES_COLORS[0], FR: theme.SERIES_COLORS[2], US: theme.SERIES_COLORS[1]}  # une couleur fixe par zone
 ROWS = [  # (titre de la ligne, {zone: clé de l'indicateur})
     ("Inflation", {EA: "infl_ea", FR: "infl_fr", US: "infl_us"}),
     ("Inflation sous-jacente", {EA: "core_ea", US: "core_us"}),
@@ -82,13 +82,17 @@ def line_chart(series: dict[str, pd.Series], height: int = 260, step: bool = Fal
         tooltip=[alt.Tooltip("date:T", title="Date", format="%m/%Y")]
         + [alt.Tooltip(f"{zone}:Q", title=zone, format=".2f") for zone in series],
     ).add_params(hover)
-    layers = [lines, rule]
+    ends = long.sort_values("date").groupby("zone").tail(1)
+    span = float(long["valeur"].max() - long["valeur"].min()) or 1.0
+    labels = theme.end_labels(ends, x, "valeur", "zone", color, lambda v: f"{theme.fr_number(v, 1)} %", span)
+    layers = [lines, labels, rule, theme.hover_points(long, x, y, color, hover)]
     if target is not None:
         goal = pd.DataFrame({"y": [target], "label": [f"objectif {theme.fr_number(target, 0)} %"]})
         layers.insert(0, alt.Chart(goal).mark_rule(color=theme.NEUTRAL, strokeDash=[4, 4]).encode(y="y:Q"))
-        layers.insert(1, alt.Chart(goal).mark_text(align="left", dx=4, dy=-7, color=theme.NEUTRAL, fontSize=11)
+        layers.insert(1, alt.Chart(goal).mark_text(align="left", dx=4, dy=-7, color=theme.chart_ink(), fontSize=11)
                       .encode(y="y:Q", text="label:N", x=alt.value(0)))
-    return alt.layer(*layers).properties(height=height, background="transparent")
+    return alt.layer(*layers).properties(height=height, background="transparent",
+                                         padding={"left": 5, "top": 5, "bottom": 5, "right": 150})
 
 
 def pick(*keys: str) -> dict[str, pd.Series]:
@@ -162,8 +166,9 @@ if curves:
                 y=alt.Y("taux:Q", title=None, scale=alt.Scale(zero=False),
                         axis=alt.Axis(format=".1f", gridOpacity=0.18, domain=False, ticks=False)),
                 color=alt.Color("date:N", scale=alt.Scale(domain=["Aujourd'hui", "Il y a un an"],
-                                                          range=[ZONE_COLORS[zone], theme.NEUTRAL]),
-                                legend=alt.Legend(title=None, orient="top")),
+                                                          range=[ZONE_COLORS[zone], theme.REFERENCE]),
+                                legend=alt.Legend(title=None, orient="top", symbolType="stroke", symbolStrokeWidth=3,
+                                                  symbolSize=260)),
                 strokeDash=alt.StrokeDash("date:N", scale=alt.Scale(domain=["Aujourd'hui", "Il y a un an"],
                                                                      range=[[1, 0], [4, 3]]), legend=None),
                 tooltip=[alt.Tooltip("maturité:N", title="Durée"), alt.Tooltip("date:N", title="Courbe"),

@@ -101,18 +101,25 @@ if history:
                    "haut l'euphorie (un risque de correction). C'est un thermomètre, pas une prévision.")
     with right:
         frame = pd.DataFrame([{"date": m, "indice": v, "humeur": lbl} for m, v, lbl in history])
-        base = alt.Chart(frame).encode(x=alt.X("date:T", title=None, axis=alt.Axis(format="%b %Y", grid=False,
-                                                                                  labelAngle=0, domainOpacity=0.4)))
-        line = base.mark_line(strokeWidth=1.8, color="#3987e5").encode(
-            y=alt.Y("indice:Q", title=None, scale=alt.Scale(domain=[0, 100]),
-                    axis=alt.Axis(values=[0, 25, 50, 75, 100], gridOpacity=0.18, domain=False, ticks=False)),
+        x = alt.X("date:T", title=None, axis=alt.Axis(format="%b %Y", grid=False, labelAngle=0, domainOpacity=0.4))
+        y = alt.Y("indice:Q", title=None, scale=alt.Scale(domain=[0, 100]),
+                  axis=alt.Axis(values=[0, 25, 50, 75, 100], gridOpacity=0.18, domain=False, ticks=False))
+        base = alt.Chart(frame).encode(x=x, y=y)
+        blue = theme.SERIES_COLORS[0]
+        area = base.mark_area(color=theme.area_fill(blue))  # le voile dégradé, comme les mini-courbes des tuiles
+        line = base.mark_line(strokeWidth=2, color=blue, strokeJoin="round")
+        hover = alt.selection_point(fields=["date"], nearest=True, on="pointerover", empty=False, clear="pointerout")
+        rule = base.mark_rule(color=theme.NEUTRAL).encode(
+            y=alt.value(0), y2=alt.value("height"), opacity=alt.condition(hover, alt.value(1), alt.value(0)),
             tooltip=[alt.Tooltip("date:T", title="Date", format="%d/%m/%Y"), alt.Tooltip("indice:Q", title="Indice"),
                      alt.Tooltip("humeur:N", title="Humeur")],
-        )
+        ).add_params(hover)
+        dot = base.mark_circle(size=70, color=blue, stroke=theme.chart_surface(), strokeWidth=2).encode(
+            opacity=alt.condition(hover, alt.value(1), alt.value(0)))
         neutral = alt.Chart(pd.DataFrame({"y": [50]})).mark_rule(color=theme.NEUTRAL, strokeDash=[4, 4]).encode(y="y:Q")
         with st.container(key="fvchart_feargreed"):
-            st.altair_chart(theme.french((neutral + line).properties(height=260, background="transparent")),
-                            width="stretch")
+            st.altair_chart(theme.french((area + neutral + line + rule + dot).properties(
+                height=260, background="transparent")), width="stretch")
 
 # --- Actualité crypto -------------------------------------------------------------------------------
 articles, _, _ = load_articles(api_keys())
