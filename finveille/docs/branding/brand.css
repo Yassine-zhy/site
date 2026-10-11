@@ -1,0 +1,70 @@
+/* Jetons de la marque pour les visuels (bannières, aperçus). Mêmes valeurs que theme.py, section 1,
+   et que docs/brand-guidelines.md : si une couleur change là-bas, elle change ici. */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+
+:root {
+  /* Primitifs */
+  --night-950: #060912; --night-850: #0c111d; --night-700: #1a2335; --night-300: #96a2b9; --night-100: #e8edf6;
+  --blue-600: #2451de; --blue-400: #6d93ff; --violet-600: #5b3fd9; --violet-300: #a78bfa; --mint-300: #6ee7a8;
+  --green-400: #34d17f; --red-400: #ff6375;
+  /* Sémantiques (thème sombre : celui des visuels) */
+  --bg: var(--night-950); --surface: var(--night-850); --line: var(--night-700);
+  --text: var(--night-100); --muted: var(--night-300); --brand: var(--blue-400); --brand-2: var(--violet-300);
+  --up: var(--green-400); --down: var(--red-400);
+  --glow: rgba(109, 147, 255, .20); --glow-2: rgba(167, 139, 250, .16);
+  --sans: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); }
+body { font-family: var(--sans); color: var(--text); -webkit-font-smoothing: antialiased; }
+
+/* Le canevas : fond nuit, deux halos (bleu, violet) et le quadrillage du site, estompé */
+.canvas { position: relative; overflow: hidden; isolation: isolate;
+  background: radial-gradient(60% 90% at 78% 10%, var(--glow), transparent 70%),
+    radial-gradient(45% 80% at 100% 100%, var(--glow-2), transparent 70%), var(--bg); }
+.canvas::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .5;
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(70% 90% at 40% 50%, #000, transparent 80%); }
+
+/* Logo : le symbole et le nom (« Fin » en clair, « Veille » en dégradé de marque) */
+.brand { display: flex; align-items: center; gap: .55em; }
+.brand svg { width: 1.45em; height: 1.45em; flex: none; filter: drop-shadow(0 6px 16px rgba(36, 81, 222, .45)); }
+.wordmark { font-weight: 700; letter-spacing: -.02em; line-height: 1; }
+.wordmark em { font-style: normal; background: linear-gradient(90deg, var(--brand), var(--brand-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+.headline { font-weight: 700; letter-spacing: -.03em; line-height: 1.06; }
+.headline em { font-style: normal; background: linear-gradient(90deg, var(--brand), var(--brand-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Pastilles, comme dans le site */
+.chips { display: flex; flex-wrap: wrap; gap: .5em; }
+.chip { display: inline-flex; align-items: center; gap: .45em; padding: .38em .8em; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent);
+  background: color-mix(in srgb, var(--brand) 10%, transparent); color: var(--text); font-weight: 500; }
+.chip::before { content: ""; width: .42em; height: .42em; border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2)); }
+
+/* Fenêtre de navigateur qui présente une vraie capture du site */
+.window { position: absolute; border-radius: 14px; overflow: hidden; border: 1px solid #24304a;
+  background: var(--surface); box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .9), 0 0 0 1px rgba(255, 255, 255, .04) inset; }
+.window-bar { display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px;
+  background: #0f1626; border-bottom: 1px solid var(--line); }
+.window-bar i { width: 9px; height: 9px; border-radius: 50%; background: #2a3550; }
+.window-bar span { margin-left: 10px; padding: 2px 10px; border-radius: 6px; background: var(--night-950);
+  font: 500 10px/1.4 var(--mono); color: var(--muted); }
+.window img { display: block; width: 100%; }
+
+/* Tuile de cours flottante (valeurs réelles de la capture) */
+.tile { position: absolute; padding: 14px 16px 12px; border-radius: 14px; border: 1px solid #24304a;
+  background: linear-gradient(180deg, rgba(52, 209, 127, .10), transparent 60%), rgba(12, 17, 29, .92);
+  box-shadow: 0 30px 60px -24px rgba(0, 0, 0, .9); backdrop-filter: blur(8px); }
+.tile::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; border-radius: 14px 14px 0 0;
+  background: var(--up); }
+.tile-name { font-size: 13px; font-weight: 600; color: var(--muted); }
+.tile-value { margin-top: 2px; font: 600 26px/1.15 var(--mono); letter-spacing: -.01em; }
+.tile-delta { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 6px;
+  background: rgba(52, 209, 127, .14); color: var(--up); font: 600 13px/1.4 var(--mono); }
+.tile svg { position: absolute; right: 14px; bottom: 14px; }

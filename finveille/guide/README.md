@@ -29,5 +29,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 23. [Un vrai logo et un fil illustré](23-logo-et-images.md)
 24. [L'assistant IA : des réponses sourcées sur l'actualité](24-assistant-ia.md)
 25. [Tenir la charge : beaucoup de visiteurs, sans crash (et Docker)](25-tenir-la-charge.md)
+26. [Refaire le design : un système de jetons, une charte, des visuels](26-systeme-de-design.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).

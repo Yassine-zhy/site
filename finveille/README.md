@@ -19,7 +19,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | | |
 | --- | --- |
 | **Agrégation** | 12 flux RSS gratuits (CNBC, BBC, Le Monde, BFM Bourse, The Economist, Fed, BCE, CoinDesk…) + Finnhub, NewsAPI, Marketaux et Alpha Vantage si les clés sont renseignées. Téléchargement en parallèle, dédoublonnage. |
-| **Le fil** | Une mise en page de journal illustrée : « À la une » en grand avec sa photo, trois vignettes illustrées, puis « En continu » avec une image par article (la photo de partage de l'article, ou une couverture dessinée aux couleurs de la rubrique). L'histoire à la une est celle reprise par le plus de sources ; rubriques Marchés / Crypto / Entreprises / Macro (classement par mots-clés), tendances cliquables, filtre par source, recherche avancée (`"expression exacte"`, `-exclure`, `source:cnbc`), vue compacte, mise à jour automatique toutes les 5 minutes. |
+| **Le fil** | Une mise en page de journal : « À la une » en grand avec sa photo, trois vignettes, puis « En continu ». Une image seulement si c'est la vraie (la photo de partage de l'article) ; sans photo, l'article passe en version texte, avec le liseré de couleur de sa rubrique. L'histoire à la une est celle reprise par le plus de sources ; rubriques Marchés / Crypto / Entreprises / Macro (classement par mots-clés), tendances cliquables, filtre par source, recherche avancée (`"expression exacte"`, `-exclure`, `source:cnbc`), vue compacte, mise à jour automatique toutes les 5 minutes. |
 | **Assistant IA** | Des questions en français sur l'actualité, les marchés ou un terme financier ; des réponses rédigées par Gemini ou Groq (gratuits) **à partir des dépêches du moment**, qui citent leurs sources [1], [2]… (recherche par pertinence avec traductions français → anglais, puis génération : « RAG »). Réponse affichée au fil de l'eau, conversation suivie. Également : analyse pédagogique des fiches entreprises, édito du brief rédigé chaque heure. Sans clé : définitions du glossaire et dépêches pertinentes. Quotas, limiteur et mémoire partagée pour tenir la charge. |
 | **Le brief** | L'édition du jour rédigée automatiquement : la séance en une phrase, l'histoire la plus reprise de chaque rubrique, les sujets qui montent, l'agenda de mes entreprises, le mot du jour. Téléchargeable en Markdown, **envoyé par e-mail chaque matin** aux abonnés. |
 | **Comptes** | Inscription par e-mail et mot de passe (empreinte scrypt, blocage anti-force brute, code de confirmation, mot de passe oublié, connexion qui dure 30 jours), ou connexion avec Google, Facebook et autres comptes (OpenID Connect). Assistant de configuration pour l'administrateur. Chaque utilisateur a ses propres favoris, suivis, portefeuille et alertes ; export et suppression de ses données (RGPD). Sans configuration, mode local à un utilisateur. |
@@ -39,7 +39,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Glossaire** | 55 termes de la finance expliqués simplement, recherche, mot du jour. |
 | **En chiffres** | Tableau de bord du flux : dépêches par heure et par rubrique, entreprises les plus citées, tonalité par rubrique. |
 | **Résumé par IA** | « L'essentiel » en 3 points : Gemini ou Groq (offres gratuites) en français, ou résumé extractif local sans clé ; repli automatique en cas d'erreur, résumés mis en cache. |
-| **Apparence** | Thèmes clair et sombre (bleu nuit) avec une palette propre à chacun (`light-dark()` en CSS), cartes, tableaux de données, responsive ordinateur / mobile, contrastes vérifiés par un test automatique, couleurs adaptées au daltonisme. |
+| **Design** | Système de design en jetons à trois niveaux (primitifs → sémantiques → composants), thèmes clair et sombre (bleu nuit) avec `light-dark()` en CSS, en-têtes de page quadrillés, tuiles de cours colorées par tendance, cartes en relief. Contrastes AA mesurés, cibles tactiles de 44 px, animations coupées si l'on préfère moins de mouvement, couleurs adaptées au daltonisme. [Charte de marque](docs/brand-guidelines.md) et visuels pour LinkedIn et GitHub (guide 26). |
 
 ## Aperçu
 
@@ -88,7 +88,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-25 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+26 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 
@@ -131,11 +131,12 @@ views/            une page par fichier (fil, brief, assistant IA, en chiffres, m
 core/             logique métier : sources, agrégation, classement, statistiques, marché, indicateurs de
                   risque, portefeuille, alertes, brief, économie (BCE, FRED), crypto, simulateurs, quiz, résumé,
                   assistant IA, images, comptes, e-mails, stockage, tenue de charge
-tests/            244 tests pytest, rejoués aussi sur PostgreSQL si une base de test est fournie (sources, recherche,
+tests/            255 tests pytest, rejoués aussi sur PostgreSQL si une base de test est fournie (sources, recherche,
                   base et comptes, IA, tenue de charge, indicateurs, portefeuille, alertes, brief, chaque page)
 scripts/          tâche planifiée : envoi du brief et des alertes par e-mail
 tools/            test de charge, générateur du logo
 deploy/           démarrage du conteneur Docker, fiche du Space Hugging Face
+docs/             charte de marque, captures d'écran, visuels (bannière LinkedIn, aperçu GitHub)
 guide/            le guide de construction, étape par étape
 ```
 
