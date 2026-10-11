@@ -17,6 +17,7 @@ import base64
 import html
 import time as clock_module
 from datetime import datetime, time, timezone
+from pathlib import Path
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
@@ -328,8 +329,8 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .7;
   background-image: linear-gradient(var(--fv-line) 1px, transparent 1px), linear-gradient(90deg, var(--fv-line) 1px, transparent 1px);
   background-size: 32px 32px;
-  -webkit-mask-image: radial-gradient(60% 85% at 85% 45%, #000, transparent 75%);
-  mask-image: radial-gradient(60% 85% at 85% 45%, #000, transparent 75%); }
+  -webkit-mask-image: radial-gradient(42% 80% at 70% 45%, #000, transparent 88%);
+  mask-image: radial-gradient(42% 80% at 70% 45%, #000, transparent 88%); }
 .fv-hero.has-aside::after { content: ""; position: absolute; z-index: -1; right: 0; top: 10%; width: 45%; height: 80%;
   pointer-events: none; background: radial-gradient(closest-side, var(--fv-glow), transparent); }
 .fv-hero-title { margin: .95rem 0 0 !important; padding: 0 !important; max-width: 20ch; text-wrap: balance;
@@ -871,8 +872,74 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-footer-links { display: flex; flex-wrap: wrap; gap: .35rem 1.2rem; align-content: start; justify-content: flex-end; }
 .fv-footer-links a { font-size: .85rem; font-weight: 500; color: var(--fv-muted) !important; text-decoration: none !important; }
 .fv-footer-links a:hover { color: var(--fv-brand) !important; }
+.fv-footer-mark { display: inline-flex; align-items: center; gap: .55rem; }
+.fv-footer-mark img { border-radius: 8px; box-shadow: 0 6px 16px -6px rgba(36, 81, 222, .6); }
 .fv-footer-note { grid-column: 1 / -1; margin: .4rem 0 0; font-size: .74rem; line-height: 1.6; color: var(--fv-muted); }
 @media (max-width: 640px) { .fv-footer { grid-template-columns: 1fr; } .fv-footer-links { justify-content: flex-start; } }
+
+/* =============================================================================================
+   12. Direction artistique « terminal de nuit » et transitions (guide 29, art.py)
+   ============================================================================================= */
+/* Le décor de l'en-tête : deux halos qui dérivent lentement, la ligne de cours signature qui se dessine */
+.fv-hero-art { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  /* bords fondus : le décor se perd dans le fond de la page, sans rectangle visible */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%), linear-gradient(180deg, transparent, #000 12%, #000 84%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 7%), linear-gradient(180deg, transparent, #000 12%, #000 84%, transparent);
+  mask-composite: intersect; }
+.fv-aurora { position: absolute; width: 50%; aspect-ratio: 1; border-radius: 50%; filter: blur(46px);
+  animation: fv-drift 24s ease-in-out infinite alternate; }
+.fv-aurora.a1 { left: 0; top: -22%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--fv-brand) 26%, transparent), transparent 68%); }
+.fv-aurora.a2 { right: 2%; top: -18%; animation-duration: 31s; animation-direction: alternate-reverse;
+  background: radial-gradient(circle, color-mix(in srgb, var(--fv-brand-2) 22%, transparent), transparent 68%); }
+@keyframes fv-drift { to { transform: translate3d(9%, 16%, 0) scale(1.12); } }
+.fv-hero-line { position: absolute; left: 0; bottom: 0; width: 100%; height: 74%; object-fit: cover;
+  object-position: right bottom; opacity: .6;
+  -webkit-mask-image: linear-gradient(90deg, transparent 8%, #000 52%); mask-image: linear-gradient(90deg, transparent 8%, #000 52%); }
+.fv-hero.is-live .fv-aurora { animation: none; }
+
+/* L'illustration de la page : un panneau de verre incliné qui flotte doucement */
+.fv-hero-spot { display: grid; place-items: center; transform: perspective(1400px) rotateY(-12deg) rotateX(5deg);
+  transform-origin: 70% 50%; }
+.fv-hero-spot img { width: min(100%, 360px); height: auto; filter: drop-shadow(0 30px 34px var(--fv-shadow-deep));
+  animation: fv-float 7s ease-in-out 1.8s infinite alternate; }
+@keyframes fv-float { to { transform: translateY(-10px); } }
+@media (max-width: 900px) { .fv-hero-spot { transform: none; } .fv-hero-spot img { width: 230px; } }
+@media (max-width: 640px) { .fv-hero-spot { display: none; } }
+
+/* Le titre : le dégradé de la formule balaie le texte une fois, à l'ouverture */
+.fv-hero-title em { background-image: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2) 50%, var(--fv-brand));
+  background-size: 200% 100%; animation: fv-sheen 2s cubic-bezier(.2, .7, .2, 1) .25s both; }
+@keyframes fv-sheen { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.fv-hero.is-live .fv-hero-title em { animation: none; }
+
+/* « En direct » : le point du sur-titre du fil pulse en vert */
+.fv-eyebrow.is-live::before { background: var(--fv-up); animation: fv-live 2.4s ease-out infinite; }
+@keyframes fv-live { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--fv-up) 55%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 7px transparent; } }
+
+/* Changer de page : le contenu arrive en cascade (400 à 600 ms, huit éléments au plus). Une seule fois : Streamlit
+   garde les éléments déjà affichés quand on clique sur un bouton de la même page. */
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > * {
+  animation: fv-enter .5s cubic-bezier(.2, .7, .2, 1) both; }
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(2) { animation-delay: 40ms; }
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(3) { animation-delay: 80ms; }
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(4) { animation-delay: 120ms; }
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(5) { animation-delay: 160ms; }
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(6) { animation-delay: 200ms; }
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(7) { animation-delay: 240ms; }
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(n+8) { animation-delay: 280ms; }
+@keyframes fv-enter { from { opacity: 0; transform: translateY(14px); } }
+
+/* En faisant défiler : les cartes, tableaux et graphiques apparaissent quand ils entrent à l'écran. Seulement là
+   où le navigateur sait le faire (sinon, tout reste simplement visible). */
+@supports (animation-timeline: view()) {
+  .fv-card, .fv-kpis, .fv-tiles, .fv-table-wrap, [class*="st-key-fvchart_"], [class*="st-key-fvbox_"] {
+    animation: fv-reveal both cubic-bezier(.2, .7, .2, 1); animation-timeline: view();
+    animation-range: entry 0% entry 55%; }
+}
+@keyframes fv-reveal { from { opacity: 0; transform: translateY(22px); } }
 
 /* Sur écran tactile, chaque bouton fait au moins 44 px de haut : on vise sans zoomer */
 @media (pointer: coarse) {
@@ -893,7 +960,9 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 @media (prefers-reduced-motion: reduce) {
   .fv-tape-window { overflow-x: auto; mask-image: none; }
   .fv-tape-track, .fv-tape-label::before, .fv-sk, .fv-hero-copy > *, [class*="st-key-fvlead_"],
-  [class*="st-key-fvtile_"], [class*="st-key-fvcard_"] { animation: none; }
+  [class*="st-key-fvtile_"], [class*="st-key-fvcard_"], .fv-aurora, .fv-hero-spot img, .fv-hero-title em,
+  .fv-eyebrow.is-live::before, [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > *,
+  .fv-card, .fv-kpis, .fv-tiles, .fv-table-wrap, [class*="st-key-fvchart_"], [class*="st-key-fvbox_"] { animation: none; }
 }
 </style>
 """
@@ -987,7 +1056,7 @@ def sessions_html(now: datetime) -> str:
     return f'<ul class="fv-sessions" aria-label="Places boursières">{items}</ul>'
 
 
-def float_tile(quote) -> str:
+def float_tile(quote, animate: bool = True) -> str:
     """Une tuile de cours « flottante » de l'en-tête : nom, cours, variation de la séance, courbe sur un mois."""
     month_change = quote.change_over(21)
     trend = direction(quote.change).removeprefix("fv-")
@@ -997,24 +1066,32 @@ def float_tile(quote) -> str:
         f'<span class="fv-float-name">{esc(quote.name)}</span>'
         f'<span class="fv-float-value">{price(quote.last)}</span>'
         f'<span class="fv-float-delta">{change(quote.change, quote.unit)}</span>'
-        f'<img src="{sparkline_uri(quote.history.tail(22).tolist(), direction(month_change), 104, 36)}" '
+        f'<img src="{sparkline_uri(quote.history.tail(22).tolist(), direction(month_change), 104, 36, animate)}" '
         f'alt="Un mois : {esc(signed(month_change, quote.unit))}"></div>'
     )
 
 
 def hero_html(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=(), extra: str = "",
-              classes: str = "") -> str:
-    """L'en-tête « héros » d'une page : sur-titre, grand titre (la fin `accent` en dégradé de marque), phrase
-    d'introduction, et à droite des tuiles de cours flottantes si `quotes` en contient."""
-    aside = "".join(float_tile(quote) for quote in quotes)
-    classes = " ".join(filter(None, ["fv-hero", "has-aside" if aside else "", classes]))
+              classes: str = "", art_name: str | None = None) -> str:
+    """L'en-tête « héros » d'une page (guide 29) : le décor (deux halos qui dérivent, la ligne de cours signature),
+    le sur-titre, le grand titre (la fin `accent` en dégradé de marque), la phrase d'introduction et, à droite, des
+    tuiles de cours flottantes (`quotes`) ou l'illustration de la page (`art_name`, voir art.py)."""
+    import art
+
+    live = "is-live" in classes  # en-tête redessiné chaque minute : décor immobile
+    aside = "".join(float_tile(quote, animate=not live) for quote in quotes)
+    spot = "" if aside or not art_name else (f'<div class="fv-hero-spot" aria-hidden="true">'
+                                              f'<img src="{art.spot(art_name)}" alt=""></div>')
+    classes = " ".join(filter(None, ["fv-hero", "has-aside" if aside or spot else "", classes]))
+    scenery = ('<div class="fv-hero-art" aria-hidden="true"><i class="fv-aurora a1"></i><i class="fv-aurora a2"></i>'
+               f'<img class="fv-hero-line" src="{art.signature_line(not live)}" alt=""></div>')
     return (
-        f'<header class="{classes}"><div class="fv-hero-copy">'
-        + (f'<div class="fv-eyebrow">{esc(eyebrow)}</div>' if eyebrow else "")
+        f'<header class="{classes}">{scenery}<div class="fv-hero-copy">'
+        + (f'<div class="fv-eyebrow{" is-live" if live else ""}">{esc(eyebrow)}</div>' if eyebrow else "")
         + f'<h1 class="fv-hero-title">{esc(title)}{f" <em>{esc(accent)}</em>" if accent else ""}</h1>'
         + f'<p class="fv-hero-dek">{dek}</p>{extra}</div>'
         + (f'<div class="fv-hero-aside" role="group" aria-label="Les marchés en un coup d\'œil">{aside}</div>'
-           if aside else "")
+           if aside else spot)
         + "</header>"
     )
 
@@ -1047,10 +1124,10 @@ def section(title: str, note: str = "") -> None:
     st.html(f'<div class="fv-section"><h2>{esc(title)}</h2>{f"<small>{esc(note)}</small>" if note else ""}</div>')
 
 
-def page_header(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=()) -> None:
-    """En-tête de page : rubrique du menu, grand titre (avec sa fin en dégradé), phrase d'introduction et,
-    sur les pages principales, quelques cours en tuiles flottantes."""
-    st.html(hero_html(title, esc(dek), eyebrow, accent, quotes))
+def page_header(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=(), art: str | None = None) -> None:
+    """En-tête de page : rubrique du menu, grand titre (avec sa fin en dégradé), phrase d'introduction et, à droite,
+    quelques cours en tuiles flottantes ou l'illustration de la page."""
+    st.html(hero_html(title, esc(dek), eyebrow, accent, quotes, art_name=art))
 
 
 def card(body: str, title: str = "", note: str = "") -> str:
@@ -1288,10 +1365,12 @@ def french(chart):
     )
 
 
-def sparkline_uri(values: list[float], end_class: str, width: int = 84, height: int = 30) -> str:
+def sparkline_uri(values: list[float], end_class: str, width: int = 84, height: int = 30,
+                  animate: bool = False) -> str:
     """Mini-courbe en SVG, encodée comme une image (st.html n'accepte pas le SVG intégré).
 
-    Courbe colorée selon la direction de la période, avec une aire très légère pour la lisibilité.
+    Courbe colorée selon la direction de la période, avec une aire très légère pour la lisibilité. Avec `animate`,
+    la courbe se dessine de gauche à droite à l'ouverture (sauf si le visiteur préfère moins de mouvement).
     """
     values = [float(v) for v in values]
     low, high = min(values), max(values)
@@ -1304,12 +1383,20 @@ def sparkline_uri(values: list[float], end_class: str, width: int = 84, height: 
     area = f"4,{height} {path} {end_x:.1f},{height}"
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
-        f'<polygon points="{area}" fill="{color}" fill-opacity=".1"/>'
-        f'<polyline points="{path}" fill="none" stroke="{color}" stroke-width="1.6" '
+        + (_SPARK_MOTION if animate else "")
+        + f'<polygon class="a" points="{area}" fill="{color}" fill-opacity=".1"/>'
+        f'<polyline class="l" pathLength="1" points="{path}" fill="none" stroke="{color}" stroke-width="1.6" '
         f'stroke-linejoin="round" stroke-linecap="round"/>'
-        f'<circle cx="{end_x:.1f}" cy="{end_y:.1f}" r="2.6" fill="{color}"/></svg>'
+        f'<circle class="a" cx="{end_x:.1f}" cy="{end_y:.1f}" r="2.6" fill="{color}"/></svg>'
     )
     return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+
+
+_SPARK_MOTION = (  # la mini-courbe se dessine, puis son aire et son point apparaissent
+    "<style>.l{stroke-dasharray:1;stroke-dashoffset:1;animation:d 1.1s cubic-bezier(.2,.7,.2,1) .2s forwards}"
+    ".a{opacity:0;animation:f .5s ease 1.1s forwards}@keyframes d{to{stroke-dashoffset:0}}@keyframes f{to{opacity:1}}"
+    "@media (prefers-reduced-motion:reduce){.l{animation:none;stroke-dashoffset:0}.a{animation:none;opacity:1}}</style>"
+)
 
 
 def quote_tile(quote) -> str:
@@ -1325,7 +1412,7 @@ def quote_tile(quote) -> str:
         f'<div class="fv-tile is-{trend}" title="{esc(summary)}">'
         f'<div class="fv-tile-label">{esc(quote.name)}</div>'
         f'<div class="fv-tile-value">{price(quote.last)}</div>'
-        f'<img src="{sparkline_uri(month.tolist(), direction(month_change), 96, 34)}" '
+        f'<img src="{sparkline_uri(month.tolist(), direction(month_change), 96, 34, animate=True)}" '
         f'alt="Un mois : {esc(signed(month_change, quote.unit))}">'
         f'<div class="fv-tile-delta">{change(quote.change, quote.unit)}</div>'
         f'<div class="fv-tile-sub">1 mois : {change(month_change, quote.unit)}</div>'
@@ -1351,8 +1438,19 @@ def ticker_tape(quotes) -> None:
     )
 
 
+LOGO_URI = svg_uri((Path(__file__).parent / "assets" / "logo.svg").read_text())  # le symbole, pour le pied de page
 FOOTER_LINKS = [("Le fil", ""), ("Le brief", "brief"), ("Assistant IA", "assistant"), ("Marchés", "markets"),
                 ("Économie", "economy"), ("Crypto", "crypto"), ("Glossaire", "glossary")]
+
+
+def nav_active(index: int) -> None:
+    """Souligne, dans le menu du haut, la rubrique de la page ouverte (Streamlit ne le signale pas lui-même).
+    Les rubriques du menu sont rangées dans l'ordre de leur déclaration (style « order: N »)."""
+    target = f'[data-testid="stToolbar"] div[style*="order: {int(index)};"] > [data-testid="stTopNavSection"]'
+    st.html(f"<style>{target} {{ position: relative; background: var(--fv-brand-soft); }}"
+            f"{target} p {{ color: var(--fv-brand); font-weight: 600; }}"
+            f"{target}::after {{ content: ''; position: absolute; left: 22%; right: 22%; bottom: -9px; height: 2px;"
+            "border-radius: 2px; background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2)); }</style>")
 
 
 def footer() -> None:
@@ -1360,7 +1458,8 @@ def footer() -> None:
     links = "".join(f'<a href="./{path}" target="_self">{esc(label)}</a>' for label, path in FOOTER_LINKS)
     st.html(
         '<footer class="fv-footer">'
-        '<div class="fv-footer-brand"><span class="fv-wordmark">Fin<em>Veille</em></span>'
+        f'<div class="fv-footer-brand"><span class="fv-footer-mark"><img src="{LOGO_URI}" alt="" width="28" height="28">'
+        '<span class="fv-wordmark">Fin<em>Veille</em></span></span>'
         "<p>La veille financière et économique mondiale, mise à jour en continu.</p></div>"
         f'<nav class="fv-footer-links" aria-label="Rubriques">{links}</nav>'
         '<p class="fv-footer-note">Sources : flux RSS des médias cités, Yahoo Finance (cours différés), BCE, Réserve '

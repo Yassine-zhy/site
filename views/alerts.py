@@ -16,7 +16,7 @@ def remove(user: str, alert_id: int) -> None:
 
 flush_toast()
 theme.page_header("Tes alertes,", "Sois prévenu quand un cours franchit un seuil : un bandeau s'affiche alors en haut "
-                  "de toutes les pages.", eyebrow="Mon espace", accent="sans surveiller l'écran.")
+                  "de toutes les pages.", eyebrow="Mon espace", accent="sans surveiller l'écran.", art="alerts")
 user = require_user()
 choices = company_choices(user)
 

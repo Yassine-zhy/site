@@ -201,4 +201,4 @@ couleur que la 4ᵉ entreprise. **Une couleur, un sens** : la frontière et ces 
 | Les étiquettes d'un graphique gardent l'ancien thème | `st.context.theme` change à la prochaine exécution | Une action ou un rechargement les remet à jour. |
 | Une alerte de l'audit ne se reproduit pas | Élément en cours de rafraîchissement (Streamlit l'estompe) | Relancer ; seule une alerte qui revient se corrige. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [une direction artistique](29-direction-artistique.md). Retour au [sommaire du guide](README.md).

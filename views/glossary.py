@@ -10,7 +10,7 @@ from core.glossary import GLOSSARY, SECTIONS, term_of_the_day
 from theme import esc
 
 theme.page_header("La finance,", f"{len(GLOSSARY)} termes de la finance et de l'économie, expliqués simplement.",
-                  eyebrow="Glossaire", accent="expliquée simplement.")
+                  eyebrow="Glossaire", accent="expliquée simplement.", art="glossary")
 
 word = term_of_the_day()
 section_name, definition = GLOSSARY[word]

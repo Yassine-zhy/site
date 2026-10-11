@@ -17,7 +17,7 @@ day_ago = datetime.now(timezone.utc) - timedelta(hours=24)
 recent = [a for a in articles if a.published >= day_ago]
 
 theme.page_header("Le fil", "Ce que raconte le flux d'actualité des dernières 24 heures.", eyebrow="Actualité",
-                  accent="en chiffres.")
+                  accent="en chiffres.", art="stats")
 
 # --- Chiffres clés ----------------------------------------------------------------------------
 mentions = analytics.company_mentions(recent)

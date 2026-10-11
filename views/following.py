@@ -252,7 +252,7 @@ def news_list(user: str, articles, empty_message: str, key_prefix: str) -> None:
 # --- La page ----------------------------------------------------------------------------------
 flush_toast()
 theme.page_header("Tes suivis,", "Les entreprises et les thèmes que tu suis, avec leur fil et leur fiche.",
-                  eyebrow="Mon espace", accent="en un seul fil.")
+                  eyebrow="Mon espace", accent="en un seul fil.", art="following")
 user = require_user()
 
 with st.container(horizontal=True, gap="small"):

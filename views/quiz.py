@@ -41,7 +41,7 @@ def restart() -> None:
 
 
 theme.page_header("Teste ton vocabulaire", f"Teste ton vocabulaire de la finance : une définition, quatre propositions. "
-                  f"{len(GLOSSARY)} termes à découvrir.", eyebrow="Quiz", accent="de la finance.")
+                  f"{len(GLOSSARY)} termes à découvrir.", eyebrow="Quiz", accent="de la finance.", art="quiz")
 
 # --- Écran d'accueil -------------------------------------------------------------------------------
 if "quiz" not in state:
