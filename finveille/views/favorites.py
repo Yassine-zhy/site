@@ -7,7 +7,7 @@ from core import storage
 from ui import NO_STATUS, article_card, flush_toast, require_user
 
 flush_toast()
-theme.page_header("Favoris", "Les articles que tu as gardés pour plus tard.", eyebrow="Mon espace")
+theme.page_header("Tes favoris,", "Les articles que tu as gardés pour plus tard.", eyebrow="Mon espace", accent="à lire plus tard.")
 user = require_user()
 favorites = storage.list_favorites(user)  # lus depuis la base : ils restent même s'ils ont quitté le flux
 statuses = storage.get_statuses(user)

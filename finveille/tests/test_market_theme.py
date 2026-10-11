@@ -76,5 +76,5 @@ def test_variation_coloree_carte_et_tableau():
     assert theme.change(-0.5).startswith('<span class="fv-down">')
     html = theme.table(["A", "B"], "<tr><td>x</td><td>y</td></tr>")
     assert html.startswith('<div class="fv-table-wrap">') and "<th>A</th><th>B</th>" in html
-    assert theme.card("<p>corps</p>", "Titre").startswith('<section class="fv-card"><h4 class="fv-card-title">Titre')
+    assert theme.card("<p>corps</p>", "Titre").startswith('<section class="fv-card"><h3 class="fv-card-title">Titre')  # h3 : sous une section h2
     assert "<script>" not in theme.card("", "<script>")  # le titre est échappé

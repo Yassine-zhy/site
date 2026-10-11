@@ -9,8 +9,8 @@ from core.filters import normalize
 from core.glossary import GLOSSARY, SECTIONS, term_of_the_day
 from theme import esc
 
-theme.page_header("Glossaire", f"{len(GLOSSARY)} termes de la finance et de l'économie, expliqués simplement.",
-                  eyebrow="Outils")
+theme.page_header("La finance,", f"{len(GLOSSARY)} termes de la finance et de l'économie, expliqués simplement.",
+                  eyebrow="Glossaire", accent="expliquée simplement.")
 
 word = term_of_the_day()
 section_name, definition = GLOSSARY[word]

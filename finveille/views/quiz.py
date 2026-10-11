@@ -9,7 +9,7 @@ from core import storage
 from core.glossary import GLOSSARY, SECTIONS
 from core.quiz import make_quiz, verdict
 from theme import esc
-from ui import current_user
+from ui import current_user, end_page
 
 user = current_user()  # None : visiteur non connecté (il joue, mais son meilleur score n'est pas enregistré)
 state = st.session_state
@@ -40,8 +40,8 @@ def restart() -> None:
         state.pop(key, None)
 
 
-theme.page_header("Quiz", f"Teste ton vocabulaire de la finance : une définition, quatre propositions. "
-                  f"{len(GLOSSARY)} termes à découvrir.", eyebrow="Outils")
+theme.page_header("Teste ton vocabulaire", f"Teste ton vocabulaire de la finance : une définition, quatre propositions. "
+                  f"{len(GLOSSARY)} termes à découvrir.", eyebrow="Quiz", accent="de la finance.")
 
 # --- Écran d'accueil -------------------------------------------------------------------------------
 if "quiz" not in state:
@@ -60,7 +60,7 @@ if "quiz" not in state:
                 st.caption(f"Ton meilleur score : {best['score']}/{best['total']} · {played} quiz joué(s).")
         else:
             st.caption("Connecte-toi pour enregistrer ton meilleur score.")
-    st.stop()
+    end_page()
 
 quiz, index, answers = state.quiz, state.quiz_index, state.quiz_answers
 
@@ -83,7 +83,7 @@ if index >= len(quiz):
         )
         st.html(theme.card(f'<dl class="fv-gloss">{items}</dl>'))
     st.button("Rejouer", type="primary", icon=":material/replay:", on_click=restart)
-    st.stop()
+    end_page()
 
 # --- Une question ----------------------------------------------------------------------------------
 question = quiz[index]

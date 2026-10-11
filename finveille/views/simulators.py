@@ -239,7 +239,7 @@ def inflation_view() -> None:
 # --- La page ----------------------------------------------------------------------------------
 theme.page_header("Simulateurs", "Épargne, investissement programmé, crédit immobilier, inflation : fais tes "
                   "calculs et vois l'effet de chaque paramètre. Simulations pédagogiques, sans conseil.",
-                  eyebrow="Outils")
+                  eyebrow="Outils", accent="d'épargne et de crédit.")
 SIMULATORS = {"Épargne": savings_view, "Investissement programmé": dca_view, "Crédit immobilier": loan_view,
               "Inflation": inflation_view}
 choice = st.segmented_control("Simulateur", list(SIMULATORS), default="Épargne", key="simulator",

@@ -10,7 +10,7 @@ import theme
 from core import macro
 from core.macro import EA, FR, US
 from theme import esc
-from ui import hero_quotes, load_macro, load_yield_curves
+from ui import end_page, hero_quotes, load_macro, load_yield_curves
 
 START = f"{date.today().year - 10}-01-01"  # dix ans d'historique
 ZONES = [EA, FR, US]
@@ -35,7 +35,7 @@ data, errors = load_macro(START)
 if not data:
     st.warning("Les statistiques ne sont pas disponibles pour le moment (BCE et FRED ne répondent pas). Réessaie "
                "dans quelques minutes.", icon=":material/cloud_off:")
-    st.stop()
+    end_page()
 
 
 def cell(key: str) -> str:

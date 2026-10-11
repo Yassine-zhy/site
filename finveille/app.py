@@ -13,7 +13,7 @@ import streamlit as st
 
 import theme
 from core import alerts, capacity, storage
-from ui import current_user, get_secret, is_admin, load_quotes, load_symbol_quotes, local_mode, sync_cookie
+from ui import PageEnd, current_user, get_secret, is_admin, load_quotes, load_symbol_quotes, local_mode, sync_cookie
 
 # Le logo : un « F » dont la barre du milieu est une courbe qui monte (tools/make_logo.py) ; le nom
 # « FinVeille » est écrit à côté en CSS, pour suivre le thème clair ou sombre (theme.py)
@@ -104,5 +104,8 @@ capacity.configure(_int_setting("RENDER_SLOTS", capacity.DEFAULT_SLOTS))
 with capacity.QUEUE.slot(on_wait=lambda: st.toast(
         "Beaucoup de visiteurs en ce moment : ta page arrive dans quelques secondes…", icon=":material/hourglass_top:")):
     tape()
-    page.run()
-theme.footer()
+    try:
+        page.run()
+    except PageEnd:  # la page s'est arrêtée tôt (connexion requise, quiz pas commencé…) : rien à signaler
+        pass
+    theme.footer()

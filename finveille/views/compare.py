@@ -8,7 +8,7 @@ import theme
 from core import metrics
 from core.market import INDICATORS
 from theme import esc
-from ui import company_choices, current_user, load_closes, load_profile
+from ui import company_choices, current_user, end_page, load_closes, load_profile
 
 PERIODS = {"6 mois": "6mo", "1 an": "1y", "3 ans": "3y", "5 ans": "5y"}
 # Un repère de date par mois (ou tous les 2, 6 ou 12 mois) : sinon le même mois peut apparaître deux fois
@@ -58,18 +58,18 @@ period = st.segmented_control("Période", list(PERIODS), default="1 an", label_v
 
 if len(selected) < 2:
     st.info("Choisis au moins deux entreprises à comparer.")
-    st.stop()
+    end_page()
 
 closes = load_closes(tuple(selected), PERIODS[period])
 if closes is None or closes.empty or len(closes) < 5:
     st.warning("Historique indisponible pour le moment.", icon=":material/cloud_off:")
-    st.stop()
+    end_page()
 
 selected = [s for s in selected if s in closes.columns]  # un symbole sans données est ignoré
 if len(selected) < 2:
     st.warning("Pas assez d'historiques disponibles pour comparer : choisis d'autres entreprises.",
                icon=":material/cloud_off:")
-    st.stop()
+    end_page()
 names = {s: choices[s] for s in selected}
 colors = {names[s]: theme.SERIES_COLORS[i] for i, s in enumerate(selected)}  # la couleur suit l'entreprise
 
