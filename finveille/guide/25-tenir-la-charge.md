@@ -158,13 +158,38 @@ Un seul processus sert environ **18 pages par seconde** (200 pages en 11 s), soi
 
 ---
 
-## 6. Héberger pour plus de monde (gratuit)
+## 6. Mettre le site en ligne
 
-| Hébergeur | Pour qui | À savoir |
+| Hébergeur | Prix | À savoir |
 | --- | --- | --- |
-| **Streamlit Community Cloud** | Démarrer, montrer le projet | Le plus simple (étape 9) ; ressources modestes ; l'appli s'endort sans visites. |
-| **Hugging Face Spaces** (Docker) | Plus de visiteurs | Offre gratuite « CPU basic » nettement plus généreuse en mémoire ; s'endort après une longue inactivité ; disque non conservé : `DATABASE_URL` obligatoire. |
-| **Ton ordinateur / un serveur** | Tout contrôler | `docker run`, voir ci-dessous. |
+| **Streamlit Community Cloud** | Gratuit | Fait pour Streamlit ; déploie directement depuis ce dépôt ; l'appli s'endort sans visites et se réveille en quelques secondes. |
+| **Hugging Face Spaces** (Docker) | Abonnement PRO | Depuis octobre 2026, Hugging Face refuse les Spaces Docker gratuits (« 402 Payment Required » : vécu lors du premier essai de publication). |
+| **Ton ordinateur / un serveur** | Selon l'hébergeur | `docker run`, voir ci-dessous. |
+
+### Streamlit Community Cloud (gratuit) : 5 minutes
+
+FinVeille peut rester dans le sous-dossier `finveille/` : Streamlit lit `finveille/.streamlit/config.toml` (thème
+et réglages de charge) et `finveille/requirements.txt`, à côté du fichier de l'appli. Vérifié en lançant
+`streamlit run finveille/app.py` depuis la racine du dépôt : toutes les pages s'affichent, réglages appliqués.
+
+1. Va sur <https://share.streamlit.io> → **Continue with GitHub** (autorise l'accès à tes dépôts).
+2. **Create app** → *Deploy a public app from GitHub*, puis :
+   - *Repository* : `ton-pseudo/site-bu` ;
+   - *Branch* : la branche du projet ;
+   - *Main file path* : `finveille/app.py` ;
+   - *App URL* : par exemple `finveille` (→ `https://finveille.streamlit.app`, si le nom est libre).
+3. **Advanced settings** : *Python version* 3.12 ; dans *Secrets*, colle au format TOML :
+
+   ```toml
+   GEMINI_API_KEY = "ta-clé"
+   DATABASE_URL = "postgresql://…"   # conseillé (étape 20), sinon les comptes s'effacent au redémarrage
+   ```
+
+4. **Deploy**. Premier démarrage : 2 à 4 minutes (installation des bibliothèques). Ensuite, chaque push sur la
+   branche met le site à jour tout seul.
+
+Pour la connexion Google, l'adresse de retour devient `https://finveille.streamlit.app/oauth2callback` (la page
+*Configuration* la calcule pour toi) et la section `[auth]` se colle dans les mêmes *Secrets*.
 
 ### Docker : le même site partout
 
@@ -181,12 +206,13 @@ directement. Seule la connexion Google exige un vrai fichier `secrets.toml` : co
 variable `SECRETS_TOML`, `deploy/entrypoint.sh` l'écrit au démarrage. En production, le visiteur ne voit jamais le
 détail technique d'une erreur (`STREAMLIT_CLIENT_SHOW_ERROR_DETAILS=none`) : il reste dans les journaux.
 
-### Publier sur Hugging Face Spaces (automatique)
+### Publier sur Hugging Face Spaces (abonnement PRO)
 
-`deploy/publish_space.py` fait tout le travail sur Hugging Face : il **crée le Space** (Docker, gratuit) s'il
-n'existe pas, y **recopie tes secrets**, puis **envoie le code** (sans le guide, les tests, ni aucun fichier secret).
-GitHub Actions le lance à chaque mise à jour du code, après avoir vérifié que les tests passent. Tu n'as que deux
-choses à faire, une seule fois :
+`deploy/publish_space.py` fait tout le travail sur Hugging Face : il **crée le Space** (Docker) s'il n'existe pas,
+y **recopie tes secrets**, puis **envoie le code** (sans le guide, les tests, ni aucun fichier secret). Le workflow
+GitHub le lance après avoir vérifié que les tests passent ; comme Hugging Face exige désormais l'abonnement PRO pour
+un Space Docker, il ne se déclenche plus tout seul : lance-le depuis l'onglet *Actions* (*Run workflow*). Avec un
+compte PRO, deux choses à faire, une seule fois :
 
 1. **Un compte et un jeton Hugging Face** : inscris-toi sur <https://huggingface.co/join>, puis
    <https://huggingface.co/settings/tokens> → *Create new token* → type **Write** → copie le jeton (`hf_…`).
@@ -196,8 +222,7 @@ choses à faire, une seule fois :
    - `GEMINI_API_KEY` : ta clé d'IA ; `DATABASE_URL` : ta base Neon (étape 20), sans laquelle les comptes
      disparaissent à chaque redémarrage du Space ; et si tu veux `SMTP_…`, `ADMIN_EMAILS`, `SECRETS_TOML`.
 
-Ensuite : onglet **Actions** → *FinVeille → Hugging Face* → dernier passage → **Re-run all jobs** (ou n'importe
-quelle mise à jour du code). Au bout de 3 à 5 minutes (construction de l'image Docker), ton site est en ligne à
+Ensuite : onglet **Actions** → *FinVeille → Hugging Face* → **Run workflow**. Au bout de 3 à 5 minutes (construction de l'image Docker), ton site est en ligne à
 l'adresse affichée à la fin du journal : `https://ton-pseudo-finveille.hf.space`.
 
 Ouvre le site par cette adresse directe, plutôt que par la page du Space sur huggingface.co : là, le site est
@@ -245,6 +270,8 @@ propre dépôt, c'est `finveille/.github/workflows/huggingface.yml` qui prend le
 | Le Space Hugging Face affiche « Runtime error » | Erreur au démarrage | Onglet *Logs* du Space ; vérifie `DATABASE_URL` et les secrets. |
 | Comptes perdus après un redémarrage du Space | Disque non conservé | Configure `DATABASE_URL` (étape 20). |
 | Le workflow affiche « Secret HF_TOKEN absent » | Le jeton n'est pas dans les secrets GitHub | *Settings → Secrets and variables → Actions*, puis *Re-run all jobs*. |
+| `402 Payment Required … requires a PRO subscription` | Hugging Face réserve les Spaces Docker à l'abonnement PRO | Mets le site en ligne sur Streamlit Community Cloud (gratuit, § 6). |
+| « Mode sans IA » sur le site en ligne | `GEMINI_API_KEY` absent des *Secrets* de l'hébergeur | Streamlit Cloud : ⋮ → *Settings* → *Secrets*. |
 | `Invalid user token` | Jeton mal copié, ou de type « Read » | Recrée un jeton de type **Write**. |
 | Impossible de rester connecté sur la page du Space | Site affiché dans un cadre : cookies bloqués | Utilise l'adresse directe `https://ton-pseudo-finveille.hf.space`. |
 

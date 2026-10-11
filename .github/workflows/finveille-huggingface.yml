@@ -1,18 +1,17 @@
-# Met FinVeille (dossier finveille/) en ligne sur Hugging Face Spaces à chaque mise à jour de sa branche.
-# Guide : finveille/guide/25-tenir-la-charge.md, § 6.
+# Met FinVeille (dossier finveille/) en ligne sur Hugging Face Spaces. Guide : finveille/guide/25-tenir-la-charge.md.
 #
-# Réglage, une seule fois, dans ce dépôt GitHub : Settings → Secrets and variables → Actions → New repository secret
+# ⚠ Depuis octobre 2026, Hugging Face réserve les Spaces Docker à l'abonnement PRO (réponse « 402 Payment
+# Required » au premier essai). Ce workflow ne se lance donc plus tout seul : la mise en ligne gratuite passe par
+# Streamlit Community Cloud (guide 25, § 6). Avec un compte PRO : onglet Actions → ce workflow → Run workflow
+# (bouton visible quand ce fichier est sur la branche principale), ou python deploy/publish_space.py à la main.
+#
+# Réglage : Settings → Secrets and variables → Actions → New repository secret
 #   HF_TOKEN        (obligatoire) jeton « Write » créé sur https://huggingface.co/settings/tokens
 #   GEMINI_API_KEY  (conseillé)   recopié automatiquement dans le Space, comme DATABASE_URL, SMTP_…, ADMIN_EMAILS…
-# Sans HF_TOKEN, rien n'est publié : le travail s'arrête avec un message. Une fois le secret ajouté :
-# onglet Actions → ce workflow → dernier passage → « Re-run all jobs ».
 name: FinVeille → Hugging Face
 
 on:
-  push:
-    branches: [ccr-f679736f-rs406o]
-    paths: ["finveille/**", ".github/workflows/finveille-huggingface.yml"]
-  workflow_dispatch:
+  workflow_dispatch:  # lancement manuel seulement (voir l'avertissement ci-dessus)
 
 concurrency:
   group: finveille-huggingface

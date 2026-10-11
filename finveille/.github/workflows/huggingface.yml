@@ -8,9 +8,8 @@
 # Le Space est créé automatiquement (« ton-pseudo/finveille », ou la variable HF_SPACE).
 name: Hugging Face
 
+# ⚠ Hugging Face réserve désormais les Spaces Docker à l'abonnement PRO (erreur 402) : lancement manuel seulement.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
