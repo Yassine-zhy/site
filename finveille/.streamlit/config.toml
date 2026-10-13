@@ -14,6 +14,9 @@ toolbarMode = "viewer"          # cache les outils de développement (bouton « 
 #   streamlit run app.py --server.fileWatcherType auto
 fileWatcherType = "none"
 websocketPingInterval = 45      # un serveur très occupé a 45 s (au lieu de 30) pour répondre aux navigateurs
+# Le dossier static/ est servi à l'adresse app/static/ : le moteur 3D et Three.js (guide 30), mis en cache par le
+# navigateur au lieu d'être renvoyés à chaque affichage
+enableStaticServing = true
 
 [runner]
 # Par défaut, Streamlit lance un grand ménage de la mémoire (gc.collect) après CHAQUE affichage : le serveur

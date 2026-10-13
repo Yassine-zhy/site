@@ -5,13 +5,14 @@ from datetime import datetime, timedelta, timezone
 
 import streamlit as st
 
+import scene3d
 import theme
 from core import analytics, capacity, images, storage
 from core.config import API_KEYS, CATEGORIES
 from core.filters import filter_articles
 from theme import esc
-from ui import (NO_STATUS, api_keys, article_card, current_user, flush_toast, hero_quotes, load_articles,
-                load_trends, setting)
+from ui import (NO_STATUS, api_keys, article_card, current_user, flush_toast, hero_quotes, known_cac40, load_articles,
+                load_trends, setting, warm_cac40)
 
 user = current_user()  # None : visiteur non connecté (il voit le fil, sans favoris ni « lu »)
 PAGE_SIZE = setting(user, "page_size", 20)  # nombre d'articles affichés par « page » (réglable)
@@ -32,6 +33,12 @@ if "visible_count" not in st.session_state:
 
 keys = api_keys()
 articles, errors, fetched_at = load_articles(keys)
+
+
+# --- Le décor 3D : la ville du CAC 40, et les derniers titres sur les bandeaux de ses tours (scene3d.py) ------
+city = st.empty()
+with city:
+    scene3d.show("city", **scene3d.city_data(articles, known_cac40()))
 
 
 # --- En-tête : se redessine toutes les minutes (horloges des places boursières) -----------------
@@ -224,3 +231,10 @@ def rail_blocks(filtered, collected):
 
 
 body(query, categories, sources, hide_read, show_hidden, compact, pictures_on)
+
+# Premier visiteur depuis le démarrage : les couleurs des tours (la séance du CAC 40) arrivent une fois la page affichée
+if not known_cac40():
+    with capacity.QUEUE.released():  # attente réseau : on laisse sa place dans la file
+        if cac40 := warm_cac40():
+            with city:
+                scene3d.show("city", key="fv3d_cac40", **scene3d.city_data(articles, cac40))

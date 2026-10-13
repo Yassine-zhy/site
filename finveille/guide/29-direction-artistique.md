@@ -144,4 +144,4 @@ de cette branche, Streamlit remet le site à jour tout seul.
 | Les cartes restent invisibles dans un vieux navigateur | Animation au défilement sans repli | L'envelopper dans `@supports (animation-timeline: view())`. |
 | Le site en ligne ne change pas après un push | Push sur une autre branche | Refaire le `subtree split` et pousser `finveille-app`. |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [un monde en 3D](30-monde-3d.md). Retour au [sommaire du guide](README.md).

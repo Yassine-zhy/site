@@ -117,6 +117,7 @@ CSS = """
   --control-bg: var(--fv-surface); --control-border: var(--fv-line-strong); --control-radius: var(--radius-md);
   --ring: 0 0 0 3px color-mix(in srgb, var(--fv-brand) 26%, transparent);
   --accent-bar: linear-gradient(180deg, var(--fv-brand), var(--fv-brand-2));
+  --fv-glare: light-dark(rgba(36, 81, 222, .07), rgba(255, 255, 255, .07));  /* le reflet qui suit la souris */
 
   /* Le fond : deux halos très doux (bleu, violet) en haut de page, qui donnent de la profondeur */
   background: radial-gradient(1100px 520px at 8% -8%, var(--fv-glow), transparent 60%),
@@ -941,6 +942,95 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 }
 @keyframes fv-reveal { from { opacity: 0; transform: translateY(22px); } }
 
+/* =============================================================================================
+   13. Le monde 3D (guide 30, scene3d.py et static/fv3d/engine.js)
+   ============================================================================================= */
+/* Le composant qui charge le moteur n'occupe aucune place ; « fvquiet » cache un indicateur de chargement inutile */
+.stApp [class*="st-key-fv3d"] { position: absolute !important; width: 1px; height: 1px; overflow: hidden; pointer-events: none; }
+.stApp .st-key-fvquiet { display: none; }
+/* La toile 3D : fixée derrière tout le contenu, elle apparaît en fondu */
+#fv3d { --fv-scene-left: light-dark(rgb(0 0 0 / .06), rgb(0 0 0 / .26));   /* le décor sous le titre */
+  --fv-scene-small: light-dark(rgb(0 0 0 / .2), rgb(0 0 0 / .3));
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity 1.1s ease; }
+#fv3d.is-on { opacity: 1; }
+/* La lisibilité d'abord : le décor est entier dans l'en-tête (--hb : le bas de l'en-tête, mesuré par le moteur),
+   discret derrière le contenu (--amb), et il s'efface à gauche, sous le titre. */
+#fv3d canvas { display: block; width: 100%; height: 100%;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(var(--hb, 60vh) - 6rem), rgb(0 0 0 / var(--amb, .2)) calc(var(--hb, 60vh) + 3rem)),
+    linear-gradient(90deg, var(--fv-scene-left) 0, var(--fv-scene-left) 34%, #000 62%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(180deg, #000 0, #000 calc(var(--hb, 60vh) - 6rem), rgb(0 0 0 / var(--amb, .2)) calc(var(--hb, 60vh) + 3rem)),
+    linear-gradient(90deg, var(--fv-scene-left) 0, var(--fv-scene-left) 34%, #000 62%);
+  mask-composite: intersect; }
+@media (max-width: 899px) {  /* une seule colonne : le texte passe devant le décor, plus discret */
+  #fv3d canvas { -webkit-mask-image: linear-gradient(180deg, var(--fv-scene-small) 0, var(--fv-scene-small) calc(var(--hb, 60vh) - 4rem), rgb(0 0 0 / var(--amb, .2)) calc(var(--hb, 60vh) + 2rem));
+    mask-image: linear-gradient(180deg, var(--fv-scene-small) 0, var(--fv-scene-small) calc(var(--hb, 60vh) - 4rem), rgb(0 0 0 / var(--amb, .2)) calc(var(--hb, 60vh) + 2rem)); }
+}
+/* Le décor 3D prend la place des illustrations de l'étape 29, gardées pour les navigateurs sans WebGL */
+html.fv-3d .fv-hero-art, html.fv-3d .fv-hero-spot, html.fv-3d .fv-hero::before,
+html.fv-3d .fv-hero.has-aside::after { display: none; }
+html.fv-3d .fv-hero.is-home { min-height: min(64vh, 40rem); }   /* la ville a besoin de place */
+html.fv-3d .fv-hero.is-home .fv-hero-dek { max-width: 46ch; }   /* la phrase s'arrête avant la ville */
+.fv-3d-caption { display: none; }
+html.fv-3d .fv-3d-caption { display: block; max-width: 54ch; margin: 1.1rem 0 0; font-size: .82rem; line-height: 1.55;
+  color: var(--fv-muted); }
+html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .5rem; height: .5rem; margin-right: .55rem;
+  border-radius: 2px; transform: rotate(45deg) translateY(-1px); background: linear-gradient(135deg, var(--fv-up), var(--fv-brand)); }
+@media (hover: none) { .fv-3d-hint { display: none; } }
+/* sur le fil, les trois cours se rangent en ligne sous la ville, au lieu de la cacher */
+@media (min-width: 900px) {
+  html.fv-3d .fv-hero.is-home .fv-hero-aside { align-self: end; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .7rem; padding: 0 0 .4rem; transform: perspective(1400px) rotateX(8deg); transform-origin: 50% 100%; }
+  html.fv-3d .fv-hero.is-home .fv-float { translate: none; grid-column: auto; padding: .8rem .85rem .75rem; }
+  html.fv-3d .fv-hero.is-home .fv-float-value { font-size: 1.15rem; }
+  html.fv-3d .fv-hero.is-home .fv-float > img { max-width: 76px; height: 28px; }
+}
+/* sur les autres pages, les cours passent sous le titre : la droite de l'en-tête est au décor */
+@media (min-width: 900px) {
+  html.fv-3d .fv-hero.has-aside:not(.is-home) .fv-hero-aside { grid-column: 1; grid-row: 2; max-width: 40rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; padding: 0; transform: none; }
+  html.fv-3d .fv-hero.has-aside:not(.is-home) .fv-float { translate: none; grid-column: auto; padding: .8rem .85rem .75rem; }
+  html.fv-3d .fv-hero.has-aside:not(.is-home) .fv-float-value { font-size: 1.15rem; }
+  html.fv-3d .fv-hero.has-aside:not(.is-home) .fv-float > img { max-width: 76px; height: 28px; }
+}
+@media (max-width: 899px) { html.fv-3d .fv-hero.is-home { min-height: 0; } }
+
+/* Les cartes d'actualité en relief : la une et les vignettes s'inclinent vers la souris, un reflet suit le
+   pointeur (engine.js pose --rx, --ry, --gx, --gy). Souris seulement, et jamais si l'on a demandé moins d'animations. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  [class*="st-key-fvlead_"], [class*="st-key-fvtile_"] { position: relative;
+    transform: perspective(1100px) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg));
+    transition: transform .7s cubic-bezier(.2, .7, .2, 1), box-shadow .2s, border-color .2s; }
+  [class*="st-key-fvlead_"].is-tilting, [class*="st-key-fvtile_"].is-tilting { transition-duration: .15s, .2s, .2s;
+    transform: perspective(1100px) translateY(-3px) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg));
+    box-shadow: var(--fv-elev-hover), 0 30px 60px -30px var(--fv-shadow-deep); }
+  [class*="st-key-fvlead_"]::after, [class*="st-key-fvtile_"]::after { content: ""; position: absolute; inset: 0;
+    z-index: 2; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .35s;
+    background: radial-gradient(520px circle at var(--gx, 50%) var(--gy, 50%), var(--fv-glare), transparent 42%); }
+  .is-tilting::after { opacity: 1; }
+}
+/* Les photos se « développent » sous le passage du scanner (le motif du décor 3D), une seule fois */
+.fv-media { position: relative; }
+.fv-media::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 44%, color-mix(in srgb, var(--fv-brand) 45%, transparent) 49.4%,
+    rgba(255, 255, 255, .75) 50%, transparent 50.6%) 0 100% / 100% 240% no-repeat;
+  animation: fv-scanline 1.3s cubic-bezier(.45, 0, .2, 1) .1s both; }
+.fv-media > img { animation: fv-develop 1.3s cubic-bezier(.45, 0, .2, 1) .1s both; }
+@keyframes fv-scanline { from { background-position: 0 100%; } 88% { opacity: 1; } to { background-position: 0 0; opacity: 0; } }
+@keyframes fv-develop { from { clip-path: inset(0 0 100% 0); filter: saturate(0) brightness(1.3); } 70% { filter: saturate(.6); } }
+/* La une : les mots du titre arrivent l'un après l'autre */
+.fv-lead .fv-w { display: inline-block; animation: fv-word .7s cubic-bezier(.2, .7, .2, 1) both;
+  animation-delay: calc(140ms + var(--i) * 30ms); }
+@keyframes fv-word { from { opacity: 0; transform: translateY(.45em); filter: blur(5px); } }
+/* Le fil en continu : chaque dépêche se redresse en entrant à l'écran (là où le navigateur sait le faire) */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    [class*="st-key-fvcard_"] { transform-origin: 50% 0; animation: fv-tilt-in both cubic-bezier(.2, .7, .2, 1);
+      animation-timeline: view(); animation-range: entry 0% entry 75%; }
+  }
+}
+@keyframes fv-tilt-in { from { opacity: 0; transform: perspective(900px) rotateX(-24deg) translateY(28px) scale(.97); } }
+
 /* Sur écran tactile, chaque bouton fait au moins 44 px de haut : on vise sans zoomer */
 @media (pointer: coarse) {
   .stApp button, .stApp a[data-testid^="stBaseLinkButton"], .stApp [data-testid="stPopoverButton"],
@@ -962,7 +1052,9 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   .fv-tape-track, .fv-tape-label::before, .fv-sk, .fv-hero-copy > *, [class*="st-key-fvlead_"],
   [class*="st-key-fvtile_"], [class*="st-key-fvcard_"], .fv-aurora, .fv-hero-spot img, .fv-hero-title em,
   .fv-eyebrow.is-live::before, [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > *,
-  .fv-card, .fv-kpis, .fv-tiles, .fv-table-wrap, [class*="st-key-fvchart_"], [class*="st-key-fvbox_"] { animation: none; }
+  .fv-card, .fv-kpis, .fv-tiles, .fv-table-wrap, [class*="st-key-fvchart_"], [class*="st-key-fvbox_"],
+  .fv-media::after, .fv-media > img, .fv-lead .fv-w { animation: none; }
+  .fv-media::after { display: none; }
 }
 </style>
 """
@@ -1096,6 +1188,12 @@ def hero_html(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=
     )
 
 
+# La légende du décor 3D du fil (scene3d.py) : affichée seulement quand le décor l'est (classe fv-3d, CSS)
+CITY_CAPTION = ('<p class="fv-3d-caption">En fond, le CAC 40 en 3D : une tour par entreprise, haute comme son poids '
+                "dans l'indice, verte ou rouge selon la séance<span class=\"fv-3d-hint\"> · survole une tour pour son "
+                "nom</span>.</p>")
+
+
 def feed_header(article_count: int, source_count: int, fetched_at: datetime, quotes=()) -> None:
     """L'en-tête du fil : date, titre, volume collecté, places boursières et trois cours qui flottent."""
     now = datetime.now(timezone.utc)
@@ -1103,7 +1201,7 @@ def feed_header(article_count: int, source_count: int, fetched_at: datetime, quo
         "L'actualité financière,", f"{fr_number(article_count, 0)} dépêches de {source_count} sources, classées par "
         f"rubrique et expliquées · dernière collecte à {clock(fetched_at)}",
         eyebrow=f"{fr_date(now.astimezone(DISPLAY_TZ)).capitalize()} · édition continue", accent="en continu.",
-        quotes=quotes, extra=sessions_html(now), classes="is-home is-live",
+        quotes=quotes, extra=sessions_html(now) + CITY_CAPTION, classes="is-home is-live",
     ))
 
 
@@ -1124,10 +1222,15 @@ def section(title: str, note: str = "") -> None:
     st.html(f'<div class="fv-section"><h2>{esc(title)}</h2>{f"<small>{esc(note)}</small>" if note else ""}</div>')
 
 
-def page_header(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=(), art: str | None = None) -> None:
+def page_header(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=(), art: str | None = None,
+                scene: str | None = None) -> None:
     """En-tête de page : rubrique du menu, grand titre (avec sa fin en dégradé), phrase d'introduction et, à droite,
-    quelques cours en tuiles flottantes ou l'illustration de la page."""
+    quelques cours en tuiles flottantes ou l'illustration de la page. Derrière, le décor 3D de la page (scene3d.py,
+    d'après `scene`, sinon d'après le nom de l'illustration)."""
+    import scene3d
+
     st.html(hero_html(title, esc(dek), eyebrow, accent, quotes, art_name=art))
+    scene3d.page(scene or art)
 
 
 def card(body: str, title: str = "", note: str = "") -> str:
