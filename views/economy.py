@@ -29,6 +29,7 @@ theme.page_header(
     "Inflation, taux directeurs, chômage et taux d'intérêt en zone euro, en France et aux États-Unis : les "
     "statistiques officielles de la BCE et de la Réserve fédérale, mises à jour chaque jour.",
     eyebrow="Économie", accent="en chiffres officiels.", quotes=hero_quotes("EURUSD=X", "BZ=F", "GC=F"),
+    scene="economy",
 )
 
 data, errors = load_macro(START)

@@ -161,7 +161,7 @@ def currency_view() -> None:
 theme.page_header(
     "Les marchés mondiaux,",
     "Indices, CAC 40, devises, taux, matières premières et crypto : dernier cours connu (Yahoo Finance, différé).",
-    eyebrow="Marchés", accent="en un coup d'œil.", quotes=hero_quotes("^STOXX50E", "^IXIC", "^N225"),
+    eyebrow="Marchés", accent="en un coup d'œil.", quotes=hero_quotes("^STOXX50E", "^IXIC", "^N225"), scene="markets",
 )
 VIEWS = {"Monde": world_view, "CAC 40": cac40_view, "Devises": currency_view}
 # Un sélecteur plutôt que des onglets : seule la vue choisie télécharge ses données.

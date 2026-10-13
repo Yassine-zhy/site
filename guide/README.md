@@ -33,5 +33,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 27. [Des pages aussi belles que la bannière](27-pages-principales.md)
 28. [Tout le site au même niveau : composants, audit, graphiques](28-refonte-complete.md)
 29. [Une direction artistique : illustrations, transitions, mise en ligne](29-direction-artistique.md)
+30. [Un monde en 3D derrière chaque page](30-monde-3d.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).

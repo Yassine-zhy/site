@@ -618,6 +618,18 @@ def load_cac40():
     return _resilient("cac40", _cac40, empty=[])
 
 
+def known_cac40() -> list:
+    """Les cours du CAC 40 déjà en mémoire (aucun appel réseau), ou une liste vide si personne ne les a demandés."""
+    return LAST_GOOD.get("cac40|()") or []
+
+
+def warm_cac40() -> list:
+    """Cherche les cours du CAC 40 sans indicateur de chargement : le décor 3D du fil peut attendre, le visiteur lit.
+    (Le conteneur « fvquiet » est caché par theme.py.)"""
+    with st.container(key="fvquiet"):
+        return load_cac40()
+
+
 @st.cache_data(ttl=600, max_entries=2, show_spinner=False)
 @_network
 def _euro_rates() -> dict[str, float]:
@@ -782,10 +794,13 @@ def article_html(article: Article, read: bool, layout: str = "row", echoes: int 
         kicker.append('<span class="fv-flag">Lu</span>')
     heading = "h3"  # sous le titre de section (h2) : la une comme les autres, sa taille vient du CSS
     link = f'href="{safe_url(article.url)}" target="_blank" rel="noopener"'
+    title = esc(article.title)
+    if layout == "lead":  # la une : les mots du titre apparaissent l'un après l'autre (theme.py)
+        title = " ".join(f'<span class="fv-w" style="--i:{i}">{word}</span>' for i, word in enumerate(title.split(" ")))
     with_dek = article.summary and (layout in ("lead", "row") or (layout == "tile" and not image))
     text = (
         f'<div class="fv-kicker">{"".join(kicker)}</div>'
-        f'<{heading} class="fv-headline"><a {link}>{esc(article.title)}</a></{heading}>'
+        f'<{heading} class="fv-headline"><a {link}>{title}</a></{heading}>'
         + (f'<p class="fv-dek">{esc(article.summary)}</p>' if with_dek else "")
         + (f'<p class="fv-tile-src"><img src="{theme.favicon_url(article.url)}" alt="" loading="lazy">'
            f"{esc(article.source)}</p>" if layout == "tile" else "")
