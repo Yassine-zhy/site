@@ -133,6 +133,9 @@ ul[class^="fv-"] > li, ol[class^="fv-"] > li { margin-left: 0; padding-left: 0; 
 /* =============================================================================================
    2. Barre d'application : logo, menu, compte
    ============================================================================================= */
+/* Streamlit Community Cloud ajoute ses propres boutons dans la barre du haut (« Fork », lien vers le dépôt GitHub) :
+   on les cache, la barre reste celle du site. Le menu ⋮ (choix du thème) reste visible. */
+[data-testid="stToolbarActions"] { display: none !important; }
 header[data-testid="stHeader"] { background: color-mix(in srgb, var(--fv-surface) 78%, transparent);
   backdrop-filter: saturate(160%) blur(14px); -webkit-backdrop-filter: saturate(160%) blur(14px);
   border-bottom: 1px solid var(--fv-line); }
