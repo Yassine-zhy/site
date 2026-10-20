@@ -85,7 +85,8 @@ def app(db, monkeypatch):
                                   "views/favorites.py", "views/settings.py", "views/glossary.py", "views/compare.py",
                                   "views/portfolio.py", "views/alerts.py", "views/brief.py",
                                   "views/account.py", "views/economy.py",
-                                  "views/simulators.py", "views/crypto.py", "views/quiz.py", "views/assistant.py"])
+                                  "views/simulators.py", "views/crypto.py", "views/quiz.py", "views/assistant.py",
+                                  "views/about.py"])
 def test_chaque_page_s_affiche(app, page):
     app.run()
     app.switch_page(page).run()

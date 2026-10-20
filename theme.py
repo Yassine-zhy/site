@@ -94,6 +94,7 @@ CSS = """
   --fv-down: light-dark(var(--red-700), var(--red-400));
   --fv-up-soft: light-dark(var(--green-50), var(--green-950));
   --fv-down-soft: light-dark(var(--red-50), var(--red-950));
+  --fv-down-on-soft: light-dark(var(--red-700), #ff8a96);  /* la baisse écrite sur une pastille rouge : 5:1 au moins */
   --fv-warn: light-dark(var(--amber-700), var(--amber-400));
   --fv-warn-soft: light-dark(var(--amber-50), var(--amber-950));
   --fv-shadow: light-dark(rgba(15, 23, 42, .07), rgba(0, 0, 0, .5));
@@ -160,7 +161,13 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .st-key-fvaccount a:hover { border-color: var(--fv-brand); }
 .st-key-fvaccount a p { font-size: .85rem; font-weight: 500; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; }
 .st-key-fvaccount button { min-height: 2.2rem; padding: .2rem .9rem; }
-@media (max-width: 640px) { .st-key-fvaccount a p { max-width: 6rem; } }
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :has(.st-key-fvaccount) { animation: none; }
+@media (max-width: 640px) {  /* téléphone : une icône (le texte reste lu par les lecteurs d'écran), loin du menu ⋮ */
+  .st-key-fvaccount { right: 3.9rem; }
+  .st-key-fvaccount a { padding: .4rem; }
+  .st-key-fvaccount a p { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  [data-testid="stStatusWidget"] button { display: none; }  /* « Stop » : inutile au visiteur, il chevauchait le compte */
+}
 
 /* Le cookie de session est posé par un composant invisible (ui.sync_cookie) : il ne doit prendre aucune place */
 .st-key-fvcookie { display: none !important; }
@@ -345,7 +352,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   -webkit-background-clip: text; background-clip: text; color: transparent; }
 .fv-hero-dek { margin: 1rem 0 0; max-width: 62ch; color: var(--fv-muted); font-size: 1.1rem; line-height: 1.6; }
 .fv-hero .fv-sessions { margin-top: 1.35rem; }
-.fv-hero-copy > * { animation: fv-rise var(--duration-slow) cubic-bezier(.2, .7, .2, 1) both; }
+.fv-hero-copy > * { animation: fv-rise var(--duration-slow) cubic-bezier(.2, .7, .2, 1) backwards; }
 .fv-hero-copy > :nth-child(2) { animation-delay: 60ms; }
 .fv-hero-copy > :nth-child(3) { animation-delay: 120ms; }
 .fv-hero.is-live .fv-hero-copy > * { animation: none; }  /* le fil se redessine chaque minute : pas d'entrée animée */
@@ -373,7 +380,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   background: color-mix(in srgb, var(--c) 14%, transparent); font: 600 .8rem/1.4 var(--fv-mono); }
 .fv-float-delta span { color: inherit; }
 .fv-float.is-up .fv-float-delta { color: var(--fv-up); }
-.fv-float.is-down .fv-float-delta { color: var(--fv-down); }
+.fv-float.is-down .fv-float-delta { color: var(--fv-down-on-soft); }
 .fv-float > img { justify-self: end; width: 100%; max-width: 104px; height: 34px; }
 @media (max-width: 900px) {
   .fv-hero.has-aside { grid-template-columns: minmax(0, 1fr); }
@@ -478,7 +485,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 
 /* Les dépêches arrivent en cascade (300 à 450 ms), une seule fois : Streamlit garde les éléments déjà affichés */
 [class*="st-key-fvlead_"], [class*="st-key-fvtile_"], [class*="st-key-fvcard_"] {
-  animation: fv-rise var(--duration-slow) cubic-bezier(.2, .7, .2, 1) both; }
+  animation: fv-rise var(--duration-slow) cubic-bezier(.2, .7, .2, 1) backwards; }
 [class*="st-key-fvtile_"] { animation-delay: 80ms; }
 [data-testid="stColumn"]:nth-child(2) > div > [class*="st-key-fvtile_"] { animation-delay: 140ms; }
 [data-testid="stColumn"]:nth-child(3) > div > [class*="st-key-fvtile_"] { animation-delay: 200ms; }
@@ -638,7 +645,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-tile-delta { grid-area: delta; font-size: .8rem; font-weight: 600; }
 .fv-tile-delta .fv-up, .fv-tile-delta .fv-down { display: inline-block; padding: .08rem .45rem; border-radius: 6px; }
 .fv-tile-delta .fv-up { background: var(--fv-up-soft); }
-.fv-tile-delta .fv-down { background: var(--fv-down-soft); }
+.fv-tile-delta .fv-down { background: var(--fv-down-soft); color: var(--fv-down-on-soft); }
 .fv-tile img { grid-area: spark; width: 96px; height: 34px; }
 .fv-tile-sub { grid-area: sub; margin-top: .45rem; padding-top: .45rem; border-top: 1px dashed var(--fv-line);
   font-size: .72rem; color: var(--fv-muted); }
@@ -926,7 +933,9 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 /* Changer de page : le contenu arrive en cascade (400 à 600 ms, huit éléments au plus). Une seule fois : Streamlit
    garde les éléments déjà affichés quand on clique sur un bouton de la même page. */
 [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > * {
-  animation: fv-enter .5s cubic-bezier(.2, .7, .2, 1) both; }
+  animation: fv-enter .5s cubic-bezier(.2, .7, .2, 1) backwards; }
+/* « backwards » et non « both » : une fois finie, l'animation ne laisse aucun transform. Sinon, tout élément fixé à
+   l'écran à l'intérieur (le bouton « Se connecter ») se cale sur le bloc animé et glisse sous le bandeau (étape 31). */
 [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(2) { animation-delay: 40ms; }
 [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(3) { animation-delay: 80ms; }
 [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(4) { animation-delay: 120ms; }
@@ -940,7 +949,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
    où le navigateur sait le faire (sinon, tout reste simplement visible). */
 @supports (animation-timeline: view()) {
   .fv-card, .fv-kpis, .fv-tiles, .fv-table-wrap, [class*="st-key-fvchart_"], [class*="st-key-fvbox_"] {
-    animation: fv-reveal both cubic-bezier(.2, .7, .2, 1); animation-timeline: view();
+    animation: fv-reveal backwards cubic-bezier(.2, .7, .2, 1); animation-timeline: view();
     animation-range: entry 0% entry 55%; }
 }
 @keyframes fv-reveal { from { opacity: 0; transform: translateY(22px); } }
@@ -1018,21 +1027,146 @@ html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .
   background: linear-gradient(180deg, transparent 44%, color-mix(in srgb, var(--fv-brand) 45%, transparent) 49.4%,
     rgba(255, 255, 255, .75) 50%, transparent 50.6%) 0 100% / 100% 240% no-repeat;
   animation: fv-scanline 1.3s cubic-bezier(.45, 0, .2, 1) .1s both; }
-.fv-media > img { animation: fv-develop 1.3s cubic-bezier(.45, 0, .2, 1) .1s both; }
+.fv-media > img { animation: fv-develop 1.3s cubic-bezier(.45, 0, .2, 1) .1s backwards; }
 @keyframes fv-scanline { from { background-position: 0 100%; } 88% { opacity: 1; } to { background-position: 0 0; opacity: 0; } }
 @keyframes fv-develop { from { clip-path: inset(0 0 100% 0); filter: saturate(0) brightness(1.3); } 70% { filter: saturate(.6); } }
 /* La une : les mots du titre arrivent l'un après l'autre */
-.fv-lead .fv-w { display: inline-block; animation: fv-word .7s cubic-bezier(.2, .7, .2, 1) both;
+.fv-lead .fv-w { display: inline-block; animation: fv-word .7s cubic-bezier(.2, .7, .2, 1) backwards;
   animation-delay: calc(140ms + var(--i) * 30ms); }
 @keyframes fv-word { from { opacity: 0; transform: translateY(.45em); filter: blur(5px); } }
 /* Le fil en continu : chaque dépêche se redresse en entrant à l'écran (là où le navigateur sait le faire) */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    [class*="st-key-fvcard_"] { transform-origin: 50% 0; animation: fv-tilt-in both cubic-bezier(.2, .7, .2, 1);
+    [class*="st-key-fvcard_"] { transform-origin: 50% 0; animation: fv-tilt-in backwards cubic-bezier(.2, .7, .2, 1);
       animation-timeline: view(); animation-range: entry 0% entry 75%; }
   }
 }
 @keyframes fv-tilt-in { from { opacity: 0; transform: perspective(900px) rotateX(-24deg) translateY(28px) scale(.97); } }
+
+/* =============================================================================================
+   14. Finitions « site de studio » (guide 31) : plus épuré, plus de relief, toujours lisible
+   ============================================================================================= */
+/* La barre du haut flotte : une pilule de verre détachée des bords, comme sur les sites primés */
+@media (min-width: 900px) {
+  header[data-testid="stHeader"] { top: .6rem; left: max(.75rem, calc((100% - 1290px) / 2));
+    right: max(.75rem, calc((100% - 1290px) / 2)); width: auto; border: 1px solid var(--fv-line); border-radius: 18px;
+    background: color-mix(in srgb, var(--fv-surface) 68%, transparent);
+    box-shadow: inset 0 1px 0 var(--fv-hi), 0 18px 40px -26px var(--fv-shadow-deep); }
+  .st-key-fvaccount { top: 1.22rem; right: calc(max(.75rem, (100% - 1290px) / 2) + 3.3rem); }
+  [data-testid="stMainBlockContainer"] { padding-top: 5.6rem; }
+}
+/* La barre de lecture : un trait de couleur en haut de l'écran, qui avance avec le défilement */
+.stApp { timeline-scope: --fv-page; }
+[data-testid="stMain"], [data-testid="stAppScrollToBottomContainer"] { scroll-timeline: --fv-page block; }
+.fv-progress { display: none; }
+@supports (animation-timeline: scroll()) {
+  .fv-progress { display: block; position: fixed; top: 0; left: 0; right: 0; z-index: 1000000; height: 2px;
+    pointer-events: none; transform-origin: 0 50%; background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2), var(--fv-up));
+    animation: fv-progress linear both; animation-timeline: --fv-page; }
+}
+@keyframes fv-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Le bandeau des cours : un simple filet, sans boîte ; un voile de verre garde ses chiffres lisibles devant le décor 3D */
+.fv-tape { margin: -1rem 0 1.4rem; border: 0; border-block: 1px solid var(--fv-line); border-radius: 0;
+  background: color-mix(in srgb, var(--fv-bg) 86%, transparent); box-shadow: none;
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.fv-tape-label { border-right: 0; padding-left: 0; }
+
+/* Les places boursières : une ligne de texte discrète, plus de pastilles */
+.stApp .fv-sessions { gap: .25rem 1.1rem; }
+.stApp .fv-sessions li { padding: 0; border: 0; background: none; font-size: .78rem; }
+
+/* L'en-tête : les mots du titre montent l'un après l'autre derrière un cache (pas sur le fil, redessiné chaque
+   minute) ; la fin du titre arrive en dernier, d'un bloc */
+.fv-hero-title .fv-hw { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .08em; margin-bottom: -.08em; }
+.fv-hero-title .fv-hw > span { display: inline-block; animation: fv-word-up .8s cubic-bezier(.2, .8, .2, 1) backwards;
+  animation-delay: calc(80ms + var(--i) * 55ms); }
+.fv-hero-title em.fv-hw-em { animation: fv-word-up .9s cubic-bezier(.2, .8, .2, 1) backwards, fv-sheen 2s cubic-bezier(.2, .7, .2, 1) .5s backwards;
+  animation-delay: calc(140ms + var(--n) * 55ms), .5s; }
+@keyframes fv-word-up { from { transform: translateY(105%); opacity: 0; } }
+
+/* Les titres de section, façon magazine : un filet qui file jusqu'au bord */
+.fv-section { align-items: center; margin-top: 2.8rem; }
+.fv-section h2 { font-size: 1.42rem !important; letter-spacing: -.025em; }
+.fv-section h2::before { width: 6px; height: 6px; border-radius: 50%; }
+.fv-section::after { content: ""; order: 3; flex: 1 1 4rem; height: 1px; min-width: 2rem;
+  background: linear-gradient(90deg, var(--fv-line-strong), transparent); }
+.fv-section small { order: 2; }
+
+/* Les cartes : des angles plus doux et, devant le décor 3D, du verre dépoli (ordinateur seulement : le flou coûte cher
+   sur un téléphone) */
+.stApp { --card-radius: 18px; }
+@media (min-width: 900px) {
+  html.fv-3d .fv-card, html.fv-3d [class*="st-key-fvpanel_"], html.fv-3d [class*="st-key-fvlead_"],
+  html.fv-3d [class*="st-key-fvtile_"], html.fv-3d [class*="st-key-fvbox_"], html.fv-3d [class*="st-key-fvchart_"],
+  html.fv-3d [class*="st-key-fvset_"], html.fv-3d .fv-kpi, html.fv-3d .fv-table-wrap {
+    background: color-mix(in srgb, var(--card-bg) 88%, transparent);
+    -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%); }
+}
+
+/* Les onglets (« Se connecter », « Créer un compte »…) : l'onglet ouvert au bleu lisible de la marque (le bleu de
+   Streamlit n'atteint que 4,2:1 sur le fond sombre) */
+.stApp [role="tab"][aria-selected="true"] p { color: var(--fv-brand); }
+
+/* Le bouton principal : un reflet passe au survol */
+.stApp button[kind="primary"], .stApp [data-testid="stBaseButton-primary"] { position: relative; overflow: hidden; }
+.stApp [data-testid="stBaseButton-primary"]::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .28) 50%, transparent 70%);
+  transform: translateX(-120%); transition: transform .7s cubic-bezier(.2, .7, .2, 1); }
+.stApp [data-testid="stBaseButton-primary"]:hover::after { transform: translateX(120%); }
+
+/* L'arrivée sur le site : le logo, le nom, un trait qui se remplit, puis le rideau se lève (1,6 s, une fois par
+   visite : l'élément reste en place quand on change de page). Jamais si l'on a demandé moins d'animations. */
+.fv-intro { position: fixed; inset: 0; z-index: 1000001; display: grid; place-items: center; pointer-events: none;
+  background: var(--fv-bg); animation: fv-curtain .6s cubic-bezier(.75, 0, .2, 1) 1.05s forwards; }
+.fv-intro-inner { display: grid; justify-items: center; gap: 1rem; animation: fv-intro-in .5s cubic-bezier(.2, .8, .2, 1) backwards; }
+.fv-intro img { width: 64px; height: 64px; border-radius: 18px; box-shadow: 0 20px 50px -14px rgba(36, 81, 222, .7); }
+.fv-intro-word { font: 700 1.6rem/1 var(--fv-sans); letter-spacing: -.03em; color: var(--fv-text); }
+.fv-intro-word em { font-style: normal; color: var(--fv-brand); }
+.fv-intro-line { display: block; width: 9rem; height: 2px; border-radius: 2px; background: var(--fv-line); overflow: hidden; }
+.fv-intro-line::after { content: ""; display: block; height: 100%; transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--fv-brand), var(--fv-up)); animation: fv-load .95s cubic-bezier(.6, 0, .2, 1) forwards; }
+@keyframes fv-curtain { to { transform: translateY(-100%); visibility: hidden; } }
+@keyframes fv-intro-in { from { opacity: 0; transform: translateY(12px) scale(.96); } }
+@keyframes fv-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Le pied de page : la signature, la marque en très grand, les rubriques en colonnes */
+.fv-footer { display: block; margin: 5rem 0 0; padding: 2.4rem 0 0; border-top: 1px solid var(--fv-line); }
+.fv-footer-top { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 2rem 3rem; align-items: start; }
+.fv-footer-links { display: grid; grid-template-columns: repeat(2, minmax(0, max-content)); gap: .5rem 2.5rem;
+  justify-content: end; }
+.fv-footer-author { margin: 1.1rem 0 0; font-size: .92rem; color: var(--fv-muted); }
+.fv-footer-author strong { color: var(--fv-text); font-weight: 600; }
+.fv-footer-giant { margin: 2.2rem 0 0; font: 800 clamp(4.2rem, 15.5vw, 13.5rem)/.8 var(--fv-sans); letter-spacing: -.065em;
+  text-align: center; white-space: nowrap; user-select: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--fv-text) 16%, transparent), transparent 85%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fv-footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem 2rem; margin-top: 1rem;
+  padding-top: 1rem; border-top: 1px solid var(--fv-line); }
+.fv-footer-note { margin: 0; max-width: 80ch; }
+.fv-footer-top-link { font-size: .8rem; font-weight: 600; color: var(--fv-brand) !important; text-decoration: none !important; white-space: nowrap; }
+@media (max-width: 640px) { .fv-footer-top { grid-template-columns: 1fr; } .fv-footer-links { justify-content: start; } }
+
+/* La page « À propos » */
+.fv-about-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1.2rem 1.4rem; align-items: center; }
+.fv-about-avatar { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 22px;
+  font: 700 1.5rem/1 var(--fv-sans); color: #fff; background: linear-gradient(135deg, var(--blue-600), var(--violet-600));
+  box-shadow: 0 18px 40px -16px rgba(36, 81, 222, .7); }
+.fv-about-card h3 { margin: 0 !important; padding: 0 !important; font: 700 1.35rem/1.2 var(--fv-sans) !important; }
+.fv-about-card p { margin: .3rem 0 0; color: var(--fv-muted); }
+.fv-bento { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .9rem; margin-top: 1rem; }
+.fv-bento > div { padding: 1.2rem 1.25rem; border: 1px solid var(--card-border); border-radius: var(--card-radius);
+  background: var(--card-bg); box-shadow: var(--card-shadow); }
+.fv-bento > .is-wide { grid-column: span 2; }
+.fv-bento b { display: block; font: 700 2rem/1.05 var(--fv-sans); letter-spacing: -.03em; color: var(--fv-text); }
+.fv-bento b em { font-style: normal; background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fv-bento span { display: block; margin-top: .35rem; font-size: .88rem; line-height: 1.5; color: var(--fv-muted); }
+.fv-stack { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0 0; padding: 0; list-style: none; }
+.stApp .fv-stack li { margin: 0; padding: .35rem .8rem; border: 1px solid var(--fv-line-strong); border-radius: 999px;
+  font-size: .82rem; font-weight: 500; color: var(--fv-text); background: var(--fv-surface); }
+@media (max-width: 900px) { .fv-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .fv-bento { grid-template-columns: 1fr; } .fv-bento > .is-wide { grid-column: auto; } }
 
 /* Sur écran tactile, chaque bouton fait au moins 44 px de haut : on vise sans zoomer */
 @media (pointer: coarse) {
@@ -1043,7 +1177,8 @@ html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .
   [data-testid="stBaseButton-elementToolbar"], [data-testid="stNumberInputStepDown"], [data-testid="stNumberInputStepUp"],
   [data-testid="stChatInputSubmitButton"] { min-width: 44px; min-height: 44px; }
   [data-testid="stTooltipHoverTarget"] { padding: .7rem; margin: -.7rem; }  /* la bulle d'aide « ? » : zone élargie */
-  .fv-footer-links a { display: inline-flex; align-items: center; min-height: 44px; }
+  .fv-footer-links a, .fv-footer-top-link { display: inline-flex; align-items: center; min-height: 44px; }
+  .stApp [role="tab"] { min-height: 44px; }
   .fv-headline a { padding-block: .9rem; }  /* zone de toucher agrandie, sans rien déplacer (lien en ligne) */
   ul[class^="fv-"] li > a { display: inline-flex; align-items: center; min-height: 44px; }  /* listes de dépêches */
   [data-testid="stPageLink-NavLink"] { min-height: 44px; }
@@ -1056,7 +1191,8 @@ html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .
   [class*="st-key-fvtile_"], [class*="st-key-fvcard_"], .fv-aurora, .fv-hero-spot img, .fv-hero-title em,
   .fv-eyebrow.is-live::before, [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > *,
   .fv-card, .fv-kpis, .fv-tiles, .fv-table-wrap, [class*="st-key-fvchart_"], [class*="st-key-fvbox_"],
-  .fv-media::after, .fv-media > img, .fv-lead .fv-w { animation: none; }
+  .fv-media::after, .fv-media > img, .fv-lead .fv-w, .fv-hero-title .fv-hw > span, .fv-hero-title em.fv-hw-em { animation: none; }
+  .fv-intro { display: none; }
   .fv-media::after { display: none; }
 }
 </style>
@@ -1064,8 +1200,11 @@ html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .
 
 
 def inject_css() -> None:
-    """Ajoute la feuille de style à la page (à appeler une fois par exécution, dans app.py)."""
-    st.html(CSS)
+    """Ajoute la feuille de style à la page (à appeler une fois par exécution, dans app.py), avec la barre de lecture et
+    l'intro de la visite (guide 31). Cet élément reste en place d'une page à l'autre : l'intro ne se rejoue pas."""
+    st.html(CSS + '<span id="fv-top"></span><div class="fv-progress" aria-hidden="true"></div>'
+            f'<div class="fv-intro" aria-hidden="true"><div class="fv-intro-inner"><img src="{LOGO_URI}" alt="">'
+            '<span class="fv-intro-word">Fin<em>Veille</em></span><i class="fv-intro-line"></i></div></div>')
 
 
 # --- Petites fonctions de mise en forme --------------------------------------------------------
@@ -1166,6 +1305,16 @@ def float_tile(quote, animate: bool = True) -> str:
     )
 
 
+def title_html(title: str, accent: str = "", animate: bool = True) -> str:
+    """Le grand titre d'un en-tête. Animé : chaque mot dans un cache (il monte à son tour), la fin en dégradé d'un bloc.
+    Les espaces restent du texte entre les mots : un lecteur d'écran lit la phrase normalement."""
+    if not animate:
+        return f'{esc(title)}{f" <em>{esc(accent)}</em>" if accent else ""}'
+    words = esc(title).split()
+    head = " ".join(f'<span class="fv-hw"><span style="--i:{i}">{word}</span></span>' for i, word in enumerate(words))
+    return head + (f' <em class="fv-hw-em" style="--n:{len(words)}">{esc(accent)}</em>' if accent else "")
+
+
 def hero_html(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=(), extra: str = "",
               classes: str = "", art_name: str | None = None) -> str:
     """L'en-tête « héros » d'une page (guide 29) : le décor (deux halos qui dérivent, la ligne de cours signature),
@@ -1183,7 +1332,7 @@ def hero_html(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=
     return (
         f'<header class="{classes}">{scenery}<div class="fv-hero-copy">'
         + (f'<div class="fv-eyebrow{" is-live" if live else ""}">{esc(eyebrow)}</div>' if eyebrow else "")
-        + f'<h1 class="fv-hero-title">{esc(title)}{f" <em>{esc(accent)}</em>" if accent else ""}</h1>'
+        + f'<h1 class="fv-hero-title">{title_html(title, accent, animate=not live)}</h1>'
         + f'<p class="fv-hero-dek">{dek}</p>{extra}</div>'
         + (f'<div class="fv-hero-aside" role="group" aria-label="Les marchés en un coup d\'œil">{aside}</div>'
            if aside else spot)
@@ -1546,7 +1695,8 @@ def ticker_tape(quotes) -> None:
 
 LOGO_URI = svg_uri((Path(__file__).parent / "assets" / "logo.svg").read_text())  # le symbole, pour le pied de page
 FOOTER_LINKS = [("Le fil", ""), ("Le brief", "brief"), ("Assistant IA", "assistant"), ("Marchés", "markets"),
-                ("Économie", "economy"), ("Crypto", "crypto"), ("Glossaire", "glossary")]
+                ("Économie", "economy"), ("Crypto", "crypto"), ("Glossaire", "glossary"), ("À propos", "about")]
+AUTHOR = "Yassine Zouhair"  # l'auteur du site : pied de page et page « À propos »
 
 
 def nav_active(index: int) -> None:
@@ -1560,17 +1710,21 @@ def nav_active(index: int) -> None:
 
 
 def footer() -> None:
-    """Le pied de page, sur toutes les pages : la marque, les rubriques, les sources et l'avertissement."""
+    """Le pied de page, sur toutes les pages : la marque et la signature de l'auteur, les rubriques, le nom du site en
+    très grand (décoratif), les sources et l'avertissement."""
     links = "".join(f'<a href="./{path}" target="_self">{esc(label)}</a>' for label, path in FOOTER_LINKS)
     st.html(
-        '<footer class="fv-footer">'
+        '<footer class="fv-footer"><div class="fv-footer-top">'
         f'<div class="fv-footer-brand"><span class="fv-footer-mark"><img src="{LOGO_URI}" alt="" width="28" height="28">'
         '<span class="fv-wordmark">Fin<em>Veille</em></span></span>'
-        "<p>La veille financière et économique mondiale, mise à jour en continu.</p></div>"
-        f'<nav class="fv-footer-links" aria-label="Rubriques">{links}</nav>'
-        '<p class="fv-footer-note">Sources : flux RSS des médias cités, Yahoo Finance (cours différés), BCE, Réserve '
-        "fédérale, CoinGecko. Résumés et réponses de l'IA à vérifier dans les articles. Informations pédagogiques : "
-        "pas un conseil en investissement.</p></footer>"
+        "<p>La veille financière et économique mondiale, mise à jour en continu.</p>"
+        f'<p class="fv-footer-author">Conçu et développé par <strong>{esc(AUTHOR)}</strong></p></div>'
+        f'<nav class="fv-footer-links" aria-label="Rubriques">{links}</nav></div>'
+        '<p class="fv-footer-giant" aria-hidden="true">FinVeille</p>'
+        '<div class="fv-footer-bottom"><p class="fv-footer-note">Sources : flux RSS des médias cités, Yahoo Finance '
+        "(cours différés), BCE, Réserve fédérale, CoinGecko. Résumés et réponses de l'IA à vérifier dans les articles. "
+        f"Informations pédagogiques : pas un conseil en investissement. © {datetime.now().year} {esc(AUTHOR)}.</p>"
+        '<a class="fv-footer-top-link" href="#fv-top" target="_self">Haut de page ↑</a></div></footer>'
     )
 
 

@@ -91,6 +91,7 @@ pages = {
         st.Page("views/glossary.py", title="Glossaire", icon=":material/menu_book:"),
         st.Page("views/settings.py", title="Réglages", icon=":material/settings:"),
         st.Page("views/account.py", title="Mon compte", icon=":material/account_circle:"),
+        st.Page("views/about.py", title="À propos", icon=":material/info:"),
     ],
 }
 if is_admin(current_user()):  # l'assistant de configuration n'est visible que par l'administrateur

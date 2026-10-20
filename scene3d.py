@@ -61,6 +61,7 @@ PAGES = {
     "settings": ("terrain", {"shape": "calm"}),
     "account": ("terrain", {"shape": "calm"}),
     "setup": ("terrain", {"shape": "calm"}),
+    "about": ("globe", {}),                            # la Terre, sans les places : une veille mondiale
 }
 
 # Ordre de grandeur du poids de chaque valeur dans le CAC 40 (en %) : il donne la hauteur des tours de la ville.

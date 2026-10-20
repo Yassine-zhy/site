@@ -7,14 +7,16 @@
 
 **La veille financière et économique mondiale, dans une interface de plateforme professionnelle, mise à jour en continu.**
 
+Conçu et développé par **Yassine Zouhair**.
+
 FinVeille rassemble l'actualité de 12 flux RSS et de 4 API financières, la classe par rubrique, suit les
 entreprises et les thèmes de son utilisateur, affiche les cours des marchés mondiaux et résume les articles par IA.
 Application web en Python (Streamlit), construite pas à pas : chaque étape est un commit, documenté dans
 [`guide/`](guide/README.md).
 
-![Le fil d'actualité de FinVeille, thème clair](docs/screenshots/fil-clair.jpg)
+![Le fil d'actualité de FinVeille : la ville du CAC 40 en 3D](docs/screenshots/fil-3d.jpg)
 
-▶ [Voir la démonstration animée (29 s)](docs/branding/demo.mp4) : transitions entre les pages, courbes qui se dessinent.
+▶ [Voir la bande-annonce (40 s)](docs/branding/trailer.mp4) : la ville du CAC 40 en 3D, le globe des marchés, la chaîne du bitcoin. · [Démonstration des transitions (29 s)](docs/branding/demo.mp4)
 
 ## Fonctionnalités
 
@@ -90,7 +92,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-30 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+31 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 

@@ -77,4 +77,4 @@ en rayons X, pendant que la caméra plonge. Tout se joue dans les shaders (`SOLI
 | `Component 'fv3d' is not registered` (tests) | Nouvel environnement Streamlit | `scene3d.show` réenregistre le composant. |
 | `StreamlitDuplicateElementKey` | Deux décors avec la même clé dans une page | Une autre clé pour la mise à jour tardive (`key="fv3d_cac40"`). |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [finitions de studio](31-finitions-studio.md). Retour au [sommaire du guide](README.md).
