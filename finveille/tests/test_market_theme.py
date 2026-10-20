@@ -101,3 +101,19 @@ def test_le_recit_de_la_seance_en_chapitres():
     assert "&lt;b&gt;baisse&lt;/b&gt;" in html  # le titre de la dépêche est échappé
     # sans les cours des 40 valeurs ni dépêche, il reste la séance
     assert theme.story_html(index).count('<article class="fv-ch') == 1
+
+
+# --- Les maquettes 3D (étape 33) ---------------------------------------------------------------------------------
+
+
+def test_les_emplacements_des_maquettes():
+    import scene3d
+
+    html = scene3d.vitrine("globe", {"markers": [{"name": 'S&P "500"'}]}, label="Un globe <3D>", caption="Légende")
+    assert 'data-obj="globe"' in html and 'role="img"' in html and "&lt;3D&gt;" in html
+    assert "&quot;S&amp;P \\&quot;500\\&quot;&quot;" in html  # les données JSON, échappées dans l'attribut
+    assert "<figcaption>Légende</figcaption>" in html
+    assert scene3d.page_object("inconnue") == ""
+    index = Quote("CAC 40", "CAC 40", "G", "%", 7859.74, 7868.40, pd.Series([7868.40, 7859.74], dtype=float))
+    story = theme.story_html(index, city={"towers": [{"n": "Sanofi", "w": 5.6, "c": 2.9}]})
+    assert 'data-obj="city"' in story and "fv-story has-obj" in story

@@ -1,9 +1,10 @@
-"""Les images de la bande-annonce (guide 32) : des séquences filmées dans le vrai site, image par image, et les chiffres
-de la séance. Le montage, lui, est fait avec Remotion (dossier video/).
+"""Les images de la bande-annonce (guides 32 et 33) : des séquences filmées dans le vrai site, image par image, et les
+chiffres de la séance. Le montage, lui, est fait avec Remotion (dossier video/), sur la musique de tools/music.py.
 
 Pourquoi image par image : un navigateur sans carte graphique dessine la 3D lentement. On arrête donc le temps : à
-chaque image, le moteur 3D avance de 1/30 s (window.__fv3d.tick), les animations CSS aussi (Web Animations API), GSAP
-aussi (gsap.updateRoot), puis on prend une capture. Les séquences sont fluides, quelle que soit la machine.
+chaque image, le décor 3D avance de 1/30 s (window.__fv3d.tick), les maquettes aussi (window.__fvObjs.tick), les
+animations CSS aussi (Web Animations API), GSAP aussi (gsap.updateRoot), puis on prend une capture. Les séquences sont
+fluides, quelle que soit la machine.
 
 Depuis le dossier finveille/, le site étant lancé en local (streamlit run app.py) :
     python tools/footage.py --url http://localhost:8501/      # écrit video/public/footage/*.mp4 et data.json
@@ -45,6 +46,7 @@ STEP = r"""(ms) => {
     window.gsap.updateRoot(st.g0 + st.t / 1000);
   }
   if (window.__fv3d) window.__fv3d.tick(ms);
+  if (window.__fvObjs && window.__fvObjs.tick) window.__fvObjs.tick(ms);
 }"""
 HIDE = ".fv-intro, [data-testid='stStatusWidget'], [data-testid='stDecoration'] { display: none !important; }"
 MAIN = "document.querySelector('[data-testid=stMain]')"
@@ -90,13 +92,20 @@ def settle(page):
     page.wait_for_timeout(800)
 
 
-def go(page, section: str, title: str, scene: str):
-    """Change de page par le menu du haut, comme un visiteur : les particules passent d'un décor à l'autre."""
+def go(page, section: str, title: str, obj: str):
+    """Change de page par le menu du haut, comme un visiteur, et attend que la maquette `obj` de l'en-tête soit là."""
     page.locator('[data-testid="stTopNavSection"]', has_text=section).first.click()
     page.locator('[data-testid="stTopNavDropdownLink"]', has_text=title).first.click()
-    page.wait_for_function(f"() => window.__fv3d && window.__fv3d.key.includes('{scene}')", timeout=90_000)
+    page.wait_for_function(f"""() => [...(window.__fvObjs?.live?.values() || [])]
+                                     .some((v) => v.kind === '{obj}' && v.el.isConnected)""", timeout=90_000)
     settle(page)
     page.add_style_tag(content=HIDE)
+
+
+def center(page, obj: str) -> tuple[float, float]:
+    """Le centre d'une maquette à l'écran."""
+    box = page.locator(f'.fv-obj[data-obj="{obj}"]').first.bounding_box()
+    return box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
 
 
 def story_scroll(page, progress: float) -> int:
@@ -144,11 +153,14 @@ def main() -> None:
         page.goto(args.url, timeout=180_000)
         page.wait_for_selector(".fv-story", timeout=180_000)
         page.wait_for_selector("#fv3d.is-on", timeout=180_000)
+        page.wait_for_function("window.__fvObjs && window.__fvObjs.live && window.__fvObjs.live.size > 0", timeout=90_000)
         settle(page)
         page.add_style_tag(content=HIDE)
         page.mouse.move(800, 420)
         page.wait_for_timeout(1500)
-        page.evaluate("() => { window.__fv3d.tick(16); window.__fv3d.replay(); }")
+        # le temps s'arrête : décor et maquettes ne bougent plus qu'image par image ; la maquette du CAC 40 se remonte
+        page.evaluate("""() => { window.__fv3d.tick(16); window.__fv3d.replay(); window.__fvObjs.tick(0);
+                                  for (const v of window.__fvObjs.live.values()) v.t = 0; }""")
 
         # 1. Le récit de la séance : la ville se construit, puis un chapitre après l'autre
         at = [story_scroll(page, p) for p in (0.0, 0.37, 0.62, 0.88, 1.0)]
@@ -159,12 +171,20 @@ def main() -> None:
         # 2. Le fil : on quitte le récit, les dépêches s'impriment
         Clip(page, "feed").hold(4.5, scroll_between(page, at[3], at[4] + 820)).save()
         page.evaluate(f"{MAIN}.scrollTo(0, 0)")
-        # 3. Marchés : les particules quittent la ville et forment le globe
+        # 3. Marchés : le globe de bureau se monte, puis on le fait tourner à la souris
         go(page, "Marchés", "Marchés", "globe")
-        Clip(page, "markets").hold(5.5, lambda k, n: page.mouse.move(760 + 140 * k / n, 360)).save()
-        # 4. Crypto : la chaîne du bitcoin, un bloc par jour
-        go(page, "Marchés", "Crypto", "chain")
-        Clip(page, "crypto").hold(4.5, lambda k, n: page.mouse.move(900 - 120 * k / n, 330)).save()
+        x, y = center(page, "globe")
+        page.mouse.move(x, y)
+        clip = Clip(page, "markets").hold(2.6)
+        page.mouse.down()
+        clip.hold(3.0, lambda k, n: page.mouse.move(x - 260 * ease(k / max(1, n - 1)), y))
+        page.mouse.up()
+        clip.hold(1.0).save()
+        # 4. Crypto : les pièces tombent et se posent ; le pointeur se pose sur la première, son étiquette s'affiche
+        go(page, "Marchés", "Crypto", "coins")
+        x, y = center(page, "coins")
+        clip = Clip(page, "crypto").hold(3.4)
+        clip.hold(2.2, lambda k, n: page.mouse.move(x + 260 - 250 * ease(min(1, k / (n * 0.6))), y - 30)).save()
         # 5. L'assistant : une vraie question, une vraie réponse, qui cite ses sources
         go(page, "Actualité", "Assistant IA", "orb")
         page.locator(".st-key-fvsuggest button").first.click()

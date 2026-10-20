@@ -11,14 +11,18 @@ from core.crypto import fear_greed_label
 from theme import esc, safe_url
 from ui import api_keys, load_articles, load_crypto, load_fear_greed
 
+coins, overview = load_crypto()
 theme.page_header(
     "Les cryptomonnaies,",
     "Les 20 premières cryptomonnaies par capitalisation, la taille du marché et l'humeur des investisseurs. "
     "Cours en euros (CoinGecko), mis à jour toutes les 5 minutes.",
     eyebrow="Crypto", accent="en euros.", art="crypto",
+    # la maquette : les trois premières, hors pièces stables (leur cours ne bouge pas, leur filet ne dirait rien)
+    obj_data={"coins": [{"sym": c.symbol.upper(), "name": c.name, "price": f"{theme.price(c.price)} €",
+                         "c": None if c.change_24h is None else round(c.change_24h, 2)}
+                        for c in coins if c.symbol.upper() not in {"USDT", "USDC", "DAI"}][:3]},
 )
 
-coins, overview = load_crypto()
 history = load_fear_greed()
 
 # --- Chiffres clés ---------------------------------------------------------------------------------
