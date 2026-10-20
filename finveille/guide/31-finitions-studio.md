@@ -63,6 +63,9 @@ serait saccadée. `tools/trailer.py` **arrête le temps** :
 Les changements de page passent par le menu du haut, comme un visiteur : les particules quittent la ville et forment
 le globe. Résultat : `docs/branding/trailer.mp4` (1920 × 1080, 30 images/s).
 
+> À l'étape 32, ce tournage devient `tools/footage.py` et la vidéo est montée en motion design avec Remotion
+> (dossier `video/`) : voir [l'étape 32](32-recit-de-la-seance.md).
+
 ## 5. Erreurs fréquentes
 
 | Symptôme | Cause | Solution |
@@ -72,4 +75,4 @@ le globe. Résultat : `docs/branding/trailer.mp4` (1920 × 1080, 30 images/s).
 | La vidéo est saccadée | Rendu plus lent que 30 images/s | Avancer le temps image par image |
 | Le tournage ouvre le lien du pied de page | Deux liens « Marchés » dans la page | Viser `[data-testid=stTopNavDropdownLink]` |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [un accueil qui raconte la séance](32-recit-de-la-seance.md). Retour au [sommaire du guide](README.md).

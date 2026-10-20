@@ -11,6 +11,7 @@
 
 import * as THREE from "./three.module.min.js";
 import { LAND, LAND_W, LAND_H } from "./land.js";
+import { installMotion } from "./motion.js";
 
 // --- Palettes : les couleurs de la marque (theme.py), en clair et en sombre -------------------------------------
 const PALETTES = {
@@ -97,20 +98,27 @@ const POINTS_FS = /* glsl */ `
 
 // Les volumes pleins : verre sombre (ou maquette blanche en clair), fenêtres allumées, liseré lumineux au scanner.
 // Au-dessus du plan du scanner, rien : on ne voit plus que les fils de fer et les particules (les « rayons X »).
+const HIGHLIGHT = /* glsl */ `
+  uniform vec3 uHi; uniform float uHiOn; uniform vec3 uHiCol;
+  float isHi(float id) {   // id 0 : rien ; sinon le numéro de la tour + 1
+    return id > 0.5 && (abs(id - uHi.x) < 0.5 || abs(id - uHi.y) < 0.5 || abs(id - uHi.z) < 0.5) ? 1.0 : 0.0;
+  }`;
+
 const SOLID_VS = /* glsl */ `
-  attribute vec3 aCol; attribute float aWin;
-  varying vec3 vN; varying vec3 vW; varying vec3 vCol; varying float vWin; varying float vDepth;
+  attribute vec3 aCol; attribute float aWin; attribute float aId;
+  varying vec3 vN; varying vec3 vW; varying vec3 vCol; varying float vWin; varying float vDepth; varying float vId;
   void main() {
     vec4 w = modelMatrix * vec4(position, 1.0);
-    vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); vCol = aCol; vWin = aWin;
+    vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); vCol = aCol; vWin = aWin; vId = aId;
     vec4 mv = viewMatrix * w; vDepth = -mv.z;
     gl_Position = projectionMatrix * mv;
   }`;
 const SOLID_FS = /* glsl */ `
   uniform float uScan, uScanOn, uFade, uTime, uTint;
   uniform vec3 uBase, uRim, uWinCol, uScanCol;
-  varying vec3 vN; varying vec3 vW; varying vec3 vCol; varying float vWin; varying float vDepth;
+  varying vec3 vN; varying vec3 vW; varying vec3 vCol; varying float vWin; varying float vDepth; varying float vId;
   ${FOG}
+  ${HIGHLIGHT}
   float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
   void main() {
     float above = vW.y - uScan;
@@ -129,34 +137,39 @@ const SOLID_FS = /* glsl */ `
     }
     float band = uScanOn * (1.0 - smoothstep(0.0, 0.3, abs(above)));
     col += uScanCol * band * 1.3;
+    float hi = isHi(vId);   // le récit : les tours du chapitre s'allument, les autres s'éteignent
+    col = mix(col, col * 0.4, uHiOn * (1.0 - hi)) + uHiCol * hi * uHiOn * (0.32 + 0.18 * sin(uTime * 3.0));
     gl_FragColor = vec4(col, uFade * fogFade(vDepth));
   }`;
 
 // Les fils de fer : pleinement visibles dans la zone « rayons X », discrets sur les volumes pleins.
 const EDGE_VS = /* glsl */ `
-  attribute vec3 aCol; attribute float aT;
+  attribute vec3 aCol; attribute float aT; attribute float aId;
   uniform float uField;
-  varying vec3 vCol; varying float vY; varying float vDepth; varying float vT;
+  varying vec3 vCol; varying float vY; varying float vDepth; varying float vT; varying float vId;
   ${FIELD}
   void main() {
     vec3 p = uField > 0.5 ? field(position, 1.0) : position;
     vec4 w = modelMatrix * vec4(p, 1.0);
-    vY = w.y; vCol = aCol; vT = aT;
+    vY = w.y; vCol = aCol; vT = aT; vId = aId;
     vec4 mv = viewMatrix * w; vDepth = -mv.z;
     gl_Position = projectionMatrix * mv;
   }`;
 const EDGE_FS = /* glsl */ `
   uniform float uScan, uScanOn, uFade, uBelow, uFlow, uTime;
   uniform vec3 uScanCol;
-  varying vec3 vCol; varying float vY; varying float vDepth; varying float vT;
+  varying vec3 vCol; varying float vY; varying float vDepth; varying float vT; varying float vId;
   ${FOG}
+  ${HIGHLIGHT}
   void main() {
     float above = vY - uScan;
     float xray = uScanOn > 0.5 ? step(0.0, above) : 1.0;
     float band = uScanOn * (1.0 - smoothstep(0.0, 0.3, abs(above)));
     float a = mix(uBelow, 1.0, xray);
     if (uFlow > 0.0 && vT >= 0.0) a *= 0.25 + 0.75 * smoothstep(0.82, 1.0, fract(vT * 3.0 - uTime * uFlow));   // flux qui court
-    gl_FragColor = vec4(vCol + uScanCol * band, a * uFade * fogFade(vDepth));
+    float hi = isHi(vId);
+    a *= mix(1.0, 0.3, uHiOn * (1.0 - hi));
+    gl_FragColor = vec4(vCol + uScanCol * band + uHiCol * hi * uHiOn * 0.9, a * uFade * fogFade(vDepth));
   }`;
 
 // Les flux : des points qui circulent d'un point A à un point B (voitures, transactions, capitaux).
@@ -194,13 +207,14 @@ const BAND_VS = /* glsl */ `
     gl_Position = projectionMatrix * mv;
   }`;
 const BAND_FS = /* glsl */ `
-  uniform sampler2D uMap; uniform float uScan, uScanOn, uFade, uOffset;
+  uniform sampler2D uMap; uniform float uScan, uScanOn, uFade, uOffset, uHiOn;
   varying vec2 vUv; varying float vY; varying float vDepth;
   ${FOG}
   void main() {
     if (uScanOn > 0.5 && vY > uScan) discard;
     vec4 c = texture2D(uMap, vec2(vUv.x + uOffset, vUv.y));
-    gl_FragColor = linearToOutputTexel(vec4(c.rgb, c.a * uFade * fogFade(vDepth)));
+    // pendant un gros plan du récit, les bandeaux s'effacent : on regarde les tours du chapitre
+    gl_FragColor = linearToOutputTexel(vec4(c.rgb, c.a * uFade * fogFade(vDepth) * (1.0 - 0.85 * uHiOn)));
   }`;
 
 // --- Construire la géométrie --------------------------------------------------------------------------------------
@@ -211,8 +225,8 @@ class Builder {
   constructor(n, palette, seed) {
     this.n = n; this.pal = palette; this.rand = random(seed);
     this.targets = new Float32Array(n * 3); this.colors = new Float32Array(n * 3); this.count = 0;
-    this.solid = { pos: [], nor: [], col: [], win: [], idx: [] };
-    this.edges = { pos: [], col: [], t: [] };
+    this.solid = { pos: [], nor: [], col: [], win: [], idx: [], id: [] };
+    this.edges = { pos: [], col: [], t: [], id: [] };
     this.streams = { a: [], b: [], col: [], seed: [], speed: [] };
     this.group = new THREE.Group();
   }
@@ -224,15 +238,15 @@ class Builder {
     return true;
   }
   left() { return this.n - this.count; }
-  segment(a, b, c, t0 = -1, t1 = -1) {   // t0, t1 ≥ 0 : un flux court le long du segment
-    this.edges.pos.push(...a, ...b); this.edges.col.push(...c, ...c); this.edges.t.push(t0, t1);
+  segment(a, b, c, t0 = -1, t1 = -1, id = 0) {   // t0, t1 ≥ 0 : un flux court le long du segment ; id : la tour
+    this.edges.pos.push(...a, ...b); this.edges.col.push(...c, ...c); this.edges.t.push(t0, t1); this.edges.id.push(id, id);
   }
   stream(a, b, c, speed) {
     this.streams.a.push(...a); this.streams.b.push(...b); this.streams.col.push(...c);
     this.streams.seed.push(this.rand()); this.streams.speed.push(speed);
   }
   // Une boîte de centre (x, z), posée au sol à y0, tournée de `rot` autour de la verticale
-  box(x, z, w, d, h, c, { y0 = 0, rot = 0, win = 0, edge = c, points = 0, tint = c } = {}) {
+  box(x, z, w, d, h, c, { y0 = 0, rot = 0, win = 0, edge = c, points = 0, tint = c, id = 0 } = {}) {
     const cos = Math.cos(rot), sin = Math.sin(rot);
     const at = (dx, y, dz) => [x + dx * cos - dz * sin, y, z + dx * sin + dz * cos];
     const hw = w / 2, hd = d / 2, y1 = y0 + h;
@@ -246,11 +260,11 @@ class Builder {
     for (const [quad, [nx, ny, nz]] of faces) {
       const base = s.pos.length / 3;
       const normal = [nx * cos - nz * sin, ny, nx * sin + nz * cos];
-      for (const k of quad) { s.pos.push(...corners[k]); s.nor.push(...normal); s.col.push(...tint); s.win.push(win); }
+      for (const k of quad) { s.pos.push(...corners[k]); s.nor.push(...normal); s.col.push(...tint); s.win.push(win); s.id.push(id); }
       s.idx.push(base, base + 2, base + 1, base, base + 3, base + 2);   // faces tournées vers l'extérieur
     }
     for (const [a, b] of [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]) {
-      this.segment(corners[a], corners[b], edge);
+      this.segment(corners[a], corners[b], edge, -1, -1, id);
     }
     for (let k = 0; k < points; k++) {   // des particules sur les arêtes (40 %) et sur les faces
       const r = this.rand;
@@ -290,6 +304,7 @@ class Builder {
       g.setAttribute("normal", new THREE.Float32BufferAttribute(this.solid.nor, 3));
       g.setAttribute("aCol", new THREE.Float32BufferAttribute(this.solid.col, 3));
       g.setAttribute("aWin", new THREE.Float32BufferAttribute(this.solid.win, 1));
+      g.setAttribute("aId", new THREE.Float32BufferAttribute(this.solid.id, 1));
       g.setIndex(this.solid.idx);
       this.group.add(solidMesh(g, uniforms, pal));
     }
@@ -298,6 +313,7 @@ class Builder {
       g.setAttribute("position", new THREE.Float32BufferAttribute(this.edges.pos, 3));
       g.setAttribute("aCol", new THREE.Float32BufferAttribute(this.edges.col, 3));
       g.setAttribute("aT", new THREE.Float32BufferAttribute(this.edges.t, 1));
+      g.setAttribute("aId", new THREE.Float32BufferAttribute(this.edges.id, 1));
       this.group.add(edgeLines(g, uniforms, pal));
     }
     if (this.streams.speed.length) {
@@ -400,15 +416,16 @@ function cityScene(n, pal, data, uniforms) {
   cells.sort((a, c) => a.d - c.d);
   const wmax = Math.max(...towers.map((t) => t.w), 1);
   const brand = rgb(pal.brand), up = rgb(pal.up), down = rgb(pal.down), faint = rgb(pal.faint);
-  const tall = [];
+  const tall = [], placed = [];
   const perTower = Math.floor(n * 0.68 / Math.max(1, towers.length));
   towers.forEach((t, k) => {
     const { i, j } = cells[k];
     const h = 0.9 + 7.4 * Math.sqrt(t.w / wmax);
     const c = t.c == null ? brand : mixc(brand, t.c >= 0 ? up : down, clamp(0.45 + Math.abs(t.c) * 0.35, 0, 0.95));
     const w = 0.92 + 0.28 * Math.sqrt(t.w / wmax);
-    b.box(i * cell, j * cell, w, w * (0.9 + b.rand() * 0.2), h, c, { win: 1, points: perTower, tint: c });
+    b.box(i * cell, j * cell, w, w * (0.9 + b.rand() * 0.2), h, c, { win: 1, points: perTower, tint: c, id: k + 1 });
     if (k < 3) tall.push({ x: i * cell, z: j * cell, w, h });
+    placed.push({ x: i * cell, z: j * cell, h, n: t.n, c: t.c, id: k + 1 });
   });
   cells.slice(towers.length).forEach(({ i, j }) => {   // les autres immeubles, bas et discrets
     const h = 0.25 + b.rand() * 1.1;
@@ -469,9 +486,34 @@ function cityScene(n, pal, data, uniforms) {
       b.group.add(mesh);
     });
   }
+  // Le récit de l'accueil (motion.js) : la caméra va voir la plus forte hausse, puis la plus forte baisse, et les tours
+  // du chapitre s'allument avec leur nom
+  const known = placed.filter((t) => t.c != null);
+  const ups = [...known].sort((a, c) => c.c - a.c).slice(0, 3), downs = [...known].sort((a, c) => a.c - c.c).slice(0, 3);
+  const storyLabels = [];
+  for (const [set, kind] of [[ups, "up"], [downs, "down"]]) {
+    for (const t of set) {
+      const sprite = label(t.n, t.c, pal);
+      sprite.position.set(t.x, t.h + 0.75, t.z);
+      sprite.material.opacity = 0;
+      b.group.add(sprite);
+      storyLabels.push([sprite, kind]);
+    }
+  }
+  const cam0 = { pos: [16, 12.5, 19], look: [0, 2.4, 0] };
+  const storyPose = (kind) => {
+    const set = kind === "up" ? ups : kind === "down" ? downs : null;
+    if (set?.length) {
+      const t = set[0];
+      return { pos: [t.x + 6.2, t.h * 0.75 + 4.5, t.z + 8.8], look: [t.x - 0.6, t.h * 0.55, t.z], hi: set.map((m) => m.id),
+        col: kind === "up" ? pal.up : pal.down };
+    }
+    if (kind === "news") return { pos: [13, 7.5, 16], look: [-0.5, 3, 0], hi: [] };
+    return { ...cam0, hi: [] };
+  };
   return {
-    ...b, center: [0, 2.5, 0], scan: [-0.1, 8.8], xray: true, bands,
-    cam0: { pos: [16, 12.5, 19], look: [0, 2.4, 0] }, cam1: { pos: [12, 6.8, 14], look: [-0.6, 3.2, 0] },
+    ...b, center: [0, 2.5, 0], scan: [-0.1, 8.8], xray: true, bands, storyPose, storyLabels,
+    cam0, cam1: { pos: [12, 6.8, 14], look: [-0.6, 3.2, 0] },
     update(t) { uOffset.value = t * 0.02; },
     labelsOf: () => (b.labels ? [...b.labels.values()] : []),
     pick: (ray) => pickTower(ray, b, towers, pal),
@@ -858,6 +900,7 @@ class World {
       uTime: { value: 0 }, uScan: { value: -100 }, uScanOn: { value: 1 }, uFogNear: { value: 18 }, uFogFar: { value: 46 },
       uScanCol: { value: new THREE.Color(this.pal.scan) }, uPixel: { value: 1 },
       uWave: { value: 0 }, uRipple: { value: 0 }, uRippleC: { value: new THREE.Vector3() },
+      uHi: { value: new THREE.Vector3() }, uHiOn: { value: 0 }, uHiCol: { value: new THREE.Color() },
     };
     this.makeParticles();
     this.current = null; this.leaving = [];
@@ -1027,7 +1070,7 @@ class World {
     if (!this.scroller?.isConnected) {
       this.scroller = document.querySelector('[data-testid="stMain"], [data-testid="stAppScrollToBottomContainer"]');
     }
-    if (!this.hero?.isConnected) this.hero = document.querySelector(".fv-hero");
+    if (!this.hero?.isConnected) this.hero = document.querySelector(".fv-story-stage, .fv-hero");
     const top = this.scroller ? this.scroller.scrollTop : 0;
     const box = this.hero ? this.hero.getBoundingClientRect() : null;
     const span = box ? Math.max(320, box.height + 120) : window.innerHeight * 0.7;
@@ -1062,7 +1105,13 @@ class World {
     this.pu.uMorph.value = morph;
     this.pu.uWobble.value = (def.wobble || 0) * smooth(1.2, 2.4, age);
     const reveal = this.reduced ? 1 : easeInOut(clamp((age - 1.1) / 1.6));
-    const xray = def.xray ? smooth(0.06, 0.85, p) : 0;
+    // le récit de l'accueil (motion.js) : le chapitre lu choisit la pose de la caméra et les tours allumées
+    const story = window.__fvStory;
+    const telling = !!(story?.el && def.storyPose && !this.reduced);
+    const kind = telling ? story.kinds[story.chapter] || "overview" : null;
+    const follow = 1 - Math.exp(-dt * 2.2);
+    if (telling) this.storyX = (this.storyX || 0) + ((kind === "news" ? 1 : 0) - (this.storyX || 0)) * follow;
+    const xray = def.xray ? (telling ? Math.max(this.storyX, story.progress >= 1 ? smooth(0.9, 1.4, p) : 0) : smooth(0.06, 0.85, p)) : 0;
     this.u.uScan.value = def.scan[0] + (def.scan[1] - def.scan[0]) * reveal * (1 - xray);
     this.pu.uScanOn.value = def.xray ? 1 : 0;
     def.uniforms.uFade.value = this.reduced ? 1 : smooth(0.55, 1.5, age);
@@ -1093,10 +1142,32 @@ class World {
     const k = easeInOut(clamp(p));
     const lerp = (a, b, s) => a.map((v, i) => v + (b[i] - v) * s);
     let pos = lerp(def.cam0.pos, def.cam1.pos, k), look = lerp(def.cam0.look, def.cam1.look, k);
+    if (telling) {
+      const goal = def.storyPose(kind);
+      this.storyCam ??= { pos: [...goal.pos], look: [...goal.look] };
+      this.storyCam.pos = this.storyCam.pos.map((v, i) => v + (goal.pos[i] - v) * follow);
+      this.storyCam.look = this.storyCam.look.map((v, i) => v + (goal.look[i] - v) * follow);
+      ({ pos, look } = this.storyCam);
+      const hi = goal.hi || [];
+      this.u.uHi.value.set(hi[0] || 0, hi[1] || 0, hi[2] || 0);
+      if (goal.col) this.u.uHiCol.value.set(goal.col);
+      this.u.uHiOn.value += ((hi.length ? 1 : 0) - this.u.uHiOn.value) * follow;
+      for (const [sprite, of] of def.storyLabels || []) {
+        sprite.material.opacity += ((of === kind ? 1 : 0) - sprite.material.opacity) * follow;
+      }
+      // tant que la caméra ou l'éclairage rejoignent le chapitre, on dessine chaque image ; ensuite, le repos
+      const gap = [...goal.pos.map((v, i) => v - this.storyCam.pos[i]), ...goal.look.map((v, i) => v - this.storyCam.look[i]),
+        (hi.length ? 1 : 0) - this.u.uHiOn.value, (kind === "news" ? 1 : 0) - this.storyX];
+      this.storyMoving = Math.max(...gap.map(Math.abs)) > 0.002;
+    } else {
+      this.storyCam = null;
+      this.u.uHiOn.value *= 1 - follow;
+      this.storyMoving = this.u.uHiOn.value > 0.002;
+    }
     const far = (this.distance || 1) * (def.far || 1);   // def.far : un décor qui demande plus de recul
     pos = pos.map((v, i) => look[i] + (v - look[i]) * far);
     if (!this.reduced) {
-      const swing = Math.sin(t * 0.07) * 0.11, cos = Math.cos(swing), sin = Math.sin(swing);
+      const swing = Math.sin(t * 0.07) * (telling ? 0.05 : 0.11), cos = Math.cos(swing), sin = Math.sin(swing);
       const dx = pos[0] - look[0], dz = pos[2] - look[2];
       pos = [look[0] + dx * cos - dz * sin, pos[1], look[2] + dx * sin + dz * cos];
       this.look[0] += (this.pointer[0] - this.look[0]) * (1 - Math.exp(-dt * 2.5));
@@ -1117,7 +1188,7 @@ class World {
 
     // Économie : un écran lent rend moins de points par seconde ; au repos (décor discret, rien ne bouge), on
     // dessine une image sur trois.
-    const busy = !this.reduced && (age < 4.5 || Math.abs(p - before) > 0.0005 || p < 0.9);
+    const busy = !this.reduced && (age < 4.5 || Math.abs(p - before) > 0.0005 || p < 0.9 || this.storyMoving);
     if (busy || this.dirty || (!this.reduced && this.frames % 3 === 0)) {
       this.renderer.render(this.scene, this.camera);
       this.dirty = false;
@@ -1226,9 +1297,32 @@ function installLinks() {
   });
 }
 
+// --- La page Assistant : la question qu'on vient de poser remonte en haut de l'écran, la réponse s'écrit dessous -----
+function installChat() {
+  if (window.__fvChat) return;
+  window.__fvChat = true;
+  let known = -1, queued = false;
+  const check = () => {
+    queued = false;
+    const log = document.querySelector(".st-key-fvchatlog");
+    if (!log) { known = -1; return; }
+    // les questions : les messages à l'icône « personne » (les réponses portent le logo du site)
+    const asked = log.querySelectorAll('[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarCustom"])');
+    if (known >= 0 && asked.length > known) {
+      const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      asked[asked.length - 1].scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" });
+    }
+    known = asked.length;
+  };
+  new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(check); } })
+    .observe(document.body, { childList: true, subtree: true });
+}
+
 export function show(data) {
+  installMotion();
   installTilt();
   installLinks();
+  installChat();
   if (!webgl()) return () => {};   // pas de WebGL : les illustrations de l'étape 29 restent en place
   try {
     world ??= new World();

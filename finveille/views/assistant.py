@@ -111,30 +111,33 @@ def answer(question: str) -> dict:
 theme.page_header("Pose ta question,", "En français, sur l'actualité, les marchés ou un terme financier : l'assistant "
                   "répond à partir des dépêches du moment.", eyebrow="Assistant IA", accent="l'IA cite ses sources.", art="assistant")
 
-# st.chat_input reste en bas de l'écran, où qu'on l'appelle : on le lit d'abord, pour savoir quoi afficher
-question = st.chat_input("Pose ta question : « Pourquoi le pétrole monte ? », « C'est quoi un ETF ? »…",
-                         max_chars=assistant.MAX_QUESTION_CHARS)
+# La conversation vit dans un panneau, la zone de saisie juste en dessous (et non collée en bas de l'écran) : la page
+# ne saute plus tout en bas à l'ouverture, et chaque nouvelle question remonte en haut de l'écran (engine.js).
+panel = st.container(key="fvchat")
+log = panel.container(key="fvchatlog")
+question = panel.chat_input("Pose ta question : « Pourquoi le pétrole monte ? », « C'est quoi un ETF ? »…",
+                            max_chars=assistant.MAX_QUESTION_CHARS)
 question = question or st.session_state.pop("fv_chat_pending", None)
 
-if not history and not question:
-    st.html(theme.assistant_hero_html(" puis ".join(engines) if engines else None, len(articles)))
-    theme.section("Pour commencer")
-    with st.container(horizontal=True, gap="small", key="fvsuggest"):
-        for number, suggestion in enumerate(SUGGESTIONS):
-            st.button(suggestion, key=f"suggest_{number}", on_click=ask, args=(suggestion,))
-    if not engines:
-        st.caption("Pour des réponses rédigées, ajoute une clé gratuite GEMINI_API_KEY ou GROQ_API_KEY dans les "
-                   "secrets (guide 24). En attendant, l'assistant cherche dans les dépêches et le glossaire.")
+with log:
+    if not history and not question:
+        st.html(theme.assistant_hero_html(" puis ".join(engines) if engines else None, len(articles)))
+        with st.container(horizontal=True, gap="small", key="fvsuggest"):
+            for number, suggestion in enumerate(SUGGESTIONS):
+                st.button(suggestion, key=f"suggest_{number}", on_click=ask, args=(suggestion,))
+        if not engines:
+            st.caption("Pour des réponses rédigées, ajoute une clé gratuite GEMINI_API_KEY ou GROQ_API_KEY dans les "
+                       "secrets (guide 24). En attendant, l'assistant cherche dans les dépêches et le glossaire.")
 
-for turn in history:
-    show_turn(turn)
-if question:
-    show_turn({"role": "user", "content": question})
-    reply = answer(question)
-    history += [{"role": "user", "content": question}, reply]
+    for turn in history:
+        show_turn(turn)
+    if question:
+        show_turn({"role": "user", "content": question})
+        reply = answer(question)
+        history += [{"role": "user", "content": question}, reply]
 
 if history:
-    with st.container(horizontal=True, gap="small", vertical_alignment="center"):
+    with st.container(horizontal=True, gap="small", vertical_alignment="center", key="fvchatbar"):
         st.button("Nouvelle conversation", icon=":material/add_comment:", on_click=new_conversation)
         if engines and not local_mode():
             left, limit = ai_quota(user)

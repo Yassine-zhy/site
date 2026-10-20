@@ -51,7 +51,7 @@ _MONTHS_SHORT = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "ao�
 
 CSS = """
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Schibsted+Grotesk:wght@500;600;700;800&display=swap");
 
 /* =============================================================================================
    1. Jetons de design, en trois couches (guide 26) :
@@ -185,8 +185,8 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-ai-status::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--blue-150); }
 .fv-ai-status.is-on::before { background: var(--mint-300); box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint-300) 25%, transparent); }
 .fv-cites { margin-top: .6rem; }
-.fv-cites-title { margin: 0 0 .4rem !important; font-size: .7rem; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--fv-muted); }
+.fv-cites-title { margin: 0 0 .4rem !important; font-size: .7rem; font-weight: 700; letter-spacing: 0;
+  text-transform: none; color: var(--fv-muted); }
 .fv-cites-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .5rem; }
 .fv-cite { display: flex; align-items: flex-start; gap: .55rem; padding: .55rem .7rem; border-radius: 10px;
   background: var(--fv-surface); border: 1px solid var(--fv-line); color: var(--fv-text) !important;
@@ -212,8 +212,8 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   color: var(--ink-0); background: var(--curve) center bottom / 100% 45% no-repeat,
     radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--mint-300) 28%, transparent), transparent 45%),
     linear-gradient(150deg, var(--blue-600) 0%, var(--blue-700) 55%, var(--blue-900) 100%); box-shadow: 0 12px 40px color-mix(in srgb, var(--blue-700) 25%, transparent); }
-.fv-show-eyebrow { margin: 0 0 .4rem; font-size: .72rem; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: var(--blue-200); }
+.fv-show-eyebrow { margin: 0 0 .4rem; font-size: .72rem; font-weight: 700; letter-spacing: 0;
+  text-transform: none; color: var(--blue-200); }
 .fv-show-title { margin: 0 0 1.4rem !important; padding: 0 !important; color: var(--ink-0) !important; max-width: 22ch;
   font: 600 1.7rem/1.2 var(--fv-serif) !important; letter-spacing: -.01em; }
 .stApp ul.fv-show-list { position: relative; display: grid; gap: .8rem; margin: 0 !important; padding: 0 !important;
@@ -398,8 +398,8 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 }
 .fv-eyebrow { display: inline-flex; align-items: center; gap: .45rem; padding: .22rem .7rem .22rem .55rem;
   border: 1px solid color-mix(in srgb, var(--fv-brand) 28%, transparent); border-radius: 999px;
-  background: var(--fv-brand-soft); font-size: .68rem; font-weight: 700; letter-spacing: .09em;
-  text-transform: uppercase; color: var(--fv-brand); }
+  background: var(--fv-brand-soft); font-size: .68rem; font-weight: 700; letter-spacing: 0;
+  text-transform: none; color: var(--fv-brand); }
 .fv-eyebrow::before { content: ""; width: .45rem; height: .45rem; border-radius: 50%;
   background: linear-gradient(135deg, var(--fv-brand), var(--fv-brand-2)); }
 
@@ -447,7 +447,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 
 .fv-cat { display: inline-flex; align-items: center; gap: .35rem; padding: .08rem .45rem; border-radius: 5px;
   background: color-mix(in srgb, var(--c) 13%, transparent); color: color-mix(in srgb, var(--c) 55%, var(--fv-text));
-  font-size: .68rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+  font-size: .68rem; font-weight: 600; letter-spacing: 0; text-transform: none; white-space: nowrap; }
 .fv-cat::before { content: ""; width: .42rem; height: .42rem; border-radius: 50%; background: var(--c); }
 .fv-kicker { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; font-size: .78rem; color: var(--fv-muted); }
 .fv-src { display: inline-flex; align-items: center; gap: .4rem; color: var(--fv-text); font-weight: 500; }
@@ -500,7 +500,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 
 /* Tendances : des « puces » cliquables qui lancent la recherche */
 .fv-trends-label { display: inline-flex; align-items: center; gap: .35rem; font-size: .7rem; font-weight: 700;
-  letter-spacing: .08em; text-transform: uppercase; color: var(--fv-brand); white-space: nowrap; }
+  letter-spacing: 0; text-transform: none; color: var(--fv-brand); white-space: nowrap; }
 .fv-trends-label::before { content: "↗"; font-size: .9rem; }
 .st-key-fvtrends { flex-wrap: wrap; row-gap: .4rem; margin-top: -.2rem; }
 .st-key-fvtrends button { min-height: 1.75rem; padding: .1rem .7rem; border: 1px solid var(--fv-line) !important;
@@ -599,7 +599,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   background: color-mix(in srgb, var(--fv-surface) 85%, transparent); border: 1px solid var(--fv-line);
   box-shadow: inset 0 1px 0 var(--fv-hi), 0 1px 2px var(--fv-shadow); font-size: .78rem; }
 .fv-tape-label { display: flex; align-items: center; gap: .5rem; padding: 0 .95rem; border-right: 1px solid var(--fv-line);
-  font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--fv-text); white-space: nowrap;
+  font-size: .66rem; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--fv-text); white-space: nowrap;
   background: linear-gradient(90deg, var(--fv-brand-soft), transparent); }
 .fv-tape-label::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--fv-up);
   box-shadow: 0 0 0 3px var(--fv-up-soft); animation: fv-pulse 2.4s ease-in-out infinite; }
@@ -626,7 +626,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-pill-up { background: var(--fv-up-soft); }
 .fv-pill-down { background: var(--fv-down-soft); }
 
-.fv-group { margin: 1rem 0 .45rem; font-size: .74rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+.fv-group { margin: 1rem 0 .45rem; font-size: .74rem; font-weight: 600; letter-spacing: 0; text-transform: none;
   color: var(--fv-muted); }
 .fv-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: .8rem; }
 .fv-tile { position: relative; display: grid; grid-template-columns: 1fr 96px; align-items: end; gap: .2rem .7rem;
@@ -706,7 +706,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   border-radius: var(--fv-radius); box-shadow: var(--fv-elev); }
 .fv-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
 .fv-table th { padding: .55rem .8rem; background: var(--fv-sunken); border-bottom: 1px solid var(--fv-line);
-  text-align: right; font-size: .7rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+  text-align: right; font-size: .7rem; font-weight: 600; letter-spacing: 0; text-transform: none;
   color: var(--fv-muted); white-space: nowrap; }
 .fv-table td { padding: .55rem .8rem; border-bottom: 1px solid var(--fv-line); text-align: right;
   font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -765,7 +765,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-gauge-history b { display: block; font-size: .95rem; color: var(--fv-text); }
 
 /* Quiz */
-.fv-quiz-question small { font-size: .74rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+.fv-quiz-question small { font-size: .74rem; font-weight: 600; letter-spacing: 0; text-transform: none;
   color: var(--fv-brand); }
 .fv-quiz-question p { margin: .5rem 0 .1rem; font-family: var(--fv-serif); font-size: 1.25rem; line-height: 1.5; }
 .fv-quiz-choice { padding: .55rem 1rem; border: 1px solid var(--fv-line-strong); border-radius: 8px; text-align: center;
@@ -808,7 +808,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-brief { margin: .6rem 0 .3rem; padding: .8rem 1rem .7rem; border: 1px solid color-mix(in srgb, var(--fv-brand) 25%, transparent);
   background: var(--fv-brand-soft); border-radius: 8px; }
 .fv-brief-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .2rem 1rem; margin-bottom: .4rem;
-  font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fv-brand); }
+  font-size: .7rem; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--fv-brand); }
 .fv-brief-head small { font-size: .72rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--fv-muted); }
 .fv-brief ul { margin: 0; padding-left: 1.1rem; }
 .fv-brief li { margin: .25rem 0; font-size: .92rem; line-height: 1.5; }
@@ -816,12 +816,12 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-brief-note { margin: .45rem 0 0; font-size: .72rem; color: var(--fv-muted); }
 .fv-note-block { margin: .5rem 0 .1rem; padding: .5rem .85rem; border-left: 3px solid var(--fv-warn);
   background: var(--fv-warn-soft); border-radius: 0 6px 6px 0; font-size: .92rem; }
-.fv-note-block b { display: block; margin-bottom: .15rem; font-size: .66rem; font-weight: 700; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--fv-warn); }
+.fv-note-block b { display: block; margin-bottom: .15rem; font-size: .66rem; font-weight: 700; letter-spacing: 0;
+  text-transform: none; color: var(--fv-warn); }
 
 .fv-word { margin: .5rem 0 .4rem; padding: 1.1rem 1.25rem; background: var(--fv-surface); border: 1px solid var(--fv-line);
   border-left: 4px solid var(--fv-brand); border-radius: var(--fv-radius); box-shadow: var(--fv-elev); }
-.fv-word small { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--fv-brand); }
+.fv-word small { font-size: .7rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--fv-brand); }
 .fv-word h3 { margin: .3rem 0 .35rem !important; padding: 0 !important; font: 700 1.5rem/1.2 var(--fv-sans) !important;
   letter-spacing: -.02em; }
 .fv-word p { margin: 0; font-size: .97rem; line-height: 1.55; color: var(--fv-muted); }
@@ -858,7 +858,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   padding: .6rem .9rem; background: var(--fv-warn-soft); border: 1px solid color-mix(in srgb, var(--fv-warn) 35%, transparent);
   border-radius: var(--fv-radius); font-size: .86rem; }
 .fv-alert-banner b { display: inline-flex; align-items: center; gap: .4rem; font-size: .7rem; font-weight: 700;
-  letter-spacing: .08em; text-transform: uppercase; color: var(--fv-warn); }
+  letter-spacing: 0; text-transform: none; color: var(--fv-warn); }
 .fv-alert-banner b::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--fv-warn); }
 .fv-alert-banner a { margin-left: auto; color: var(--fv-warn) !important; font-size: .8rem; font-weight: 600; }
 .fv-status { display: inline-flex; align-items: center; gap: .4rem; font-size: .78rem; font-weight: 600; color: var(--fv-warn); }
@@ -1108,6 +1108,18 @@ html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .
    Streamlit n'atteint que 4,2:1 sur le fond sombre) */
 .stApp [role="tab"][aria-selected="true"] p { color: var(--fv-brand); }
 
+/* L'assistant : un panneau de conversation, la saisie juste en dessous */
+.st-key-fvchat { gap: .9rem !important; padding: 1.1rem; border: 1px solid var(--fv-line); border-radius: 22px;
+  background: color-mix(in srgb, var(--fv-surface) 80%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+.st-key-fvchatlog { gap: .8rem !important; }
+.st-key-fvchatlog [data-testid="stChatMessage"] { scroll-margin-top: 6.5rem; }   /* sous la barre du haut */
+.st-key-fvchatlog [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarCustom"]) { margin-left: auto; max-width: 85%;
+  flex-direction: row-reverse; text-align: right; }
+.st-key-fvchat [data-testid="stChatInput"] { margin-top: .2rem; }
+.st-key-fvchatbar { margin-top: .4rem; }
+@media (max-width: 640px) { .st-key-fvchat { padding: .7rem; border-radius: 18px; }
+  .st-key-fvchatlog [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarCustom"]) { max-width: 100%; } }
+
 /* Le bouton principal : un reflet passe au survol */
 .stApp button[kind="primary"], .stApp [data-testid="stBaseButton-primary"] { position: relative; overflow: hidden; }
 .stApp [data-testid="stBaseButton-primary"]::after { content: ""; position: absolute; inset: 0; pointer-events: none;
@@ -1179,6 +1191,86 @@ html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .
 @media (max-width: 900px) { .fv-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .fv-bento { grid-template-columns: 1fr; } .fv-bento > .is-wide { grid-column: auto; } }
 
+/* =============================================================================================
+   15. Étape 32 : le récit de la séance (accueil), les cours en rouleaux, une typographie de presse
+   ============================================================================================= */
+/* Les titres en Schibsted Grotesk, une linéale dessinée pour un groupe de presse : serrée, nette, faite pour l'info */
+.stApp { --fv-display: "Schibsted Grotesk", "IBM Plex Sans", system-ui, sans-serif; }
+.fv-hero-title, .fv-story-title, .fv-section h2, .fv-box-title, .fv-about-card h3, .fv-bento b, .fv-footer-giant,
+.fv-intro-word, .fv-kpi-value { font-family: var(--fv-display) !important; }
+.fv-hero-title { letter-spacing: -.035em; }
+
+/* Moins de tics « gabarit » : la rubrique est déjà soulignée dans le menu (plus de sur-titre en capitales), la fin du
+   titre n'est plus en dégradé, les cartes ne surgissent plus une à une, les sections n'ont plus de puce */
+.fv-hero .fv-eyebrow { display: none; }
+.fv-hero-title em { background: none !important; color: inherit !important; -webkit-text-fill-color: currentColor; }
+.fv-hero-title em:not(.fv-hw-em) { animation: none; }
+.fv-hero-title em.fv-hw-em { animation: fv-word-up .9s cubic-bezier(.2, .8, .2, 1) backwards;
+  animation-delay: calc(140ms + var(--n) * 55ms); }
+.fv-section h2::before { display: none; }
+[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > * { animation: none; }
+@supports (animation-timeline: view()) {
+  .fv-card, .fv-kpis, .fv-tiles, .fv-table-wrap, [class*="st-key-fvchart_"], [class*="st-key-fvbox_"],
+  [class*="st-key-fvcard_"] { animation: none; }
+}
+
+/* Le récit de la séance : une section haute de plusieurs écrans, sa scène reste collée en haut (position: sticky) ;
+   le défilement choisit le chapitre (motion.js), le décor 3D le suit (engine.js) */
+.fv-story { position: relative; height: calc(var(--chapters, 4) * 80vh + 30vh); margin-top: -1rem; }
+.fv-story-stage { position: sticky; top: 5.4rem; height: calc(100vh - 6.4rem); min-height: 30rem; display: grid;
+  grid-template-rows: minmax(0, 1fr) auto; }
+.fv-story-chapters { position: relative; align-self: center; width: min(100%, 36rem); min-height: 25rem; }
+.fv-ch { position: absolute; inset: 0 auto auto 0; width: 100%; opacity: 0; visibility: hidden; transform: translateY(26px);
+  transition: opacity .45s cubic-bezier(.2, .8, .2, 1), transform .7s cubic-bezier(.2, .8, .2, 1), visibility 0s .45s; }
+.fv-ch.is-active { opacity: 1; visibility: visible; transform: none; transition-delay: .1s, .1s, 0s; }
+.fv-ch-kicker { margin: 0; font-size: 1rem; font-weight: 600; color: var(--fv-brand); }
+.fv-story-title { margin: .7rem 0 0 !important; padding: 0 !important; font-weight: 700 !important;
+  font-size: clamp(2.4rem, 4.8vw, 4.3rem) !important; line-height: 1.02 !important; letter-spacing: -.045em;
+  color: var(--fv-text); text-wrap: balance; }
+.fv-move { white-space: nowrap; font-variant-numeric: proportional-nums; }   /* en chiffres tabulaires, la virgule prend la largeur d'un chiffre */
+.fv-move.is-up { color: var(--fv-up); }
+.fv-move.is-down { color: var(--fv-down); }
+.fv-story-headline { display: block; font: 600 .74em/1.12 var(--fv-serif); letter-spacing: -.012em; }
+.fv-ch-text { margin: 1.1rem 0 0; max-width: 32rem; font-size: 1.12rem; line-height: 1.6; color: var(--fv-muted); }
+.fv-story .fv-sessions { margin-top: 1.3rem; }
+.fv-story-cta { display: inline-flex; align-items: center; min-height: 2.9rem; margin-top: 1.5rem; padding: 0 1.3rem;
+  border-radius: 12px; background: var(--btn-primary-bg); box-shadow: var(--btn-primary-glow); font-weight: 600;
+  color: #fff !important; text-decoration: none !important; }
+.fv-story-rail { display: flex; gap: .75rem; width: min(100%, 36rem); margin: 0 0 1.4rem; padding: 0; list-style: none; }
+.stApp .fv-story-rail li { flex: 1; display: grid; gap: .35rem; margin: 0; }
+.fv-story-rail button { all: unset; box-sizing: border-box; min-height: 2.2rem; cursor: pointer; font-size: .86rem;
+  font-weight: 600; color: var(--fv-muted); }
+.fv-story-rail button:focus-visible { outline: 2px solid var(--fv-brand); outline-offset: 3px; border-radius: 4px; }
+.fv-story-rail li.is-active button, .fv-story-rail button:hover { color: var(--fv-text); }
+.fv-story-rail i { position: relative; display: block; height: 3px; border-radius: 3px; overflow: hidden; background: var(--fv-line-strong); }
+.fv-story-rail i::after { content: ""; position: absolute; inset: 0; transform-origin: 0 50%;
+  transform: scaleX(var(--fill, 0)); background: var(--fv-brand); }
+.fv-story-stage .fv-credit { position: absolute; right: 0; bottom: 1.4rem; margin: 0; }
+/* Sans le chef d'orchestre (JavaScript absent) : les chapitres se lisent l'un sous l'autre */
+html:not(.fv-story-on) .fv-story { height: auto; }
+html:not(.fv-story-on) .fv-story-stage { position: static; height: auto; min-height: 0; }
+html:not(.fv-story-on) .fv-story-chapters { min-height: 0; }
+html:not(.fv-story-on) .fv-ch { position: static; opacity: 1; visibility: visible; transform: none; margin-bottom: 3rem; }
+html:not(.fv-story-on) .fv-story-rail { display: none; }
+@media (max-width: 760px) {
+  .fv-story { height: calc(var(--chapters, 4) * 70vh + 30vh); }
+  .fv-story-stage { top: 4.2rem; height: calc(100svh - 4.8rem); min-height: 0; }
+  .fv-story-chapters { align-self: start; min-height: 27rem; padding-top: 1.5rem; }
+  .fv-story-title { font-size: clamp(2.1rem, 9.5vw, 2.8rem) !important; }
+  .fv-ch-text { font-size: 1rem; }
+  .fv-story-stage .fv-credit { display: none; }
+  .fv-story-rail { gap: .5rem; margin-bottom: .8rem; }
+  .fv-story-rail button { font-size: .78rem; min-height: 44px; }
+}
+@media (pointer: coarse) { .fv-story-cta { min-height: 44px; } }
+
+/* Les cours en rouleaux (motion.js) : chaque chiffre est une colonne 0-9 qui défile jusqu'à sa valeur */
+.fv-odo-run { white-space: nowrap; }
+.fv-odo-d { position: relative; display: inline-block; height: 1em; overflow: hidden; vertical-align: -.1em; line-height: 1em; }
+.fv-odo-ghost { visibility: hidden; }   /* le chiffre final, invisible : il donne sa largeur à la colonne */
+.fv-odo-strip { position: absolute; left: 0; top: 0; display: block; }
+.fv-odo-strip > span { display: block; height: 1em; line-height: 1em; }
+
 /* Sur écran tactile, chaque bouton fait au moins 44 px de haut : on vise sans zoomer */
 @media (pointer: coarse) {
   .stApp button, .stApp a[data-testid^="stBaseLinkButton"], .stApp [data-testid="stPopoverButton"],
@@ -1205,6 +1297,7 @@ html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .
   .fv-media::after, .fv-media > img, .fv-lead .fv-w, .fv-hero-title .fv-hw > span, .fv-hero-title em.fv-hw-em { animation: none; }
   .fv-intro { display: none; }
   .fv-media::after { display: none; }
+  .fv-ch { transition: none; }
 }
 </style>
 """
@@ -1293,11 +1386,13 @@ def exchange_status(now: datetime) -> list[tuple[str, str, bool]]:
 
 
 def sessions_html(now: datetime) -> str:
-    """Les places boursières en pastilles : point vert = séance ouverte (le texte le dit aussi)."""
+    """Les places boursières : point vert = séance ouverte (le texte le dit aussi). L'heure et l'état sont ensuite
+    tenus à jour dans le navigateur (static/fv3d/motion.js, attributs data-fv-…) : la page n'a pas à se redessiner."""
     items = "".join(
-        f'<li class="{"is-open" if is_open else ""}" title="{city} : séance {"ouverte" if is_open else "fermée"}">'
-        f'<b>{city}</b><time>{hour}</time>{"ouverte" if is_open else "fermée"}</li>'
-        for city, hour, is_open in exchange_status(now)
+        f'<li class="{"is-open" if is_open else ""}" data-fv-tz="{zone}" data-fv-open="{opens.hour * 60 + opens.minute}" '
+        f'data-fv-close="{closes.hour * 60 + closes.minute}"><b>{city}</b> <time>{hour}</time> '
+        f'<span class="fv-state">{"ouverte" if is_open else "fermée"}</span></li>'
+        for (city, zone, opens, closes), (_, hour, is_open) in zip(EXCHANGES, exchange_status(now))
     )
     return f'<ul class="fv-sessions" aria-label="Places boursières">{items}</ul>'
 
@@ -1318,7 +1413,7 @@ def float_tile(quote, animate: bool = True) -> str:
 
 
 def title_html(title: str, accent: str = "", animate: bool = True) -> str:
-    """Le grand titre d'un en-tête. Animé : chaque mot dans un cache (il monte à son tour), la fin en dégradé d'un bloc.
+    """Le grand titre d'un en-tête. Animé : chaque mot dans un cache (il monte à son tour), la fin d'un bloc.
     Les espaces restent du texte entre les mots : un lecteur d'écran lit la phrase normalement."""
     if not animate:
         return f'{esc(title)}{f" <em>{esc(accent)}</em>" if accent else ""}'
@@ -1352,28 +1447,72 @@ def hero_html(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=
     )
 
 
-# La légende du décor 3D du fil (scene3d.py) : affichée seulement quand le décor l'est (classe fv-3d, CSS)
-CITY_CAPTION = ('<p class="fv-3d-caption">En fond, le CAC 40 en 3D : une tour par entreprise, haute comme son poids '
-                "dans l'indice, verte ou rouge selon la séance<span class=\"fv-3d-hint\"> · survole une tour pour son "
-                "nom</span>.</p>")
-
-
 def credit_html() -> str:
     """Le badge de l'accueil : le site est l'œuvre d'un étudiant (lien vers la page « À propos »)."""
     initials = "".join(part[0] for part in AUTHOR.split()[:2])
     return (f'<a class="fv-credit" href="./about"><span class="fv-credit-avatar" aria-hidden="true">{esc(initials)}</span>'
-            f'<span>Créé par un étudiant · <b>{esc(AUTHOR)}</b></span><span aria-hidden="true">→</span></a>')
+            f'<span>Créé par un étudiant, <b>{esc(AUTHOR)}</b></span></a>')
 
 
-def feed_header(article_count: int, source_count: int, fetched_at: datetime, quotes=()) -> None:
-    """L'en-tête du fil : date, titre, volume collecté, places boursières et trois cours qui flottent."""
-    now = datetime.now(timezone.utc)
-    st.html(hero_html(
-        "L'actualité financière,", f"{fr_number(article_count, 0)} dépêches de {source_count} sources, classées par "
-        f"rubrique et expliquées · dernière collecte à {clock(fetched_at)}",
-        eyebrow=f"{fr_date(now.astimezone(DISPLAY_TZ)).capitalize()} · édition continue", accent="en continu.",
-        quotes=quotes, extra=sessions_html(now) + CITY_CAPTION + credit_html(), classes="is-home is-live",
-    ))
+def _plural(count: int, words: str) -> str:
+    """« 1 valeur », « 3 valeurs » ; « 2 autres sources » : chaque mot prend la marque du pluriel."""
+    return f"{count} {' '.join(w + 's' for w in words.split()) if count > 1 else words}"
+
+
+def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None = None) -> str:
+    """L'accueil raconte la séance, un chapitre par écran de défilement (guide 32) : le CAC 40, la plus forte hausse,
+    la plus forte baisse, puis l'histoire du jour. Le décor 3D suit le chapitre (static/fv3d/motion.js, engine.js).
+
+    Les chiffres sont ceux du moment ; sans les cours des 40 valeurs, les chapitres hausse et baisse sont omis."""
+    local = (now or datetime.now(timezone.utc)).astimezone(DISPLAY_TZ)
+    day = fr_date(local).rsplit(" ", 1)[0].capitalize()  # « Mardi 20 octobre »
+
+    def chapter(kind: str, label: str, kicker: str, title: str, body: str, first: bool = False) -> tuple[str, str]:
+        tag = "h1" if first else "h2"
+        return label, (f'<article class="fv-ch{" is-active" if first else ""}" data-kind="{kind}" '
+                       f'aria-hidden="{"false" if first else "true"}"><p class="fv-ch-kicker">{kicker}</p>'
+                       f'<{tag} class="fv-story-title">{title}</{tag}>{body}</article>')
+
+    chapters = []
+    if index is not None:
+        move = index.change
+        verb = "progresse de" if move >= 0.05 else "recule de" if move <= -0.05 else "est stable, à"
+        amount = (f'<span class="fv-odo">{fr_number(abs(move))}</span>\u202f%' if abs(move) >= 0.05
+                  else f'<span class="fv-odo">{fr_number(move)}</span>\u202f%')
+        title = f'Le CAC 40 {verb} <span class="fv-move is-{"up" if move >= 0 else "down"}">{amount}</span>'
+        text = f"Il s'établit à {price(index.last)} points."
+    else:
+        title, text = "Les marchés, en direct.", ""
+    if cac40:
+        rising = sum(1 for quote in cac40 if quote.change > 0)
+        text += f" {_plural(rising, 'valeur')} en hausse, {len(cac40) - rising} en baisse."
+    chapters.append(chapter("overview", "La séance", f"{day}, {local:%H} h {local:%M}", title,
+                            f'<p class="fv-ch-text">{esc(text.strip())}</p>{sessions_html(now or datetime.now(timezone.utc))}',
+                            first=True))
+    ranked = sorted(cac40, key=lambda quote: quote.change, reverse=True)
+    for kind, label, kicker, movers in (("up", "Hausse", "La plus forte hausse du CAC 40", ranked[:3]),
+                                        ("down", "Baisse", "La plus forte baisse du CAC 40", ranked[::-1][:3])):
+        if not movers:
+            continue
+        top, others = movers[0], movers[1:]
+        title = (f'{esc(top.name)}, <span class="fv-move is-{"up" if top.change >= 0 else "down"}">'
+                 f'<span class="fv-odo">{"+" if top.change > 0 else "−" if top.change < 0 else ""}'
+                 f'{fr_number(abs(top.change))}</span>\u202f%</span>')
+        follow = " et ".join(f"{esc(q.name)} ({signed(q.change)})" for q in others)
+        body = f'<p class="fv-ch-text">{"Puis " if kind == "down" else "Derrière : "}{follow}.</p>' if follow else ""
+        chapters.append(chapter(kind, label, kicker, title, body))
+    if lead is not None:
+        echo = f"Reprise par {_plural(echoes, 'autre source')}. " if echoes else ""
+        chapters.append(chapter("news", "L'actualité", "Ce qui fait l'actualité",
+                                f'<span class="fv-story-headline">{esc(lead.title)}</span>',
+                                f'<p class="fv-ch-text">{echo}Le détail, les autres dépêches et leurs sources sont '
+                                'juste en dessous.</p><a class="fv-story-cta" href="#fv-fil">Lire les dépêches</a>'))
+    rail = "".join(f'<li{" class=is-active" if i == 0 else ""}><button type="button">{esc(label)}</button><i></i></li>'
+                   for i, (label, _) in enumerate(chapters))
+    return (f'<section class="fv-story" style="--chapters:{len(chapters)}" aria-label="La séance en bref">'
+            f'<div class="fv-story-stage"><div class="fv-story-chapters">{"".join(html for _, html in chapters)}</div>'
+            f'<ol class="fv-story-rail" aria-label="Chapitres">{rail}</ol>{credit_html()}</div></section>'
+            '<span id="fv-fil"></span>')
 
 
 def feed_skeleton() -> str:
@@ -1395,7 +1534,7 @@ def section(title: str, note: str = "") -> None:
 
 def page_header(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=(), art: str | None = None,
                 scene: str | None = None) -> None:
-    """En-tête de page : rubrique du menu, grand titre (avec sa fin en dégradé), phrase d'introduction et, à droite,
+    """En-tête de page : rubrique du menu, grand titre (sa fin d'un seul tenant), phrase d'introduction et, à droite,
     quelques cours en tuiles flottantes ou l'illustration de la page. Derrière, le décor 3D de la page (scene3d.py,
     d'après `scene`, sinon d'après le nom de l'illustration)."""
     import scene3d
@@ -1765,5 +1904,5 @@ def alert_banner(fired) -> None:
     plural = "s" if len(fired) > 1 else ""
     st.html(
         f'<div class="fv-alert-banner" role="alert"><b>Alerte{plural}</b><span>{items}</span>'
-        f'<a href="alerts" target="_self">Gérer mes alertes →</a></div>'
+        f'<a href="alerts" target="_self">Gérer mes alertes</a></div>'
     )

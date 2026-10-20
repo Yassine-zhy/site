@@ -1,6 +1,7 @@
 """Calculs de marché et mise en forme à la française."""
 
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pandas as pd
 
@@ -78,3 +79,25 @@ def test_variation_coloree_carte_et_tableau():
     assert html.startswith('<div class="fv-table-wrap">') and "<th>A</th><th>B</th>" in html
     assert theme.card("<p>corps</p>", "Titre").startswith('<section class="fv-card"><h3 class="fv-card-title">Titre')  # h3 : sous une section h2
     assert "<script>" not in theme.card("", "<script>")  # le titre est échappé
+
+
+# --- L'accueil raconte la séance (étape 32) --------------------------------------------------------
+
+
+def test_le_recit_de_la_seance_en_chapitres():
+    def quote(name, last, previous):
+        return Quote(name, name, "G", "%", last, previous, pd.Series([previous, last], dtype=float))
+
+    index = quote("CAC 40", 7859.74, 7868.40)
+    cac40 = [quote("Sanofi", 102.9, 100), quote("Accor", 102, 100), quote("Legrand", 98, 100),
+             quote("Schneider Electric", 97, 100)]
+    lead = SimpleNamespace(title="La Fed <b>baisse</b> ses taux")
+    html = theme.story_html(index, cac40, lead, echoes=3, now=datetime(2026, 10, 20, 12, 0, tzinfo=timezone.utc))
+    assert html.count('<article class="fv-ch') == 4  # la séance, la hausse, la baisse, l'actualité
+    assert html.count('aria-hidden="false"') == 1  # un seul chapitre lu à la fois
+    assert "Mardi 20 octobre, 14 h 00" in html and "Le CAC 40 recule de" in html
+    assert "Sanofi, " in html and "Schneider Electric, " in html
+    assert "2 valeurs en hausse, 2 en baisse" in html and "Reprise par 3 autres sources" in html
+    assert "&lt;b&gt;baisse&lt;/b&gt;" in html  # le titre de la dépêche est échappé
+    # sans les cours des 40 valeurs ni dépêche, il reste la séance
+    assert theme.story_html(index).count('<article class="fv-ch') == 1

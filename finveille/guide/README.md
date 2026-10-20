@@ -35,5 +35,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 29. [Une direction artistique : illustrations, transitions, mise en ligne](29-direction-artistique.md)
 30. [Un monde en 3D derrière chaque page](30-monde-3d.md)
 31. [Finitions de studio : bug, design épuré, signature, bande-annonce](31-finitions-studio.md)
+32. [Une page IA qui reste en place, un accueil qui raconte la séance, une vraie vidéo](32-recit-de-la-seance.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).

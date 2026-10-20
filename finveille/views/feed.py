@@ -41,15 +41,9 @@ with city:
     scene3d.show("city", **scene3d.city_data(articles, known_cac40()))
 
 
-# --- En-tête : se redessine toutes les minutes (horloges des places boursières) -----------------
-@st.fragment(run_every="1min")
-def header():
-    current, _, collected = load_articles(keys)
-    theme.feed_header(len(current), len({a.source for a in current}), collected,
-                      hero_quotes("^FCHI", "^GSPC", "BTC-USD"))
-
-
-header()
+# --- Le récit de la séance (guide 32) : le CAC 40, sa plus forte hausse, sa plus forte baisse, l'histoire du jour.
+# Rempli plus bas, une fois la une connue ; les horloges des places tournent dans le navigateur (motion.js).
+story = st.empty()
 
 # --- Barre d'outils : recherche, filtres, actualisation -----------------------------------------
 with st.container(horizontal=True, vertical_alignment="center", gap="small", key="fvtoolbar"):
@@ -230,6 +224,18 @@ def rail_blocks(filtered, collected):
     )
 
 
+def tell(cac40) -> None:
+    """Le récit, avec la une du moment (la même que dans le fil, calculée une fois pour tous les visiteurs)."""
+    index = next(iter(hero_quotes("^FCHI")), None)
+    lead = echoes = None
+    if articles:
+        lead_id, echoes, _ = lead_for(tuple(a.id for a in articles[:150]))
+        lead = next((a for a in articles if a.id == lead_id), articles[0])
+    with story:
+        st.html(theme.story_html(index, cac40, lead, echoes or 0))
+
+
+tell(known_cac40())
 body(query, categories, sources, hide_read, show_hidden, compact, pictures_on)
 
 # Premier visiteur depuis le démarrage : les couleurs des tours (la séance du CAC 40) arrivent une fois la page affichée
@@ -238,3 +244,4 @@ if not known_cac40():
         if cac40 := warm_cac40():
             with city:
                 scene3d.show("city", key="fv3d_cac40", **scene3d.city_data(articles, cac40))
+            tell(cac40)
