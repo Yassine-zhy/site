@@ -656,7 +656,7 @@ function globeScene(n, pal, data, uniforms) {
   if (lines) lines.material.uniforms.uFlow.value = 0;  // les arcs ne clignotent pas : les flux suffisent
   b.group.rotation.set(0.56, -paris[2] * Math.PI / 180, 0);   // l'Europe face à la caméra
   return {
-    ...b, center: [0, 0, 0], scan: [-R - 0.1, R + 0.1], xray: true, labels, size: 0.068,
+    ...b, center: [0, 0, 0], scan: [-R - 0.1, R + 0.1], xray: true, labels, size: 0.068, far: 1.14,
     cam0: { pos: [0, 5.6, 21.5], look: [0, 0.2, 0] }, cam1: { pos: [0, 2.2, 16.5], look: [0, 0.6, 0] },
     update(t, p) { b.group.rotation.y = -paris[2] * Math.PI / 180 + 0.045 * Math.sin(t * 0.12) + easeInOut(clamp(p)) * 1.32; },
   };
@@ -1093,7 +1093,7 @@ class World {
     const k = easeInOut(clamp(p));
     const lerp = (a, b, s) => a.map((v, i) => v + (b[i] - v) * s);
     let pos = lerp(def.cam0.pos, def.cam1.pos, k), look = lerp(def.cam0.look, def.cam1.look, k);
-    const far = this.distance || 1;
+    const far = (this.distance || 1) * (def.far || 1);   // def.far : un décor qui demande plus de recul
     pos = pos.map((v, i) => look[i] + (v - look[i]) * far);
     if (!this.reduced) {
       const swing = Math.sin(t * 0.07) * 0.11, cos = Math.cos(swing), sin = Math.sin(swing);
@@ -1134,7 +1134,19 @@ class World {
     clearTimeout(this.idle);
     this.idle = setTimeout(() => this.loop(), 500);
   }
-  loop() { if (!this.raf && !document.hidden) this.raf = requestAnimationFrame((now) => this.frame(now)); }
+  loop() { if (!this.manual && !this.raf && !document.hidden) this.raf = requestAnimationFrame((now) => this.frame(now)); }
+  // Pour la bande-annonce (tools/trailer.py) : le temps avance image par image, quelle que soit la vitesse du rendu
+  tick(ms) { this.manual = true; this.stopped = false; this.last = performance.now() - ms; this.frame(performance.now()); }
+  replay() {   // rejoue l'arrivée du décor : les particules repartent d'un nuage dispersé
+    const geo = this.points.geometry, from = geo.attributes.aFrom.array, rnd = random(1);
+    for (let i = 0; i < this.n; i++) {
+      const r = 14 + rnd() * 22, th = rnd() * Math.PI * 2, u = rnd() * 2 - 1;
+      from[i * 3] = Math.sqrt(1 - u * u) * Math.cos(th) * r; from[i * 3 + 1] = u * r * 0.6 + 4;
+      from[i * 3 + 2] = Math.sqrt(1 - u * u) * Math.sin(th) * r; rnd();
+    }
+    geo.attributes.aFrom.needsUpdate = true;
+    this.pu.uMorph.value = 0; this.started = this.clock; this.camFrom = null;
+  }
   start() { this.stopped = false; this.last = performance.now(); this.loop(); }
   hide() {
     this.host.classList.remove("is-on");
@@ -1189,8 +1201,34 @@ function installTilt() {
   document.addEventListener("pointerleave", () => { if (active) reset(active); active = null; });
 }
 
+// --- Les liens du pied de page : changer de page sans recharger le site (comme le menu du haut) ------------------
+// Un lien HTML ordinaire recharge tout (intro rejouée, décor 3D reconstruit). Streamlit suit l'historique du
+// navigateur : on y inscrit la nouvelle adresse et on le prévient, comme le ferait le bouton « Précédent ».
+function installLinks() {
+  if (window.__fvLinks) return;
+  window.__fvLinks = true;
+  document.addEventListener("click", (e) => {
+    const a = e.target instanceof Element ? e.target.closest(".fv-footer a") : null;
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (a.classList.contains("fv-footer-top-link")) {   // « Haut de page » : la zone qui défile remonte en douceur
+      e.preventDefault();
+      const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.querySelector('[data-testid="stMain"], [data-testid="stAppScrollToBottomContainer"]')
+        ?.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" });
+      return;
+    }
+    if (!a.getAttribute("href")?.startsWith("./")) return;   // seulement les pages du site
+    const url = new URL(a.getAttribute("href"), window.location.href);
+    if (url.origin !== window.location.origin) return;
+    e.preventDefault();
+    window.history.pushState({}, "", url.pathname + url.search);
+    window.dispatchEvent(new PopStateEvent("popstate", { state: {} }));
+  });
+}
+
 export function show(data) {
   installTilt();
+  installLinks();
   if (!webgl()) return () => {};   // pas de WebGL : les illustrations de l'étape 29 restent en place
   try {
     world ??= new World();
