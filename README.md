@@ -7,7 +7,7 @@
 
 **La veille financière et économique mondiale, dans une interface de plateforme professionnelle, mise à jour en continu.**
 
-Conçu et développé par **Yassine Zouhair**.
+Un projet étudiant, conçu et développé par **Yassine Zouhair**.
 
 FinVeille rassemble l'actualité de 12 flux RSS et de 4 API financières, la classe par rubrique, suit les
 entreprises et les thèmes de son utilisateur, affiche les cours des marchés mondiaux et résume les articles par IA.

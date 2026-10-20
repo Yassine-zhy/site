@@ -1208,7 +1208,7 @@ function installLinks() {
   if (window.__fvLinks) return;
   window.__fvLinks = true;
   document.addEventListener("click", (e) => {
-    const a = e.target instanceof Element ? e.target.closest(".fv-footer a") : null;
+    const a = e.target instanceof Element ? e.target.closest(".fv-footer a, a.fv-credit") : null;
     if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if (a.classList.contains("fv-footer-top-link")) {   // « Haut de page » : la zone qui défile remonte en douceur
       e.preventDefault();

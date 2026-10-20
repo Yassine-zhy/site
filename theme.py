@@ -1123,6 +1123,17 @@ html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .
 .fv-intro img { width: 64px; height: 64px; border-radius: 18px; box-shadow: 0 20px 50px -14px rgba(36, 81, 222, .7); }
 .fv-intro-word { font: 700 1.6rem/1 var(--fv-sans); letter-spacing: -.03em; color: var(--fv-text); }
 .fv-intro-word em { font-style: normal; color: var(--fv-brand); }
+.fv-intro-by { font-size: .85rem; letter-spacing: .02em; color: var(--fv-muted); animation: fv-intro-in .5s cubic-bezier(.2, .8, .2, 1) .25s backwards; }
+/* Le badge « Créé par un étudiant » de l'accueil */
+.fv-credit { display: inline-flex; align-items: center; gap: .55rem; margin-top: 1.1rem; padding: .3rem .85rem .3rem .3rem;
+  border: 1px solid var(--fv-line-strong); border-radius: 999px; font-size: .84rem; color: var(--fv-muted) !important;
+  text-decoration: none !important; background: color-mix(in srgb, var(--fv-surface) 82%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); transition: border-color .2s, transform .2s; }
+.fv-credit b { font-weight: 600; color: var(--fv-text); }
+.fv-credit:hover { border-color: var(--fv-brand); transform: translateY(-1px); }
+.fv-credit-avatar { display: grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%;
+  font-size: .68rem; font-weight: 700; color: #fff; background: linear-gradient(135deg, var(--blue-600), var(--violet-600)); }
+@media (pointer: coarse) { .fv-credit { min-height: 44px; } }
 .fv-intro-line { display: block; width: 9rem; height: 2px; border-radius: 2px; background: var(--fv-line); overflow: hidden; }
 .fv-intro-line::after { content: ""; display: block; height: 100%; transform-origin: 0 50%;
   background: linear-gradient(90deg, var(--fv-brand), var(--fv-up)); animation: fv-load .95s cubic-bezier(.6, 0, .2, 1) forwards; }
@@ -1204,7 +1215,8 @@ def inject_css() -> None:
     l'intro de la visite (guide 31). Cet élément reste en place d'une page à l'autre : l'intro ne se rejoue pas."""
     st.html(CSS + '<span id="fv-top"></span><div class="fv-progress" aria-hidden="true"></div>'
             f'<div class="fv-intro" aria-hidden="true"><div class="fv-intro-inner"><img src="{LOGO_URI}" alt="">'
-            '<span class="fv-intro-word">Fin<em>Veille</em></span><i class="fv-intro-line"></i></div></div>')
+            '<span class="fv-intro-word">Fin<em>Veille</em></span><i class="fv-intro-line"></i>'
+            f'<span class="fv-intro-by">Un projet étudiant de {esc(AUTHOR)}</span></div></div>')
 
 
 # --- Petites fonctions de mise en forme --------------------------------------------------------
@@ -1346,6 +1358,13 @@ CITY_CAPTION = ('<p class="fv-3d-caption">En fond, le CAC 40 en 3D : une tour pa
                 "nom</span>.</p>")
 
 
+def credit_html() -> str:
+    """Le badge de l'accueil : le site est l'œuvre d'un étudiant (lien vers la page « À propos »)."""
+    initials = "".join(part[0] for part in AUTHOR.split()[:2])
+    return (f'<a class="fv-credit" href="./about"><span class="fv-credit-avatar" aria-hidden="true">{esc(initials)}</span>'
+            f'<span>Créé par un étudiant · <b>{esc(AUTHOR)}</b></span><span aria-hidden="true">→</span></a>')
+
+
 def feed_header(article_count: int, source_count: int, fetched_at: datetime, quotes=()) -> None:
     """L'en-tête du fil : date, titre, volume collecté, places boursières et trois cours qui flottent."""
     now = datetime.now(timezone.utc)
@@ -1353,7 +1372,7 @@ def feed_header(article_count: int, source_count: int, fetched_at: datetime, quo
         "L'actualité financière,", f"{fr_number(article_count, 0)} dépêches de {source_count} sources, classées par "
         f"rubrique et expliquées · dernière collecte à {clock(fetched_at)}",
         eyebrow=f"{fr_date(now.astimezone(DISPLAY_TZ)).capitalize()} · édition continue", accent="en continu.",
-        quotes=quotes, extra=sessions_html(now) + CITY_CAPTION, classes="is-home is-live",
+        quotes=quotes, extra=sessions_html(now) + CITY_CAPTION + credit_html(), classes="is-home is-live",
     ))
 
 
@@ -1718,7 +1737,7 @@ def footer() -> None:
         f'<div class="fv-footer-brand"><span class="fv-footer-mark"><img src="{LOGO_URI}" alt="" width="28" height="28">'
         '<span class="fv-wordmark">Fin<em>Veille</em></span></span>'
         "<p>La veille financière et économique mondiale, mise à jour en continu.</p>"
-        f'<p class="fv-footer-author">Conçu et développé par <strong>{esc(AUTHOR)}</strong></p></div>'
+        f'<p class="fv-footer-author">Un projet étudiant, conçu et développé par <strong>{esc(AUTHOR)}</strong></p></div>'
         f'<nav class="fv-footer-links" aria-label="Rubriques">{links}</nav></div>'
         '<p class="fv-footer-giant" aria-hidden="true">FinVeille</p>'
         '<div class="fv-footer-bottom"><p class="fv-footer-note">Sources : flux RSS des médias cités, Yahoo Finance '
