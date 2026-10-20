@@ -8,14 +8,17 @@ un rendu React ; les animations suivent le numéro de l'image (`useCurrentFrame`
   `tools/footage.py` à partir de Yahoo Finance ;
 - `public/footage/` : les séquences filmées dans le vrai site par `tools/footage.py` (non suivies par Git, trop
   lourdes : on les refait à la demande) ;
-- `public/fonts/` : Schibsted Grotesk et IBM Plex Sans (licence SIL Open Font, voir `LICENCES.txt`).
+- `public/fonts/` : Schibsted Grotesk et IBM Plex Sans (licence SIL Open Font, voir `LICENCES.txt`) ;
+- `public/music.mp3` : la musique, composée par `tools/music.py` (120 battements par minute ; chaque scène dure un
+  nombre entier de mesures, les coupes tombent sur un temps fort).
 
 ## Refaire la vidéo
 
 Depuis le dossier `finveille/`, le site lancé en local (`streamlit run app.py`) :
 
 ```bash
-python tools/footage.py --url http://localhost:8501/   # les séquences et les chiffres du jour (≈ 15 min)
+python tools/footage.py --url http://localhost:8501/   # les séquences et les chiffres du jour (≈ 20 min)
+python tools/music.py                                  # la musique (quelques secondes)
 cd video
 npm install
 npx remotion studio                                    # aperçu, image par image

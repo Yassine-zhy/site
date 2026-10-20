@@ -144,4 +144,4 @@ navigateur de Remotion ne passe pas toujours par le réseau de la machine. Les s
 | Le rendu Remotion échoue sur les polices | Le navigateur de rendu ne passe pas par le proxy | Polices locales avec `@remotion/fonts` |
 | L'audit signale du texte invisible | Les chapitres inactifs sont transparents | Ignorer ce qui est `aria-hidden` |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [des maquettes 3D dans la page](33-maquettes-3d.md). Retour au [sommaire du guide](README.md).
