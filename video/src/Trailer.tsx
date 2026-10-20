@@ -1,7 +1,7 @@
 // La bande-annonce de FinVeille (guide 32), en motion design avec Remotion.
 // Une idée par scène ; le texte d'un côté, une séquence filmée dans le vrai site de l'autre (tools/footage.py) ;
 // les chiffres de la séance viennent de public/data.json (écrit par le même outil).
-import { Video } from "@remotion/media";
+import { Audio, Video } from "@remotion/media";
 import { loadFont } from "@remotion/fonts";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
@@ -280,8 +280,13 @@ const Outro: React.FC = () => {
 // --- Le montage ----------------------------------------------------------------------------------------------------
 // la séquence Crypto commence une seconde plus tard : le changement de page y laisse un reste du tableau au tournage
 const CRYPTO_SKIP = 30;
-export const SCENES = { open: 90, brand: 80, story: 400, movers: 150, feed: 135, markets: 165, crypto: 135 - CRYPTO_SKIP, ai: 135, outro: 130 };
-export const TRANSITION = 16;
+// Le montage suit la musique (tools/music.py, 120 battements par minute) : une mesure = 2 s = 60 images. Chaque scène
+// dure un nombre entier de mesures, plus le fondu qui la relie à la suivante : toutes les coupes tombent sur un temps fort.
+export const TRANSITION = 15;
+const BAR = 60;
+const bars = (n: number, last = false) => n * BAR + (last ? 0 : TRANSITION);
+export const SCENES = { open: bars(2), brand: bars(2), story: bars(6), movers: bars(2), feed: bars(2), markets: bars(3),
+  crypto: bars(2), ai: bars(2), outro: bars(3, true) };
 export const TOTAL = Object.values(SCENES).reduce((a, b) => a + b, 0) - TRANSITION * (Object.keys(SCENES).length - 1);
 
 export const Trailer: React.FC<{ readonly data: Data }> = ({ data }) => {
@@ -289,6 +294,7 @@ export const Trailer: React.FC<{ readonly data: Data }> = ({ data }) => {
   const headline = data.top[0] ? `${data.top[0].name}, ${signed(data.top[0].change)}` : "";
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.night }}>
+      <Audio src={staticFile("music.mp3")} volume={(f) => interpolate(f, [TOTAL - 50, TOTAL], [1, 0], clampOpts)} />
       <TransitionSeries>
         <TransitionSeries.Sequence durationInFrames={SCENES.open}><Open data={data} /></TransitionSeries.Sequence>
         <TransitionSeries.Transition presentation={fade()} timing={t} />
@@ -296,7 +302,7 @@ export const Trailer: React.FC<{ readonly data: Data }> = ({ data }) => {
         <TransitionSeries.Transition presentation={fade()} timing={t} />
         <TransitionSeries.Sequence durationInFrames={SCENES.story}>
           <FootageScene src="footage/story.mp4" side="right" kicker="L'accueil raconte la séance"
-            title="La ville du CAC 40, en 3D." note={`Une tour par entreprise. Au défilement, la caméra file vers la plus forte hausse${headline ? ` (${headline})` : ""}, puis la plus forte baisse.`} />
+            title="Le CAC 40 en maquette." note={`Une tour par valeur : sa hauteur suit son poids, son toit la séance. La caméra file vers la plus forte hausse${headline ? ` (${headline})` : ""}, puis la plus forte baisse.`} />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition presentation={slide({ direction: "from-right" })} timing={t} />
         <TransitionSeries.Sequence durationInFrames={SCENES.movers}><Movers data={data} /></TransitionSeries.Sequence>
@@ -306,11 +312,11 @@ export const Trailer: React.FC<{ readonly data: Data }> = ({ data }) => {
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition presentation={slide({ direction: "from-right" })} timing={t} />
         <TransitionSeries.Sequence durationInFrames={SCENES.markets}>
-          <FootageScene src="footage/markets.mp4" side="right" kicker="Marchés" title="Les places du monde, en un coup d'œil." />
+          <FootageScene src="footage/markets.mp4" side="right" kicker="Marchés" title="Un globe de bureau, une épingle par place." note="Verte si l'indice monte, rouge s'il baisse. Il tourne sous la souris." />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition presentation={slide({ direction: "from-right" })} timing={t} />
         <TransitionSeries.Sequence durationInFrames={SCENES.crypto}>
-          <FootageScene src="footage/crypto.mp4" skip={CRYPTO_SKIP} side="left" kicker="Crypto" title="Le bitcoin, bloc par bloc." note="Un bloc par jour : sa taille et sa couleur suivent la séance." />
+          <FootageScene src="footage/crypto.mp4" skip={CRYPTO_SKIP} side="left" kicker="Crypto" title="Trois pièces, gravées à leur symbole." note="Le filet de chaque pièce dit sa séance sur 24 heures ; survolée, elle donne son cours." />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition presentation={slide({ direction: "from-right" })} timing={t} />
         <TransitionSeries.Sequence durationInFrames={SCENES.ai}>

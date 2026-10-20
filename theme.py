@@ -1288,6 +1288,73 @@ html:not(.fv-story-on) .fv-story-rail { display: none; }
 }
 .stApp button, .stApp a[href], .stApp [role="tab"], .stApp summary { cursor: pointer; touch-action: manipulation; }
 
+/* ==== 16. Les maquettes (guide 33) ===============================================================================
+   Un objet 3D par page, posé dans l'en-tête (et la ville du CAC 40 dans le récit de l'accueil), fait de la matière du
+   site : verre sombre, arêtes de lumière, données en lumière. Le moteur (static/fv3d/vitrines.js) dessine dans la toile
+   de chaque emplacement ; le décor plein écran recule au rang d'ambiance. */
+.fv-obj-wrap { margin: 0; }
+.fv-obj { position: relative; width: 100%; aspect-ratio: 5 / 4; touch-action: pan-y; user-select: none;
+  -webkit-user-select: none; }
+html.fv-obj-on .fv-obj { cursor: grab; }
+html.fv-obj-on .fv-obj.is-grabbing { cursor: grabbing; }
+.fv-obj-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%;
+  /* la toile a le fond de la page ; ses bords s'y fondent */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(180deg, transparent, #000 7%, #000 93%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(180deg, transparent, #000 7%, #000 93%, transparent);
+  mask-composite: intersect; }
+.fv-obj-fallback { position: absolute; inset: 8% 10%; width: 80%; height: 84%; object-fit: contain;
+  filter: drop-shadow(0 30px 34px var(--fv-shadow-deep)); }
+html.fv-obj-on .fv-obj-fallback { display: none; }
+html.fv-obj-on .fv-obj.is-fallback .fv-obj-fallback { display: block; }   /* plus de contexte WebGL : l'illustration */
+html.fv-obj-on .fv-obj.is-fallback { cursor: auto; }
+.fv-obj-wrap figcaption { max-width: 34rem; margin: .2rem auto 0; font-size: .86rem; line-height: 1.5; text-align: center;
+  color: var(--fv-muted); }
+/* le nom et le chiffre de ce que l'on survole, et les étiquettes posées sur la maquette */
+.fv-obj-tip, .fv-obj-label { position: absolute; z-index: 2; pointer-events: none; white-space: nowrap;
+  padding: .3rem .65rem; border: 1px solid var(--fv-line-strong); border-radius: 999px;
+  background: color-mix(in srgb, var(--fv-surface) 88%, transparent); backdrop-filter: blur(8px);
+  box-shadow: 0 10px 24px -12px var(--fv-shadow-deep); font: 600 .82rem/1.3 var(--fv-sans); color: var(--fv-text); }
+.fv-obj-tip { transform: translate(-50%, calc(-100% - 14px)); opacity: 0; transition: opacity .15s ease; }
+.fv-obj-tip.is-on { opacity: 1; }
+.fv-obj-label { transform: translate(-50%, -100%); transition: opacity .3s ease; }
+.fv-obj-label[data-tone="up"] { border-color: color-mix(in srgb, var(--fv-up) 60%, transparent); }
+.fv-obj-label[data-tone="down"] { border-color: color-mix(in srgb, var(--fv-down) 60%, transparent); }
+/* l'en-tête : le texte à gauche, la maquette à droite ; les tuiles de cours passent sous le titre */
+.fv-hero.has-obj { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "copy obj" "tiles obj";
+  align-items: center; padding-bottom: .6rem; }
+.fv-hero.has-obj .fv-hero-copy { grid-area: copy; align-self: end; }
+.fv-hero.has-obj .fv-hero-obj { grid-area: obj; align-self: center; margin: -1.5rem -1rem -1rem 0; }
+.fv-hero.has-obj .fv-hero-aside { grid-area: tiles; align-self: start; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .7rem; padding: 0; transform: none; max-width: 40rem; }
+.fv-hero.has-obj .fv-float { translate: none; grid-column: auto; padding: .8rem .85rem .75rem; }
+.fv-hero.has-obj .fv-float-value { font-size: 1.15rem; }
+.fv-hero.has-obj .fv-float > img { max-width: 76px; height: 28px; }
+.fv-hero.has-obj::after { display: none; }
+@media (max-width: 900px) {
+  .fv-hero.has-obj { grid-template-columns: minmax(0, 1fr); grid-template-areas: "copy" "obj" "tiles"; }
+  .fv-hero.has-obj .fv-hero-obj { margin: 0 auto; width: min(100%, 26rem); }
+}
+/* le récit de l'accueil : les chapitres à gauche, la maquette du CAC 40 à droite, sa caméra suit le chapitre */
+.fv-story.has-obj .fv-story-stage { grid-template-columns: minmax(0, 34rem) minmax(0, 1fr); column-gap: 1.5rem;
+  grid-template-areas: "ch obj" "rail obj"; }
+.fv-story.has-obj .fv-story-chapters { grid-area: ch; }
+.fv-story.has-obj .fv-story-rail { grid-area: rail; }
+.fv-story-obj { grid-area: obj; align-self: center; min-height: 0; height: 100%; display: grid; align-items: center; }
+.fv-story-obj .fv-obj { aspect-ratio: auto; height: min(100%, 44rem); }
+@media (max-width: 760px) {
+  .fv-story.has-obj .fv-story-stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "ch" "obj" "rail"; }
+  .fv-story.has-obj .fv-story-chapters { min-height: 17.5rem; }
+  .fv-story.has-obj .fv-ch-text { font-size: .95rem; }
+  .fv-story.has-obj .fv-sessions { display: none; }
+}
+html:not(.fv-story-on) .fv-story-obj { display: none; }
+/* le décor plein écran n'est plus qu'une ambiance : les objets sont dans la page */
+#fv3d.is-on { opacity: .55; }
+
 @media (prefers-reduced-motion: reduce) {
   .fv-tape-window { overflow-x: auto; mask-image: none; }
   .fv-tape-track, .fv-tape-label::before, .fv-sk, .fv-hero-copy > *, [class*="st-key-fvlead_"],
@@ -1298,6 +1365,7 @@ html:not(.fv-story-on) .fv-story-rail { display: none; }
   .fv-intro { display: none; }
   .fv-media::after { display: none; }
   .fv-ch { transition: none; }
+  .fv-obj-tip, .fv-obj-label { transition: none; }
 }
 </style>
 """
@@ -1423,17 +1491,20 @@ def title_html(title: str, accent: str = "", animate: bool = True) -> str:
 
 
 def hero_html(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=(), extra: str = "",
-              classes: str = "", art_name: str | None = None) -> str:
+              classes: str = "", art_name: str | None = None, obj: str = "") -> str:
     """L'en-tête « héros » d'une page (guide 29) : le décor (deux halos qui dérivent, la ligne de cours signature),
     le sur-titre, le grand titre (la fin `accent` en dégradé de marque), la phrase d'introduction et, à droite, des
-    tuiles de cours flottantes (`quotes`) ou l'illustration de la page (`art_name`, voir art.py)."""
+    tuiles de cours flottantes (`quotes`) ou l'illustration de la page (`art_name`, voir art.py). Depuis l'étape 33,
+    la droite revient à la maquette 3D de la page (`obj`, scene3d.page_object) et les tuiles passent sous le titre."""
     import art
 
     live = "is-live" in classes  # en-tête redessiné chaque minute : décor immobile
     aside = "".join(float_tile(quote, animate=not live) for quote in quotes)
     spot = "" if aside or not art_name else (f'<div class="fv-hero-spot" aria-hidden="true">'
                                               f'<img src="{art.spot(art_name)}" alt=""></div>')
-    classes = " ".join(filter(None, ["fv-hero", "has-aside" if aside or spot else "", classes]))
+    if obj:
+        spot = ""
+    classes = " ".join(filter(None, ["fv-hero", "has-aside" if aside or spot else "", "has-obj" if obj else "", classes]))
     scenery = ('<div class="fv-hero-art" aria-hidden="true"><i class="fv-aurora a1"></i><i class="fv-aurora a2"></i>'
                f'<img class="fv-hero-line" src="{art.signature_line(not live)}" alt=""></div>')
     return (
@@ -1443,6 +1514,7 @@ def hero_html(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=
         + f'<p class="fv-hero-dek">{dek}</p>{extra}</div>'
         + (f'<div class="fv-hero-aside" role="group" aria-label="Les marchés en un coup d\'œil">{aside}</div>'
            if aside else spot)
+        + (f'<div class="fv-hero-obj">{obj}</div>' if obj else "")
         + "</header>"
     )
 
@@ -1459,9 +1531,10 @@ def _plural(count: int, words: str) -> str:
     return f"{count} {' '.join(w + 's' for w in words.split()) if count > 1 else words}"
 
 
-def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None = None) -> str:
+def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None = None, city: dict | None = None) -> str:
     """L'accueil raconte la séance, un chapitre par écran de défilement (guide 32) : le CAC 40, la plus forte hausse,
-    la plus forte baisse, puis l'histoire du jour. Le décor 3D suit le chapitre (static/fv3d/motion.js, engine.js).
+    la plus forte baisse, puis l'histoire du jour. La maquette du CAC 40 (`city`, scene3d.city_data) est posée à côté :
+    sa caméra suit le chapitre (static/fv3d/motion.js, vitrines.js).
 
     Les chiffres sont ceux du moment ; sans les cours des 40 valeurs, les chapitres hausse et baisse sont omis."""
     local = (now or datetime.now(timezone.utc)).astimezone(DISPLAY_TZ)
@@ -1509,9 +1582,16 @@ def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None
                                 'juste en dessous.</p><a class="fv-story-cta" href="#fv-fil">Lire les dépêches</a>'))
     rail = "".join(f'<li{" class=is-active" if i == 0 else ""}><button type="button">{esc(label)}</button><i></i></li>'
                    for i, (label, _) in enumerate(chapters))
-    return (f'<section class="fv-story" style="--chapters:{len(chapters)}" aria-label="La séance en bref">'
+    model = ""
+    if city:
+        import scene3d
+
+        model = scene3d.vitrine("city", city, "La maquette du CAC 40 : une tour par valeur, sa hauteur suit son poids "
+                                "dans l'indice, son toit est vert si elle monte, rouge si elle baisse.",
+                                classes="fv-story-obj")
+    return (f'<section class="fv-story{" has-obj" if model else ""}" style="--chapters:{len(chapters)}" aria-label="La séance en bref">'
             f'<div class="fv-story-stage"><div class="fv-story-chapters">{"".join(html for _, html in chapters)}</div>'
-            f'<ol class="fv-story-rail" aria-label="Chapitres">{rail}</ol>{credit_html()}</div></section>'
+            f'<ol class="fv-story-rail" aria-label="Chapitres">{rail}</ol>{model}{credit_html()}</div></section>'
             '<span id="fv-fil"></span>')
 
 
@@ -1533,14 +1613,17 @@ def section(title: str, note: str = "") -> None:
 
 
 def page_header(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=(), art: str | None = None,
-                scene: str | None = None) -> None:
-    """En-tête de page : rubrique du menu, grand titre (sa fin d'un seul tenant), phrase d'introduction et, à droite,
-    quelques cours en tuiles flottantes ou l'illustration de la page. Derrière, le décor 3D de la page (scene3d.py,
-    d'après `scene`, sinon d'après le nom de l'illustration)."""
+                scene: str | None = None, obj_data: dict | None = None) -> None:
+    """En-tête de page : rubrique du menu, grand titre (sa fin d'un seul tenant), phrase d'introduction, quelques
+    cours en tuiles et, à droite, la maquette 3D de la page (scene3d.OBJECTS, d'après `scene`, sinon d'après le nom de
+    l'illustration ; `obj_data` : ses données). Sans WebGL, l'illustration de l'étape 29 la remplace."""
+    import art as artwork
     import scene3d
 
-    st.html(hero_html(title, esc(dek), eyebrow, accent, quotes, art_name=art))
-    scene3d.page(scene or art)
+    name = scene or art
+    obj = scene3d.page_object(name, obj_data, fallback=artwork.spot(art) if art else None)
+    st.html(hero_html(title, esc(dek), eyebrow, accent, quotes, art_name=art, obj=obj))
+    scene3d.page(name)
 
 
 def card(body: str, title: str = "", note: str = "") -> str:

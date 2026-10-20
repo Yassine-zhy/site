@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquettes FinVeille</title>
+<!-- Le banc d'essai des maquettes (guide 33) : toutes les vitrines sur une page, sans Streamlit.
+     python tools/vitrines_preview.py ouvre cette page et en fait une planche de photos. -->
+<style>
+  body { margin: 0; font-family: "IBM Plex Sans", sans-serif; }
+  .stApp { min-height: 100vh; padding: 24px; box-sizing: border-box; background: #0a0f1c; color: #e8edf6; }
+  .stApp.light { background: #f3f5f9; color: #141a26; }
+  .grid { display: grid; grid-template-columns: repeat(var(--cols, 4), 1fr); gap: 18px; }
+  .cell h2 { margin: 0 0 6px; font: 600 14px "Schibsted Grotesk", sans-serif; }
+  .fv-obj { position: relative; margin: 0; aspect-ratio: 5 / 4; width: 100%; outline: 1px dashed rgb(128 128 128 / .25); }
+  .fv-obj-canvas { position: absolute; inset: 0; width: 100%; height: 100%;
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent), linear-gradient(180deg, transparent, #000 7%, #000 93%, transparent);
+    mask-composite: intersect; }
+  .fv-obj-label, .fv-obj-tip { position: absolute; transform: translate(-50%, -120%); padding: 3px 8px; border-radius: 999px;
+    font: 600 12px "IBM Plex Sans", sans-serif; background: rgb(10 15 28 / .8); color: #fff; white-space: nowrap; }
+  .fv-obj-tip:not(.is-on) { display: none; }
+</style>
+</head>
+<body>
+<div class="stApp" id="app"><div class="grid" id="grid"></div></div>
+<script type="module">
+  const q = new URLSearchParams(location.search);
+  if (q.get("theme") === "light") document.getElementById("app").classList.add("light");
+  document.getElementById("grid").style.setProperty("--cols", q.get("cols") || "4");
+  const rnd = (() => { let a = 7; return () => (a = (a * 16807) % 2147483647) / 2147483647; })();
+  const W = [10.5, 7, 6.5, 6, 5.6, 5.6, 5.4, 5.2, 4.6, 4.6, 4.4, 4.2, 3.4, 2.4, 2.4, 2.1, 1.7, 1.6, 1.6, 1.5, 1.4, 1.3,
+    1.2, 1.2, 1.2, 1.1, 1.1, 1, 0.9, 0.9, 0.8, 0.6, 0.6, 0.6, 0.6, 0.5, 0.5, 0.5, 0.3, 0.2];
+  const SAMPLES = {
+    city: { towers: W.map((w, i) => ({ n: `Valeur ${i + 1}`, w, c: Math.round((rnd() * 6 - 3) * 100) / 100 })) },
+    globe: { markers: [["^FCHI", "CAC 40", -0.11], ["^GDAXI", "DAX", 0.4], ["^FTSE", "FTSE 100", -0.2], ["^GSPC", "S&P 500", 0.8],
+      ["^N225", "Nikkei 225", -1.3], ["^HSI", "Hang Seng", -1.32], ["000001.SS", "Shanghai", 0.3]].map(([symbol, name, c]) => ({ symbol, name, c })) },
+    coins: { coins: [{ sym: "BTC", name: "Bitcoin", c: 0.78, price: "73 816 €" }, { sym: "ETH", name: "Ether", c: -1.9, price: "2 187 €" },
+      { sym: "SOL", name: "Solana", c: 3.1, price: "151 €" }] },
+    orb: {}, quiz: { variant: "quiz" },
+  };
+  const kinds = (q.get("kinds") || "city,globe,coins,orb").split(",");
+  for (const name of kinds) {
+    const kind = name === "quiz" ? "orb" : name;
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.innerHTML = `<h2>${name}</h2>`;
+    const fig = document.createElement("figure");
+    fig.className = "fv-obj";
+    fig.dataset.obj = kind;
+    fig.dataset.objData = JSON.stringify(SAMPLES[name] || {});
+    cell.appendChild(fig);
+    document.getElementById("grid").appendChild(cell);
+  }
+  const { installVitrines } = await import("../static/fv3d/vitrines.js");
+  installVitrines();
+  window.__ready = true;
+</script>
+</body>
+</html>

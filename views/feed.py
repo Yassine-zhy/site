@@ -35,10 +35,8 @@ keys = api_keys()
 articles, errors, fetched_at = load_articles(keys)
 
 
-# --- Le décor 3D : la ville du CAC 40, et les derniers titres sur les bandeaux de ses tours (scene3d.py) ------
-city = st.empty()
-with city:
-    scene3d.show("city", **scene3d.city_data(articles, known_cac40()))
+# --- Le décor 3D : une ambiance derrière la page ; la ville du CAC 40 est une maquette dans le récit (guide 33) -----
+scene3d.page("feed")
 
 
 # --- Le récit de la séance (guide 32) : le CAC 40, sa plus forte hausse, sa plus forte baisse, l'histoire du jour.
@@ -232,7 +230,7 @@ def tell(cac40) -> None:
         lead_id, echoes, _ = lead_for(tuple(a.id for a in articles[:150]))
         lead = next((a for a in articles if a.id == lead_id), articles[0])
     with story:
-        st.html(theme.story_html(index, cac40, lead, echoes or 0))
+        st.html(theme.story_html(index, cac40, lead, echoes or 0, city=scene3d.city_data(cac40)))
 
 
 tell(known_cac40())
@@ -242,6 +240,4 @@ body(query, categories, sources, hide_read, show_hidden, compact, pictures_on)
 if not known_cac40():
     with capacity.QUEUE.released():  # attente réseau : on laisse sa place dans la file
         if cac40 := warm_cac40():
-            with city:
-                scene3d.show("city", key="fv3d_cac40", **scene3d.city_data(articles, cac40))
             tell(cac40)
