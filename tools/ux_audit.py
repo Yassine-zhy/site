@@ -64,6 +64,7 @@ JS = r"""(mobile) => {
     // Faux positifs connus : texte des graphiques (SVG, couleur donnée par « fill »), étiquettes des curseurs
     // (placées hors du bouton coloré qui les contient), éléments invisibles (opacité nulle)
     if (el.closest('svg') || el.closest('[data-testid="stSliderThumbValue"]') || opacityOf(el) < 0.05) continue;
+    if (el.closest('[aria-hidden="true"]')) continue;   // masqué (chapitres du récit en attente, décor) : pas lu, pas vu
     const cs = getComputedStyle(el); const fg = parse(cs.color); if (!fg || fg.a === 0) continue;
     if (cs.webkitTextFillColor && parse(cs.webkitTextFillColor)?.a === 0) continue;
     const bg = bgOf(el); if (!bg) continue;
