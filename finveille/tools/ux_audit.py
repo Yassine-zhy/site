@@ -26,7 +26,7 @@ import sys
 from playwright.sync_api import sync_playwright
 
 PAGES = ["", "brief", "assistant", "stats", "markets", "economy", "crypto", "compare", "following", "portfolio",
-         "alerts", "favorites", "simulators", "quiz", "glossary", "settings", "account"]
+         "alerts", "favorites", "simulators", "quiz", "glossary", "settings", "account", "about"]
 
 JS = r"""(mobile) => {
   const res = {hscroll: false, noName: [], noAlt: [], contrast: [], small: {}};
@@ -176,6 +176,7 @@ def main() -> int:
     parser.add_argument("--theme", choices=["dark", "light"], default="dark")
     parser.add_argument("--mobile", action="store_true", help="téléphone de 375 × 812 px, écran tactile")
     parser.add_argument("--json", help="enregistre le rapport complet dans ce fichier")
+    parser.add_argument("--pages", help="seulement ces pages, séparées par des virgules (feed = la page d'accueil)")
     args = parser.parse_args()
     width, height = (375, 812) if args.mobile else (1440, 1000)
     report, problems = {}, 0
@@ -185,7 +186,10 @@ def main() -> int:
                                     args=["--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
         context = browser.new_context(viewport={"width": width, "height": height}, color_scheme=args.theme,
                                       has_touch=args.mobile, is_mobile=args.mobile)
+        wanted = {name.strip() for name in args.pages.split(",")} if args.pages else None
         for path in PAGES:
+            if wanted and (path or "feed") not in wanted:
+                continue
             result = report[path or "feed"] = audit_page(context, args.url.rstrip("/") + "/" + path, args.mobile)
             if "error" in result:
                 print(f"{path or 'feed':11s} ERREUR {result['error']}")
