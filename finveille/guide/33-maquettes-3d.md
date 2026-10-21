@@ -1,23 +1,25 @@
 # Étape 33 — Des maquettes 3D dans la page, une bande-annonce en musique
 
 > **Objectif :** sortir la 3D du simple décor, en posant de vraies maquettes (ville, globe, pièces, assistant) dans les
-> pages, leur donner la matière du site plutôt qu'un look d'icône, et finir la bande-annonce sur de la musique.
+> pages, leur donner la matière du site plutôt qu'un look d'icône, faire que chacune serve à quelque chose au clic, et
+> finir la bande-annonce sur de la musique.
 
 Fichiers créés : `static/fv3d/vitrines.js`, `kit.js`, `models.js`, `atelier.js`, le dossier `static/fv3d/addons/`
 (modules de Three.js : environnement, boîtes arrondies, effets), `tools/music.py`, `tools/vitrines_preview.py` (et son
 `.html`), `video/public/music.mp3`, le dossier `.claude/` (skills et agents), `CLAUDE.md`, ce guide. Fichiers
 modifiés : `scene3d.py`, `theme.py`, `views/feed.py`, `views/crypto.py`, `static/fv3d/engine.js`, `tools/footage.py`,
-`video/src/Trailer.tsx`, `tests/test_market_theme.py`, `README.md`.
+`video/src/Trailer.tsx`, `static/fv3d/motion.js`, `tests/test_market_theme.py`, `README.md`.
 
 ---
 
 ## 1. Ce que tu as demandé
 
-Quatre demandes, dans cet ordre. Premièrement : « la ville, c'est un fond, je ne veux pas que ce soit que le fond »,
+Cinq demandes, dans cet ordre. Premièrement : « la ville, c'est un fond, je ne veux pas que ce soit que le fond »,
 donc refaire l'ensemble des modèles 3D et les inclure dans le site. Deuxièmement : importer de nouveaux skills depuis
 GitHub pour varier les modèles et économiser des tokens. Troisièmement, après un premier essai : « les modèles sont
 moches et ne s'intègrent pas », avec la consigne d'être bien plus professionnel et de mettre plein de détails.
-Quatrièmement : de la musique dans la bande-annonce, tout à la fin.
+Quatrièmement : de la musique dans la bande-annonce, tout à la fin. Cinquièmement : « que tous les modèles 3D aient
+un intérêt, qu'ils soient interactifs », puis la mise en ligne.
 
 ## 2. Répartir le travail entre les modèles
 
@@ -57,6 +59,7 @@ Au chargement, `vitrines.js` donne à chaque emplacement sa propre toile et son 
 
 - au survol, il affiche un nom et un chiffre (un *raycaster* trouve la pièce sous la souris) ;
 - au glisser, il tourne, avec de l'élan ; au repos, il se tourne un peu vers la souris ;
+- au clic, il agit sur la page : il cherche, montre ou demande quelque chose (section 7) ;
 - quand rien ne bouge, **il ne dessine rien** ;
 - avec « réduire les animations » : ni montage ni parallaxe.
 
@@ -128,7 +131,42 @@ tampon HalfFloat multiéchantillonné : MSAA 4 (2 sur téléphone)
 
 Le thème clair garde les objets en verre sombre et n'a pas de halo : une lueur additive disparaît sur un fond clair.
 
-## 7. La musique de la bande-annonce
+## 7. Chaque maquette sert à quelque chose
+
+Tourner et survoler un objet amuse une fois. Pour qu'il ait un intérêt, **un clic doit faire quelque chose dans la
+page**, et le survol doit l'annoncer (« Cliquer : sa tuile de cours »). Chaque page donne à sa maquette une action,
+dans `scene3d.OBJECTS` ; `vitrines.js` l'exécute (`perform`) avec le nom de la pièce visée.
+
+| Maquette | Ce que fait un clic | Action |
+| --- | --- | --- |
+| La ville du CAC 40 (accueil) | la tour cliquée cherche ses dépêches : son nom s'écrit dans la recherche du fil, puis la page descend aux résultats | `search` |
+| Le globe (Marchés) | l'épingle mène à la tuile de cours de sa place, qui s'illumine | `reveal` |
+| Les pièces (Crypto) | la pièce mène à sa ligne du classement | `reveal` |
+| La sphère et ses fiches (Assistant) | la fiche pose sa question à l'assistant, qui répond | `ask` |
+| Les livres (Glossaire) | le livre cherche son sujet (« action », « obligation », « indice ») | `search` |
+| Les autres (cloche, engrenages, journaux…) | la page descend au contenu que l'objet annonce : le formulaire d'alerte, les réglages, le brief | `next` |
+
+L'objet répond aussi au geste : il rebondit, la cloche sonne une nouvelle volée (ses ondes repartent), les engrenages
+font un quart de tour (les rapports de dents les gardent engrenés). Avec « réduire les animations », l'action a lieu,
+sans rebond ni défilement en douceur. Au doigt, sans survol possible, un premier toucher montre l'étiquette et le second
+agit.
+
+Écrire dans un champ de Streamlit depuis JavaScript demande de passer par React : on change la valeur avec le
+*setter* natif (sinon React ne voit rien), on prévient par un événement `input`, puis on appuie sur Entrée.
+
+```js
+Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(field, "Sanofi");
+field.dispatchEvent(new Event("input", { bubbles: true }));
+field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, bubbles: true }));
+```
+
+Le piège : le défilement **ne se faisait pas**. La page défile dans `stMain`, et chaque `ScrollTrigger.refresh()`
+(lancé par `motion.js` dès que la page change) remet un instant la page en haut pour mesurer, ce qui coupe un
+défilement en cours. Or les cours en direct changent le texte des tuiles toutes les quelques secondes. Deux
+corrections : `motion.js` ne recalcule plus que si un **élément** arrive (un cours qui change n'échange qu'un texte), et
+`show()` vérifie après 1,2 s que la page est arrivée, sinon il termine le trajet.
+
+## 8. La musique de la bande-annonce
 
 `tools/music.py` compose le morceau par le code (numpy, scipy), sans échantillon extérieur :
 
@@ -149,16 +187,28 @@ Toutes les coupes tombent ainsi sur un temps fort. La musique entre par `<Audio>
 sortie. Côté image, `tools/footage.py` fait aussi avancer les maquettes (`window.__fvObjs.tick`), tourne le globe à la
 souris et survole une pièce.
 
-## 8. Vérifier
+## 9. Vérifier
 
 - `tools/vitrines_preview.py` (avec son `.html`) produit une planche de photos des maquettes sans lancer Streamlit.
   **Au plus 8 maquettes par planche** : chacune demande un contexte WebGL, et le navigateur en refuse au-delà.
-- `pytest` : 232 tests passent, 28 sont ignorés. Un test couvre les emplacements (échappement du JSON, récit avec
-  maquette).
+- `pytest` : 233 tests passent, 28 sont ignorés. Un test couvre les emplacements (échappement du JSON, récit avec
+  maquette), un autre vérifie que chaque maquette a une action et que son survol l'annonce.
 - Des captures d'écran en thème sombre, en thème clair et sur téléphone.
-- Audit d'accessibilité : AUDIT_RESULT.
+- Un essai des clics dans le vrai site (Playwright) : la tour de Sanofi remplit la recherche du fil et la page descend
+  aux dépêches ; l'épingle de Paris fait briller la tuile du CAC 40 ; une fiche de l'assistant obtient sa réponse ; le
+  livre « Actions » cherche « action » dans le glossaire ; la cloche mène au formulaire.
+- Audit d'accessibilité (`tools/ux_audit.py`, en sombre, en clair et sur téléphone) : une vraie alerte, corrigée :
+  en thème clair, la légende posée sur le décor 3D (« Une épingle par place… ») n'avait que 4,45:1 au lieu de 4,5:1 ; elle est
+  plus foncée. Les autres alertes sont de faux positifs : des titres pris au milieu de leur animation d'entrée
+  (opacité), et des éléments que Streamlit grise pendant un recalcul (comparateur).
+- **Une limite connue.** Dans le navigateur des tests, sans carte graphique (rendu logiciel SwiftShader), la page Crypto
+  met environ une minute à afficher ses pièces : le navigateur bloque à leur première image, et l'audit dépasse son
+  délai sur cette page. Les essais ont écarté le relief, le vernis, l'anisotropie et les ombres des pièces ; la cause
+  n'est pas trouvée. La maquette a tout de même été allégée (une gravure par nom, partagée, et des pièces de pile deux
+  fois moins fines : 89 000 triangles au lieu de 157 000, 22 textures au lieu de 34), et la page a été vérifiée à la
+  main. À vérifier sur un vrai téléphone.
 
-## 9. Erreurs fréquentes
+## 10. Erreurs fréquentes
 
 | Symptôme | Cause | Solution |
 | --- | --- | --- |
@@ -169,5 +219,8 @@ souris et survole une pièce.
 | La maquette crypto est vide | CoinGecko limite les requêtes, la liste de pièces est vide | Pièces par défaut, sans chiffres |
 | `WEIGHTS` a disparu de `scene3d.py` | Une découpe trop large | Restauré depuis Git |
 | Les objets ressemblent à des icônes d'argile | Une matière étrangère au site | Reprendre la matière de l'interface |
+| Le clic trouve la tuile, mais la page ne descend pas | `ScrollTrigger.refresh()`, relancé à chaque cours qui change, coupe le défilement | Ne recalculer qu'à l'arrivée d'un élément ; vérifier et terminer le trajet |
+| Au doigt, toucher la maquette fait partir la page aussitôt | Pas de survol sur un écran tactile : l'étiquette n'a pas le temps de s'afficher | Premier toucher : l'étiquette (« Toucher encore : … ») ; second toucher : l'action |
+| L'audit plante : « could not convert string to float » | Une couleur de texte en `color-mix()` : le navigateur la rend en `color(srgb …)`, que l'audit ne lit pas | Une couleur fixe (`#475165`) |
 
 Retour au [sommaire du guide](README.md).

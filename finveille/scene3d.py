@@ -48,29 +48,58 @@ def _register():
 _component = _register()
 
 # La maquette de chaque page (guide 33) : son modèle (static/fv3d/), ses réglages, sa description pour les lecteurs
-# d'écran et, si elle encode des données, une légende qui dit comment la lire.
+# d'écran et, si elle encode des données, une légende qui dit comment la lire. Chaque maquette sert à quelque chose :
+# son action (« act », exécutée par vitrines.js au clic) et le texte qui l'annonce au survol.
+def _next(label: str, hint: str) -> dict:
+    """Un clic sur l'objet mène au contenu qui suit l'en-tête (le formulaire, le tableau…)."""
+    return {"type": "next", "label": label, "hint": hint}
+
+
 OBJECTS = {
-    "markets": ("globe", {}, "Un globe de bureau : une épingle par grande place boursière.",
-                "Une épingle par place : verte si l'indice monte, rouge s'il baisse."),
-    "about": ("logo", {}, "Le logo de FinVeille, en relief.", ""),
-    "crypto": ("coins", {}, "Trois pièces gravées : les trois premières cryptomonnaies.",
+    "markets": ("globe", {"act": {"type": "reveal", "in": ".fv-tile", "keyed": True, "hint": "Cliquer : sa tuile de cours",
+                                  "hintAll": "Cliquer : les indices"}},
+                "Un globe de bureau : une épingle par grande place boursière.",
+                "Une épingle par place : verte si l'indice monte, rouge s'il baisse. Clique-la pour voir son cours."),
+    "about": ("logo", {"act": _next("FinVeille", "Cliquer : le projet")}, "Le logo de FinVeille, en relief.", ""),
+    "crypto": ("coins", {"act": {"type": "reveal", "in": ".fv-table tbody tr", "keyed": True,
+                                 "hint": "Cliquer : sa ligne du classement", "hintAll": "Cliquer : le classement"}},
+               "Trois pièces gravées : les trois premières cryptomonnaies.",
                "Le filet autour de chaque pièce : vert si elle monte sur 24 h, rouge si elle baisse."),
-    "assistant": ("orb", {}, "Une sphère dans un anneau bleu, entourée de fiches : l'assistant et ses sources.", ""),
-    "quiz": ("orb", {"variant": "quiz"}, "Quatre cartes en éventail : la bonne réponse se lève.", ""),
-    "brief": ("paper", {}, "Une pile de journaux du matin, devant le soleil qui se lève.", ""),
-    "stats": ("bars", {}, "Un histogramme en relief : les dépêches heure par heure.", ""),
-    "compare": ("duel", {}, "Deux quartiers de tours face à face.", ""),
-    "portfolio": ("ring", {}, "Un anneau découpé en parts : la répartition d'un portefeuille.", ""),
-    "simulators": ("stairs", {}, "Un escalier de colonnes : le capital versé et les intérêts qui s'y ajoutent.", ""),
-    "economy": ("ridges", {}, "Des courbes des taux en relief, l'une derrière l'autre.", ""),
-    "alerts": ("bell", {}, "Une cloche et les ondes qu'elle fait naître : une alerte qui sonne.", ""),
-    "following": ("lens", {}, "Une loupe au-dessus d'un quartier de tours : les entreprises que tu suis.", ""),
-    "favorites": ("bookmark", {}, "Des articles et un marque-page : à lire plus tard.", ""),
-    "glossary": ("books", {}, "Une pile de livres : le vocabulaire de la finance.", ""),
-    "settings": ("gear", {}, "Des engrenages : les réglages.", ""),
-    "account": ("gear", {}, "Des engrenages : ton compte.", ""),
-    "setup": ("gear", {}, "Des engrenages : la configuration du site.", ""),
+    "assistant": ("orb", {"act": {"type": "ask", "keyed": True, "label": "L'assistant", "hint": "Cliquer : poser cette question",
+                                  "hintAll": "Cliquer : écrire ta question"}},
+                  "Une sphère dans un anneau bleu, entourée de fiches : l'assistant et ses sources.",
+                  "Chaque fiche en orbite porte une question : clique-la pour la poser."),
+    "quiz": ("orb", {"variant": "quiz", "act": _next("Le quiz", "Cliquer : aller aux questions")},
+             "Quatre cartes en éventail : la bonne réponse se lève.", ""),
+    "brief": ("paper", {"act": _next("Le brief du jour", "Cliquer : le lire")},
+              "Une pile de journaux du matin, devant le soleil qui se lève.", ""),
+    "stats": ("bars", {"act": _next("Le fil en chiffres", "Cliquer : les chiffres du fil")},
+              "Un histogramme en relief : les dépêches heure par heure.", ""),
+    "compare": ("duel", {"act": _next("Deux quartiers", "Cliquer : la comparaison")}, "Deux quartiers de tours face à face.", ""),
+    "portfolio": ("ring", {"act": _next("Ton portefeuille", "Cliquer : tes positions")},
+                  "Un anneau découpé en parts : la répartition d'un portefeuille.", ""),
+    "simulators": ("stairs", {"act": _next("Les intérêts composés", "Cliquer : le simulateur")},
+                   "Un escalier de colonnes : le capital versé et les intérêts qui s'y ajoutent.", ""),
+    "economy": ("ridges", {"act": _next("Les courbes des taux", "Cliquer : les indicateurs")},
+                "Des courbes des taux en relief, l'une derrière l'autre.", ""),
+    "alerts": ("bell", {"act": _next("Une alerte", "Cliquer : créer une alerte")},
+               "Une cloche et les ondes qu'elle fait naître : une alerte qui sonne.", ""),
+    "following": ("lens", {"act": _next("Tes suivis", "Cliquer : tes entreprises")},
+                  "Une loupe au-dessus d'un quartier de tours : les entreprises que tu suis.", ""),
+    "favorites": ("bookmark", {"act": _next("Tes favoris", "Cliquer : tes articles")},
+                  "Des articles et un marque-page : à lire plus tard.", ""),
+    "glossary": ("books", {"act": {"type": "search", "input": "PER, inflation", "keyed": True, "then": '[data-testid="stTextInput"]',
+                                   "hint": "Cliquer : chercher ce sujet", "hintAll": "Cliquer : le glossaire"}},
+                 "Une pile de livres : le vocabulaire de la finance.",
+                 "Clique un livre : le glossaire cherche son sujet."),
+    "settings": ("gear", {"act": _next("Les réglages", "Cliquer : tes préférences")}, "Des engrenages : les réglages.", ""),
+    "account": ("gear", {"act": _next("Ton compte", "Cliquer : ton profil")}, "Des engrenages : ton compte.", ""),
+    "setup": ("gear", {"act": _next("La configuration", "Cliquer : les services")}, "Des engrenages : la configuration du site.", ""),
 }
+# La maquette du CAC 40 (le récit de l'accueil) : une tour cliquée cherche ses dépêches dans le fil
+CITY_ACT = {"type": "search", "input": "Rechercher", "keyed": True, "then": "#fv-fil", "hint": "Cliquer : ses dépêches",
+            "hintAll": "Cliquer : aller au fil"}
+
 # Ordre de grandeur du poids de chaque valeur dans le CAC 40 (en %) : il donne la hauteur des tours de la maquette.
 # Elle montre des ordres de grandeur, pas des décimales : une approximation suffit.
 WEIGHTS = {
@@ -103,7 +132,7 @@ def city_data(quotes) -> dict:
 
     change = {quote.symbol: round(quote.change, 2) for quote in quotes}
     return {"towers": [{"n": name, "w": WEIGHTS.get(symbol, 0.5), "c": change.get(symbol)}
-                       for symbol, name, _ in market.CAC40]}
+                       for symbol, name, _ in market.CAC40], "act": CITY_ACT}
 
 
 def vitrine(kind: str, data: dict | None = None, label: str = "", caption: str = "", fallback: str | None = None,

@@ -158,7 +158,8 @@ function city(data, pal, scene) {
       }
       return moving;
     },
-    pick: (ray) => pickFrom(ray, towers.map((t) => t.g), (id) => `${towers[id].n}${towers[id].c != null ? `, ${signed(towers[id].c)}` : ""}`),
+    pick: (ray) => pickFrom(ray, towers.map((t) => t.g), (id) => `${towers[id].n}${towers[id].c != null ? `, ${signed(towers[id].c)}` : ""}`,
+      (id) => towers[id].n),
     setHover(id) { hover = id == null ? null : towers[id]; },
     labels() {
       const lit = chapter === "up" ? ups : chapter === "down" ? downs : [];
@@ -306,7 +307,8 @@ function globe(data, pal, scene) {
       }
       return moving;
     },
-    pick: (ray) => pickFrom(ray, pins.map((p) => p.pin), (id) => `${pins[id].name} (${pins[id].city}), ${signed(pins[id].c)}`),
+    pick: (ray) => pickFrom(ray, pins.map((p) => p.pin), (id) => `${pins[id].name} (${pins[id].city}), ${signed(pins[id].c)}`,
+      (id) => pins[id].name),
     setHover(id) { hover = id == null ? null : pins[id]; },
     labels() {   // Paris, toujours nommée : c'est la place de référence du site
       const p = pins.find((x) => x.symbol === "^FCHI");
@@ -360,30 +362,30 @@ function coinFace(sym, name, relief) {   // la face frappée, dessinée en blanc
   return t;
 }
 
-function coin(pal, c) {
-  const g = new THREE.Group();
+function coin(pal, c, face, fine = true) {   // face(relief) : la gravure, partagée par les pièces d'un même nom
+  const g = new THREE.Group(), n = fine ? 1 : 0.5;   // les petites pièces de la pile : deux fois moins de facettes
   // le corps : un bord relevé autour d'un champ en creux (profil tourné), puis la tranche cannelée
   const profile = [[0, 0.055], [0.84, 0.055], [0.87, 0.085], [0.95, 0.092], [0.985, 0.075], [0.985, -0.075], [0.95, -0.092],
     [0.87, -0.085], [0.84, -0.055], [0, -0.055]].map(([x, y]) => new THREE.Vector2(x, y));
-  const body = new THREE.Mesh(new THREE.LatheGeometry(profile, 160), metal(pal, { rough: 0.32 }));
-  const edge = new THREE.CylinderGeometry(1, 1, 0.15, 240, 1, true);
+  const body = new THREE.Mesh(new THREE.LatheGeometry(profile, 160 * n), metal(pal, { rough: 0.32 }));
+  const sides = 240 * n, edge = new THREE.CylinderGeometry(1, 1, 0.15, sides, 1, true);
   const pos = edge.attributes.position;
   for (let i = 0; i < pos.count; i++) {   // les cannelures : un rayon sur deux est en retrait
-    const a = Math.atan2(pos.getZ(i), pos.getX(i)), r = 0.993 + 0.009 * Math.sign(Math.cos(a * 120));
+    const a = Math.atan2(pos.getZ(i), pos.getX(i)), r = 0.993 + 0.009 * Math.sign(Math.cos(a * sides / 2));
     pos.setXYZ(i, Math.cos(a) * r, pos.getY(i), Math.sin(a) * r);
   }
   edge.computeVertexNormals();
   const reed = new THREE.Mesh(edge, metal(pal, { rough: 0.4 }));
   reed.userData.noEdges = true;
-  const glow = coinFace(c.sym, c.name || c.sym, false), bump = coinFace(c.sym, c.name || c.sym, true);
+  const glow = face(false), bump = face(true);
   const faceMat = metal(pal, { rough: 0.42, emissive: pal.ink, emissiveMap: glow, glow: pal.dark ? 0.8 : 0.5, bump, bumpScale: 4 });
-  const front = new THREE.Mesh(new THREE.CircleGeometry(0.84, 128).rotateX(-Math.PI / 2), faceMat);
+  const front = new THREE.Mesh(new THREE.CircleGeometry(0.84, 128 * n).rotateX(-Math.PI / 2), faceMat);
   front.position.y = 0.056;
   const back = front.clone();
   back.rotation.x = Math.PI;
   back.position.y = -0.056;
   const tone = changeColor(pal, c.c, 3);
-  const line = new THREE.Mesh(new THREE.TorusGeometry(0.91, 0.012, 8, 160).rotateX(Math.PI / 2),
+  const line = new THREE.Mesh(new THREE.TorusGeometry(0.91, 0.012, 6, 160 * n).rotateX(Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: tone.clone().multiplyScalar(1.7) }));
   line.position.y = 0.093;
   const line2 = line.clone();
@@ -402,8 +404,14 @@ function coins(data, pal, scene) {
   const list = (data.coins?.length ? data.coins : [{ sym: "BTC", name: "Bitcoin" }, { sym: "ETH", name: "Ether" },
     { sym: "SOL", name: "Solana" }]).slice(0, 3);
   const items = [];
+  const faces = new Map();   // une gravure par nom, partagée (la pile : six fois la même)
+  const face = (c) => (relief) => {
+    const key = `${c.sym}|${relief}`;
+    if (!faces.has(key)) faces.set(key, coinFace(c.sym, c.name || c.sym, relief));
+    return faces.get(key);
+  };
   const add = (c, id, s, pos, rot, delay) => {
-    const g = coin(pal, c);
+    const g = coin(pal, c, face(c), s > 0.7);
     g.scale.setScalar(s);
     tag(g, id);
     root.add(g);
@@ -433,7 +441,7 @@ function coins(data, pal, scene) {
     pick: (ray) => pickFrom(ray, items.map((it) => it.g), (id) => {
       const it = items.find((x) => x.id === id);
       return [it.name, it.price, it.c != null ? `${signed(it.c)} sur 24 h` : ""].filter(Boolean).join(", ");
-    }),
+    }, (id) => items.find((x) => x.id === id).name),
     setHover(id) { hover = id; },
   };
 }
@@ -487,12 +495,16 @@ function orb(data, pal, scene) {
     core.add(g);
     return { g, r };
   });
+  // chaque fiche porte une des questions suggérées de la page : un clic la pose à l'assistant
+  const questions = data.questions || [];
   const cards = [];
   orbits.forEach((o, i) => [0, 1].forEach((j) => {
-    const card = sourceCard(pal, i * 2 + j + 3);
+    const n = i * 2 + j, card = sourceCard(pal, n + 3);
+    tag(card, n);
     o.g.add(card);
-    cards.push({ card, o, a: j * Math.PI + i * 0.9, delay: 0.6 + (i * 2 + j) * 0.12 });
+    cards.push({ card, o, a: j * Math.PI + i * 0.9, delay: 0.6 + n * 0.12, question: questions[n % Math.max(1, questions.length)] });
   }));
+  let hover = null;
   return {
     root, view: { pos: [0.6, 3.7, 9.6], look: [0, 1.85, 0], fov: 30, aspect: 1.15 }, intro: 2.4,
     update(t) {
@@ -501,14 +513,18 @@ function orb(data, pal, scene) {
       heart.scale.setScalar(Math.max(0.001, phase(t, 0.3, 0.6)));
       lattice.material.opacity = phase(t, 0.4, 0.9) * 0.75;
       nodes.scale.setScalar(Math.max(0.001, phase(t, 0.6, 0.6)));
-      for (const c of cards) {   // les fiches rejoignent leur orbite, face au regard
+      let moving = t < 2.4;
+      for (const c of cards) {   // les fiches rejoignent leur orbite, face au regard ; la fiche visée grandit
         const q = phase(t, c.delay, 0.9), a = c.a + (1 - q) * 1.4;
         c.card.position.set(Math.cos(a) * c.o.r * q, Math.sin(a) * c.o.r * q, 0);
         c.card.rotation.set(-Math.PI / 2, 0, 0);
-        c.card.scale.setScalar(Math.max(0.001, q));
+        const s = Math.max(0.001, q) * (c === hover ? 1.25 : 1);
+        if (Math.abs(c.card.scale.x - s) > 0.002) { c.card.scale.setScalar(c.card.scale.x + (s - c.card.scale.x) * 0.3); moving = true; }
       }
-      return t < 2.4;
+      return moving;
     },
+    pick: (ray) => (questions.length ? pickFrom(ray, cards.map((c) => c.card), (id) => cards[id].question, (id) => cards[id].question) : null),
+    setHover(id) { hover = id == null || id === "all" ? null : cards[id]; },
   };
 }
 function hand(root, pal) {   // quatre réponses en éventail ; la bonne se lève, et son « ? » s'allume

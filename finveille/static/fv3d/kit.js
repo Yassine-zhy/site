@@ -253,9 +253,12 @@ export function tag(object, id) {
   object.traverse((o) => { if (o.isMesh) o.userData.id = id; });
   return object;
 }
-export function pickFrom(ray, objects, describe) {
+// `keyOf` : le nom que la page cherchera si l'on clique (une entreprise, une place, une question…)
+export function pickFrom(ray, objects, describe, keyOf = null) {
   const hit = ray.intersectObjects(objects, true).find((h) => h.object.userData.id != null);
-  return hit ? { id: hit.object.userData.id, text: describe(hit.object.userData.id) } : null;
+  if (!hit) return null;
+  const id = hit.object.userData.id;
+  return { id, text: describe(id), key: keyOf ? keyOf(id) : null };
 }
 
 // --- Les outils du détail -----------------------------------------------------------------------------------------

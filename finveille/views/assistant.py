@@ -109,7 +109,8 @@ def answer(question: str) -> dict:
 
 # --- La page ----------------------------------------------------------------------------------------
 theme.page_header("Pose ta question,", "En français, sur l'actualité, les marchés ou un terme financier : l'assistant "
-                  "répond à partir des dépêches du moment.", eyebrow="Assistant IA", accent="l'IA cite ses sources.", art="assistant")
+                  "répond à partir des dépêches du moment.", eyebrow="Assistant IA", accent="l'IA cite ses sources.", art="assistant",
+                  obj_data={"questions": SUGGESTIONS})
 
 # La conversation vit dans un panneau, la zone de saisie juste en dessous (et non collée en bas de l'écran) : la page
 # ne saute plus tout en bas à l'ouverture, et chaque nouvelle question remonte en haut de l'écran (engine.js).
