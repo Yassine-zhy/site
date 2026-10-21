@@ -197,10 +197,10 @@ souris et survole une pièce.
 - Un essai des clics dans le vrai site (Playwright) : la tour de Sanofi remplit la recherche du fil et la page descend
   aux dépêches ; l'épingle de Paris fait briller la tuile du CAC 40 ; une fiche de l'assistant obtient sa réponse ; le
   livre « Actions » cherche « action » dans le glossaire ; la cloche mène au formulaire.
-- Audit d'accessibilité (`tools/ux_audit.py`, en sombre, en clair et sur téléphone) : une vraie alerte, corrigée :
-  en thème clair, la légende posée sur le décor 3D (« Une épingle par place… ») n'avait que 4,45:1 au lieu de 4,5:1 ; elle est
-  plus foncée. Les autres alertes sont de faux positifs : des titres pris au milieu de leur animation d'entrée
-  (opacité), et des éléments que Streamlit grise pendant un recalcul (comparateur).
+- Audit d'accessibilité (`tools/ux_audit.py`, en sombre, en clair et sur téléphone) : une vraie alerte, corrigée : en
+  thème clair, la légende posée sur le décor 3D (« Une épingle par place… ») n'avait que 4,45:1 au lieu de 4,5:1 ;
+  elle est plus foncée. Les autres alertes sont de faux positifs : des titres pris au milieu de leur animation
+  d'entrée (opacité), et des éléments que Streamlit grise pendant un recalcul (comparateur).
 - **Une limite connue.** Dans le navigateur des tests, sans carte graphique (rendu logiciel SwiftShader), la page Crypto
   met environ une minute à afficher ses pièces : le navigateur bloque à leur première image, et l'audit dépasse son
   délai sur cette page. Les essais ont écarté le relief, le vernis, l'anisotropie et les ombres des pièces ; la cause
