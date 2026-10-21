@@ -8,27 +8,63 @@ CATEGORIES = {
     "macro": "Macro",
 }
 
+# Les régions du fil : clé technique -> libellé affiché
+REGIONS = {"fr": "France", "ca": "Canada", "monde": "Monde"}
+
 # Les flux RSS gratuits (aucune clé nécessaire).
-# "category" est la catégorie par défaut des articles de ce flux.
+# "category" est la catégorie par défaut des articles de ce flux ; "region" : "fr" (France et zone euro),
+# "ca" (Canada) ou "monde".
 _CNBC = "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id="
 RSS_FEEDS = [
-    {"name": "CNBC Marchés", "url": _CNBC + "10000664", "category": "marches"},
-    {"name": "CNBC Économie", "url": _CNBC + "20910258", "category": "macro"},
-    {"name": "CNBC Entreprises", "url": _CNBC + "10001147", "category": "entreprises"},
-    {"name": "BFM Bourse", "url": "https://www.tradingsat.com/rssbourse.xml", "category": "marches"},
-    {"name": "Le Monde Économie", "url": "https://www.lemonde.fr/economie/rss_full.xml", "category": "macro"},
-    {"name": "BBC Business", "url": "https://feeds.bbci.co.uk/news/business/rss.xml", "category": "entreprises"},
-    {"name": "Nasdaq", "url": "https://www.nasdaq.com/feed/rssoutbound?category=Markets", "category": "entreprises"},
-    {"name": "The Economist", "url": "https://www.economist.com/finance-and-economics/rss.xml", "category": "macro"},
-    {"name": "Réserve fédérale (Fed)", "url": "https://www.federalreserve.gov/feeds/press_all.xml", "category": "macro"},
-    {"name": "BCE", "url": "https://www.ecb.europa.eu/rss/press.html", "category": "macro"},
-    {"name": "CoinDesk", "url": "https://www.coindesk.com/arc/outboundfeeds/rss/", "category": "crypto"},
-    {"name": "Cointelegraph", "url": "https://cointelegraph.com/rss", "category": "crypto"},
+    {"name": "CNBC Marchés", "url": _CNBC + "10000664", "category": "marches", "region": "monde"},
+    {"name": "CNBC Économie", "url": _CNBC + "20910258", "category": "macro", "region": "monde"},
+    {"name": "CNBC Entreprises", "url": _CNBC + "10001147", "category": "entreprises", "region": "monde"},
+    {"name": "BFM Bourse", "url": "https://www.tradingsat.com/rssbourse.xml", "category": "marches", "region": "fr"},
+    {"name": "Le Monde Économie", "url": "https://www.lemonde.fr/economie/rss_full.xml", "category": "macro", "region": "fr"},
+    {"name": "BBC Business", "url": "https://feeds.bbci.co.uk/news/business/rss.xml", "category": "entreprises", "region": "monde"},
+    {"name": "Nasdaq", "url": "https://www.nasdaq.com/feed/rssoutbound?category=Markets", "category": "entreprises", "region": "monde"},
+    {"name": "The Economist", "url": "https://www.economist.com/finance-and-economics/rss.xml", "category": "macro", "region": "monde"},
+    {"name": "Réserve fédérale (Fed)", "url": "https://www.federalreserve.gov/feeds/press_all.xml", "category": "macro", "region": "monde"},
+    {"name": "BCE", "url": "https://www.ecb.europa.eu/rss/press.html", "category": "macro", "region": "fr"},
+    {"name": "CoinDesk", "url": "https://www.coindesk.com/arc/outboundfeeds/rss/", "category": "crypto", "region": "monde"},
+    {"name": "Cointelegraph", "url": "https://cointelegraph.com/rss", "category": "crypto", "region": "monde"},
+    # --- France et zone euro ---
+    {"name": "Le Figaro Économie", "url": "https://www.lefigaro.fr/rss/figaro_economie.xml", "category": "macro", "region": "fr"},
+    {"name": "Le Figaro Bourse", "url": "https://www.lefigaro.fr/rss/figaro_bourse.xml", "category": "marches", "region": "fr"},
+    {"name": "La Tribune", "url": "https://www.latribune.fr/feed.xml", "category": "macro", "region": "fr"},
+    {"name": "Capital", "url": "https://feed.prismamediadigital.com/v1/cap/rss?sources=capital", "category": "marches", "region": "fr"},
+    {"name": "Challenges", "url": "https://www.challenges.fr/rss.xml", "category": "entreprises", "region": "fr"},
+    {"name": "BFM Business", "url": "https://www.bfmtv.com/rss/economie/", "category": "macro", "region": "fr"},
+    {"name": "Franceinfo Économie", "url": "https://www.francetvinfo.fr/economie.rss", "category": "macro", "region": "fr"},
+    {"name": "20 Minutes Économie", "url": "https://www.20minutes.fr/feeds/rss-economie.xml", "category": "macro", "region": "fr"},
+    {"name": "Investing.com France", "url": "https://fr.investing.com/rss/news.rss", "category": "marches", "region": "fr"},
+    {"name": "AMF (régulateur des marchés)", "url": "https://www.amf-france.org/fr/flux-rss/display/21", "category": "marches", "region": "fr"},
+    {"name": "Journal du Coin", "url": "https://journalducoin.com/feed/", "category": "crypto", "region": "fr"},
+    {"name": "Cryptoast", "url": "https://cryptoast.fr/feed/", "category": "crypto", "region": "fr"},
+    # --- Canada ---
+    {"name": "Radio-Canada Économie", "url": "https://ici.radio-canada.ca/rss/5717", "category": "macro", "region": "ca"},
+    {"name": "La Presse Affaires", "url": "https://www.lapresse.ca/affaires/rss", "category": "entreprises", "region": "ca"},
+    {"name": "Le Devoir Économie", "url": "https://www.ledevoir.com/rss/section/economie.xml", "category": "macro", "region": "ca"},
+    {"name": "The Globe and Mail", "url": "https://www.theglobeandmail.com/arc/outboundfeeds/rss/category/business/", "category": "entreprises", "region": "ca"},
+    {"name": "Financial Post", "url": "https://financialpost.com/feed/", "category": "marches", "region": "ca"},
+    {"name": "BNN Bloomberg", "url": "https://www.bnnbloomberg.ca/arc/outboundfeeds/rss/category/business/?outputType=xml", "category": "marches", "region": "ca"},
+    {"name": "Banque du Canada", "url": "https://www.banqueducanada.ca/content_type/communiques/feed/", "category": "macro", "region": "ca"},
+    # --- Monde ---
+    {"name": "MarketWatch", "url": "https://feeds.content.dowjones.io/public/rss/mw_topstories", "category": "marches", "region": "monde"},
+    {"name": "Investing.com", "url": "https://www.investing.com/rss/news.rss", "category": "marches", "region": "monde"},
+    {"name": "Financial Times", "url": "https://www.ft.com/markets?format=rss", "category": "marches", "region": "monde"},
+    {"name": "Fortune", "url": "https://fortune.com/feed/", "category": "entreprises", "region": "monde"},
+    {"name": "Business Insider", "url": "https://markets.businessinsider.com/rss/news", "category": "marches", "region": "monde"},
+    {"name": "The Guardian Business", "url": "https://www.theguardian.com/uk/business/rss", "category": "macro", "region": "monde"},
+    {"name": "Seeking Alpha", "url": "https://seekingalpha.com/market_currents.xml", "category": "marches", "region": "monde"},
+    {"name": "France 24 Économie", "url": "https://www.france24.com/fr/economie/rss", "category": "macro", "region": "monde"},
+    {"name": "Decrypt", "url": "https://decrypt.co/feed", "category": "crypto", "region": "monde"},
+    {"name": "The Block", "url": "https://www.theblock.co/rss.xml", "category": "crypto", "region": "monde"},
 ]
 
 MAX_ARTICLES_PER_FEED = 25  # on garde les N articles les plus récents de chaque flux
 REQUEST_TIMEOUT = 10  # secondes d'attente maximum par requête
-USER_AGENT = "Mozilla/5.0 (compatible; FinVeille/1.0; projet etudiant)"
+USER_AGENT = "Mozilla/5.0 (compatible; FinVeille/1.0; +https://finveille.streamlit.app)"
 
 # Mots-clés qui signalent une catégorie (en minuscules, sans accents ; anglais et français).
 # Sert à reclasser les articles des flux généralistes (voir core/classifier.py).
@@ -42,7 +78,7 @@ CATEGORY_KEYWORDS = {
         "banque centrale", "interest rate", "interest rates", "taux directeur", "rate cut", "rate hike",
         "gdp", "pib", "recession", "unemployment", "chomage", "jobs report", "payrolls", "cpi",
         "tariff", "tariffs", "droits de douane", "budget", "public debt", "dette publique", "deficit",
-        "imf", "fmi", "treasury", "economy", "economie", "croissance", "growth",
+        "imf", "fmi", "banque du canada", "bank of canada", "treasury", "economy", "economie", "croissance", "growth",
     ],
     "entreprises": [
         "earnings", "resultats", "revenue", "chiffre d'affaires", "ceo", "pdg", "acquisition",
@@ -52,7 +88,7 @@ CATEGORY_KEYWORDS = {
     "marches": [
         "stocks", "stock market", "actions", "s&p 500", "nasdaq", "dow", "cac 40", "dax", "index",
         "indice", "bonds", "obligations", "yield", "yields", "oil", "petrole", "gold", "forex",
-        "wall street", "bourse", "rally", "sell-off", "futures", "etf", "shares",
+        "wall street", "bourse", "bourse de toronto", "tsx", "s&p/tsx", "huard", "toronto", "rally", "sell-off", "futures", "etf", "shares",
     ],
 }
 

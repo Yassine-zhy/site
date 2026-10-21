@@ -24,6 +24,7 @@ class Article:
     image: str | None = None
     tickers: list[str] = field(default_factory=list)
     sentiment: float | None = None  # de -1 (très négatif) à +1 (très positif), si la source le fournit
+    region: str = "monde"  # « fr », « ca » ou « monde » (voir REGIONS) ; absent des anciens JSON
 
     @property
     def id(self) -> str:

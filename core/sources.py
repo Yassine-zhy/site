@@ -92,6 +92,7 @@ def fetch_rss(feed: dict) -> list[Article]:
                 summary=shorten(clean_html(entry.get("summary"))),
                 category=feed["category"],
                 image=_entry_image(entry),
+                region=feed.get("region", "monde"),
             )
         )
 
