@@ -184,4 +184,4 @@ cd video && npx remotion render Trailer out/trailer.mp4
 | La crête du film monté frôle 0 dB | Les effets sonores s'ajoutent à une musique déjà au niveau | Un limiteur à -1,5 dB à l'encodage de la version publiée |
 | La vidéo parle du jour (« le CAC 40 recule de 0,11 % ») | L'ancienne bande-annonce était construite sur la séance | Un film de lancement : le site, ses pages, ses outils |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [une bande-annonce qui raconte](35-bande-annonce-racontee.md). Retour au [sommaire du guide](README.md).

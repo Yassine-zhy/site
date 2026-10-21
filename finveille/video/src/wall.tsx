@@ -15,7 +15,7 @@ const cards = Array.from({ length: COLS * ROWS }, (_, i) => {
   const d = Math.hypot((c - 13.5) / 14, (r - 6.5) / 7);
   const h = rnd(`card${i}`);
   return {
-    i, c, r, ap: d < 0.22 ? 4 + h * 44 : 55 + d * 30 + h * 6,  // quelques cartes seules d'abord, puis la vague depuis le centre à « milliers »
+    i, c, r, ap: d < 0.34 ? 1 + h * 46 : 55 + d * 30 + h * 6,  // quelques cartes seules d'abord, puis la vague depuis le centre à « milliers »
     flashAt: rnd(`fa${i}`) * 36, flashUp: rnd(`fu${i}`) > 0.5, flashy: rnd(`fy${i}`) < 0.14,
   };
 });
@@ -38,7 +38,7 @@ export const Wall: React.FC<{ readonly mode: "open" | "close" }> = ({ mode }) =>
         if (pop <= 0) return null;
         const x = mod(k.c * PX + dx, 1920) + 6, y = mod(k.r * PY + dy, 1080) + 6;
         // l'éclat de l'arrivée, puis le clignotement vert et rouge de « marchés »
-        const arrive = 1 - ramp(f, k.ap, k.ap + 14, [0, 1], OUT);
+        const arrive = 1 - ramp(f, k.ap, k.ap + 20, [0, 1], OUT);
         let fl = 0;
         if (flashing && k.flashy) {
           const ph = mod(f - W("L01", "marchés") - k.flashAt, 40);

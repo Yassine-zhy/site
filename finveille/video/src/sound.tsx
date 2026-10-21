@@ -5,7 +5,7 @@ import { Sequence, staticFile } from "remotion";
 import { CAM, VO, fr, lerp, ramp } from "./kit";
 
 export const TOTAL = 1980;
-const VOL = { music: 0.85, ducked: 0.32, voice: 0.65, whoosh: 0.4, impact: 0.8, click: 0.6, bell: 0.5, keys: 0.25, tick: 0.22 };
+const VOL = { music: 0.85, ducked: 0.32, voice: 0.75, whoosh: 0.4, impact: 0.8, click: 0.6, bell: 0.5, keys: 0.25, tick: 0.22 };
 
 // Les intervalles de voix (images), fusionnés quand deux phrases se touchent presque : la musique ne « pompe » pas entre deux mots
 const VOICE = VO.map((p) => [fr(p.start), fr(p.start + p.dur)] as [number, number]).reduce<[number, number][]>((acc, [a, b]) => {
@@ -17,9 +17,9 @@ const VOICE = VO.map((p) => [fr(p.start), fr(p.start + p.dur)] as [number, numbe
 // Le niveau de la musique sous la voix, par intervalle (image de début → volume). Le plan fixe 0,32 ; mais la musique est bien
 // plus forte dans la seconde moitié (le drop) : on a mesuré la voix et la musique de chaque intervalle (ffmpeg, niveau RMS) et
 // baissé la musique juste assez pour qu'elle reste 8 dB sous la voix (0,32 au plus). Le mélangeur de Remotion relève les voix
-// (mono) d'environ 2,8 dB : la voix est donc à 0,65 pour garder de la marge avant l'écrêtage (crête mesurée sur le rendu). Les intervalles absents gardent 0,32.
+// (mono) d'environ 2,8 dB : la voix est donc à 0,75 pour garder de la marge avant l'écrêtage (crête mesurée sur le rendu). Les intervalles absents gardent 0,32.
 const DUCK_LEVEL: Record<number, number> = {
-  360: 0.18, 480: 0.26, 630: 0.18, 855: 0.18, 930: 0.18, 1200: 0.18, 1395: 0.15, 1500: 0.12, 1710: 0.32, 1755: 0.22, 1860: 0.16,
+  360: 0.2, 480: 0.3, 630: 0.2, 855: 0.2, 930: 0.2, 1200: 0.2, 1395: 0.17, 1500: 0.14, 1710: 0.32, 1755: 0.25, 1860: 0.18,
 };
 // Attaque 4 images avant la voix, relâchement 10 images après : 1 = musique baissée
 const lin = (t: number) => t;
