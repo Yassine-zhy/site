@@ -69,8 +69,10 @@ TARGET_LUFS = -14.0        # le niveau des plateformes
 TAIL = 3.5                 # secondes de queue de réverbération après la dernière mesure
 
 # Le plan, en mesures (il doit suivre les sections du montage, video/src/Trailer.tsx)
-PLAN = [("accroche", 4), ("logo", 2), ("informer", 6), ("marches", 6), ("montee", 2), ("drop", 4), ("galerie", 2),
-        ("outils", 4), ("signature", 4)]
+# Étape 34 bis : la bande-annonce racontée. accroche (« Chaque jour… »), logo (« Alors voici FinVeille »), informer (ce que
+# fait le site), marches (Inès, Hugo, Sami), montee, drop (« Un seul site »), galerie (« Et ce site ? »), outils, signature
+PLAN = [("accroche", 6), ("logo", 1), ("informer", 3), ("marches", 13), ("montee", 2), ("drop", 3), ("galerie", 1),
+        ("outils", 2), ("signature", 2)]
 BARS = sum(bars for _, bars in PLAN)
 START = {}                 # première mesure de chaque section, comptée depuis 0 (m. 1 = mesure 0)
 LENGTH = dict(PLAN)
@@ -78,7 +80,7 @@ _at = 0
 for _name, _bars in PLAN:
     START[_name] = _at
     _at += _bars
-assert BARS == 34 and START["logo"] == 4 and START["drop"] == 20 and START["signature"] == 30
+assert BARS == 33 and START["logo"] == 6 and START["drop"] == 25 and START["signature"] == 31
 
 # Ré mineur : (basse, accord) en notes MIDI. i – VI – iv – V pour l'accroche, i – VI – III – VII pour le groove
 CHORDS = {
@@ -90,9 +92,9 @@ CHORDS = {
     "A7": (45, [52, 57, 61, 64, 67]),
     "Dm+": (38, [50, 57, 64, 65, 69, 74]),   # le dernier accord, large
 }
-BAR_CHORDS = (["Dm", "Bb", "Gm", "A7"] + ["Dm"] * 2 + ["Dm", "Bb", "F", "C", "Dm", "Bb"]
-              + ["Dm", "Bb", "F", "C", "Gm", "A7"] + ["Gm", "A7"] + ["Dm", "Bb", "F", "C"] + ["Bb"] * 2
-              + ["Dm", "Bb", "Gm", "A7"] + ["Dm", "Bb", "Dm+", "Dm+"])
+BAR_CHORDS = (["Dm", "Bb", "Gm", "A7", "Gm", "A7"] + ["Dm"] + ["Dm", "Bb", "F"]
+              + ["C", "Dm", "Bb", "F", "C", "Dm", "Bb", "F", "C", "Dm", "Bb", "F", "C"] + ["Gm", "A7"] + ["Dm", "Bb", "F"]
+              + ["C"] + ["Bb"] * 2 + ["Dm+", "Dm+"])
 assert len(BAR_CHORDS) == BARS
 
 # Mélodies : (temps depuis le début de la phrase, note MIDI, durée en temps)
@@ -403,7 +405,7 @@ def compose(parts: dict | None = None) -> np.ndarray:
     n_drone = t_of(K["informer"])    # la sous-basse (ré) gonfle jusqu'à l'impact puis tient jusqu'à la grosse caisse
     t = np.arange(n_drone) / SR
     ph = 2 * np.pi * hz(26) * t
-    drone = (np.sin(ph) + 0.55 * np.sin(2 * ph) + 0.16 * np.sin(3 * ph)) * np.minimum(1, (t / 8) ** 2.5) * 0.24
+    drone = (np.sin(ph) + 0.55 * np.sin(2 * ph) + 0.16 * np.sin(3 * ph)) * np.minimum(1, (t / (K["logo"] * BAR)) ** 2.5) * 0.24
     place(bass, drone, 0, 1.0)
     place(fx, rev_cymbal(1.6), t_of(K["logo"]) - int(1.6 * SR), 0.3)
     for bar, name in ((K["logo"], "impact"), (K["signature"], "impact")):
@@ -423,18 +425,18 @@ def compose(parts: dict | None = None) -> np.ndarray:
             if marches:
                 for step in (1, 3):
                     place(drum, hat(), t_of(bar, beat + step / 4), 0.16, pan=-0.2)
-            if bar >= 8 and beat in (1, 3):
+            if bar > K["informer"] and beat in (1, 3):
                 place(perc, clap(), t_of(bar, beat), 0.6)
-        if bar >= 8:
+        if bar > K["informer"]:
             arpeggio(bar, sixteenths=marches, octave_up=marches, gain=0.15 if marches else 0.12)
     place(fx, rev_cymbal(0.9), t_of(K["informer"]) - int(0.9 * SR), 0.3)
-    for bar, steps in ((K["marches"] - 1, 4), (K["marches"] + 3, 6)):   # le petit roulement : fin de m. 12 et de m. 16
+    for bar, steps in ((K["marches"] - 1, 4), (K["marches"] + 4, 6), (K["marches"] + 9, 6)):   # un roulement avant chaque personnage
         for i in range(steps):
             place(perc, snare(), t_of(bar, 4 - steps / 4 + i / 4), 0.3 + 0.5 * i / (steps - 1))
     for i, (b, note, dur) in enumerate(MELODY_A):                       # m. 13-16
-        place(lead, lead_note(note, dur * BEAT), t_of(K["marches"], b), 0.24)
+        place(lead, lead_note(note, dur * BEAT), t_of(K["marches"], b), 0.12)   # sous la voix : discrète
     for b, note, dur in MELODY_B:                                       # m. 17-18
-        place(lead, lead_note(note, dur * BEAT), t_of(K["marches"] + 4, b), 0.24)
+        place(lead, lead_note(note, dur * BEAT), t_of(K["marches"] + 4, b), 0.12)
 
     # La montée : une caisse claire qui accélère, du bruit blanc qui monte, puis le silence (appliqué à la fin)
     snare_roll(perc, K["montee"])
@@ -479,14 +481,14 @@ def compose(parts: dict | None = None) -> np.ndarray:
         place(perc, clap(), t_of(bar, 2), 0.45)
         for e in range(8):
             place(drum, hat(), t_of(bar, e / 2), 0.2 if e % 2 else 0.12, pan=0.25)
-    for b, note in PLUCKED:
+    for b, note in (x for x in PLUCKED if x[0] < LENGTH["outils"] * 4):   # la mélodie pincée tient dans la section
         place(lead, pluck(hz(note), 0.9, 1.4), t_of(K["outils"], b), 0.3, pan=0.35 if int(b * 2) % 2 else -0.35)
 
     # La signature : une note qui répond à l'impact, puis le dernier accord et ses étincelles
     place(lead, pluck(hz(86), 1.8, 0.8), t_of(K["signature"]), 0.14, pan=-0.3)
     place(lead, pluck(hz(81), 1.8, 0.8), t_of(K["signature"], 3), 0.1, pan=0.3)
-    place(lead, pluck(hz(81), 2.5, 0.8), t_of(K["signature"] + 2), 0.12, pan=0.25)
-    place(lead, pluck(hz(86), 3.0, 0.8), t_of(K["signature"] + 2, 1), 0.1, pan=-0.25)
+    place(lead, pluck(hz(81), 2.5, 0.8), t_of(K["signature"] + 1), 0.12, pan=0.25)
+    place(lead, pluck(hz(86), 3.0, 0.8), t_of(K["signature"] + 1, 1), 0.1, pan=-0.25)
     place(bass, bass_note(hz(26), 2 * BAR * 2 + 2.5, 0.0) * np.minimum(1, np.exp(-np.arange(int((2 * BAR * 2 + 2.5) * SR)) / SR / 3.5)), t_of(K["signature"]), 0.3)
 
     # Les nappes et les accords, une note longue par suite de mesures identiques
@@ -504,14 +506,19 @@ def compose(parts: dict | None = None) -> np.ndarray:
         bar += bars
 
     # La nappe : sa coupure suit l'arc (elle s'ouvre dans l'accroche et la montée, se referme à la fin)
-    cut_t = [0, 7.9, 8, 12, 24, 36, 39.75, 40, 52, 60, 68, 72]
+    sec = lambda name, off=0.0: K[name] * BAR + off   # le début d'une section, en secondes
+    end = BARS * BAR
+    cut_t = [0, sec("logo", -0.1), sec("logo"), sec("informer"), sec("marches"), sec("montee"), sec("drop", -0.25),
+             sec("drop"), sec("outils"), sec("signature"), end, end + 4]
     cut_f = [320, 1700, 2600, 1800, 2300, 2700, 9500, 4500, 3000, 1800, 1300, 600]
     pad = sweep(pad, "low", cut_t, cut_f)
     pad = highpass(pad, 130)
     sup = highpass(lowpass(sup, 7500), 170)
-    pad *= automation([(0, -17), (7.9, -8), (8, -4), (12, -7), (36, -5), (39.75, -2), (40, -14), (52, -11), (60, -7),
-                       (64, -5), (68, -11), (71.5, -40)])
-    sup *= automation([(0, -90), (39.9, -90), (40, 0), (47.9, 0), (48, -8), (50.9, -8), (52, -90)])
+    pad *= automation([(0, -17), (sec("logo", -0.1), -8), (sec("logo"), -4), (sec("informer"), -7), (sec("montee"), -5),
+                       (sec("drop", -0.25), -2), (sec("drop"), -14), (sec("outils"), -11), (sec("signature"), -7),
+                       (sec("signature", 2), -5), (end, -11), (end + 3.5, -40)])
+    sup *= automation([(0, -90), (sec("drop", -0.1), -90), (sec("drop"), 0), (sec("galerie", -0.1), 0), (sec("galerie"), -8),
+                       (sec("outils", -1.1), -8), (sec("outils"), -90)])
 
     # La pompe : nappe, accords, mélodie et arpège se creusent à chaque coup de grosse caisse ; la basse plus vite encore
     duck = pump_curve(pumps)

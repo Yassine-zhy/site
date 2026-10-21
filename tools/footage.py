@@ -349,15 +349,31 @@ def brief(page):
 
 @sequence("ai")
 def ai(page):
-    """L'assistant : une vraie question, une vraie réponse, qui cite ses sources."""
+    """L'assistant : on tape une vraie question, il répond, et cite ses sources (la vraie réponse du site)."""
     go(page, "Actualité", "Assistant IA", "orb")
-    page.locator(".st-key-fvsuggest button").first.click()
-    page.wait_for_timeout(1500)
+    field = page.locator('[data-testid="stChatInputTextArea"]').first
+    field.scroll_into_view_if_needed()
     settle(page)
-    top = page.evaluate("() => { const m = document.querySelector('.st-key-fvchatlog [data-testid=stChatMessage]');"
-                        f" return m ? m.getBoundingClientRect().top + {MAIN}.scrollTop - 110 : 0; }}")
-    Pointer(page, 800, 420)
-    Clip(page, "ai").hold(4.5, scroll_between(page, int(top), int(top) + 260)).save()
+    box = field.bounding_box()
+    pointer = Pointer(page, 800, 420)
+    clip = Clip(page, "ai", pointer)
+    clip.hold(0.4, glide(pointer, box["x"] + 80, box["y"] + box["height"] / 2))
+    click(clip)
+    question = "Qu'est-ce qui fait bouger le CAC 40 aujourd'hui ?"
+    clip.mark("typing")
+    clip.hold(len(question) / FPS, lambda k, n: page.keyboard.type(question[k]))   # une lettre par image
+    clip.hold(0.2)
+    clip.mark("send")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(1500)
+    settle(page)   # la réponse s'écrit ; le temps de la vidéo, lui, est arrêté
+    page.wait_for_timeout(1500)
+    asked = page.evaluate("""() => { const all = document.querySelectorAll('.st-key-fvchatlog [data-testid=stChatMessage]');
+      const m = all[all.length - 2] || all[0]; return m ? m.getBoundingClientRect().top + MAIN_TOP : 0; }"""
+                          .replace("MAIN_TOP", f"{MAIN}.scrollTop - 110"))
+    scroll_to(page, int(asked))
+    clip.mark("answer")
+    clip.hold(1.2).hold(2.4, scroll_between(page, int(asked), int(asked) + 360)).save()
 
 
 def chase_pin(page, pointer: Pointer, key: str, state: dict, t: float = 1.0):

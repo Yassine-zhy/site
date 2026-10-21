@@ -9,6 +9,8 @@
   },
   "private": true,
   "dependencies": {
+    "@dicebear/collection": "9.2.4",
+    "@dicebear/core": "9.2.4",
     "@remotion/cli": "4.0.537",
     "@remotion/fonts": "4.0.537",
     "@remotion/media": "4.0.537",
