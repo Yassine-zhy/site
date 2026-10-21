@@ -3,8 +3,9 @@
 import streamlit as st
 
 import theme
-from core import storage
+from core import company, storage
 from core.alerts import KINDS, describe, is_triggered
+from sheet import display_name
 from theme import esc
 from ui import company_choices, end_page, flush_toast, load_symbol_quotes, require_user
 
@@ -19,12 +20,17 @@ theme.page_header("Tes alertes,", "Sois prévenu quand un cours franchit un seui
                   "de toutes les pages.", eyebrow="Mon espace", accent="sans surveiller l'écran.", art="alerts")
 user = require_user()
 choices = company_choices(user)
+# Arrivée depuis une fiche (alerts?s=MC.PA) : la valeur est déjà choisie dans le formulaire, même si la liste ne la connaît pas
+wanted = company.normalize_symbol(st.query_params.get("s"))
+options, chosen = company.with_symbol(["^FCHI", "^GSPC", *choices], wanted)
+if wanted and wanted not in choices and wanted not in ("^FCHI", "^GSPC"):
+    choices[wanted] = display_name(wanted)
 
 with st.form("new_alert", clear_on_submit=True):
     left, middle, right = st.columns([1.4, 1.2, 0.8])
-    symbol = left.selectbox("Entreprise ou indice", ["^FCHI", "^GSPC", *choices],
+    symbol = left.selectbox("Entreprise ou indice", options,
                             format_func=lambda s: {"^FCHI": "CAC 40", "^GSPC": "S&P 500"}.get(s) or f"{choices.get(s, s)} · {s}",
-                            index=None, placeholder="Choisis ou tape un symbole", accept_new_options=True)
+                            index=chosen, placeholder="Choisis ou tape un symbole", accept_new_options=True)
     kind = middle.selectbox("Condition", list(KINDS), format_func=KINDS.get)
     threshold = right.number_input("Seuil", min_value=0.0, value=0.0, step=1.0)
     if st.form_submit_button("Créer l'alerte", type="primary", icon=":material/notifications:"):

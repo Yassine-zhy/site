@@ -1,28 +1,15 @@
 """Page « Mes suivis » : entreprises et thèmes suivis, fils dédiés et fiches entreprises."""
 
-from datetime import date
-
-import altair as alt
-import pandas as pd
 import streamlit as st
 
 import theme
-from core import assistant, storage
-from core.config import COMPANIES
-from core.market import INDICATORS
-from theme import esc
-from ui import (NO_STATUS, ai_count, ai_enabled, ai_quota, api_keys, article_card, complete_ai, end_page,
-                flush_toast, load_calendar, load_followed, load_followed_quotes, load_history, load_profile,
+from core import storage
+from sheet import company_sheet, follow
+from ui import (NO_STATUS, api_keys, article_card, end_page, flush_toast, load_followed, load_followed_quotes,
                 require_user, search_companies)
 
 SUGGESTIONS = [("company", "MC.PA", "LVMH"), ("company", "AIR.PA", "Airbus"), ("company", "NVDA", "Nvidia"),
                ("company", "AAPL", "Apple"), ("theme", "inflation", "inflation"), ("theme", "BCE", "BCE")]
-CHART_PERIODS = {"1 mois": "1mo", "6 mois": "6mo", "1 an": "1y", "5 ans": "5y"}
-
-
-def follow(user: str, kind: str, value: str, label: str) -> None:
-    storage.add_follow(user, kind, value, label)
-    st.toast(f"Tu suis maintenant {label}")
 
 
 def unfollow(user: str, kind: str, value: str, label: str) -> None:
@@ -37,206 +24,6 @@ def add_theme(user: str) -> None:
     if value:
         follow(user, "theme", value, value)
     st.session_state.new_theme = ""
-
-
-def format_indicator(value, kind: str, currency: str) -> str:
-    if value is None:
-        return "—"
-    if kind == "money":
-        return theme.compact_money(value, currency)
-    if kind == "x":
-        return f"{theme.fr_number(value, 1)}×"
-    if kind == "pct":  # yfinance donne déjà ce chiffre en pourcentage (3,41 = 3,41 %)
-        return f"{theme.fr_number(value, 2)} %"
-    if kind == "ratio":  # fraction : 0,137 = 13,7 %
-        return f"{theme.fr_number(value * 100, 1)} %"
-    return theme.fr_number(value, 2)
-
-
-def news_markers(closes: pd.Series, articles) -> pd.DataFrame:
-    """Place chaque dépêche sur la courbe : à sa date, à la hauteur du dernier cours connu à ce moment-là."""
-    rows = []
-    for article in articles[:40]:
-        moment = pd.Timestamp(article.published)
-        moment = moment.tz_convert(closes.index.tz) if closes.index.tz else moment.tz_localize(None)
-        if closes.index[0] <= moment:
-            rows.append({"date": closes.index[closes.index.get_indexer([moment], method="pad")[0]],
-                         "cours": float(closes.asof(moment)), "titre": article.title, "source": article.source})
-    return pd.DataFrame(rows)
-
-
-def price_chart(closes: pd.Series, currency: str, long_period: bool, markers: pd.DataFrame) -> alt.LayerChart:
-    """Courbe du cours de clôture, avec un réticule et les dépêches placées sur la courbe.
-
-    Sous la courbe, un voile dégradé qui descend jusqu'au bas du graphique (y2 = « height ») : l'axe ne part pas de
-    zéro, les variations restent bien visibles.
-    """
-    data = closes.rename("cours").rename_axis("date").reset_index()
-    base = alt.Chart(data).encode(
-        # Mois en français grâce à theme.french (voir theme.ALTAIR_LOCALE)
-        x=alt.X("date:T", title=None, axis=alt.Axis(grid=False, labelAngle=0, tickCount=6, domainOpacity=0.4,
-                                                    format="%b %Y" if long_period else "%d %b")),
-        y=alt.Y("cours:Q", title=None, scale=alt.Scale(zero=False), stack=None,  # le voile ne force pas le zéro
-                axis=alt.Axis(gridOpacity=0.18, domain=False, ticks=False, tickCount=5)),
-    )
-    hover = alt.selection_point(fields=["date"], nearest=True, on="pointerover", empty=False, clear="pointerout")
-    blue = theme.SERIES_COLORS[0]
-    area = base.mark_area(color=theme.area_fill(blue)).encode(y2=alt.value("height"))
-    line = base.mark_line(color=blue, strokeWidth=2, strokeJoin="round")
-    rule = (
-        base.mark_rule(color=theme.NEUTRAL, strokeWidth=1)
-        .encode(opacity=alt.condition(hover, alt.value(1), alt.value(0)),
-                tooltip=[alt.Tooltip("date:T", title="Date", format="%d/%m/%Y"),
-                         alt.Tooltip("cours:Q", title=f"Clôture ({currency})", format=",.2f")])
-        .add_params(hover)
-    )
-    dot = base.mark_circle(color=blue, size=70, stroke=theme.chart_surface(), strokeWidth=2).encode(
-        opacity=alt.condition(hover, alt.value(1), alt.value(0))
-    )
-    layers = area + line + rule + dot
-    if not markers.empty:
-        news = alt.Chart(markers).mark_point(shape="diamond", filled=True, size=90, color=theme.NEUTRAL).encode(
-            x="date:T", y="cours:Q",
-            tooltip=[alt.Tooltip("date:T", title="Séance", format="%d/%m/%Y"),
-                     alt.Tooltip("titre:N", title="Dépêche"), alt.Tooltip("source:N", title="Source")],
-        )
-        layers = layers + news
-    return layers.properties(height=280, background="transparent")  # fond de la carte
-
-
-def agenda_html(symbol: str, currency: str) -> str:
-    """Prochains rendez-vous de l'entreprise et consensus des analystes (vide si Yahoo ne fournit rien)."""
-    calendar = load_calendar(symbol)
-    rows = []
-
-    def when(day: date) -> str:
-        delta = (day - date.today()).days
-        countdown = "aujourd'hui" if delta == 0 else f"dans {delta} jour{'s' if delta > 1 else ''}"
-        return f"{theme.fr_day(day)} {day.year}<small>{countdown}</small>"
-
-    if calendar.get("earnings"):
-        rows.append(("Prochains résultats", when(calendar["earnings"])))
-    if calendar.get("ex_dividend"):
-        rows.append(("Détachement du dividende", when(calendar["ex_dividend"])))
-    if calendar.get("dividend"):
-        rows.append(("Versement du dividende", when(calendar["dividend"])))
-    if calendar.get("eps_average") is not None:
-        rows.append(("Consensus BPA du trimestre", f"{theme.fr_number(calendar['eps_average'])}\u202f{esc(currency)}"))
-    if calendar.get("revenue_average"):
-        rows.append(("Consensus chiffre d'affaires", theme.compact_money(calendar["revenue_average"], currency)))
-    if not rows:
-        return ""
-    items = "".join(f"<li><span>{label}</span><span>{value}</span></li>" for label, value in rows)
-    return theme.card(f'<ul class="fv-agenda">{items}</ul>', "Agenda")
-
-
-
-def company_sheet(symbol: str, label: str, articles=()) -> None:
-    """La fiche d'une entreprise : identité, cours, graphique annoté, indicateurs clés, agenda, présentation."""
-    profile = load_profile(symbol)
-    name = profile.get("longName") or profile.get("shortName") or label
-    currency = profile.get("currency", "")
-    website = profile.get("website") or (f"https://{COMPANIES[symbol][1]}" if symbol in COMPANIES else "")
-    logo = theme.favicon_url(website) if website else ""
-    details = " · ".join(
-        esc(part) for part in [symbol, profile.get("fullExchangeName"), profile.get("sector"), profile.get("country")]
-        if part
-    )
-    st.html(
-        f'<div class="fv-firm">{f"<img src={chr(34)}{logo}{chr(34)} alt={chr(34)}{chr(34)}>" if logo else ""}'
-        f"<div><h2>{esc(name)}</h2><p>{details}</p></div></div>"
-    )
-
-    left, right = st.columns([1.6, 1], gap="large")
-    stats = {}  # les chiffres calculés ici, transmis à l'analyse (IA ou lecture automatique)
-    with left:
-        period = st.segmented_control("Période du graphique", list(CHART_PERIODS), default="6 mois",
-                                      key=f"period_{symbol}", label_visibility="collapsed")
-        history = load_history(symbol, CHART_PERIODS[period or "6 mois"])
-        closes = history["Close"].dropna() if history is not None and not history.empty else pd.Series(dtype=float)
-        if len(closes) < 2:
-            st.caption("Historique indisponible pour le moment.")
-        else:
-            # dropna() : la ligne du jour peut être vide (week-end, séance pas encore ouverte)
-            last, previous, first = float(closes.iloc[-1]), float(closes.iloc[-2]), float(closes.iloc[0])
-            day, span = (last / previous - 1) * 100, (last / first - 1) * 100
-            stats["Variation sur la période affichée (%)"] = round(span, 1)
-            stats["Période affichée"] = period or "6 mois"
-            st.html(
-                f'<div class="fv-quote-big"><b>{theme.price(last)} {esc(currency)}</b>'
-                f"{theme.change(day)}"
-                f"<small>sur la séance · {theme.signed(span)} sur {esc(period or '6 mois')}</small></div>"
-            )
-            markers = news_markers(closes, list(articles))
-            with st.container(key=f"fvchart_{symbol}"):
-                chart = price_chart(closes, currency, period in ("1 an", "5 ans"), markers)
-                st.altair_chart(theme.french(chart), width="stretch")
-            if not markers.empty:
-                st.caption(f"◆ {len(markers)} dépêche(s) placée(s) sur la courbe : survole un losange pour lire le titre.")
-
-    with right:
-        rows = "".join(
-            f'<dt title="{esc(help_text)}">{esc(title)}</dt>'
-            f"<dd>{format_indicator(profile.get(key), kind, currency)}</dd>"
-            for key, (title, kind, help_text) in INDICATORS.items()
-        )
-        low, high, current = profile.get("fiftyTwoWeekLow"), profile.get("fiftyTwoWeekHigh"), profile.get("regularMarketPrice")
-        range_html = ""
-        if low and high and current and high > low:
-            position = min(max((current - low) / (high - low), 0), 1)
-            stats["Position dans la fourchette sur 52 semaines (%)"] = round(position * 100)
-            range_html = (
-                f'<div class="fv-range" title="Le cours actuel se situe à {position:.0%} entre le plus bas et le plus haut sur un an">'
-                f"Fourchette sur 52 semaines"
-                f'<div class="fv-range-bar"><i style="left:{position:.1%}"></i></div>'
-                f'<div class="fv-range-ends"><span>{theme.price(low)}</span><span>cours {theme.price(current)}</span>'
-                f"<span>{theme.price(high)}</span></div></div>"
-            )
-        st.html(theme.card(f'<dl class="fv-ratios">{rows}</dl>{range_html}', "Indicateurs clés"))
-        if agenda := agenda_html(symbol, currency):
-            st.html(agenda)
-        st.caption("Survole un indicateur pour voir sa définition. Données Yahoo Finance.")
-        st.page_link("views/glossary.py", label="Tous les termes dans le glossaire", icon=":material/menu_book:")
-
-    analysis(symbol, name, profile, stats, list(articles))
-    if profile.get("longBusinessSummary"):
-        with st.expander("À propos de l'entreprise"):
-            st.write(profile["longBusinessSummary"])
-
-
-def analysis(symbol: str, name: str, profile: dict, stats: dict, articles: list) -> None:
-    """L'analyse de l'entreprise : par l'IA (gardée 6 heures, pour tous les visiteurs), sinon une lecture
-    automatique des indicateurs. Calculée seulement à la demande (bouton), pour ménager le quota gratuit."""
-    use_ai = ai_enabled() and ai_quota(user)[0] > 0
-    theme.section("L'analyse", "rédigée par l'IA" if use_ai else "lecture automatique des indicateurs")
-    flag = f"fv_analysis_{symbol}"
-    if not st.session_state.get(flag):
-        st.button("Analyser cette entreprise", icon=":material/auto_awesome:", key=f"{flag}_button",
-                  on_click=lambda: st.session_state.update({flag: True}))
-        st.caption("Points forts, points de vigilance et ce qu'il faut surveiller, expliqués simplement.")
-        return
-    result, sources = {"text": None, "note": None, "engine": ""}, []
-    if use_ai:
-        messages, sources = assistant.company_messages(name, symbol, profile, stats, articles)
-
-        def compute() -> dict:
-            answer = complete_ai(messages, max_tokens=1200)
-            if answer["text"]:
-                ai_count(user)  # compté seulement quand l'IA travaille vraiment (pas pour une analyse en mémoire)
-            return answer | {"sources": [s.to_dict() for s in sources]}
-
-        key = f"company|{symbol}|{date.today()}|{stats.get('Période affichée', '')}"
-        with st.spinner(f"Analyse de {name} en cours…"):
-            result = assistant.ANALYSES.get_or_compute(key, compute)
-        sources = [assistant.Source(**s) for s in result.get("sources", [])]  # celles de l'analyse en mémoire
-    text = result["text"] or assistant.company_offline(name, profile, stats)
-    with st.container(key=f"fvanalysis_{symbol}"):
-        st.markdown(assistant.linkify(text, sources))
-    if result["text"] and (used := assistant.cited(text, sources)):
-        st.html(theme.sources_html([s.to_dict() for s in used], "Dépêches citées"))
-    origin = f"Rédigé par {result['engine']}" if result["text"] else "Lecture automatique des indicateurs, sans IA"
-    note = f" ({result['note']})" if result["note"] and not result["text"] else ""
-    st.caption(f"{origin}{note}. Analyse pédagogique, pas un conseil en investissement.")
 
 
 def news_list(user: str, articles, empty_message: str, key_prefix: str) -> None:
@@ -306,7 +93,9 @@ else:
     kind, value = view.split("|", 1)
     label = labels[view]
     if kind == "company":
-        company_sheet(value, label, feeds.get((kind, value), []))
+        st.page_link("views/quote.py", label="Ouvrir la fiche complète : résultats, analystes, dividendes",
+                     icon=":material/query_stats:", query_params={"s": value})
+        company_sheet(value, label, feeds.get((kind, value), []), user)
     theme.section(f"Actualités · {label}", f"{len(feeds.get((kind, value), []))} dépêches")
     news_list(user, feeds.get((kind, value), []), "Aucune dépêche trouvée pour le moment.", f"follow_{value}")
     st.button(f"Ne plus suivre {label}", icon=":material/remove_circle:", on_click=unfollow,

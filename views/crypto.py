@@ -7,6 +7,7 @@ import pandas as pd
 import streamlit as st
 
 import theme
+from coins import CSS as SEARCH_CSS, search_box
 from core.crypto import fear_greed_label
 from theme import esc, safe_url
 from ui import api_keys, load_articles, load_crypto, load_fear_greed
@@ -22,6 +23,18 @@ theme.page_header(
                          "c": None if c.change_24h is None else round(c.change_24h, 2)}
                         for c in coins if c.symbol.upper() not in {"USDT", "USDC", "DAI"}][:3]},
 )
+
+# Chercher une cryptomonnaie, quelle qu'elle soit : ses résultats mènent à sa fiche
+st.html(SEARCH_CSS + """<style>
+.fvcoin-rows .fv-table tbody tr { position: relative; cursor: pointer; transition: background .15s; }
+.fvcoin-rows .fv-table tbody tr:hover { background: var(--fv-hover); }
+.fvcoin-rows .fv-table tbody tr:hover .fv-coin { color: var(--fv-brand); }
+.fvcoin-rows a.fv-coin { color: inherit !important; text-decoration: none !important; font-weight: 600; }
+.fvcoin-rows a.fv-coin::after { content: ""; position: absolute; inset: 0; }  /* toute la ligne est le lien */
+</style>""")
+search_column, _ = st.columns([1, 1.6])
+with search_column:
+    search_box("crypto_search")
 
 history = load_fear_greed()
 
@@ -65,13 +78,14 @@ if coins:
         return f'<img class="fv-spark" src="{theme.sparkline_uri(points, kind, 96, 28)}" alt="Sept jours : {esc(change)}">'
 
     rows = "".join(
-        f"<tr><td><span class='fv-coin'><small>{coin.rank}</small>"
+        f"<tr><td><a class='fv-coin' href='{theme.coin_url(coin.id)}' target='_self'><small>{coin.rank}</small>"
         f"<img src='{safe_url(coin.image)}' alt='' loading='lazy'>{esc(coin.name)} <small>{esc(coin.symbol)}</small>"
-        f"</span></td><td>{theme.price(coin.price)} €</td><td>{pct(coin.change_24h)}</td><td>{pct(coin.change_7d)}</td>"
+        f"</a></td><td>{theme.price(coin.price)} €</td><td>{pct(coin.change_24h)}</td><td>{pct(coin.change_7d)}</td>"
         f"<td>{pct(coin.change_30d)}</td><td>{theme.compact_money(coin.market_cap, 'EUR')}</td><td>{spark(coin)}</td></tr>"
         for coin in coins
     )
-    st.html(theme.table(["Cryptomonnaie", "Cours", "24 h", "7 jours", "30 jours", "Capitalisation", "7 jours"], rows))
+    st.html('<div class="fvcoin-rows">' + theme.table(
+        ["Cryptomonnaie", "Cours", "24 h", "7 jours", "30 jours", "Capitalisation", "7 jours"], rows) + "</div>")
     with st.expander("Trier et explorer les données", icon=":material/table:"):
         st.dataframe(
             pd.DataFrame({"Rang": c.rank, "Nom": c.name, "Symbole": c.symbol, "Cours (€)": c.price,

@@ -516,7 +516,7 @@ def load_trends(collected: datetime) -> list[tuple[str, int, int]]:
 @st.cache_data(ttl=120, max_entries=2, show_spinner=False)
 @_network
 def _quotes():
-    return _not_empty(fetch_quotes())
+    return _not_empty(market.fetch_quotes_with_fallback(fetch=fetch_quotes))
 
 
 def load_quotes():
@@ -616,6 +616,20 @@ def _cac40():
 
 def load_cac40():
     return _resilient("cac40", _cac40, empty=[])
+
+
+@st.cache_data(ttl=900, max_entries=4, show_spinner="Chargement des cours de la place…")
+@_network
+def _place(key: str):
+    index, members = market.fetch_place(key, fetch=fetch_quotes)
+    _not_empty(members)
+    return index, members
+
+
+def load_place(key: str):
+    """Une place de la page Marchés (clé de `market.PLACES`) : (le cours de son indice ou None, les cours de ses
+    valeurs), gardés 15 minutes. Sans réponse : (None, [])."""
+    return _resilient("place", _place, key, empty=(None, []))
 
 
 def known_cac40() -> list:

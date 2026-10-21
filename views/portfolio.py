@@ -7,7 +7,8 @@ import pandas as pd
 import streamlit as st
 
 import theme
-from core import metrics, portfolio, storage
+from core import company, metrics, portfolio, storage
+from sheet import display_name
 from theme import esc
 from ui import (company_choices, end_page, flush_toast, load_closes, load_euro_rates, load_profile,
                 load_symbol_quotes, require_user)
@@ -77,11 +78,21 @@ choices = company_choices(user)
 
 positions = storage.list_positions(user)
 
+# Arrivée depuis une fiche (portfolio?s=MC.PA) : le formulaire s'ouvre avec la valeur déjà choisie, même si la liste
+# ne la connaît pas. Le formulaire ne s'ouvre qu'une fois par valeur, pour ne pas se rouvrir à chaque action.
+wanted = company.normalize_symbol(st.query_params.get("s"))
+options, chosen = company.with_symbol(list(choices), wanted)
+if wanted and wanted not in choices:
+    choices[wanted] = display_name(wanted)
+if wanted and st.session_state.get("fv_position_for") != wanted:
+    st.session_state["fv_position_for"] = wanted
+    st.session_state["fv_position_popover"] = True
+
 with st.container(horizontal=True, gap="small"):
-    with st.popover("Ajouter une position", icon=":material/add_chart:"):
+    with st.popover("Ajouter une position", icon=":material/add_chart:", key="fv_position_popover"):
         with st.form("new_position", clear_on_submit=True, border=False):
-            symbol = st.selectbox("Entreprise", list(choices), format_func=lambda s: f"{choices.get(s, s)} · {s}",
-                                  index=None, placeholder="Choisis ou tape un symbole (ex. MC.PA)",
+            symbol = st.selectbox("Entreprise", options, format_func=lambda s: f"{choices.get(s, s)} · {s}",
+                                  index=chosen, placeholder="Choisis ou tape un symbole (ex. MC.PA)",
                                   accept_new_options=True)
             quantity = st.number_input("Quantité", min_value=0.0, value=10.0, step=1.0)
             price = st.number_input("Prix d'achat unitaire (devise de cotation)", min_value=0.0, value=0.0,
