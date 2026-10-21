@@ -18,12 +18,15 @@ WATCHLIST = [
     ("^GSPC", "S&P 500", "Amériques", "%"),
     ("^IXIC", "Nasdaq", "Amériques", "%"),
     ("^DJI", "Dow Jones", "Amériques", "%"),
+    ("^GSPTSX", "S&P/TSX", "Amériques", "%"),
     ("^N225", "Nikkei 225", "Asie", "%"),
     ("^HSI", "Hang Seng", "Asie", "%"),
     ("000001.SS", "Shanghai", "Asie", "%"),
     ("EURUSD=X", "EUR/USD", "Devises", "%"),
     ("USDJPY=X", "USD/JPY", "Devises", "%"),
     ("EURGBP=X", "EUR/GBP", "Devises", "%"),
+    ("CAD=X", "USD/CAD", "Devises", "%"),
+    ("EURCAD=X", "EUR/CAD", "Devises", "%"),
     ("^TNX", "Taux US 10 ans", "Taux et volatilité", "pb"),
     ("^VIX", "VIX", "Taux et volatilité", "%"),
     ("BZ=F", "Pétrole Brent", "Matières premières", "%"),
@@ -54,6 +57,70 @@ CAC40 = [
     ("STLAP.PA", "Stellantis", "Automobile"), ("RNO.PA", "Renault", "Automobile"), ("ML.PA", "Michelin", "Automobile"),
     ("URW.PA", "Unibail-Rodamco-Westfield", "Immobilier"),
 ]
+
+# Les grandes valeurs de Toronto (S&P/TSX 60, composition indicative) : (symbole, nom, secteur)
+TSX60 = [
+    ("RY.TO", "Banque Royale", "Finance"), ("TD.TO", "Banque TD", "Finance"), ("BMO.TO", "BMO", "Finance"),
+    ("BNS.TO", "Banque Scotia", "Finance"), ("CM.TO", "CIBC", "Finance"), ("NA.TO", "Banque Nationale", "Finance"),
+    ("MFC.TO", "Manuvie", "Finance"), ("SLF.TO", "Financière Sun Life", "Finance"), ("IFC.TO", "Intact", "Finance"),
+    ("GWO.TO", "Great-West Lifeco", "Finance"), ("POW.TO", "Power Corporation", "Finance"),
+    ("FFH.TO", "Fairfax", "Finance"), ("BN.TO", "Brookfield", "Finance"), ("BAM.TO", "Brookfield Asset Management", "Finance"),
+    ("X.TO", "Groupe TMX", "Finance"),
+    ("ENB.TO", "Enbridge", "Énergie"), ("CNQ.TO", "Canadian Natural", "Énergie"), ("SU.TO", "Suncor", "Énergie"),
+    ("TRP.TO", "TC Énergie", "Énergie"), ("CVE.TO", "Cenovus", "Énergie"), ("IMO.TO", "Pétrolière Impériale", "Énergie"),
+    ("TOU.TO", "Tourmaline", "Énergie"), ("CCO.TO", "Cameco", "Énergie"),
+    ("AEM.TO", "Agnico Eagle", "Mines et matériaux"), ("ABX.TO", "Barrick", "Mines et matériaux"),
+    ("WPM.TO", "Wheaton Precious Metals", "Mines et matériaux"), ("FNV.TO", "Franco-Nevada", "Mines et matériaux"),
+    ("K.TO", "Kinross", "Mines et matériaux"), ("AGI.TO", "Alamos Gold", "Mines et matériaux"),
+    ("TECK-B.TO", "Teck", "Mines et matériaux"), ("FM.TO", "First Quantum", "Mines et matériaux"),
+    ("NTR.TO", "Nutrien", "Mines et matériaux"), ("CCL-B.TO", "CCL Industries", "Mines et matériaux"),
+    ("CNR.TO", "CN", "Industrie"), ("CP.TO", "CPKC", "Industrie"), ("WCN.TO", "Waste Connections", "Industrie"),
+    ("WSP.TO", "WSP", "Industrie"), ("CAE.TO", "CAE", "Industrie"), ("TFII.TO", "TFI International", "Industrie"),
+    ("SHOP.TO", "Shopify", "Technologie"), ("CSU.TO", "Constellation Software", "Technologie"),
+    ("GIB-A.TO", "CGI", "Technologie"), ("OTEX.TO", "OpenText", "Technologie"), ("CLS.TO", "Celestica", "Technologie"),
+    ("TRI.TO", "Thomson Reuters", "Technologie"),
+    ("ATD.TO", "Couche-Tard", "Consommation"), ("L.TO", "Loblaw", "Consommation"), ("DOL.TO", "Dollarama", "Consommation"),
+    ("QSR.TO", "Restaurant Brands", "Consommation"), ("MRU.TO", "Metro", "Consommation"),
+    ("WN.TO", "George Weston", "Consommation"), ("SAP.TO", "Saputo", "Consommation"),
+    ("CTC-A.TO", "Canadian Tire", "Consommation"), ("MG.TO", "Magna", "Consommation"),
+    ("BCE.TO", "BCE", "Télécoms"), ("T.TO", "Telus", "Télécoms"), ("RCI-B.TO", "Rogers", "Télécoms"),
+    ("FTS.TO", "Fortis", "Services publics"), ("EMA.TO", "Emera", "Services publics"), ("H.TO", "Hydro One", "Services publics"),
+]
+
+# Les grandes valeurs de New York : les 30 du Dow Jones, plus cinq géants de la technologie
+USA = [
+    ("AAPL", "Apple", "Technologie"), ("MSFT", "Microsoft", "Technologie"), ("NVDA", "Nvidia", "Technologie"),
+    ("GOOGL", "Alphabet", "Technologie"), ("META", "Meta", "Technologie"), ("AVGO", "Broadcom", "Technologie"),
+    ("CSCO", "Cisco", "Technologie"), ("IBM", "IBM", "Technologie"), ("CRM", "Salesforce", "Technologie"),
+    ("AMZN", "Amazon", "Consommation"), ("TSLA", "Tesla", "Consommation"), ("WMT", "Walmart", "Consommation"),
+    ("HD", "Home Depot", "Consommation"), ("MCD", "McDonald's", "Consommation"), ("NKE", "Nike", "Consommation"),
+    ("KO", "Coca-Cola", "Consommation"), ("PG", "Procter & Gamble", "Consommation"),
+    ("NFLX", "Netflix", "Télécoms et médias"), ("DIS", "Disney", "Télécoms et médias"), ("VZ", "Verizon", "Télécoms et médias"),
+    ("JPM", "JPMorgan", "Finance"), ("GS", "Goldman Sachs", "Finance"), ("V", "Visa", "Finance"),
+    ("AXP", "American Express", "Finance"), ("TRV", "Travelers", "Finance"),
+    ("UNH", "UnitedHealth", "Santé"), ("JNJ", "Johnson & Johnson", "Santé"), ("MRK", "Merck", "Santé"),
+    ("AMGN", "Amgen", "Santé"),
+    ("CAT", "Caterpillar", "Industrie"), ("BA", "Boeing", "Industrie"), ("HON", "Honeywell", "Industrie"),
+    ("MMM", "3M", "Industrie"), ("SHW", "Sherwin-Williams", "Industrie"), ("CVX", "Chevron", "Énergie"),
+]
+
+# Les places suivies sur la page Marchés, chacune avec son indice et ses valeurs. Le CAC 40 n'y est qu'une place parmi
+# d'autres. (clé → nom affiché, indice Yahoo, nom de l'indice, valeurs)
+PLACES = {
+    "france": ("France", "^FCHI", "CAC 40", CAC40),
+    "canada": ("Canada", "^GSPTSX", "S&P/TSX", TSX60),
+    "usa": ("États-Unis", "^DJI", "Dow Jones", USA),
+}
+
+
+# Yahoo refuse parfois l'indice de Toronto : à sa place, le fonds qui suit le S&P/TSX 60 (symbole, nom affiché)
+FALLBACKS = {"^GSPTSX": ("XIU.TO", "S&P/TSX 60")}
+
+
+def place_of(symbol: str) -> str | None:
+    """La place (« france », « canada », « usa ») dont une valeur fait partie, ou None."""
+    return next((key for key, (*_, members) in PLACES.items() if any(s == symbol for s, *_ in members)), None)
+
 
 CURRENCIES = {
     "EUR": "Euro", "USD": "Dollar américain", "GBP": "Livre sterling", "CHF": "Franc suisse",
@@ -101,6 +168,82 @@ def fetch_quotes(watchlist: list[tuple[str, str, str, str]] = WATCHLIST, period:
             continue
         quotes.append(Quote(symbol, name, group, unit, float(closes.iloc[-1]), float(closes.iloc[-2]), closes))
     return quotes
+
+
+def fetch_quotes_with_fallback(watchlist: list[tuple[str, str, str, str]] = WATCHLIST, period: str = "3mo",
+                               fetch=None) -> list[Quote]:
+    """Comme `fetch_quotes` (ou `fetch`, si on en donne une autre), mais un instrument introuvable est remplacé par
+    son secours (`FALLBACKS`), à sa place."""
+    fetch = fetch or fetch_quotes
+    quotes = fetch(watchlist, period)
+    found = {q.symbol: q for q in quotes}
+    spare = [(FALLBACKS[symbol][0], FALLBACKS[symbol][1], group, unit)
+             for symbol, _, group, unit in watchlist if symbol in FALLBACKS and symbol not in found]
+    if spare:
+        try:
+            found.update({q.symbol: q for q in fetch(spare, period)})
+        except Exception:  # le secours échoue aussi : la page s'affiche sans cet instrument
+            pass
+    # L'ordre de la liste suivie est conservé : le secours prend la place de l'instrument manquant.
+    result = []
+    for symbol, *_ in watchlist:
+        chosen = symbol if symbol in found else FALLBACKS.get(symbol, (None,))[0]
+        if chosen in found:
+            result.append(found[chosen])
+    return result
+
+
+def place_index(key: str, quotes: list[Quote]) -> Quote | None:
+    """Le cours de l'indice d'une place parmi des cours (l'indice lui-même, sinon son secours), ou None."""
+    symbol = PLACES[key][1]
+    wanted = {symbol, FALLBACKS.get(symbol, (symbol,))[0]}
+    return next((q for q in quotes if q.symbol in wanted), None)
+
+
+def fetch_place(key: str, fetch=None) -> tuple[Quote | None, list[Quote]]:
+    """Les cours d'une place, en une seule requête : (son indice, ses valeurs avec leur secteur comme groupe)."""
+    _, index, index_name, members = PLACES[key]
+    watchlist = [(index, index_name, "Indice", "%")] + [(symbol, name, sector, "%") for symbol, name, sector in members]
+    quotes = fetch_quotes_with_fallback(watchlist, fetch=fetch)
+    head = place_index(key, quotes)
+    return head, [q for q in quotes if q is not head]
+
+
+def mood(quotes: list[Quote], sessions: int = 1) -> dict | None:
+    """L'ambiance d'une cote sur N séances : valeurs en hausse / en baisse / stables, variation moyenne, meilleure
+    valeur et plus forte baisse (chacune sous la forme (variation, cours)). None sans aucun cours."""
+    if not quotes:
+        return None
+    changes = sorted(((q.change_over(sessions), q) for q in quotes), key=lambda item: item[0], reverse=True)
+    return {
+        "count": len(changes),
+        "up": sum(1 for change, _ in changes if change > 0),
+        "down": sum(1 for change, _ in changes if change < 0),
+        "average": sum(change for change, _ in changes) / len(changes),
+        "best": changes[0],
+        "worst": changes[-1],
+    }
+
+
+def top_moves(quotes: list[Quote], sessions: int = 1, count: int = 5) -> tuple[list, list]:
+    """Les plus fortes hausses et les plus fortes baisses : deux listes de (variation, cours), les extrêmes d'abord."""
+    changes = sorted(((q.change_over(sessions), q) for q in quotes), key=lambda item: item[0], reverse=True)
+    return changes[:count], changes[::-1][:count]
+
+
+# Les vues de la page Marchés, et les autres écritures acceptées dans l'adresse (`markets?view=…`)
+VIEW_KEYS = ("monde", "france", "canada", "usa", "devises")
+VIEW_ALIASES = {"etats-unis": "usa", "états-unis": "usa", "us": "usa", "world": "monde", "cac40": "france",
+                "cac-40": "france", "devise": "devises", "change": "devises"}
+
+
+def resolve_view(value, default: str = "monde") -> str:
+    """La vue demandée par le paramètre d'adresse `view` ; la vue par défaut si elle est absente ou inconnue."""
+    if isinstance(value, (list, tuple)):
+        value = value[-1] if value else None
+    text = str(value or "").strip().lower()
+    text = VIEW_ALIASES.get(text, text)
+    return text if text in VIEW_KEYS else default
 
 
 def search_companies(query: str, limit: int = 8) -> list[dict]:

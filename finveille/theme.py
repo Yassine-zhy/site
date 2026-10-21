@@ -18,7 +18,7 @@ import html
 import time as clock_module
 from datetime import datetime, time, timezone
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import quote as url_quote, urlparse
 from zoneinfo import ZoneInfo
 
 import streamlit as st
@@ -723,6 +723,28 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   border-bottom: 1px solid var(--fv-line); font-size: .86rem; }
 .fv-ranking li:last-child { border-bottom: 0; }
 .fv-ranking small { color: var(--fv-muted); }
+
+/* Chaque valeur mène à sa fiche : un lien qui garde l'allure de son bloc (pas de bleu ni de soulignement), un survol
+   qui éclaircit ou souligne le liseré, et un anneau de focus bien visible au clavier */
+a.fv-tile, a.fv-float, a.fv-cell, a.fv-tick, a.fv-rank-link { color: inherit; text-decoration: none; cursor: pointer; }
+a.fv-tile:hover, a.fv-float:hover, a.fv-cell:hover, a.fv-tick:hover, a.fv-rank-link:hover { color: inherit; text-decoration: none; }
+a.fv-tile:focus-visible, a.fv-float:focus-visible, a.fv-cell:focus-visible, a.fv-tick:focus-visible {
+  outline: 2px solid var(--fv-brand); outline-offset: 2px; }
+a.fv-cell { display: block; transition: border-color .15s, box-shadow .15s, filter .15s; }
+a.fv-cell:hover, a.fv-cell:focus-visible { border-color: var(--fv-brand); box-shadow: 0 0 0 1px var(--fv-brand);
+  filter: brightness(1.06); position: relative; z-index: 1; }
+a.fv-float { transition: border-color .15s, box-shadow .2s; }
+a.fv-float:hover, a.fv-float:focus-visible { border-color: var(--fv-brand); }
+a.fv-tick { transition: background-color .15s; }
+a.fv-tick:hover, a.fv-tick:focus-visible { background: var(--fv-sunken); }
+a.fv-tick:hover b, a.fv-tick:focus-visible b { color: var(--fv-brand); }
+.fv-ranking li:has(.fv-rank-link) { position: relative; transition: background-color .15s; }
+.fv-ranking li:has(.fv-rank-link):hover { background: var(--fv-sunken); }
+.fv-rank-link::after { content: ""; position: absolute; inset: 0; border-radius: 6px; }  /* toute la ligne est cliquable */
+.fv-rank-link:hover b, .fv-rank-link:focus-visible b { color: var(--fv-brand); }
+.fv-rank-link:focus-visible { outline: none; }
+.fv-rank-link:focus-visible::after { outline: 2px solid var(--fv-brand); outline-offset: -2px; }
+.fv-rank-link b { font-weight: 600; }
 .fv-agenda { list-style: none; margin: 0; padding: 0; }
 .fv-agenda li { display: flex; justify-content: space-between; gap: 1rem; margin: 0; padding: .5rem 0;
   border-bottom: 1px solid var(--fv-line); font-size: .85rem; }
@@ -1483,12 +1505,12 @@ def float_tile(quote, animate: bool = True) -> str:
     trend = direction(quote.change).removeprefix("fv-")
     summary = f"{quote.name} : {price(quote.last)}, {signed(quote.change, quote.unit)} sur la séance"
     return (
-        f'<div class="fv-float is-{trend}" title="{esc(summary)}">'
+        f'<a class="fv-float is-{trend}" href="{fiche_url(quote.symbol)}" target="_self" title="{esc(summary)}">'
         f'<span class="fv-float-name">{esc(quote.name)}</span>'
         f'<span class="fv-float-value">{price(quote.last)}</span>'
         f'<span class="fv-float-delta">{change(quote.change, quote.unit)}</span>'
         f'<img src="{sparkline_uri(quote.history.tail(22).tolist(), direction(month_change), 104, 36, animate)}" '
-        f'alt="Un mois : {esc(signed(month_change, quote.unit))}"></div>'
+        f'alt="Un mois : {esc(signed(month_change, quote.unit))}"></a>'
     )
 
 
@@ -1907,8 +1929,25 @@ _SPARK_MOTION = (  # la mini-courbe se dessine, puis son aire et son point appar
 )
 
 
+# --- Les fiches : chaque valeur (action, indice, devise, matière première) et chaque cryptomonnaie a sa page ------------
+# Ce sont des pages cachées du menu (app.py) ; un lien relatif marche quelle que soit la page d'où l'on vient.
+CRYPTO_IDS = {"BTC-USD": "bitcoin", "ETH-USD": "ethereum", "BTC-EUR": "bitcoin", "ETH-EUR": "ethereum"}
+
+
+def fiche_url(symbol: str) -> str:
+    """Le lien vers la fiche d'une valeur, par son symbole Yahoo Finance (« MC.PA », « ^FCHI », « EURUSD=X »…)."""
+    if symbol in CRYPTO_IDS:
+        return coin_url(CRYPTO_IDS[symbol])
+    return f"fiche?s={url_quote(symbol, safe='')}"
+
+
+def coin_url(coin_id: str) -> str:
+    """Le lien vers la fiche d'une cryptomonnaie, par son identifiant CoinGecko (« bitcoin », « solana »…)."""
+    return f"fiche-crypto?c={url_quote(coin_id, safe='')}"
+
+
 def quote_tile(quote) -> str:
-    """Une tuile de cotation : nom, cours, variation de la séance, mini-courbe sur un mois."""
+    """Une tuile de cotation : nom, cours, variation de la séance, mini-courbe sur un mois. Un lien vers la fiche."""
     month = quote.history.tail(22)
     month_change = quote.change_over(21)
     summary = (
@@ -1917,14 +1956,14 @@ def quote_tile(quote) -> str:
     )
     trend = direction(quote.change).removeprefix("fv-")  # « up », « down » ou « flat » : l'accent de la tuile
     return (
-        f'<div class="fv-tile is-{trend}" title="{esc(summary)}">'
+        f'<a class="fv-tile is-{trend}" href="{fiche_url(quote.symbol)}" target="_self" title="{esc(summary)}">'
         f'<div class="fv-tile-label">{esc(quote.name)}</div>'
         f'<div class="fv-tile-value">{price(quote.last)}</div>'
         f'<img src="{sparkline_uri(month.tolist(), direction(month_change), 96, 34, animate=True)}" '
         f'alt="Un mois : {esc(signed(month_change, quote.unit))}">'
         f'<div class="fv-tile-delta">{change(quote.change, quote.unit)}</div>'
         f'<div class="fv-tile-sub">1 mois : {change(month_change, quote.unit)}</div>'
-        f"</div>"
+        f"</a>"
     )
 
 
@@ -1932,16 +1971,21 @@ def ticker_tape(quotes) -> None:
     """Le bandeau défilant des cours, en haut de chaque page."""
     if not quotes:
         return
-    items = "".join(
-        f'<span class="fv-tick"><b>{esc(q.name)}</b>{price(q.last)} {change(q.change, q.unit)}</span>'
-        for q in quotes
-    )
+    def items(copy: bool = False) -> str:
+        # Chaque cours mène à sa fiche. La copie (pour la boucle) est cachée des lecteurs d'écran et du clavier.
+        extra = ' tabindex="-1" aria-hidden="true"' if copy else ""
+        return "".join(
+            f'<a class="fv-tick" href="{fiche_url(q.symbol)}" target="_self"{extra}>'
+            f'<b>{esc(q.name)}</b>{price(q.last)} {change(q.change, q.unit)}</a>'
+            for q in quotes
+        )
+
     # Le contenu est répété deux fois : en décalant de 50 %, la boucle est invisible.
     # Le délai négatif, calé sur l'horloge, évite que le bandeau reparte du début à chaque rafraîchissement.
     delay = -(clock_module.time() % TAPE_SECONDS)
     st.html(
         f'<div class="fv-tape" role="marquee" aria-label="Cours des marchés"><span class="fv-tape-label">Marchés</span>'
-        f'<div class="fv-tape-window"><div class="fv-tape-track" style="animation-delay:{delay:.1f}s">{items}{items}</div>'
+        f'<div class="fv-tape-window"><div class="fv-tape-track" style="animation-delay:{delay:.1f}s">{items()}{items(True)}</div>'
         f"</div></div>"
     )
 
