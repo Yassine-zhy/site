@@ -123,7 +123,7 @@ const INTERVALS = [0, 15, 14, 12, 11, 10, 9, 8, 7, 6];
 const BAR_AT = INTERVALS.reduce<number[]>((acc, d) => [...acc, (acc.length ? acc[acc.length - 1] : 1395) + d], []);
 export const S17: React.FC = () => {
   const f = useAbs();
-  const BW = 80, GAP = 26, X0 = 760, BASE = 810, MAXH = 580;
+  const BW = 72, GAP = 22, X0 = 830, BASE = 810, MAXH = 580;
   const full = fv(10);
   const tCent = W("L17", "cent"), tDeviennent = W("L17", "deviennent"), tDix = W("L17", "dix"), tAns = W("L17", "ans");
   return (
@@ -139,7 +139,7 @@ export const S17: React.FC = () => {
           </div>
         </div>
         <div style={{ position: "absolute", left: 96, top: 750, opacity: ramp(f, tAns, tAns + 10), translate: `0 ${(1 - ramp(f, tAns, tAns + 10)) * 30}px` }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 18, fontFamily: display, fontWeight: 900, fontSize: 56, letterSpacing: "-0.03em", color: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 18, fontFamily: display, fontWeight: 900, fontSize: 50, letterSpacing: "-0.03em", color: "#fff" }}>
             <span style={{ width: 34, height: 34, borderRadius: 8, background: COLORS.brand, display: "inline-block" }} />+ les intérêts composés
           </div>
         </div>

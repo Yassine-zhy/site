@@ -16,9 +16,9 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 
 ![L'accueil de FinVeille raconte la séance : la plus forte hausse du CAC 40 s'allume dans la maquette 3D](docs/screenshots/fil-3d.jpg)
 
-[![La bande-annonce : les 17 maquettes 3D interactives du site](docs/branding/trailer-cover.jpg)](docs/branding/trailer.mp4)
+[![La bande-annonce : Inès, Hugo et Sami, trois façons de comprendre les marchés](docs/branding/trailer-cover.jpg)](docs/branding/trailer.mp4)
 
-▶ [Voir la bande-annonce (68 s, avec sa musique)](docs/branding/trailer.mp4) : un film de lancement monté avec Remotion, chaque coupe calée sur une musique composée par le code. Le fil et sa recherche, l'assistant qui cite ses sources, le globe des marchés qu'on clique, la carte du CAC 40, les taux, la crypto, les 17 maquettes 3D, les outils, le téléphone et le thème clair (guide 34). [Démonstration des transitions (29 s)](docs/branding/demo.mp4)
+▶ [Voir la bande-annonce (66 s, avec voix off)](docs/branding/trailer.mp4) : une histoire racontée. Des milliers d'articles, dix minutes pour comprendre, puis trois personnages : Inès prépare un oral et interroge l'assistant, Hugo s'entraîne sur un portefeuille virtuel, Sami apprend le vocabulaire et simule son épargne. Voix, musique, personnages et montage faits par le code (guide 35). [Démonstration des transitions (29 s)](docs/branding/demo.mp4)
 
 ## Fonctionnalités
 
@@ -94,7 +94,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-34 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+35 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 

@@ -51,7 +51,7 @@ export const S8: React.FC = () => {
     <AbsoluteFill>
       <SiteWindow
         name="brief" box={{ x: 180, y: 96, w: 1560, h: 800 }} sync={[tEss, 89]} len={90} hold={89} enter={525}
-        cam={[{ f: 525, cx: 930, cy: 560, z: 1.45 }]}
+        cam={[{ f: 525, cx: 940, cy: 560, z: 1.4 }]}
         marks={[{ rect: [306, 304, 1566, 736], at: tEss, pad: 8 }]}
       />
       {f >= tFr ? (
