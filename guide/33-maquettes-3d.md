@@ -222,5 +222,6 @@ souris et survole une pièce.
 | Le clic trouve la tuile, mais la page ne descend pas | `ScrollTrigger.refresh()`, relancé à chaque cours qui change, coupe le défilement | Ne recalculer qu'à l'arrivée d'un élément ; vérifier et terminer le trajet |
 | Au doigt, toucher la maquette fait partir la page aussitôt | Pas de survol sur un écran tactile : l'étiquette n'a pas le temps de s'afficher | Premier toucher : l'étiquette (« Toucher encore : … ») ; second toucher : l'action |
 | L'audit plante : « could not convert string to float » | Une couleur de texte en `color-mix()` : le navigateur la rend en `color(srgb …)`, que l'audit ne lit pas | Une couleur fixe (`#475165`) |
+| Sur une vraie carte graphique, une maquette devient une silhouette noire ou blanche qui clignote (la page Économie) | Un triangle plat (trois points alignés, un point en double) n'a pas de normale ; la carte graphique en fait un NaN, et le halo étale ce pixel sur tout l'objet. Le rendu logiciel des tests ne le montrait pas | `extrude()` retire les points en double et alignés avant l'extrusion ; le halo ignore tout pixel NaN ou infini. Un contrôle des normales de toutes les maquettes dans le banc d'essai |
 
 Retour au [sommaire du guide](README.md).

@@ -10,6 +10,22 @@ import {
 } from "./kit.js";
 
 // --- Les outils communs de l'atelier -----------------------------------------------------------------------------
+// Une extrusion sans triangle plat. Deux points confondus (un cercle qui se referme sur son premier point, une courbe
+// qui repart de son origine) ou trois points alignés (une portion droite d'une courbe) donnent une normale nulle, que la
+// carte graphique change en NaN : le halo étale ce pixel en une tache noire ou blanche qui clignote dès que l'objet bouge.
+function extrude(shape, options) {
+  const clean = (pts) => {
+    const out = pts.filter((p, i) => p.distanceToSquared(pts[(i + 1) % pts.length]) > 1e-12);
+    return out.filter((p, i) => {   // le point du milieu de trois points alignés n'apporte rien à la forme
+      const a = out[(i + out.length - 1) % out.length], c = out[(i + 1) % out.length];
+      return Math.abs((p.x - a.x) * (c.y - p.y) - (p.y - a.y) * (c.x - p.x)) > 1e-9;
+    });
+  };
+  const { shape: outline, holes } = shape.extractPoints(options.curveSegments ?? 12);
+  const solid = new THREE.Shape(clean(outline));
+  solid.holes = holes.map((h) => new THREE.Path(clean(h)));
+  return new THREE.ExtrudeGeometry(solid, options);
+}
 const NN = " ";   // l'espace fine insécable : avant % et €, et entre les milliers
 const fr = (v, d = 0) => {   // un nombre à la française : 16 289 ou 1,20
   const [int, dec] = Math.abs(v).toFixed(d).split(".");
@@ -60,7 +76,7 @@ function roundedRect(w, h, r) {   // un rectangle aux angles arrondis, centré s
 function frameGeo(w, d, r, border, height, upright = false) {   // un cadre : un rectangle arrondi évidé, à plat sur y = 0
   const s = roundedRect(w, d, r);
   s.holes.push(new THREE.Path(roundedRect(w - 2 * border, d - 2 * border, Math.max(0.01, r - border)).getPoints(6)));
-  const geo = new THREE.ExtrudeGeometry(s, { depth: height, bevelEnabled: false, curveSegments: 6 });
+  const geo = extrude(s, { depth: height, bevelEnabled: false, curveSegments: 6 });
   return upright ? geo : geo.rotateX(-Math.PI / 2);
 }
 function rod(a, b, r, material, seg = 12) {   // une tige de métal entre deux points
@@ -597,7 +613,7 @@ function ring(data, pal, scene) {
   const plateShape = new THREE.Shape();
   plateShape.absarc(0, 0, R + 0.28, 0, Math.PI * 2, false);
   plateShape.holes.push(new THREE.Path().absarc(0, 0, r - 0.1, 0, Math.PI * 2, true));
-  root.add(part(new THREE.ExtrudeGeometry(plateShape, { depth: plate - 0.03, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.02,
+  root.add(part(extrude(plateShape, { depth: plate - 0.03, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.02,
     bevelSegments: 2, curveSegments: 96 }).translate(0, 0, 0.015).rotateX(-Math.PI / 2), steel));
   const jonc = (rad, tube, material, y) => root.add(at(quiet(part(new THREE.TorusGeometry(rad, tube, 10, 160).rotateX(Math.PI / 2), material)), 0, y, 0));
   jonc(R + 0.28, 0.03, steel2, plate);
@@ -636,15 +652,15 @@ function ring(data, pal, scene) {
     const n = Math.max(2, Math.ceil(span / 0.06));
     const sh = new THREE.Shape(sectorPoints(a0, a1, r, R, n));
     const h = Math.max(0.3, 2.4 * s.weight / wmax);
-    const geo = new THREE.ExtrudeGeometry(sh, { depth: h - 2 * bt, bevelEnabled: true, bevelThickness: bt, bevelSize: bt * 0.8,
+    const geo = extrude(sh, { depth: h - 2 * bt, bevelEnabled: true, bevelThickness: bt, bevelSize: bt * 0.8,
       bevelSegments: 2, curveSegments: 1 }).translate(0, 0, bt).rotateX(-Math.PI / 2);
     // le dessus : une peau de lumière très pâle, bordée d'un cadre fin de la couleur de la séance
     const edge = s.c != null ? changeColor(pal, s.c) : pal.brand, m = 0.075, da = m / ((r + R) / 2);
     const frame = new THREE.Shape(sectorPoints(a0, a1, r + m * 0.55, R - m * 0.55, n));
     frame.holes.push(new THREE.Path(sectorPoints(a0 + da, a1 - da, r + m * 1.5, R - m * 1.5, n).reverse()));
-    const lid = new THREE.ExtrudeGeometry(frame, { depth: 0.02, bevelEnabled: false, curveSegments: 1 }).translate(0, 0, h - 0.004)
+    const lid = extrude(frame, { depth: 0.02, bevelEnabled: false, curveSegments: 1 }).translate(0, 0, h - 0.004)
       .rotateX(-Math.PI / 2);
-    const skinGeo = new THREE.ExtrudeGeometry(new THREE.Shape(sectorPoints(a0, a1, r + m * 0.55, R - m * 0.55, n)),
+    const skinGeo = extrude(new THREE.Shape(sectorPoints(a0, a1, r + m * 0.55, R - m * 0.55, n)),
       { depth: 0.01, bevelEnabled: false, curveSegments: 1 }).translate(0, 0, h - 0.006).rotateX(-Math.PI / 2);
     const g = new THREE.Group().add(part(geo, mat(pal.porcelain)), quiet(part(skinGeo, mat(edge, { opacity: 0.22 }))),
       lit(lid, edge, 1.35));
@@ -815,7 +831,7 @@ function ridges(data, pal, scene) {
     sh.moveTo(line[0].x, line[0].y);
     for (const p of line) sh.lineTo(p.x, p.y);
     for (let i = line.length - 1; i >= 0; i--) sh.lineTo(line[i].x, Math.max(floor + 0.03, line[i].y - band));
-    const geo = new THREE.ExtrudeGeometry(sh, { depth: depth - 2 * bt, bevelEnabled: true, bevelThickness: bt, bevelSize: bt * 0.8,
+    const geo = extrude(sh, { depth: depth - 2 * bt, bevelEnabled: true, bevelThickness: bt, bevelSize: bt * 0.8,
       bevelSegments: 1, curveSegments: 1 }).translate(0, 0, -(depth - 2 * bt) / 2);
     const front = k === 0, mixed = pal.brand.clone().lerp(pal.violet, 0.85 * k / Math.max(1, n - 1));
     const g = new THREE.Group();
@@ -1094,7 +1110,7 @@ function bookmark(data, pal, scene) {
   ribbon.lineTo(0, -rl + 0.22);
   ribbon.lineTo(-rw / 2, -rl);
   ribbon.closePath();
-  const rgeo = new THREE.ExtrudeGeometry(ribbon, { depth: 0.014, bevelEnabled: true, bevelThickness: 0.005, bevelSize: 0.005,
+  const rgeo = extrude(ribbon, { depth: 0.014, bevelEnabled: true, bevelThickness: 0.005, bevelSize: 0.005,
     bevelSegments: 1 });
   const rp = rgeo.attributes.position;
   for (let i = 0; i < rp.count; i++) {   // le ruban se décolle légèrement vers le bas
@@ -1282,7 +1298,7 @@ function gear(data, pal, scene) {
   // la platine : une plaque debout où les axes sont vissés, posée sur une semelle, avec ses vis et ses pieds
   const lift = 0.3, cx = (A.x - A.R + C.x + C.R) / 2 + 0.05, pw = C.x + C.R - (A.x - A.R) + 0.9, ph = 4.3;
   root.add(part(box(pw + 0.5, 0.18, 1.5, 0.05).translate(cx, 0.12, 0.1), steel));
-  const back = new THREE.ExtrudeGeometry(roundedRect(pw, ph, 0.2), { depth: 0.1, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02,
+  const back = extrude(roundedRect(pw, ph, 0.2), { depth: 0.1, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02,
     bevelSegments: 2, curveSegments: 8 }).translate(cx, 0.21 + ph / 2, -0.62);
   root.add(part(back, alloy(pal, { rough: 0.38, color: pal.dark ? 0x1d2a5c : 0xc3cfee })));
   for (const sx of [-1, 1]) {
@@ -1309,7 +1325,7 @@ function gear(data, pal, scene) {
   plaque.position.set(cx - pw / 2 + 0.55 + 1.7, 0.21 + ph - 0.38, -0.494);
   root.add(border, plaque);
   const gears = [A, B, C].map((s, i) => {
-    const geo = new THREE.ExtrudeGeometry(gearShape(s.teeth, s.R, s.hole, s.holes), { depth: 0.36, bevelEnabled: true, bevelThickness: 0.025,
+    const geo = extrude(gearShape(s.teeth, s.R, s.hole, s.holes), { depth: 0.36, bevelEnabled: true, bevelThickness: 0.025,
       bevelSize: 0.018, bevelSegments: 2, curveSegments: 4 }).translate(0, 0, -0.18);
     const spin = new THREE.Group();
     spin.add(part(geo, s.color));
@@ -1388,7 +1404,7 @@ function logo(data, pal, scene) {
     tile.position.y = cy;
     piece.add(tile);
     // la tuile : un corps de métal à chanfrein, un filet de lumière, et la plaque de verre où la marque est incrustée
-    tile.add(part(new THREE.ExtrudeGeometry(roundedRect(4.3, 4.3, 16 * S), { depth, bevelEnabled: true, bevelThickness: bt, bevelSize: bt,
+    tile.add(part(extrude(roundedRect(4.3, 4.3, 16 * S), { depth, bevelEnabled: true, bevelThickness: bt, bevelSize: bt,
       bevelSegments: 4, curveSegments: 12 }).translate(0, 0, -depth / 2), frame));
     const z0 = depth / 2 + bt;
     const grad = canvasTexture(256, 256, (x, w, h) => {
@@ -1414,8 +1430,8 @@ function logo(data, pal, scene) {
     const inlay = (w, h, r, d, x, y, rz, start, m = lightMat) => {   // un liseré de métal, et dans le creux la lumière
       const g = new THREE.Group();
       const b = 0.045;
-      g.add(part(new THREE.ExtrudeGeometry(roundedRect(w + 2 * b, h + 2 * b, r + b), { depth: 0.07, bevelEnabled: false, curveSegments: 8 }), steel),
-        quiet(part(new THREE.ExtrudeGeometry(roundedRect(w, h, r), { depth: d, bevelEnabled: false, curveSegments: 8 }), m)));
+      g.add(part(extrude(roundedRect(w + 2 * b, h + 2 * b, r + b), { depth: 0.07, bevelEnabled: false, curveSegments: 8 }), steel),
+        quiet(part(extrude(roundedRect(w, h, r), { depth: d, bevelEnabled: false, curveSegments: 8 }), m)));
       g.position.set(x, y, 0);
       g.rotation.z = rz;
       g.scale.z = 0.001;
