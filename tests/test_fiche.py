@@ -216,3 +216,76 @@ def test_plus_fortes_hausses_et_baisses():
     ups, downs = company.movers(changes, count=2)
     assert [s for s, *_ in ups] == ["A", "C"] and [s for s, *_ in downs] == ["B", "D"]
     assert company.movers([("A", "A", 1.0)]) == ([("A", "A", 1.0)], [])  # une valeur ne figure pas des deux côtés
+
+
+# --- Les pages (données factices, aucun réseau) ---------------------------------------------------
+
+from test_app import app  # noqa: E402,F401  (la fixture qui monte le site complet avec des données factices)
+
+
+@pytest.fixture
+def yahoo(monkeypatch):
+    """Yahoo Finance factice : un historique de 5 ans, des résultats, des dividendes, des avis d'analystes."""
+    days = pd.bdate_range(end=pd.Timestamp.today().normalize(), periods=1300, tz="Europe/Paris")
+    history = pd.DataFrame({"Close": [100 + n * 0.1 for n in range(len(days))]}, index=days)
+    monkeypatch.setattr(market, "price_history", lambda symbol, period="6mo": history.tail(
+        {"1mo": 22, "6mo": 130, "1y": 260, "5y": 1300}.get(period, 130)) if symbol != "ZZZZZZ" else history.iloc[:0])
+    monkeypatch.setattr(market, "company_profile", lambda symbol: {} if symbol == "ZZZZZZ" else {
+        "shortName": symbol, "longName": f"{symbol} SA", "currency": "EUR", "quoteType": company.guess_type(symbol),
+        "regularMarketPrice": 110.0, "fiftyTwoWeekLow": 90.0, "fiftyTwoWeekHigh": 130.0, "recommendationMean": 2.0,
+        "numberOfAnalystOpinions": 12, "targetLowPrice": 100.0, "targetMeanPrice": 125.0, "targetHighPrice": 150.0,
+        "dividendYield": 2.5})
+    columns = pd.to_datetime(["2025-12-31", "2024-12-31", "2023-12-31"])
+    income = pd.DataFrame({"Total Revenue": [80e9, 84e9, 86e9], "Net Income": [10e9, 12e9, 15e9]}, index=columns).T
+    monkeypatch.setattr(company, "fetch_income", lambda symbol: company.yearly_results(income))
+    monkeypatch.setattr(company, "fetch_dividends", lambda symbol: PAYMENTS)
+    monkeypatch.setattr(company, "fetch_analysts", lambda symbol: {})
+    from core import sources
+    monkeypatch.setattr(sources, "fetch_yahoo_ticker_news", lambda ticker: [])
+
+
+def test_fiche_d_une_action(app, yahoo):
+    app.query_params["s"] = "MC.PA"
+    app.run()
+    app.switch_page("views/quote.py").run()
+    assert not app.exception
+    titles = " ".join(h.value for h in app.get("html"))
+    for section in ["Performances", "Résultats", "Ce qu&#x27;en pensent les analystes", "Dividendes", "Actualités"]:
+        assert section in titles
+    assert any(b.label == "Suivre" for b in app.button)  # mode local : on est connecté
+
+
+def test_fiche_d_un_indice_sans_les_sections_d_entreprise(app, yahoo):
+    app.query_params["s"] = "^FCHI"
+    app.run()
+    app.switch_page("views/quote.py").run()
+    assert not app.exception
+    titles = " ".join(h.value for h in app.get("html"))
+    assert "Performances" in titles and "Dans le CAC 40" in titles
+    assert "Résultats" not in titles and "Dividendes" not in titles
+
+
+def test_fiche_sans_symbole_ou_avec_un_symbole_inconnu(app, yahoo):
+    app.run()
+    app.switch_page("views/quote.py").run()
+    assert not app.exception and any("Quelques fiches" in h.value for h in app.get("html"))
+    app.query_params["s"] = "ZZZZZZ"
+    app.switch_page("views/quote.py").run()
+    assert not app.exception and any("ne connaît pas" in w.value for w in app.warning)
+
+
+def test_alerte_depuis_une_fiche(app, yahoo):
+    app.query_params["s"] = "EURUSD=X"
+    app.run()
+    app.switch_page("views/alerts.py").run()
+    assert not app.exception
+    assert app.selectbox[0].value == "EURUSD=X"  # présélectionnée, bien qu'absente de la liste habituelle
+
+
+def test_mes_suivis_garde_sa_fiche(app, yahoo, db):
+    db.add_follow(db.LOCAL_USER, "company", "MC.PA", "LVMH")
+    app.run()
+    app.switch_page("views/following.py").run()
+    app.pills(key="follow_view").set_value("company|MC.PA").run()
+    assert not app.exception
+    assert any("Indicateurs clés" in h.value for h in app.get("html"))

@@ -89,7 +89,7 @@ if wanted and st.session_state.get("fv_position_for") != wanted:
     st.session_state["fv_position_popover"] = True
 
 with st.container(horizontal=True, gap="small"):
-    with st.popover("Ajouter une position", icon=":material/add_chart:", key="fv_position_popover"):
+    with st.popover("Ajouter une position", icon=":material/add_chart:", key="fv_position_popover", on_change="rerun"):
         with st.form("new_position", clear_on_submit=True, border=False):
             symbol = st.selectbox("Entreprise", options, format_func=lambda s: f"{choices.get(s, s)} · {s}",
                                   index=chosen, placeholder="Choisis ou tape un symbole (ex. MC.PA)",

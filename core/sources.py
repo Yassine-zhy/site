@@ -27,6 +27,7 @@ class SourceError(Exception):
 _BLOCK_RE = re.compile(r"<(script|style)\b.*?</\1>", re.IGNORECASE | re.DOTALL)  # <style>…</style>
 _CSS_RE = re.compile(r"@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}")  # règle CSS « @media … { … } »
 _TAG_RE = re.compile(r"<[^>]+>")  # une balise HTML : <p>, </a>, <img src="…">…
+_REAL_TAG_RE = re.compile(r"</?[a-zA-Z][\w:-]*(?:\s[^<>]*)?/?>")  # un nom de balise collé au « < »
 _SPACES_RE = re.compile(r"\s+")  # une suite d'espaces, tabulations ou retours à la ligne
 _CREDIT_RE = re.compile(r"^Image source:.*$", re.IGNORECASE)  # crédit photo seul, sans contenu (Nasdaq)
 _HEADING_RE = re.compile(r"^Key Points\s*")  # intertitre collé au texte : « Key PointsForecasting… » (Nasdaq)
@@ -37,6 +38,9 @@ def clean_html(text: str | None) -> str:
     text = _BLOCK_RE.sub(" ", text or "")  # enlève les blocs de code CSS/JavaScript ET leur contenu
     text = _TAG_RE.sub(" ", text)  # enlève les autres balises (leur texte reste)
     text = html.unescape(text)  # &amp; -> &, &eacute; -> é…
+    # Certains flux échappent leur HTML deux fois (« &lt;link …&gt; ») : une fois décodé, ce sont encore des balises
+    text = _BLOCK_RE.sub(" ", text)
+    text = _REAL_TAG_RE.sub(" ", text)  # seulement de vraies balises : « 3 < 5 » reste du texte
     text = _CSS_RE.sub(" ", text)  # du CSS « nu » glissé par erreur dans certains flux (ex. Nasdaq)
     text = _SPACES_RE.sub(" ", text).strip()
     return _HEADING_RE.sub("", _CREDIT_RE.sub("", text))
