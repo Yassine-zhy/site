@@ -63,6 +63,11 @@ class Lens {
       // le halo s'ajoute à la couleur sans toucher à la transparence : autour de l'objet, il éclaire la page
       Object.assign(bloom.blendMaterial, { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
         blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor });
+      // un pixel invalide (NaN, infini) n'entre pas dans le halo : le flou l'étalerait en tache noire ou blanche
+      const pass = bloom.materialHighPassFilter, read = "vec4 texel = texture2D( tDiffuse, vUv );";
+      pass.fragmentShader = pass.fragmentShader.replace(read, `${read}
+        if (any(isnan(texel)) || any(isinf(texel))) texel = vec4(0.0);
+        texel = min(texel, vec4(64.0));`);
       bloom.enabled = this.dark;   // sur une page claire, un halo additif blanchirait le fond
       this.composer.addPass(bloom);
       this.composer.addPass(new OutputPass());
