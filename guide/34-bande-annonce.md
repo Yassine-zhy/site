@@ -168,6 +168,8 @@ cd video && npx remotion render Trailer out/trailer.mp4
 - Des planches contact des séquences et des maquettes.
 - Le volume de la musique section par section, pour vérifier l'arc.
 - Le contrôle des normales des 17 maquettes, et le test du pixel NaN.
+- Le film rendu (5 min 40 de rendu) : 68 s, 1920 × 1080, H.264 et AAC. Le son du film monté mesure -14,8 LUFS, crête
+  à -1 dB ; les impacts tombent sur les coupes (le drop passe de -29 dB, le silence, à -15 dB).
 
 ## 11. Erreurs fréquentes
 
@@ -179,6 +181,7 @@ cd video && npx remotion render Trailer out/trailer.mp4
 | Le drop ne ressort pas | La normalisation à -14 LUFS égalise tout | Une automation de volume par section, avant la normalisation |
 | Pas de curseur dans les séquences filmées | Une capture sans écran ne dessine pas le pointeur | Enregistrer sa position, le dessiner au montage |
 | Le clic filmé saute d'un coup | Le site défile en temps réel entre deux captures | Le crochet `scroller` : le tournage mène le défilement |
+| La crête du film monté frôle 0 dB | Les effets sonores s'ajoutent à une musique déjà au niveau | Un limiteur à -1,5 dB à l'encodage de la version publiée |
 | La vidéo parle du jour (« le CAC 40 recule de 0,11 % ») | L'ancienne bande-annonce était construite sur la séance | Un film de lancement : le site, ses pages, ses outils |
 
 Retour au [sommaire du guide](README.md).

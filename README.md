@@ -16,7 +16,9 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 
 ![L'accueil de FinVeille raconte la séance : la plus forte hausse du CAC 40 s'allume dans la maquette 3D](docs/screenshots/fil-3d.jpg)
 
-▶ [Voir la bande-annonce (48 s, avec sa musique)](docs/branding/trailer.mp4), montée en motion design avec Remotion sur une musique composée par le code : la séance du jour en chiffres, la maquette 3D du CAC 40, le globe de bureau des marchés, les pièces des cryptomonnaies, l'assistant IA. · [Démonstration des transitions (29 s)](docs/branding/demo.mp4)
+[![La bande-annonce : les 17 maquettes 3D interactives du site](docs/branding/trailer-cover.jpg)](docs/branding/trailer.mp4)
+
+▶ [Voir la bande-annonce (68 s, avec sa musique)](docs/branding/trailer.mp4) : un film de lancement monté avec Remotion, chaque coupe calée sur une musique composée par le code. Le fil et sa recherche, l'assistant qui cite ses sources, le globe des marchés qu'on clique, la carte du CAC 40, les taux, la crypto, les 17 maquettes 3D, les outils, le téléphone et le thème clair (guide 34). [Démonstration des transitions (29 s)](docs/branding/demo.mp4)
 
 ## Fonctionnalités
 
@@ -92,7 +94,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-33 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+34 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 
