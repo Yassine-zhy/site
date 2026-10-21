@@ -92,6 +92,10 @@ _NEWS_WORDS = {
     "ten", "deux", "trois", "percent", "points", "rules", "deal", "company", "companies", "group", "inc", "corp",
     "dollar", "dollars", "euros", "now", "next", "big", "top", "need", "know", "look", "high", "low",
     "these", "those", "some", "many", "much", "every", "still", "encore", "tout", "tous", "aussi",
+    # les mots de remplissage des titres français (plus nombreux depuis l'étape 38) : « ans » n'est pas un sujet
+    "ans", "mois", "jour", "jours", "semaine", "semaines", "annee", "annees", "fois", "chez", "sans", "sous", "vers",
+    "leur", "leurs", "mais", "quand", "comment", "pourquoi", "nouveau", "nouvelle", "nouveaux", "nouvelles",
+    "milliard", "euro", "plusieurs", "toujours", "deja", "veut", "peut", "doit", "faut", "etre", "avoir", "voici",
 }
 
 
