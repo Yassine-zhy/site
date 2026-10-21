@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Maquettes FinVeille</title>
+<link rel="icon" href="data:,">
 <!-- Le banc d'essai des maquettes (guide 33) : toutes les vitrines sur une page, sans Streamlit.
      python tools/vitrines_preview.py ouvre cette page et en fait une planche de photos. -->
 <style>
@@ -19,13 +20,22 @@
   .fv-obj-label, .fv-obj-tip { position: absolute; transform: translate(-50%, -120%); padding: 3px 8px; border-radius: 999px;
     font: 600 12px "IBM Plex Sans", sans-serif; background: rgb(10 15 28 / .8); color: #fff; white-space: nowrap; }
   .fv-obj-tip:not(.is-on) { display: none; }
+  /* ?film=1 : une seule maquette plein cadre sur le noir nuit de la vidéo (tools/vitrines_film.py) */
+  body.film { background: #060912; overflow: hidden; }
+  .film .stApp { padding: 0; min-height: 0; background: #060912; }
+  .film .grid { display: block; }
+  .film .cell h2 { display: none; }
+  .film .fv-obj { width: 100vw; height: 100vh; aspect-ratio: auto; outline: none; }
+  .film .fv-obj-canvas { mask-image: none; }
 </style>
 </head>
 <body>
 <div class="stApp" id="app"><div class="grid" id="grid"></div></div>
 <script type="module">
   const q = new URLSearchParams(location.search);
-  if (q.get("theme") === "light") document.getElementById("app").classList.add("light");
+  const film = q.get("film") === "1";
+  if (film) document.body.classList.add("film");
+  else if (q.get("theme") === "light") document.getElementById("app").classList.add("light");
   document.getElementById("grid").style.setProperty("--cols", q.get("cols") || "4");
   const rnd = (() => { let a = 7; return () => (a = (a * 16807) % 2147483647) / 2147483647; })();
   const W = [10.5, 7, 6.5, 6, 5.6, 5.6, 5.4, 5.2, 4.6, 4.6, 4.4, 4.2, 3.4, 2.4, 2.4, 2.1, 1.7, 1.6, 1.6, 1.5, 1.4, 1.3,
@@ -38,7 +48,7 @@
       { sym: "SOL", name: "Solana", c: 3.1, price: "151 €" }] },
     orb: {}, quiz: { variant: "quiz" },
   };
-  const kinds = (q.get("kinds") || "city,globe,coins,orb").split(",");
+  const kinds = (q.get("kinds") || "city,globe,coins,orb").split(",").slice(0, film ? 1 : undefined);   // film : une seule maquette
   for (const name of kinds) {
     const kind = name === "quiz" ? "orb" : name;
     const cell = document.createElement("div");

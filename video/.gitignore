@@ -8,3 +8,5 @@ out
 
 # Les séquences filmées (tools/footage.py) : refaites à la demande, trop lourdes pour Git
 public/footage/
+# Les maquettes 3D filmées (tools/vitrines_film.py) : refaites à la demande, trop lourdes pour Git
+public/models/
