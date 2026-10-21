@@ -637,13 +637,12 @@ def search_results(query: str) -> str:
     """Les résultats de la recherche, en liens vers les fiches. Un symbole tapé tel quel (« ^FCHI », « GC=F »)
     est toujours proposé : la recherche de Yahoo ne trouve que les actions et les fonds."""
     query = query.strip()
-    rows = []
-    if re.fullmatch(r"[A-Za-z0-9^.=\-]{1,20}", query):
-        symbol = company.normalize_symbol(query)
+    symbol = company.normalize_symbol(query)
+    rows = [(found["symbol"], found["name"], f"{found['symbol']} · {found['exchange']}")
+            for found in search_companies(query) if found["symbol"] != symbol]
+    # Ce qui ressemble à un symbole (« ^FCHI », « GC=F », « AAPL »), à la fin de la liste
+    if re.fullmatch(r"[A-Za-z0-9^.=\-]{1,20}", query) and (query != query.lower() or re.search(r"[\^.=\-\d]", query)):
         rows.append((symbol, f"Ouvrir le symbole {symbol}", "Indice, devise, matière première, action…"))
-    for found in search_companies(query):
-        if found["symbol"] != company.normalize_symbol(query):
-            rows.append((found["symbol"], found["name"], f"{found['symbol']} · {found['exchange']}"))
     if not rows:
         return ""
     links = "".join(
