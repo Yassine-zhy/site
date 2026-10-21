@@ -117,3 +117,15 @@ def test_les_emplacements_des_maquettes():
     index = Quote("CAC 40", "CAC 40", "G", "%", 7859.74, 7868.40, pd.Series([7868.40, 7859.74], dtype=float))
     story = theme.story_html(index, city={"towers": [{"n": "Sanofi", "w": 5.6, "c": 2.9}]})
     assert 'data-obj="city"' in story and "fv-story has-obj" in story
+
+
+def test_chaque_maquette_a_une_action():
+    import scene3d
+
+    for name, (_, settings, _, _) in scene3d.OBJECTS.items():
+        act = settings["act"]
+        assert act["type"] in {"search", "reveal", "ask", "next"}, name
+        assert (act.get("hintAll") or act["hint"]).startswith("Cliquer"), name  # le survol annonce le clic
+        if act["type"] == "reveal":
+            assert act["in"] and act["keyed"], name
+    assert scene3d.CITY_ACT["type"] == "search" and scene3d.CITY_ACT["then"] == "#fv-fil"

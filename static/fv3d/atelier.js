@@ -934,20 +934,25 @@ function bell(data, pal, scene) {
     root.add(torus);
     return { torus, m, full: [1, 0.7, 0.5, 0.34][i], delay: 0.7 + i * 0.3 };
   });
+  let volley = -1;   // un clic sonne une nouvelle volée : le temps depuis le clic (-1 : au repos)
   return {
     root, view: { pos: [5.0, 6.6, 12.0], look: [0, 1.6, 0], fov: 30, aspect: 1.2 }, intro: 2.3,
-    update(t) {
+    poke() { volley = 0; },
+    update(t, dt) {
       rig.scale.setScalar(Math.max(0.001, overshoot(t, 0.05, 0.8)));
-      const u = Math.min(1, Math.max(0, (t - 0.8) / 1.5)), ramp = Math.min(1, u * 6);   // une seule volée, qui s'éteint
+      if (volley >= 0) volley += dt;
+      const s = volley >= 0 ? 0.8 + volley : t;   // la volée du montage, ou celle du clic, et ses ondes
+      const u = Math.min(1, Math.max(0, (s - 0.8) / 1.5)), ramp = Math.min(1, u * 6);   // une seule volée, qui s'éteint
       pivot.rotation.z = 0.42 * Math.sin(u * Math.PI * 3) * (1 - u);
       clapper.rotation.z = -0.7 * Math.sin(u * Math.PI * 3 - 0.9) * (1 - u) * ramp;
       for (const w of waves) {
-        const k = phase(t, w.delay, 0.9);
+        const k = phase(s, w.delay, 0.9);
         w.torus.scale.setScalar(0.3 + 0.7 * k);
         w.m.opacity = k * w.full;
         w.torus.visible = k > 0.001;
       }
-      return t < 2.3;
+      if (volley > 1.8) volley = -1;
+      return t < 2.3 || volley >= 0;
     },
   };
 }
@@ -1200,19 +1205,30 @@ function books(data, pal, scene) {
       mark.position.set(0, s.h + 0.006, -0.08);
       b.add(mark);
     }
-    return { holder, rest, delay: 0.15 + i * 0.3 };
+    tag(holder, i);
+    return { holder, rest, delay: 0.15 + i * 0.3, title: TITLES[i] };
   });
   const intro = 0.15 + 3 * 0.3 + 1.0;
+  let hover = null;
+  // un clic sur un livre cherche son sujet dans le glossaire (le dessus de la pile : tout le glossaire)
+  const terms = { GLOSSAIRE: "", ACTIONS: "action", OBLIGATIONS: "obligation", INDICES: "indice" };
   return {
     root, view: { pos: [3.8, 5.0, 8.8], look: [0, 1.0, 0.1], fov: 30, aspect: 1.2 }, intro,
     update(t) {
+      let moving = t < intro;
       for (const b of stack) {
-        const k = overshoot(t, b.delay, 0.9);
+        const k = overshoot(t, b.delay, 0.9), out = b === hover ? 0.35 : 0;   // le livre visé sort de la pile
         b.holder.position.y = b.rest + (1 - k) * 3.5;
         b.holder.rotation.y = (1 - phase(t, b.delay, 0.9)) * 0.9;
+        const z = b.holder.position.z + (out - b.holder.position.z) * 0.25;
+        if (Math.abs(z - out) > 0.002) moving = true;
+        b.holder.position.z = z;
       }
-      return t < intro;
+      return moving;
     },
+    pick: (ray) => pickFrom(ray, stack.map((b) => b.holder), (id) => stack[id].title.charAt(0) + stack[id].title.slice(1).toLowerCase(),
+      (id) => terms[stack[id].title] ?? stack[id].title.toLowerCase()),
+    setHover(id) { hover = id == null || id === "all" ? null : stack[id]; },
   };
 }
 
@@ -1324,15 +1340,23 @@ function gear(data, pal, scene) {
     return { g, spin, s, k: sign[i], delay: 0.05 + i * 0.15 };
   });
   const intro = 2.3;
+  let extra = 0, from = 0, clock = -1;
   return {
     root, view: { pos: [3.8, 6.4, 11.6], look: [0.1, 2.0, 0], fov: 30, aspect: 1.2 }, intro,
-    update(t) {
-      const turn = (1 - phase(t, 0.15, 1.9)) * Math.PI * 2.4;   // ils tournent ensemble, puis s'arrêtent bien engrenés
+    poke() { from = extra; clock = 0; },
+    update(t, dt) {
+      if (clock >= 0) {   // un clic : un quart de tour de plus, en douceur (les rapports gardent les dents engrenées)
+        clock += dt;
+        const k = phase(clock, 0, 0.9);
+        extra = from + k * Math.PI / 2;
+        if (k >= 1) clock = -1;
+      }
+      const turn = (1 - phase(t, 0.15, 1.9)) * Math.PI * 2.4 + extra;   // ils tournent ensemble, puis s'arrêtent bien engrenés
       for (const it of gears) {
         it.g.scale.setScalar(Math.max(0.001, overshoot(t, it.delay, 0.7)));
         it.spin.rotation.z = it.s.off + it.k * turn;
       }
-      return t < intro;
+      return t < intro || clock >= 0;
     },
   };
 }

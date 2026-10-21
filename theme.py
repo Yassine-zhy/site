@@ -1311,13 +1311,24 @@ html.fv-obj-on .fv-obj-fallback { display: none; }
 html.fv-obj-on .fv-obj.is-fallback .fv-obj-fallback { display: block; }   /* plus de contexte WebGL : l'illustration */
 html.fv-obj-on .fv-obj.is-fallback { cursor: auto; }
 .fv-obj-wrap figcaption { max-width: 34rem; margin: .2rem auto 0; font-size: .86rem; line-height: 1.5; text-align: center;
-  color: var(--fv-muted); }
+  color: light-dark(#475165, var(--night-300)); }  /* posée sur le décor 3D : un cran plus foncée en clair (ink-500 et 20 % d'ink-900) */
 /* le nom et le chiffre de ce que l'on survole, et les étiquettes posées sur la maquette */
 .fv-obj-tip, .fv-obj-label { position: absolute; z-index: 2; pointer-events: none; white-space: nowrap;
   padding: .3rem .65rem; border: 1px solid var(--fv-line-strong); border-radius: 999px;
   background: color-mix(in srgb, var(--fv-surface) 88%, transparent); backdrop-filter: blur(8px);
   box-shadow: 0 10px 24px -12px var(--fv-shadow-deep); font: 600 .82rem/1.3 var(--fv-sans); color: var(--fv-text); }
-.fv-obj-tip { transform: translate(-50%, calc(-100% - 14px)); opacity: 0; transition: opacity .15s ease; }
+.fv-obj-tip { transform: translate(-50%, calc(-100% - 14px)); opacity: 0; transition: opacity .15s ease;
+  border-radius: 12px; text-align: center; }
+.fv-obj-tip b { display: block; font-weight: 600; }
+.fv-obj-tip small { display: block; margin-top: .1rem; font-size: .74rem; font-weight: 500; color: var(--fv-brand); }
+html.fv-obj-on .fv-obj.is-pointing { cursor: pointer; }   /* ce que vise le pointeur fait quelque chose au clic */
+/* l'élément de la page qu'une maquette vient de montrer (une tuile de cours, une ligne du classement) brille un instant */
+.fv-flash { animation: fv-flash 1.8s cubic-bezier(.2, .8, .2, 1); }
+@keyframes fv-flash {
+  0%, 35% { box-shadow: 0 0 0 2px var(--fv-brand), 0 0 34px color-mix(in srgb, var(--fv-brand) 45%, transparent);
+    background-color: color-mix(in srgb, var(--fv-brand) 14%, transparent); }
+  100% { box-shadow: none; }
+}
 .fv-obj-tip.is-on { opacity: 1; }
 .fv-obj-label { transform: translate(-50%, -100%); transition: opacity .3s ease; }
 .fv-obj-label[data-tone="up"] { border-color: color-mix(in srgb, var(--fv-up) 60%, transparent); }
@@ -1366,6 +1377,7 @@ html:not(.fv-story-on) .fv-story-obj { display: none; }
   .fv-media::after { display: none; }
   .fv-ch { transition: none; }
   .fv-obj-tip, .fv-obj-label { transition: none; }
+  .fv-flash { animation: none; outline: 2px solid var(--fv-brand); }
 }
 </style>
 """

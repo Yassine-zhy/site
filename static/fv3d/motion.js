@@ -198,7 +198,10 @@ export async function installMotion() {
     clearTimeout(refresh);
     refresh = setTimeout(() => ST.refresh(), 250);
   };
-  new MutationObserver(() => { if (!queued) { queued = true; setTimeout(scan, 120); } })
+  // seulement quand un élément arrive : un cours qui change n'échange qu'un texte, et chaque refresh remet la page
+  // en haut un instant (il mesure), ce qui coupe un défilement en cours (le clic sur une maquette)
+  const added = (records) => records.some((r) => [...r.addedNodes].some((n) => n.nodeType === 1));
+  new MutationObserver((records) => { if (!queued && added(records)) { queued = true; setTimeout(scan, 120); } })
     .observe(document.body, { childList: true, subtree: true });
   scan();
   // le chapitre affiché au chargement fait rouler ses chiffres

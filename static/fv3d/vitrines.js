@@ -96,6 +96,7 @@ class Vitrine {
     this.scene.environment = this.lens.env;
     this.scene.environmentIntensity = dark ? 0.9 : 0.8;
     this.pal = palette(dark);
+    this.data = data;
     this.model = (MODELS[this.kind] || MODELS.paper)(data, this.pal, this.scene);
     outline(this.model.root, this.pal);   // les arêtes de lumière, sur tous les volumes
     this.pivot = new THREE.Group();   // l'objet tourne dans la lumière, qui reste fixe
@@ -109,7 +110,7 @@ class Vitrine {
     // le temps du montage, en secondes ; un objet que la page vient de redessiner (nouveaux cours) ne le rejoue pas
     this.t = reduced() || (last && performance.now() - last < 30_000) ? 99 : 0;
     this.yaw = 0; this.yawGoal = 0; this.spin = 0; this.tiltX = 0; this.tiltY = 0;
-    this.hover = null; this.visible = false; this.dirty = true;
+    this.hover = null; this.touched = null; this.visible = false; this.dirty = true; this.bump = 0;
     this.labels = new Map();
     this.ray = new THREE.Raycaster();
     this.tip = el.querySelector(".fv-obj-tip") || el.appendChild(Object.assign(document.createElement("span"), { className: "fv-obj-tip" }));
@@ -148,20 +149,30 @@ class Vitrine {
       if (e.pointerType === "mouse") this.pick((e.clientX - box.left) / box.width, (e.clientY - box.top) / box.height, e);
     };
     this.onDown = (e) => {
-      drag = { x: e.clientX, y: e.clientY, lastX: e.clientX, yaw: this.yawGoal, touch: e.pointerType !== "mouse" };
+      clearTimeout(this.forget);
+      drag = { x: e.clientX, y: e.clientY, lastX: e.clientX, yaw: this.yawGoal, touch: e.pointerType !== "mouse", moved: 0 };
       this.spin = 0;
       if (!drag.touch) el.setPointerCapture?.(e.pointerId);
       el.classList.add("is-grabbing");
     };
     this.onUp = (e) => {
+      const click = drag && Math.abs(e.clientX - drag.x) < 6 && Math.abs(e.clientY - drag.y) < 6;
       drag = null;
       el.classList.remove("is-grabbing");
-      if (e.pointerType !== "mouse") {   // au doigt : un simple toucher montre l'étiquette
-        const box = el.getBoundingClientRect();
-        this.pick((e.clientX - box.left) / box.width, (e.clientY - box.top) / box.height, e);
+      const box = el.getBoundingClientRect();
+      const hit = this.pick((e.clientX - box.left) / box.width, (e.clientY - box.top) / box.height, e);
+      if (click && hit && e.type === "pointerup") {   // un clic sans glisser : l'action
+        // au doigt, pas de survol : un premier toucher montre l'étiquette, un second sur la même pièce agit
+        if (e.pointerType !== "mouse" && this.touched !== hit.id) this.touched = hit.id;
+        else { this.touched = null; this.activate(hit); }
       }
     };
-    this.onLeave = () => { this.pick(null); };
+    this.onLeave = (e) => {
+      if (e.pointerType === "mouse") { this.pick(null); return; }
+      // au doigt, le navigateur « quitte » l'objet après chaque toucher : l'étiquette reste quelques secondes
+      clearTimeout(this.forget);
+      this.forget = setTimeout(() => { this.touched = null; this.pick(null); }, 4000);
+    };
     el.addEventListener("pointermove", this.onMove);
     el.addEventListener("pointerdown", this.onDown);
     el.addEventListener("pointerup", this.onUp);
@@ -170,11 +181,15 @@ class Vitrine {
     this.resizer = new ResizeObserver(() => this.resize());
     this.resizer.observe(el);
   }
-  pick(x, y, e) {   // ce qu'il y a sous le pointeur : son nom et son chiffre
+  pick(x, y, e) {   // ce qu'il y a sous le pointeur : son nom, son chiffre, et ce que fait un clic
     let hit = null;
-    if (x != null && this.model.pick) {
+    if (x != null) {
       this.ray.setFromCamera(new THREE.Vector2(x * 2 - 1, -(y * 2 - 1)), this.camera);
-      hit = this.model.pick(this.ray);
+      hit = this.model.pick ? this.model.pick(this.ray) : null;
+      // l'objet tout entier se vise quand il n'a pas de parties nommées (ou entre elles)
+      if (!hit && this.data.act && this.ray.intersectObject(this.model.root, true).some((h) => h.object.isMesh && h.object.visible)) {
+        hit = { id: "all", text: this.data.act.label || "", key: null };
+      }
     }
     const id = hit ? hit.id : null;
     if (id !== this.hover) {
@@ -182,13 +197,25 @@ class Vitrine {
       this.model.setHover?.(id);
       this.dirty = true;
     }
-    this.tip.textContent = hit ? hit.text : "";
-    this.tip.classList.toggle("is-on", !!hit);
+    const act = this.data.act;
+    let hint = hit && act ? (hit.key != null || !act.keyed ? act.hint : act.hintAll) : "";
+    if (e && e.pointerType !== "mouse") hint = hint.replace(/^Cliquer/, "Toucher encore");   // au doigt : deux touchers
+    this.tip.replaceChildren();
+    if (hit?.text) this.tip.append(Object.assign(document.createElement("b"), { textContent: hit.text }));
+    if (hint) this.tip.append(Object.assign(document.createElement("small"), { textContent: hint }));
+    this.tip.classList.toggle("is-on", !!(hit && (hit.text || hint)));
+    this.el.classList.toggle("is-pointing", !!(hit && act));
     if (hit && e) {
       const box = this.el.getBoundingClientRect();
       this.tip.style.left = `${e.clientX - box.left}px`;
       this.tip.style.top = `${e.clientY - box.top}px`;
     }
+    return hit;
+  }
+  activate(hit) {   // le clic : l'objet rebondit, et la page fait ce que l'objet annonce
+    if (!reduced()) { this.bump = 1; this.model.poke?.(hit.id); }   // la réaction propre à l'objet (la cloche sonne)
+    this.dirty = true;
+    if (this.data.act) perform(this.data.act, hit.key, this.el);
   }
   step(dt, pointer, story) {   // avance d'une image ; vrai s'il faut redessiner
     let busy = this.dirty;
@@ -220,8 +247,10 @@ class Vitrine {
     const dy = (this.yawGoal + tx) - this.yaw, dx = ty - this.tiltX;
     if (Math.abs(dy) > 0.0005 || Math.abs(dx) > 0.0005) { this.yaw += dy * k; this.tiltX += dx * k; busy = true; }
     if (this.model.update && this.model.update(this.t, dt)) busy = true;
+    if (this.bump > 0.001) { this.bump *= Math.exp(-dt * 7); busy = true; } else this.bump = 0;
     if (!busy) return false;
     this.pivot.rotation.set(this.tiltX, this.yaw, 0);
+    this.pivot.scale.setScalar(1 + Math.sin(this.bump * Math.PI) * 0.035);
     const back = this.reach;
     this.camera.position.copy(this.cam.look).addScaledVector(this.cam.pos.clone().sub(this.cam.look), back);
     this.camera.lookAt(this.cam.look);
@@ -258,6 +287,7 @@ class Vitrine {
   dispose() {
     recent.set(this.kind, performance.now());
     this.resizer.disconnect();
+    clearTimeout(this.forget);
     this.el.removeEventListener("pointermove", this.onMove);
     this.el.removeEventListener("pointerdown", this.onDown);
     this.el.removeEventListener("pointerup", this.onUp);
@@ -270,6 +300,67 @@ class Vitrine {
     });
     this.lens.dispose();
   }
+}
+
+// --- Ce que fait un clic sur une maquette (l'action est donnée par la page : scene3d.OBJECTS) -----------------------
+//   search  écrire le nom visé dans un champ de recherche de la page, puis aller aux résultats (la ville : ses dépêches)
+//   reveal  aller à l'élément de la page qui porte le nom visé, et le faire briller (une tuile, une ligne de tableau)
+//   ask     poser à l'assistant la question portée par la fiche visée
+//   next    aller au contenu qui suit l'en-tête (le formulaire, le tableau…)
+function perform(act, key, el) {
+  // la page défile dans stMain, pas dans window : scrollIntoView en douceur y reste parfois sans effet
+  // et un défilement en cours s'arrête si la page bouge (Streamlit redessine) : on vérifie, puis on termine
+  const show = (node, block = "center", tries = 2) => {
+    const main = node.closest('[data-testid="stMain"]');
+    if (!main) { node.scrollIntoView({ block }); return; }
+    const goal = () => {
+      const r = node.getBoundingClientRect(), m = main.getBoundingClientRect();
+      const gap = block === "center" ? Math.max(90, (m.height - r.height) / 2) : 90;   // sous la barre de Streamlit
+      return Math.min(main.scrollHeight - main.clientHeight, Math.max(0, main.scrollTop + r.top - m.top - gap));
+    };
+    const smooth = tries > 0 && !reduced();
+    main.scrollTo({ top: goal(), behavior: smooth ? "smooth" : "auto" });
+    if (smooth) setTimeout(() => { if (node.isConnected && Math.abs(goal() - main.scrollTop) > 40) show(node, block, tries - 1); }, 1200);
+  };
+  const flash = (node) => {
+    node.classList.remove("fv-flash");
+    void node.offsetWidth;   // relance l'animation si l'élément brillait déjà
+    node.classList.add("fv-flash");
+    setTimeout(() => node.classList.remove("fv-flash"), 2000);
+  };
+  const next = () => {   // le premier bloc de la page après celui de la maquette
+    let block = el.closest('[data-testid="stElementContainer"]');
+    while (block && !block.nextElementSibling) block = block.parentElement?.closest('[data-testid="stElementContainer"], [data-testid="stVerticalBlock"]');
+    let target = block?.nextElementSibling;
+    while (target && target.offsetHeight < 8) target = target.nextElementSibling;   // les blocs invisibles (le moteur 3D)
+    if (target) show(target, "start");
+  };
+  const type = (field, value, Proto) => {   // comme au clavier : React voit la saisie, puis la touche Entrée
+    Object.getOwnPropertyDescriptor(Proto.prototype, "value").set.call(field, value);
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+    field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, bubbles: true }));
+  };
+  if (act.type === "search" && key) {
+    const field = [...document.querySelectorAll('[data-testid="stTextInput"] input')]
+      .find((input) => (input.placeholder || "").startsWith(act.input || ""));
+    if (field) {
+      type(field, key, HTMLInputElement);
+      // le temps que Streamlit redessine le fil filtré ; show() rattrape un redessin plus lent
+      setTimeout(() => { const target = document.querySelector(act.then || "#fv-fil"); if (target) show(target, "start"); }, 1000);
+      return;
+    }
+  }
+  if (act.type === "reveal" && key) {
+    const nodes = [...document.querySelectorAll(act.in)].filter((node) => node.textContent.includes(key));
+    const node = nodes.sort((a, b) => a.textContent.length - b.textContent.length)[0];   // le plus précis
+    if (node) { show(node); flash(node); return; }
+  }
+  if (act.type === "ask") {
+    const box = document.querySelector('[data-testid="stChatInputTextArea"]');
+    if (box && key) { type(box, key, HTMLTextAreaElement); return; }
+    if (box) { show(box); box.focus({ preventScroll: true }); return; }
+  }
+  next();
 }
 
 // --- Le chef d'orchestre ------------------------------------------------------------------------------------------
