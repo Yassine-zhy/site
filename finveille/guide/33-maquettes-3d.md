@@ -3,10 +3,11 @@
 > **Objectif :** sortir la 3D du simple décor, en posant de vraies maquettes (ville, globe, pièces, assistant) dans les
 > pages, leur donner la matière du site plutôt qu'un look d'icône, et finir la bande-annonce sur de la musique.
 
-Fichiers créés : `static/fv3d/vitrines.js`, `static/fv3d/kit.js`, `tools/music.py`, `tools/vitrines_preview.py` (et son
-`.html`), `video/public/music.mp3`, le dossier `.claude/` (skills et agents), `CLAUDE.md`, ce guide. Fichiers modifiés :
-`scene3d.py`, `theme.py`, `static/fv3d/engine.js`, `tools/footage.py`, `video/src/Trailer.tsx`, les tests,
-`README.md`.
+Fichiers créés : `static/fv3d/vitrines.js`, `kit.js`, `models.js`, `atelier.js`, le dossier `static/fv3d/addons/`
+(modules de Three.js : environnement, boîtes arrondies, effets), `tools/music.py`, `tools/vitrines_preview.py` (et son
+`.html`), `video/public/music.mp3`, le dossier `.claude/` (skills et agents), `CLAUDE.md`, ce guide. Fichiers
+modifiés : `scene3d.py`, `theme.py`, `views/feed.py`, `views/crypto.py`, `static/fv3d/engine.js`, `tools/footage.py`,
+`video/src/Trailer.tsx`, `tests/test_market_theme.py`, `README.md`.
 
 ---
 
@@ -141,7 +142,7 @@ Le montage (`Trailer.tsx`) range chaque scène sur un nombre entier de mesures. 
 mesure fait 60 images. Avec `TransitionSeries`, une scène dure donc :
 
 ```text
-durée d'une scène = n mesures x 60 images + 15 images de fondu
+durée d'une scène = n mesures × 60 images + 15 images de fondu
 ```
 
 Toutes les coupes tombent ainsi sur un temps fort. La musique entre par `<Audio>` de `@remotion/media`, avec un fondu de

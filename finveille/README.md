@@ -14,7 +14,7 @@ entreprises et les thèmes de son utilisateur, affiche les cours des marchés mo
 Application web en Python (Streamlit), construite pas à pas : chaque étape est un commit, documenté dans
 [`guide/`](guide/README.md).
 
-![L'accueil de FinVeille raconte la séance : la plus forte hausse du CAC 40 et sa tour dans la ville 3D](docs/screenshots/fil-3d.jpg)
+![L'accueil de FinVeille raconte la séance : la plus forte hausse du CAC 40 s'allume dans la maquette 3D](docs/screenshots/fil-3d.jpg)
 
 ▶ [Voir la bande-annonce (48 s, avec sa musique)](docs/branding/trailer.mp4), montée en motion design avec Remotion sur une musique composée par le code : la séance du jour en chiffres, la maquette 3D du CAC 40, le globe de bureau des marchés, les pièces des cryptomonnaies, l'assistant IA. · [Démonstration des transitions (29 s)](docs/branding/demo.mp4)
 

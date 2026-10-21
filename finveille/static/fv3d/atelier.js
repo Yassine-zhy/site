@@ -251,9 +251,9 @@ function newspaper(x, W, H, dark, front, seed) {   // une page de journal : en-t
     x.textAlign = "left";
     x.fillText("ÉDITION DU MATIN", M, 292);
     x.textAlign = "center";
-    x.fillText("MARCHÉS · ÉCONOMIE · ENTREPRISES", W / 2, 292);
+    x.fillText("MARCHÉS, ÉCONOMIE, ENTREPRISES", W / 2, 292);
     x.textAlign = "right";
-    x.fillText("BOURSE · TAUX · CRYPTOS", W - M, 292);
+    x.fillText("BOURSE, TAUX, CRYPTOS", W - M, 292);
     rule(304, 1);
     y = 372;
   }
@@ -316,7 +316,7 @@ function newspaper(x, W, H, dark, front, seed) {   // une page de journal : en-t
   x.fillStyle = mid;
   x.font = `600 14px ${FONT}`;
   x.textAlign = "center";
-  x.fillText("FINVEILLE · LA VEILLE FINANCIÈRE DU MATIN", W / 2, H - 28);
+  x.fillText("FINVEILLE, LA VEILLE FINANCIÈRE DU MATIN", W / 2, H - 28);
 }
 function fold(pal, W, D, material, layers, lean, edge, seed) {   // un journal plié en deux : deux moitiés qui se rejoignent au pli
   const g = new THREE.Group(), rnd = random(seed), th = 0.013;
@@ -1288,7 +1288,7 @@ function gear(data, pal, scene) {
     x.textAlign = "left";
     x.textBaseline = "middle";
     x.letterSpacing = `${ch * 0.1}px`;
-    x.fillText("MÉCANISME DE RÉGLAGE · N° 1", 0, ch * 0.54);
+    x.fillText("MÉCANISME DE RÉGLAGE, n° 1", 0, ch * 0.54);
   }, 200);
   plaque.position.set(cx - pw / 2 + 0.55 + 1.7, 0.21 + ph - 0.38, -0.494);
   root.add(border, plaque);
