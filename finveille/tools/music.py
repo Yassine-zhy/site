@@ -24,8 +24,11 @@ large (scies désaccordées, polyBLEP : pas de repliement), réverbération par 
 compression des nappes déclenchée par la grosse caisse, fondus de quelques ms à chaque coupure, limiteur à
 anticipation sur la crête vraie (suréchantillonnée) en sortie.
 
-Volume mesuré par ffmpeg (filtre ebur128) sur le MP3 écrit : voir la dernière ligne affichée à chaque exécution ;
-résultat du réglage livré : voir MESURE plus bas.
+Le mixage suit l'arc du montage : une automation de volume met le développement en retrait (-3 dB pour « s'informer »,
+-1,5 dB pour les marchés), remonte pendant la montée, et laisse le drop au niveau plein. Volume par section du morceau
+livré (RMS) : logo -16,4 dB, s'informer -19,6, marchés -16,6, montée -16,8, drop -14,4, galerie -18,8, outils -18,0.
+Mesuré par ffmpeg (filtre ebur128) sur le MP3 écrit : -13,9 LUFS intégrés, crête vraie -1,1 dBTP (la dernière ligne
+affichée à chaque exécution redonne ces valeurs).
 
 Habillage sonore (video/public/sfx/*.wav, WAV 48 kHz 16 bits stéréo, crête à -3 dBFS, attaque à l'échantillon 0) :
     whoosh.wav   0,7 s   bruit filtré dont la coupure et le niveau montent ; SOMMET À 0,5 s EXACTEMENT (échantillon 24 000 :
@@ -532,7 +535,14 @@ def compose(parts: dict | None = None) -> np.ndarray:
         parts.update(pad=pad, sup=sup, lead=lead, arp=arp, drum=drum, perc=perc, fx=fx, tic=tic, wet=wet,
                      low=np.stack([low, low]), bass=np.stack([bass, bass]))
     mix += (low + bass)[None]
-    return mix
+    # L'arc du mixage, en dB par section : le développement en retrait, la montée qui remonte, le drop au niveau plein.
+    # La normalisation à -14 LUFS remonte ensuite l'ensemble : le drop ressort de 2 à 3 dB au-dessus du reste
+    at = lambda name, end=False: (START[name] + (LENGTH[name] if end else 0)) * BAR - (0.05 if end else 0)
+    arc = automation([(0, 0), (at("logo", True), 0), (at("informer"), -3), (at("informer", True), -3),
+                      (at("marches"), -1.5), (at("montee"), -1.5), (at("montee", True) - 0.2, 0), (at("drop", True), 0),
+                      (at("galerie"), -2), (at("galerie", True), -2), (at("outils"), -2.5), (at("outils", True), -2.5),
+                      (at("signature"), 0), (N / SR, 0)])
+    return mix * arc[None]
 
 
 def master(mix: np.ndarray, gain_db: float, ceiling_db: float) -> np.ndarray:
