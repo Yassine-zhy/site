@@ -224,4 +224,4 @@ souris et survole une pièce.
 | L'audit plante : « could not convert string to float » | Une couleur de texte en `color-mix()` : le navigateur la rend en `color(srgb …)`, que l'audit ne lit pas | Une couleur fixe (`#475165`) |
 | Sur une vraie carte graphique, une maquette devient une silhouette noire ou blanche qui clignote (la page Économie) | Un triangle plat (trois points alignés, un point en double) n'a pas de normale ; la carte graphique en fait un NaN, et le halo étale ce pixel sur tout l'objet. Le rendu logiciel des tests ne le montrait pas | `extrude()` retire les points en double et alignés avant l'extrusion ; le halo ignore tout pixel NaN ou infini. Un contrôle des normales de toutes les maquettes dans le banc d'essai |
 
-Retour au [sommaire du guide](README.md).
+Étape suivante : [une vraie bande-annonce du site](34-bande-annonce.md). Retour au [sommaire du guide](README.md).

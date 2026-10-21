@@ -1,13 +1,14 @@
 # La bande-annonce de FinVeille
 
-Un montage en motion design, écrit en React avec [Remotion](https://www.remotion.dev/) (guide 32). Chaque image est
+Un film de lancement du site, écrit en React avec [Remotion](https://www.remotion.dev/) (guides 32 et 34). Chaque image est
 un rendu React ; les animations suivent le numéro de l'image (`useCurrentFrame`), jamais l'horloge.
 
-- `src/Trailer.tsx` : les scènes (ouverture, palmarès du CAC 40, séquences filmées, fin) et le montage ;
-- `public/data.json` : les chiffres de la séance (CAC 40, plus fortes hausses et baisses), écrits par
-  `tools/footage.py` à partir de Yahoo Finance ;
-- `public/footage/` : les séquences filmées dans le vrai site par `tools/footage.py` (non suivies par Git, trop
-  lourdes : on les refait à la demande) ;
+- `src/Trailer.tsx` : le montage (34 mesures, 2 040 images, 68 s) ; en tête, la table des plans en images absolues ;
+- `public/footage/` : les séquences filmées dans le vrai site par `tools/footage.py`, avec la position du curseur
+  (`*.cursor.json`) et l'instant des clics (`*.events.json`) ;
+- `public/models/` : les 17 maquettes 3D en plein cadre, filmées par `tools/vitrines_film.py` ;
+- (ces deux dossiers ne sont pas suivis par Git, trop lourds : on les refait à la demande) ;
+- `public/sfx/` : l'habillage sonore (souffle, impact, clic, cloche, frappe, tic), créé par `tools/music.py` ;
 - `public/fonts/` : Schibsted Grotesk et IBM Plex Sans (licence SIL Open Font, voir `LICENCES.txt`) ;
 - `public/music.mp3` : la musique, composée par `tools/music.py` (120 battements par minute ; chaque scène dure un
   nombre entier de mesures, les coupes tombent sur un temps fort).
@@ -17,8 +18,9 @@ un rendu React ; les animations suivent le numéro de l'image (`useCurrentFrame`
 Depuis le dossier `finveille/`, le site lancé en local (`streamlit run app.py`) :
 
 ```bash
-python tools/footage.py --url http://localhost:8501/   # les séquences et les chiffres du jour (≈ 20 min)
-python tools/music.py                                  # la musique (quelques secondes)
+python tools/footage.py --url http://localhost:8501/   # les séquences du site (≈ 1 h sans carte graphique)
+python tools/vitrines_film.py                          # les 17 maquettes (≈ 30 min)
+python tools/music.py                                  # la musique et l'habillage sonore (moins d'une minute)
 cd video
 npm install
 npx remotion studio                                    # aperçu, image par image
