@@ -40,5 +40,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 34. [Une vraie bande-annonce du site, et des maquettes réparées](34-bande-annonce.md)
 35. [Une bande-annonce qui raconte, au lieu de montrer](35-bande-annonce-racontee.md)
 36. [Une bande-annonce comme une pub d'application](36-pub-application.md)
+37. [Une bande-annonce qui montre ce qu'il y a dedans](37-bande-annonce-contenu.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).
