@@ -10,6 +10,5 @@ out
 public/footage/
 # Les maquettes 3D filmées (tools/vitrines_film.py) : refaites à la demande, trop lourdes pour Git
 public/models/
-# La musique (Mixkit, à ne pas redistribuer seule) et le mur des maquettes : refaits par tools/trailer_assets.py
+# La musique (Mixkit, à ne pas redistribuer seule) : refaite par tools/trailer_assets.py
 public/music/
-public/models-grid.mp4

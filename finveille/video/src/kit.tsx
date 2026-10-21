@@ -1,5 +1,6 @@
-// La boîte à outils de la v4 (étape 36) : le temps musical, les courbes, le fond, le verre lumineux, les icônes.
-// Toutes les scènes raisonnent en images absolues du film (60 im/s) et en temps de la musique (67 battements/min).
+// La boîte à outils de la bande-annonce (étapes 36 et 37) : le temps musical, les courbes, le fond, le verre lumineux,
+// les icônes, les titres animés. Toutes les scènes raisonnent en images absolues du film (60 im/s) et en temps de la
+// musique (127 battements par minute).
 import { loadFont } from "@remotion/fonts";
 import React from "react";
 import { AbsoluteFill, Easing, Img, interpolate, random, spring, staticFile } from "remotion";
@@ -14,11 +15,11 @@ export const C = {
   brand: "#6D93FF", violet: "#9B7BFF", up: "#34D17F", down: "#FF6375", amber: "#FFB547", dot: "#6ee7a8",
 };
 
-// --- Le temps : 60 im/s ; un temps de la musique = 0,89555 s = 53,733 images ; une mesure = 4 temps ---------------------
+// --- Le temps : 60 im/s ; un temps de la musique = 0,4724 s = 28,344 images ; une mesure = 4 temps -----------------------
 export const FPS = 60, W = 1920, H = 1080, CX = 960, CY = 540;
-export const BEAT = 0.89555 * FPS;
-export const b = (beat: number) => Math.round(beat * BEAT);  // l'image d'un temps (le drop est au temps 4)
-export const TOTAL = 2000;  // 33,33 s
+export const BEAT = 0.4724 * FPS;
+export const b = (beat: number) => Math.round(beat * BEAT);  // l'image d'un temps (la musique repart au temps 10)
+export const TOTAL = 3180;  // 53 s
 
 // --- Les courbes --------------------------------------------------------------------------------------------------------
 export const OUT = Easing.bezier(0.16, 1, 0.3, 1);  // arrivée : rapide puis très douce
@@ -110,7 +111,7 @@ export const Halo: React.FC<{ readonly x: number; readonly y: number; readonly r
   );
 
 // --- Les icônes : traits de 2 px sur une grille de 24, à la manière des pictogrammes du site --------------------------------------
-export type GlyphName = "news" | "chart" | "building" | "bank" | "coin" | "spark" | "bell" | "play" | "search" | "pie" | "arrowUp";
+export type GlyphName = "news" | "chart" | "building" | "bank" | "coin" | "spark" | "bell" | "play" | "search" | "pie" | "arrowUp" | "phone" | "laptop" | "grid" | "book" | "calc";
 const PATHS: Record<GlyphName, React.ReactNode> = {
   news: <><rect x="3" y="4" width="15" height="16" rx="2.5" /><path d="M18 8h2.5a.5.5 0 0 1 .5.5V18a2 2 0 0 1-2 2H6" /><path d="M7 8.5h7M7 12h7M7 15.5h4" /></>,
   chart: <><path d="M3 20h18" /><path d="M6 16l4-5 3.5 3L19 7" /><circle cx="19" cy="7" r="1.6" fill="currentColor" /></>,
@@ -123,6 +124,11 @@ const PATHS: Record<GlyphName, React.ReactNode> = {
   search: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5L21 21" /></>,
   pie: <><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5V12l6 6" /></>,
   arrowUp: <path d="M12 5l7 8h-4.5v6h-5v-6H5z" fill="currentColor" stroke="none" />,
+  phone: <><rect x="6.5" y="2.5" width="11" height="19" rx="2.5" /><path d="M10.5 18.5h3" /></>,
+  laptop: <><rect x="4" y="5" width="16" height="11" rx="1.5" /><path d="M2 19h20" /></>,
+  grid: <><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" /></>,
+  book: <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" /><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5" /></>,
+  calc: <><rect x="5" y="2.5" width="14" height="19" rx="2.5" /><path d="M8.5 7h7M8.5 12h1M12 12h1M15.5 12h0M8.5 16h1M12 16h1M15.5 16v0" /></>,
 };
 export const Glyph: React.FC<{ readonly name: GlyphName; readonly size: number; readonly color?: string; readonly stroke?: number; readonly style?: React.CSSProperties }> = ({
   name, size, color = C.ink, stroke = 2, style,
@@ -152,3 +158,42 @@ export const LogoMark: React.FC<{ readonly size: number; readonly p: number; rea
     </svg>
   );
 };
+
+// --- Le titre animé : chaque mot monte derrière un cache à son image (`at`), et repart vers le haut à `out` -------------------
+export type Word = { readonly t: string; readonly at: number; readonly color?: string; readonly br?: boolean };
+export const Title: React.FC<{
+  readonly words: readonly Word[]; readonly size: number; readonly out?: number; readonly align?: "left" | "center";
+  readonly color?: string; readonly weight?: number; readonly style?: React.CSSProperties; readonly f: number;
+}> = ({ words, size, out, align = "left", color = C.ink, weight = 800, style, f }) => {
+  const lines: Word[][] = [];
+  words.forEach((w, i) => { if (i === 0 || w.br) lines.push([]); lines[lines.length - 1].push(w); });
+  return (
+    <div style={{ fontFamily: display, fontWeight: weight, fontSize: size, lineHeight: 1.0, letterSpacing: "-0.035em", color, ...style }}>
+      {lines.map((line, li) => (
+        <div key={li} style={{ display: "flex", justifyContent: align === "center" ? "center" : "flex-start", columnGap: "0.24em", whiteSpace: "nowrap" }}>
+          {line.map((w, wi) => {
+            const up = ramp(f, w.at, w.at + 12);
+            const down = out === undefined ? 0 : ramp(f, out + wi * 2, out + wi * 2 + 10, 0, 1, IN);
+            return (
+              <span key={wi} style={{ display: "inline-block", overflow: "hidden", paddingTop: "0.12em", marginTop: "-0.12em", paddingBottom: "0.16em", marginBottom: "-0.16em", paddingRight: "0.04em" }}>
+                <span style={{ display: "inline-block", color: w.color, translate: `0 ${(1 - up) * 120 - down * 120}%` }}>{w.t}</span>
+              </span>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// --- Des poussières de lumière qui dérivent lentement (la vie du fond) : n points, graine, couleur ---------------------------
+export const Sparks: React.FC<{ readonly f: number; readonly n?: number; readonly seed?: string; readonly color?: string; readonly a?: number }> = ({ f, n = 40, seed = "s", color = C.brand, a = 0.6 }) => (
+  <svg width={W} height={H} style={{ position: "absolute", inset: 0 }}>
+    {Array.from({ length: n }, (_, i) => {
+      const x0 = rnd(`${seed}x${i}`) * W, y0 = rnd(`${seed}y${i}`) * H, v = 0.15 + rnd(`${seed}v${i}`) * 0.5;
+      const y = ((y0 - f * v) % H + H) % H, x = x0 + Math.sin(f / 90 + i) * 14;
+      const r = 1 + rnd(`${seed}r${i}`) * 2.2, tw = 0.5 + 0.5 * Math.sin(f / 23 + i * 1.7);
+      return <circle key={i} cx={x} cy={y} r={r} fill={color} opacity={a * (0.25 + 0.75 * tw)} />;
+    })}
+  </svg>
+);
