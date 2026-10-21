@@ -39,5 +39,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 33. [Des maquettes 3D dans la page, une bande-annonce en musique](33-maquettes-3d.md)
 34. [Une vraie bande-annonce du site, et des maquettes réparées](34-bande-annonce.md)
 35. [Une bande-annonce qui raconte, au lieu de montrer](35-bande-annonce-racontee.md)
+36. [Une bande-annonce comme une pub d'application](36-pub-application.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).
