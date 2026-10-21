@@ -52,20 +52,20 @@ const SEC_SHORT = { lift: 46, exit: 27, caption: 38 };  // P17 ne dure que 60 im
 export const FOOTAGE: readonly Shot[] = [
   { id: "P4", name: "story", from: 360, to: 480, trim: 10, caption: "La séance, racontée en 3D", section: { text: "S'informer", ...SEC } },
   { id: "P5", name: "feed", from: 480, to: 540, trim: 56, caption: "Toutes les dépêches, triées par sujet" },
-  { id: "P6", name: "search", from: 540, to: 600, trim: 0, caption: "Une recherche qui parle Bourse" },
-  { id: "P7", name: "brief", from: 600, to: 660, trim: 0, caption: "Le brief du matin" },
+  { id: "P6", name: "search", from: 540, to: 600, trim: 22, caption: "Une recherche qui parle Bourse" },
+  { id: "P7", name: "brief", from: 600, to: 660, trim: 20, caption: "Le brief du matin" },
   { id: "P8", name: "ai", from: 660, to: 720, trim: 0, caption: "Un assistant qui cite ses sources" },
-  { id: "P9", name: "globe", from: 720, to: 840, trim: 0, caption: "Un clic sur une place, et son cours", section: { text: "Comprendre les marchés", ...SEC } },
-  { id: "P10", name: "heatmap", from: 840, to: 900, trim: 0, caption: "Les 40 valeurs, d'un coup d'œil" },
-  { id: "P11", name: "economy", from: 900, to: 960, trim: 0, caption: "Taux, inflation, banques centrales" },
+  { id: "P9", name: "globe", from: 720, to: 840, trim: 30, caption: "Un clic sur une place, et son cours", section: { text: "Comprendre les marchés", ...SEC } },
+  { id: "P10", name: "heatmap", from: 840, to: 900, trim: 25, caption: "Les 40 valeurs, d'un coup d'œil" },
+  { id: "P11", name: "economy", from: 900, to: 960, trim: 30, caption: "Taux, inflation, banques centrales" },
   { id: "P12", name: "crypto", from: 960, to: 1020, trim: 6, caption: "Et les cryptomonnaies" },
-  { id: "P13", name: "compare", from: 1020, to: 1080, trim: 0, caption: "Deux valeurs face à face" },
+  { id: "P13", name: "compare", from: 1020, to: 1080, trim: 20, caption: "Deux valeurs face à face" },
   { id: "P17", name: "portfolio", from: 1560, to: 1620, trim: 0, caption: "Un portefeuille pour t'entraîner", section: { text: "Tes outils", ...SEC_SHORT } },
-  { id: "P18", name: "alerts", from: 1620, to: 1680, trim: 0, caption: "Des alertes de cours" },
-  { id: "P19", name: "simulators", from: 1680, to: 1740, trim: 0, caption: "Des simulateurs pour décider" },
+  { id: "P18", name: "alerts", from: 1620, to: 1680, trim: 10, caption: "Des alertes de cours" },
+  { id: "P19", name: "simulators", from: 1680, to: 1740, trim: 20, caption: "Des simulateurs pour décider" },
 ];
 // P20 : l'écran partagé (thème clair à gauche, téléphone à droite)
-export const SPLIT = { light: { trim: 0 }, mobile: { trim: 0 }, caption: "Sur ordinateur et sur téléphone, en clair ou en sombre" };
+export const SPLIT = { light: { trim: 20 }, mobile: { trim: 30 }, caption: "Sur ordinateur et sur téléphone, en clair ou en sombre" };
 
 // P15 : la galerie, un temps (15 im) par maquette ; chacune commence vers l'image 20 de son fichier
 const MODELS: readonly (readonly [string, string])[] = [
@@ -81,9 +81,9 @@ const GRID_MODELS = [...MODELS.map((m) => m[0]), "quiz"];  // P16 : les 17 maque
 const VOL = { music: 0.9, whoosh: 0.45, impact: 0.8, click: 0.6, bell: 0.5, keys: 0.3, tick: 0.22 };
 const WHOOSH = [225, 705, 1185, 1545, 1785];  // 15 images avant chaque changement de section : le sommet tombe sur la coupe
 const IMPACT = [240, 1200, 1800];
-const KEYS = { from: 549, count: 6, every: 4 };  // « Sanofi » se tape dans P6
+const KEYS = { from: 543, count: 4, every: 4 };  // « Sanofi » se tape dans P6 : les 4 dernières lettres (image 25 de la séquence, trim 22)
 const TICKS = MODELS.map((_, i) => 1200 + i * 15);  // un tic par maquette du drop
-const CLICKS = [{ name: "globe", from: 720, trim: 0, bell: false }, { name: "alerts", from: 1620, trim: 0, bell: true }];
+const CLICKS = [{ name: "globe", from: 720, trim: 30, bell: false }, { name: "alerts", from: 1620, trim: 10, bell: true }];  // mêmes trim que FOOTAGE
 
 // --- Outils : mouvement, fichiers, JSON ------------------------------------------------------------------------------------
 const clampOpts = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -469,7 +469,7 @@ const FootageShot: React.FC<{ readonly shot: Shot }> = ({ shot }) => {
 
 // --- 11. P20 : l'écran partagé, thème clair à gauche, téléphone à droite -------------------------------------------------
 const LIGHT_BOX: Box = { x: 210, y: 220, w: 990 };
-const PHONE = { cx: 1500, w: 400, ar: 2.0, r: 52, bezel: 6 };  // ar : hauteur / largeur de la séquence mobile
+const PHONE = { cx: 1500, w: 400, ar: 2338 / 1080, r: 52, bezel: 6 };  // ar : hauteur / largeur de la séquence mobile
 const Phone: React.FC<{ readonly trimBefore: number }> = ({ trimBefore }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();

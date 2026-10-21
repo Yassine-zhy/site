@@ -90,14 +90,6 @@ HITS = r"""([kind, key, n, region, all]) => {
   v.pick(null);
   return found;
 }"""
-# Un tooltip comme celui du navigateur : l'attribut title des cases de la carte ne se dessine pas dans une capture
-TOOLTIP = """.fv-cell { position: relative; } .fv-cell:hover { z-index: 20; }
-.fv-cell:hover::after { content: attr(title); position: absolute; left: 50%; top: calc(100% + 8px); z-index: 20;
-  transform: translateX(-50%); padding: .35rem .6rem; border-radius: 6px; white-space: nowrap; font-size: .78rem;
-  background: var(--fv-surface); color: var(--fv-text); border: 1px solid var(--fv-line);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, .35); animation: fv-tip-in .18s ease-out; }
-@keyframes fv-tip-in { from { opacity: 0; } to { opacity: 1; } }"""
-
 DESKTOP = dict(viewport={"width": 1600, "height": 900}, device_scale_factor=1.2, color_scheme="dark", locale="fr-FR")
 CONTEXTS = {
     "dark": DESKTOP,
@@ -229,11 +221,11 @@ def story_scroll(page, progress: float) -> int:
 
 def section_scroll(page, *selectors: str, gap: int = 110) -> int:
     """La position de défilement qui amène en haut de l'écran le premier élément trouvé. Un sélecteur peut être le
-    titre d'une section : « h2:La carte du CAC 40 »."""
+    titre d'une section (« h2:La carte du CAC 40 ») ou un h3 (« h3:Connecte-toi »)."""
     top = page.evaluate("""([selectors, gap]) => {
       const sc = document.querySelector('[data-testid=stMain]');
       for (const s of selectors) {
-        const [css, text] = s.startsWith('h2:') ? ['.fv-section h2', s.slice(3)] : [s, ''];
+        const [css, text] = s.startsWith('h2:') ? ['.fv-section h2', s.slice(3)] : s.startsWith('h3:') ? ['h3', s.slice(3)] : [s, ''];
         const el = [...document.querySelectorAll(css)].find((e) => e.textContent.trim().startsWith(text));
         if (el) return Math.round(sc.scrollTop + el.getBoundingClientRect().top - sc.getBoundingClientRect().top - gap);
       }
@@ -412,14 +404,15 @@ def globe(page):
 
 @sequence("heatmap")
 def heatmap(page):
-    """Marchés : la carte du CAC 40 ; la souris se pose sur une case, son infobulle s'affiche."""
+    """Marchés : la carte du CAC 40 ; la souris se pose sur une case. (Son infobulle est celle du navigateur, qu'une
+    capture ne dessine pas : on ne la contrefait pas, la bande-annonce ne montre que ce que le site affiche.)"""
     if not page.locator('.fv-obj[data-obj="globe"]').count():   # sinon on est déjà sur Marchés (après le globe)
         go(page, "Marchés", "Marchés", "globe")
     scroll_to(page, 0)
     page.locator('[data-testid="stButtonGroup"] button', has_text="CAC 40").first.click()   # la vue « CAC 40 »
-    page.wait_for_selector(".fv-cell", timeout=120_000)
+    page.wait_for_function("""() => [...document.querySelectorAll('.fv-section h2')]
+                                   .some((h) => h.textContent.trim().startsWith('La carte du CAC 40'))""", timeout=120_000)
     settle(page)
-    style = page.add_style_tag(content=TOOLTIP)
     pointer = Pointer(page, 800, 420)
     clip = Clip(page, "heatmap", pointer)
     here = 0
@@ -435,7 +428,6 @@ def heatmap(page):
         raise RuntimeError("aucune case de la carte à l'écran")
     clip.hold(0.6, glide(pointer, *cell))
     clip.until(3.0).save()
-    style.evaluate("(e) => e.remove()")
 
 
 @sequence("economy")
@@ -478,7 +470,7 @@ def portfolio(page):
     """Portefeuille : l'anneau se monte, puis la page descend vers les positions."""
     go(page, "Mon espace", "Portefeuille", "ring")
     Pointer(page, 800, 420)
-    there = section_scroll(page, "h2:Mes positions", "h2:Vue d'ensemble", "h2:Pour commencer", gap=120)
+    there = section_scroll(page, "h2:Mes positions", "h2:Vue d'ensemble", "h2:Pour commencer", "h3:Connecte-toi", gap=120)
     Clip(page, "portfolio").hold(1.2).hold(1.8, scroll_between(page, 0, there)).save()
 
 
