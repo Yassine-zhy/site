@@ -323,6 +323,8 @@ function perform(act, key, el) {
       const gap = block === "center" ? Math.max(90, (m.height - r.height) / 2) : 90;   // sous la barre de Streamlit
       return Math.min(main.scrollHeight - main.clientHeight, Math.max(0, main.scrollTop + r.top - m.top - gap));
     };
+    // le tournage de la bande-annonce (tools/footage.py) mène lui-même le défilement, image par image
+    if (window.__fvObjs?.scroller) { window.__fvObjs.scroller(main, goal()); return; }
     const smooth = tries > 0 && !reduced();
     main.scrollTo({ top: goal(), behavior: smooth ? "smooth" : "auto" });
     if (smooth) setTimeout(() => { if (node.isConnected && Math.abs(goal() - main.scrollTop) > 40) show(node, block, tries - 1); }, 1200);
