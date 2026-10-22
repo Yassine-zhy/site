@@ -121,7 +121,7 @@ PAGES = {  # titre et adresse relative de chaque page
     "terms": ("Conditions d'utilisation", "./conditions"),
 }
 GOOGLE_PHOTO = ", ainsi que ta photo de profil Google si tu te connectes avec Google"
-GEMINI_WARNING = ("Avec la formule gratuite de Gemini (Google), Google peut utiliser les contenus envoyés pour "
+GEMINI_WARNING = ("Dans la formule gratuite de Gemini, Google peut utiliser les contenus envoyés pour "
                   "améliorer ses services, et des personnes peuvent les relire : n'y écris jamais d'informations "
                   "personnelles.")
 
@@ -162,7 +162,7 @@ def _table(head: list[str], rows: list[list[str]]) -> str:
 def _host_lines(cfg: LegalConfig) -> list[str]:
     host = host_of(cfg)
     first = f"**{host['name']}**" + (f", service de **{host['company']}**" if host.get("company") else "")
-    lines = [first + "."]
+    lines = [first if host.get("company", "").endswith(".") else first + "."]  # « Snowflake Inc. » a déjà son point
     if host.get("address"):
         lines.append(f"- Adresse : {host['address']}")
     if host.get("phone"):
@@ -350,11 +350,11 @@ def _cookie_rows(cfg: LegalConfig) -> list[list[str]]:
     ]
     if cfg.logins:
         rows.append(["`_streamlit_user`, `_streamlit_user_tokens`", "Streamlit",
-                     f"Gardent ta connexion avec {_join(list(cfg.logins))}", "Le temps de la connexion",
+                     f"Gardent ta connexion avec {_join(list(cfg.logins))}", "30 jours",
                      "Oui (authentification)"])
     rows.append(["`stActiveTheme-…` (stockage local du navigateur)", "Streamlit",
-                 "Retient le thème que tu as choisi (clair, sombre ou système)", "Jusqu'à ce que tu l'effaces",
-                 "Oui (préférence choisie par toi)"])
+                 "Retient le thème d'affichage (clair, sombre ou celui du système) ; ne t'identifie pas",
+                 "Jusqu'à ce que tu l'effaces", "Oui (préférence d'affichage)"])
     return rows
 
 

@@ -78,9 +78,10 @@ class Brief:
     agenda: list[tuple[str, str]] = field(default_factory=list)  # (date formatée, événement)
     word: tuple[str, str] | None = None  # (terme, définition)
 
-    def to_markdown(self, site_url: str = "") -> str:
+    def to_markdown(self, site_url: str | None = None) -> str:
         """Le brief au format Markdown : un fichier texte lisible partout (et joli sur GitHub ou Notion).
-        Avec `site_url` (le texte de l'e-mail), il se termine par le lien pour ne plus le recevoir."""
+        Pour le texte d'un e-mail, `site_url` (vide si l'adresse du site est inconnue) ajoute la façon de ne plus le
+        recevoir, avec le lien des réglages quand on le connaît."""
         lines = [f"# FinVeille · Le brief du {self.date_label}", "", "## Les marchés", "", self.market or "—", ""]
         if self.headlines:
             lines += ["## À la une", ""] + [f"- **{rubric}** · [{title}]({url}) ({source})"
@@ -96,8 +97,10 @@ class Brief:
             lines += ["## Le mot du jour", "", f"**{self.word[0]}** : {self.word[1]}", ""]
         lines += ["---", "Brief rédigé automatiquement par FinVeille à partir de sources publiques. "
                   "Ce n'est pas un conseil en investissement."]
-        if site_url:
-            lines.append(f"Pour ne plus recevoir ce brief : {site_url}/settings (Réglages → Notifications par e-mail).")
+        if site_url is not None:
+            where = f"{site_url}/settings (Réglages → Notifications par e-mail)" if site_url else (
+                "Réglages → Notifications par e-mail")
+            lines.append(f"Pour ne plus recevoir ce brief : {where}.")
         return "\n".join(lines)
 
     def to_html(self, site_url: str = "") -> str:
