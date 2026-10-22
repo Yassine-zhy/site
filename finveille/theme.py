@@ -41,6 +41,7 @@ EXCHANGES = [
     ("Hong Kong", "Asia/Hong_Kong", time(9, 30), time(16, 0)),
     ("Paris", "Europe/Paris", time(9, 0), time(17, 30)),
     ("Londres", "Europe/London", time(8, 0), time(16, 30)),
+    ("Toronto", "America/Toronto", time(9, 30), time(16, 0)),
     ("New York", "America/New_York", time(9, 30), time(16, 0)),
 ]
 
@@ -1287,6 +1288,28 @@ html:not(.fv-story-on) .fv-story-rail { display: none; }
 }
 @media (pointer: coarse) { .fv-story-cta { min-height: 44px; } }
 
+/* Le choix de la place racontée (France, Canada, États-Unis) : une ligne discrète au-dessus du récit, à gauche comme
+   le texte. Sa hauteur est réservée : la page ne saute pas quand le sélecteur arrive. */
+.stApp .st-key-fvplace { flex-wrap: nowrap; align-items: center; gap: .6rem; min-height: 2.6rem; margin: -.2rem 0 -.4rem; }
+.fv-place-label { font-size: .86rem; font-weight: 600; color: var(--fv-muted); white-space: nowrap; }
+.stApp .st-key-fvplace [role="radiogroup"]:has(> [data-variant="segmented_control"]) { flex-wrap: nowrap; }
+.stApp .st-key-fvplace [data-variant="segmented_control"] { min-height: 2rem; padding: 0 .7rem; }
+.stApp .st-key-fvplace [data-variant="segmented_control"] p { font-size: .84rem; white-space: nowrap; }
+/* En attendant les cours d'une place jamais ouverte : le récit garde sa hauteur */
+.fv-story-wait { height: calc(4 * 80vh + 30vh); margin-top: -1rem; }
+.fv-story-wait p { position: sticky; top: 40vh; margin: 0; padding-top: 4rem; font-size: 1rem; color: var(--fv-muted);
+  animation: fv-wait 1.6s ease-in-out infinite alternate; }
+@keyframes fv-wait { from { opacity: .45; } }
+@media (max-width: 760px) {
+  .fv-story-wait { height: calc(4 * 70vh + 30vh); }
+  .stApp .st-key-fvplace { gap: .45rem; }
+  .stApp .st-key-fvplace [data-variant="segmented_control"] { padding: 0 .5rem; }
+}
+@media (prefers-reduced-motion: reduce) { .fv-story-wait p { animation: none; } }
+/* Dans les horloges du récit, la place racontée ressort */
+.fv-sessions li.is-current b { font-weight: 800; text-decoration: underline; text-decoration-color: var(--fv-brand);
+  text-decoration-thickness: 2px; text-underline-offset: 4px; }
+
 /* Les cours en rouleaux (motion.js) : chaque chiffre est une colonne 0-9 qui défile jusqu'à sa valeur */
 .fv-odo-run { white-space: nowrap; }
 .fv-odo-d { position: relative; display: inline-block; height: 1em; overflow: hidden; vertical-align: -.1em; line-height: 1em; }
@@ -1494,11 +1517,15 @@ def exchange_status(now: datetime) -> list[tuple[str, str, bool]]:
 # --- Blocs d'interface ------------------------------------------------------------------------
 
 
-def sessions_html(now: datetime) -> str:
+def sessions_html(now: datetime, current: str | None = None) -> str:
     """Les places boursières : point vert = séance ouverte (le texte le dit aussi). L'heure et l'état sont ensuite
-    tenus à jour dans le navigateur (static/fv3d/motion.js, attributs data-fv-…) : la page n'a pas à se redessiner."""
+    tenus à jour dans le navigateur (static/fv3d/motion.js, attributs data-fv-…) : la page n'a pas à se redessiner.
+    `current` : la ville de la place racontée, mise en avant (classe is-current)."""
+    def classes(city: str, is_open: bool) -> str:
+        return " ".join(filter(None, ["is-open" if is_open else "", "is-current" if city == current else ""]))
+
     items = "".join(
-        f'<li class="{"is-open" if is_open else ""}" data-fv-tz="{zone}" data-fv-open="{opens.hour * 60 + opens.minute}" '
+        f'<li class="{classes(city, is_open)}" data-fv-tz="{zone}" data-fv-open="{opens.hour * 60 + opens.minute}" '
         f'data-fv-close="{closes.hour * 60 + closes.minute}"><b>{city}</b> <time>{hour}</time> '
         f'<span class="fv-state">{"ouverte" if is_open else "fermée"}</span></li>'
         for (city, zone, opens, closes), (_, hour, is_open) in zip(EXCHANGES, exchange_status(now))
@@ -1572,12 +1599,31 @@ def _plural(count: int, words: str) -> str:
     return f"{count} {' '.join(w + 's' for w in words.split()) if count > 1 else words}"
 
 
-def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None = None, city: dict | None = None) -> str:
-    """L'accueil raconte la séance, un chapitre par écran de défilement (guide 32) : le CAC 40, la plus forte hausse,
-    la plus forte baisse, puis l'histoire du jour. La maquette du CAC 40 (`city`, scene3d.city_data) est posée à côté :
-    sa caméra suit le chapitre (static/fv3d/motion.js, vitrines.js).
+# Ce que le récit de l'accueil dit de chaque place : (« Le … » devant le verbe, nom de l'indice dans les accroches,
+# la ville dont l'horloge est mise en avant, l'accroche de l'actualité, la maquette pour les lecteurs d'écran)
+STORY_PLACES = {
+    "france": ("Le CAC 40", "du CAC 40", "Paris", "Ce qui fait l'actualité",
+               "La maquette du CAC 40 : une tour par valeur, sa hauteur suit son poids dans l'indice, son toit est vert "
+               "si elle monte, rouge si elle baisse."),
+    "canada": ("Le S&P/TSX", "du S&P/TSX 60", "Toronto", "Ce qui fait l'actualité au Canada",
+               "La maquette du S&P/TSX 60 : ses 40 plus grandes valeurs, une tour par valeur, sa hauteur suit la taille "
+               "de l'entreprise, son toit est vert si elle monte, rouge si elle baisse."),
+    "usa": ("Le Dow Jones", "à Wall Street", "New York", "Ce qui fait l'actualité dans le monde",
+            "La maquette de Wall Street : les 30 valeurs du Dow Jones et cinq géants de la tech, une tour par valeur, "
+            "sa hauteur suit la taille de l'entreprise, son toit est vert si elle monte, rouge si elle baisse."),
+}
+FUND_SYMBOLS = {"XIU.TO": "XIU"}  # l'indice de secours : un fonds, dont le cours n'est pas un niveau d'indice
 
-    Les chiffres sont ceux du moment ; sans les cours des 40 valeurs, les chapitres hausse et baisse sont omis."""
+
+def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None = None, city: dict | None = None,
+               place: str = "france") -> str:
+    """L'accueil raconte la séance, un chapitre par écran de défilement (guide 32) : l'indice de la place (le CAC 40
+    par défaut, ou le Canada, les États-Unis), la plus forte hausse, la plus forte baisse, puis l'histoire du jour.
+    La maquette de la place (`city`, scene3d.city_data) est posée à côté : sa caméra suit le chapitre
+    (static/fv3d/motion.js, vitrines.js). `cac40` : les valeurs de la place, quelle qu'elle soit.
+
+    Les chiffres sont ceux du moment ; sans les cours des valeurs, les chapitres hausse et baisse sont omis."""
+    name, short, town, news_kicker, model_label = STORY_PLACES.get(place, STORY_PLACES["france"])
     local = (now or datetime.now(timezone.utc)).astimezone(DISPLAY_TZ)
     day = fr_date(local).rsplit(" ", 1)[0].capitalize()  # « Mardi 20 octobre »
 
@@ -1593,19 +1639,24 @@ def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None
         verb = "progresse de" if move >= 0.05 else "recule de" if move <= -0.05 else "est stable, à"
         amount = (f'<span class="fv-odo">{fr_number(abs(move))}</span>\u202f%' if abs(move) >= 0.05
                   else f'<span class="fv-odo">{fr_number(move)}</span>\u202f%')
-        title = f'Le CAC 40 {verb} <span class="fv-move is-{"up" if move >= 0 else "down"}">{amount}</span>'
-        text = f"Il s'établit à {price(index.last)} points."
+        fund = FUND_SYMBOLS.get(index.symbol)
+        if fund:  # le fonds de secours suit le S&P/TSX 60 : on ne parle pas de points, son cours n'est pas un niveau
+            name = "Le S&P/TSX\u00a060"
+            text = f"D'après son fonds {fund}, qui s'échange à {price(index.last)}\u202f$."
+        else:
+            text = f"Il s'établit à {price(index.last)} points."
+        title = f'{esc(name)} {verb} <span class="fv-move is-{"up" if move >= 0 else "down"}">{amount}</span>'
     else:
         title, text = "Les marchés, en direct.", ""
     if cac40:
         rising = sum(1 for quote in cac40 if quote.change > 0)
         text += f" {_plural(rising, 'valeur')} en hausse, {len(cac40) - rising} en baisse."
     chapters.append(chapter("overview", "La séance", f"{day}, {local:%H} h {local:%M}", title,
-                            f'<p class="fv-ch-text">{esc(text.strip())}</p>{sessions_html(now or datetime.now(timezone.utc))}',
-                            first=True))
+                            f'<p class="fv-ch-text">{esc(text.strip())}</p>'
+                            f'{sessions_html(now or datetime.now(timezone.utc), town)}', first=True))
     ranked = sorted(cac40, key=lambda quote: quote.change, reverse=True)
-    for kind, label, kicker, movers in (("up", "Hausse", "La plus forte hausse du CAC 40", ranked[:3]),
-                                        ("down", "Baisse", "La plus forte baisse du CAC 40", ranked[::-1][:3])):
+    for kind, label, kicker, movers in (("up", "Hausse", f"La plus forte hausse {short}", ranked[:3]),
+                                        ("down", "Baisse", f"La plus forte baisse {short}", ranked[::-1][:3])):
         if not movers:
             continue
         top, others = movers[0], movers[1:]
@@ -1614,10 +1665,10 @@ def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None
                  f'{fr_number(abs(top.change))}</span>\u202f%</span>')
         follow = " et ".join(f"{esc(q.name)} ({signed(q.change)})" for q in others)
         body = f'<p class="fv-ch-text">{"Puis " if kind == "down" else "Derrière : "}{follow}.</p>' if follow else ""
-        chapters.append(chapter(kind, label, kicker, title, body))
+        chapters.append(chapter(kind, label, esc(kicker), title, body))
     if lead is not None:
         echo = f"Reprise par {_plural(echoes, 'autre source')}. " if echoes else ""
-        chapters.append(chapter("news", "L'actualité", "Ce qui fait l'actualité",
+        chapters.append(chapter("news", "L'actualité", news_kicker,
                                 f'<span class="fv-story-headline">{esc(lead.title)}</span>',
                                 f'<p class="fv-ch-text">{echo}Le détail, les autres dépêches et leurs sources sont '
                                 'juste en dessous.</p><a class="fv-story-cta" href="#fv-fil">Lire les dépêches</a>'))
@@ -1627,10 +1678,9 @@ def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None
     if city:
         import scene3d
 
-        model = scene3d.vitrine("city", city, "La maquette du CAC 40 : une tour par valeur, sa hauteur suit son poids "
-                                "dans l'indice, son toit est vert si elle monte, rouge si elle baisse.",
-                                classes="fv-story-obj")
-    return (f'<section class="fv-story{" has-obj" if model else ""}" style="--chapters:{len(chapters)}" aria-label="La séance en bref">'
+        model = scene3d.vitrine("city", city, model_label, classes="fv-story-obj")
+    return (f'<section class="fv-story{" has-obj" if model else ""}" data-place="{esc(place)}" '
+            f'style="--chapters:{len(chapters)}" aria-label="La séance en bref">'
             f'<div class="fv-story-stage"><div class="fv-story-chapters">{"".join(html for _, html in chapters)}</div>'
             f'<ol class="fv-story-rail" aria-label="Chapitres">{rail}</ol>{model}{credit_html()}</div></section>'
             '<span id="fv-fil"></span>')
