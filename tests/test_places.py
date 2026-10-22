@@ -74,7 +74,7 @@ def test_secours_xiu_quand_l_indice_de_toronto_manque():
     symbols = [q.symbol for q in quotes]
     assert "^GSPTSX" not in symbols
     spare = quotes[symbols.index("XIU.TO")]
-    assert spare.name == "S&P/TSX 60" and spare.group == "Amériques"
+    assert spare.name == "S&P/TSX 60 (fonds XIU)" and spare.group == "Amériques"
     assert symbols.index("XIU.TO") == symbols.index("^DJI") + 1  # à la place de l'indice manquant, dans l'ordre
     assert fetch.calls[1] == ["XIU.TO"]  # une seconde requête, pour le seul secours
 
@@ -98,7 +98,7 @@ def test_secours_qui_echoue_aussi():
 
 def test_une_place_avec_son_indice_ou_son_secours():
     index, members = market.fetch_place("canada", fetch=fake_fetch(unavailable={"^GSPTSX"}))
-    assert index.symbol == "XIU.TO" and index.name == "S&P/TSX 60"
+    assert index.symbol == "XIU.TO" and index.name == "S&P/TSX 60 (fonds XIU)"
     assert len(members) == len(PLACES["canada"][3]) and index not in members
     index, members = market.fetch_place("france", fetch=fake_fetch())
     assert index.symbol == "^FCHI" and len(members) == 40
@@ -137,8 +137,21 @@ def app(db, monkeypatch):
     import ui
     from core import capacity
 
+    import socket
+
+    from core import aggregator, images
+
+    def no_network(*args, **kwargs):
+        raise OSError("réseau coupé pendant les tests")
+
+    monkeypatch.setattr(socket, "getaddrinfo", no_network)  # un appel réseau oublié fait échouer le test tout de suite
     st.cache_data.clear()
     monkeypatch.setenv("LOCAL_MODE", "true")
+    monkeypatch.setattr(aggregator, "build_tasks", lambda keys: [])
+    monkeypatch.setattr(aggregator, "fetch_yahoo_ticker_news", lambda ticker: [])
+    monkeypatch.setattr(images, "share_images", lambda urls: {})
+    monkeypatch.setattr(ui, "ai_keys", lambda: {})
+    monkeypatch.setattr(market, "euro_rates", lambda: {"EUR": 1.0, "USD": 1.1})
     monkeypatch.setattr(ui, "fetch_quotes", fake_fetch())
     monkeypatch.setattr(ui, "LAST_GOOD", capacity.Memory())
     monkeypatch.setattr(ui, "search_companies", lambda q: [{"symbol": "SHOP.TO", "name": "Shopify", "exchange": "Toronto"}])
@@ -168,7 +181,7 @@ def test_changer_de_vue_met_a_jour_l_adresse(app):
     assert not app.exception
     assert app.query_params["view"] in ("canada", ["canada"])
     page = html_of(app)
-    assert "Les grandes valeurs de Toronto (S&P/TSX 60)" in page and "RY.TO" in page
+    assert theme.esc("Les grandes valeurs de Toronto (S&P/TSX 60)") in page and 'href="fiche?s=RY.TO"' in page
 
 
 def test_titres_des_trois_places(app):
@@ -176,7 +189,7 @@ def test_titres_des_trois_places(app):
     app.switch_page("views/markets.py").run()
     for label, title in [("France", "La carte du CAC 40"), ("États-Unis", "Les grandes valeurs de New York (Dow Jones et géants de la tech)")]:
         app.segmented_control(key="markets_view").set_value(label).run()
-        assert not app.exception and title in html_of(app)
+        assert not app.exception and theme.esc(title) in html_of(app)
 
 
 def test_la_vue_monde_presente_les_places(app):
