@@ -9,8 +9,13 @@
 // de nettoyage appelée quand la page se ferme.
 
 import * as THREE from "./three.module.min.js";
-import { installMotion } from "./motion.js";
 import { installVitrines } from "./vitrines.js";
+
+// motion.js arrive avec la version de ce fichier (?v=…, scene3d.py) : un correctif y est pris tout de suite, au lieu
+// d'attendre que le navigateur oublie l'ancienne copie (le serveur ne dit pas combien de temps la garder)
+const VERSION = new URL(import.meta.url).search;
+const installMotion = () => import(`./motion.js${VERSION}`).then((m) => m.installMotion())
+  .catch((error) => console.warn("FinVeille : animations indisponibles", error));
 
 // --- Palettes : les couleurs de la marque (theme.py), en clair et en sombre -------------------------------------
 const PALETTES = {
