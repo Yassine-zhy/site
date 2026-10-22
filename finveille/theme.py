@@ -3,7 +3,8 @@
 Principes :
 - deux palettes complètes, claire (blanc et gris bleuté) et sombre (bleu nuit), définies en CSS avec
   `light-dark(couleur claire, couleur sombre)` : Streamlit indique le thème actif au navigateur
-  (propriété CSS `color-scheme`), donc les couleurs suivent le thème choisi, sans relancer le script ;
+  (propriété CSS `color-scheme`, recopiée sur la page entière pour les dialogues : voir `THEME_SYNC_JS`), donc les
+  couleurs suivent le thème choisi, sans relancer le script ;
 - une seule couleur de marque, le bleu FinVeille, pour les actions et les liens ;
 - la couleur des données est réservée aux rubriques, à la hausse (▲ vert) et à la baisse (▼ rouge),
   toujours accompagnée d'un signe ou d'un nom : l'information ne repose jamais sur la couleur seule ;
@@ -1444,13 +1445,29 @@ html:not(.fv-story-on) .fv-story-obj { display: none; }
 """
 
 
+# Streamlit ne donne le thème choisi (propriété color-scheme) qu'à .stApp et à la barre latérale. Les dialogues
+# (« Rechercher ») et les menus déroulants sont rendus hors de .stApp, à la racine de la page, restée sans thème :
+# light-dark() y prenait la couleur claire (la barre de recherche restait blanche en thème sombre). Ce script recopie
+# le thème de .stApp sur <html>, dont ils héritent, et le suit quand le visiteur en change (menu ⋮ ou système) :
+# Streamlit change alors la classe de .stApp, sans relancer le script Python.
+THEME_SYNC_JS = """<script>(() => {
+  const app = document.querySelector('.stApp');
+  if (!app || app.dataset.fvThemeSync) return;
+  app.dataset.fvThemeSync = '1';
+  const sync = () => { document.documentElement.style.colorScheme = getComputedStyle(app).colorScheme; };
+  sync();
+  new MutationObserver(sync).observe(app, {attributes: true, attributeFilter: ['class']});
+})();</script>"""
+
+
 def inject_css() -> None:
     """Ajoute la feuille de style à la page (à appeler une fois par exécution, dans app.py), avec la barre de lecture et
     l'intro de la visite (guide 31). Cet élément reste en place d'une page à l'autre : l'intro ne se rejoue pas."""
-    st.html(CSS + '<span id="fv-top"></span><div class="fv-progress" aria-hidden="true"></div>'
+    st.html(CSS + THEME_SYNC_JS + '<span id="fv-top"></span><div class="fv-progress" aria-hidden="true"></div>'
             f'<div class="fv-intro" aria-hidden="true"><div class="fv-intro-inner"><img src="{LOGO_URI}" alt="">'
             '<span class="fv-intro-word">Fin<em>Veille</em></span><i class="fv-intro-line"></i>'
-            f'<span class="fv-intro-by">Un projet étudiant de {esc(AUTHOR)}</span></div></div>')
+            f'<span class="fv-intro-by">Un projet étudiant de {esc(AUTHOR)}</span></div></div>',
+            unsafe_allow_javascript=True)
 
 
 # --- Petites fonctions de mise en forme --------------------------------------------------------
