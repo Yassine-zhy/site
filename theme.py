@@ -1302,7 +1302,7 @@ html:not(.fv-story-on) .fv-story-rail { display: none; }
 @keyframes fv-wait { from { opacity: .45; } }
 @media (max-width: 760px) {
   .fv-story-wait { height: calc(4 * 70vh + 30vh); }
-  .stApp .st-key-fvplace { gap: .45rem; }
+  .stApp .st-key-fvplace { gap: .45rem; margin-bottom: .6rem; }
   .stApp .st-key-fvplace [data-variant="segmented_control"] { padding: 0 .5rem; }
 }
 @media (prefers-reduced-motion: reduce) { .fv-story-wait p { animation: none; } }
