@@ -49,6 +49,30 @@ def test_chaque_adresse_de_page_est_relative():
 # --- Le glossaire ----------------------------------------------------------------------------------
 
 
+# --- Les valeurs connues du site, avant celles de Yahoo ----------------------------------------------
+
+
+def test_valeurs_connues_par_debut_de_mot():
+    assert [v["symbol"] for v in search.local_values("total")] == ["TTE.PA"]  # Yahoo : des fonds Vanguard
+    assert search.local_values("royal")[0]["symbol"] == "RY.TO"
+    assert search.local_values("ROYAL")[0]["exchange"] == "Toronto"
+    assert search.local_values("cac")[0]["symbol"] == "^FCHI"
+    assert search.local_values("") == [] and search.local_values("zzzz") == []
+
+
+def test_valeurs_connues_quatre_au_plus_sans_doublon():
+    hits = search.local_values("banque")
+    assert 0 < len(hits) <= 4 and len({v["symbol"] for v in hits}) == len(hits)
+
+
+def test_valeurs_connues_d_abord_puis_yahoo_sans_doublon():
+    yahoo = [{"symbol": "TTE.PA", "name": "TotalEnergies SE", "exchange": "Paris"},
+             {"symbol": "VTI", "name": "Vanguard Total Stock", "exchange": "NYSEArca"}]
+    merged = search.merge_values(search.local_values("total"), yahoo)
+    assert [v["symbol"] for v in merged] == ["TTE.PA", "VTI"]
+    assert merged[0]["name"] == "TotalEnergies"  # le nom du site, pas celui de Yahoo
+
+
 def test_glossaire_par_nom_de_terme():
     hits = search.glossary_hits("dividende")
     assert hits[0] == ("Dividende", GLOSSARY["Dividende"][1])

@@ -15,6 +15,7 @@ import coins
 import theme
 import ui
 from core.crypto import CoinHit
+from core.market import PLACES, WATCHLIST
 from core.filters import normalize
 from core.glossary import GLOSSARY
 from theme import esc, safe_url
@@ -64,17 +65,10 @@ CSS = """<style>
 .st-key-fvaccount .st-key-fvsearch_open button:hover { border-color: var(--fv-brand); }
 .st-key-fvaccount .st-key-fvsearch_open button p { font-size: .85rem; font-weight: 500; }
 @media (max-width: 640px) {  /* téléphone : l'icône seule, le texte reste lu par les lecteurs d'écran */
-  .st-key-fvaccount .st-key-fvsearch_open button { min-width: 2.3rem; min-height: 2.3rem; padding: .4rem; gap: 0;
-    justify-content: center; }
+  .st-key-fvaccount .st-key-fvsearch_open button { gap: 0; }  /* sa taille : celle du compte (theme.py) */
   .st-key-fvaccount .st-key-fvsearch_open button p { position: absolute; width: 1px; height: 1px; overflow: hidden;
     clip-path: inset(50%); }
 }
-/* Le dialogue : Streamlit le place hors de .stApp, où theme.py définit les variables --fv-* ; on reprend ici les
-   valeurs dont il a besoin (mêmes teintes que la couche sémantique de theme.py, clair et sombre) */
-[role="dialog"] { --fv-line: light-dark(#e2e7f0, #1a2335); --fv-surface: light-dark(#ffffff, #0c111d);
-  --fv-sunken: light-dark(#f6f8fc, #0a0e18); --fv-text: light-dark(#0b1220, #e8edf6);
-  --fv-muted: light-dark(#566176, #96a2b9); --fv-brand: light-dark(#2451de, #6d93ff);
-  --fv-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
 .st-key-fvsearch_q { margin-bottom: 0; }
 .fvs-note { margin: -.4rem 0 .6rem; font-size: .76rem; color: var(--fv-muted); }
 .fvs-group { margin: .9rem 0 0; }
@@ -113,6 +107,35 @@ def page_hits(query: str) -> list[tuple[str, str]]:
         if all(word in text for word in words):
             found.append((not all(word in in_title for word in words), len(found), title, address))
     return [(title, address) for _, _, title, address in sorted(found)[:MAX_PAGES]]
+
+
+# Les valeurs que le site connaît : celles des places (CAC 40, S&P/TSX 60, Wall Street) et les cours du bandeau
+CITIES = {"france": "Paris", "canada": "Toronto", "usa": "New York"}
+KNOWN = ([{"symbol": symbol, "name": name, "exchange": CITIES[key]}
+          for key, (_, _, _, members) in PLACES.items() for symbol, name, _ in members]
+         + [{"symbol": symbol, "name": name, "exchange": group} for symbol, name, group, _ in WATCHLIST])
+
+
+def local_values(query: str, limit: int = 4) -> list[dict]:
+    """Les valeurs connues du site dont un mot du nom commence par la recherche (ou dont le symbole commence par elle).
+    Yahoo répond en anglais, d'abord pour les États-Unis : « total » y donne des fonds Vanguard, pas TotalEnergies."""
+    wanted = normalize(query).strip()
+    if not wanted:
+        return []
+    found, seen = [], set()
+    for value in KNOWN:
+        if value["symbol"] in seen:
+            continue
+        if f" {wanted}" in f" {normalize(value['name'])}" or normalize(value["symbol"]).startswith(wanted):
+            found.append(value)
+            seen.add(value["symbol"])
+    return found[:limit]
+
+
+def merge_values(known: list[dict], yahoo: list[dict]) -> list[dict]:
+    """Les valeurs connues du site d'abord, puis celles de Yahoo, sans doublon de symbole."""
+    seen = {value["symbol"] for value in known}
+    return (known + [value for value in yahoo if value["symbol"] not in seen])[:MAX_VALUES]
 
 
 def glossary_hits(query: str) -> list[tuple[str, str]]:
@@ -189,7 +212,7 @@ def open_dialog() -> None:
     if len(query) < MIN_CHARS:
         st.html(shortcuts_html())
         return
-    values = (ui.search_companies(query) or [])[:MAX_VALUES]
+    values = merge_values(local_values(query), ui.search_companies(query) or [])
     found_coins = coins.search_coins(query)
     page_found, terms = page_hits(query), glossary_hits(query)
     body = results_html(values, found_coins or [], page_found, terms)

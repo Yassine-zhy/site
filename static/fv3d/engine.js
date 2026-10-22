@@ -855,6 +855,26 @@ function installChat() {
     .observe(document.body, { childList: true, subtree: true });
 }
 
+// --- Les dialogues de Streamlit (« Rechercher ») : le thème de la page ------------------------------------------------
+// Streamlit ne donne le thème (color-scheme) qu'à .stApp, et ses dialogues sont posés à côté : sans lui, les couleurs
+// light-dark() de theme.py y restaient claires en mode sombre (un champ blanc, un texte presque invisible).
+function installDialogTheme() {
+  if (window.__fvDialogTheme) return;
+  window.__fvDialogTheme = true;
+  let queued = false;
+  const sync = () => {
+    queued = false;
+    const app = document.querySelector(".stApp");
+    if (!app) return;
+    const scheme = getComputedStyle(app).colorScheme;
+    for (const dialog of document.querySelectorAll('[data-testid="stDialog"]')) {
+      if (dialog.style.colorScheme !== scheme) dialog.style.colorScheme = scheme;
+    }
+  };
+  new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(sync); } })
+    .observe(document.body, { childList: true, subtree: true });
+}
+
 // --- La recherche du site : la touche « / » ou Ctrl+K (Cmd+K) ouvre le dialogue « Rechercher » (search.py) ---------
 function installShortcut() {
   if (window.__fvShortcut) return;
@@ -890,6 +910,7 @@ export function show(data) {
   installLinks();
   installChat();
   installShortcut();
+  installDialogTheme();
   if (!webgl()) return () => {};   // pas de WebGL : les illustrations de l'étape 29 restent en place
   installVitrines();
   try {

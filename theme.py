@@ -60,7 +60,7 @@ CSS = """
       Un composant n'utilise jamais une couleur brute : changer de thème, c'est changer la couche sémantique.
       light-dark(clair, sombre) suit le thème choisi dans Streamlit.
    ============================================================================================= */
-.stApp {
+.stApp, [data-testid="stDialog"] {  /* les dialogues (« Rechercher ») sont hors de .stApp : mêmes jetons */
   /* --- Primitifs : couleurs ----------------------------------------------------------------- */
   --ink-0: #ffffff;   --ink-50: #f6f8fc;  --ink-100: #eef2f9; --ink-150: #e2e7f0; --ink-200: #c9d2e0;
   --ink-400: #8791a5; --ink-500: #566176; --ink-900: #0b1220;
@@ -120,7 +120,8 @@ CSS = """
   --ring: 0 0 0 3px color-mix(in srgb, var(--fv-brand) 26%, transparent);
   --accent-bar: linear-gradient(180deg, var(--fv-brand), var(--fv-brand-2));
   --fv-glare: light-dark(rgba(36, 81, 222, .07), rgba(255, 255, 255, .07));  /* le reflet qui suit la souris */
-
+}
+.stApp {
   /* Le fond : deux halos très doux (bleu, violet) en haut de page, qui donnent de la profondeur */
   background: radial-gradient(1100px 520px at 8% -8%, var(--fv-glow), transparent 60%),
     radial-gradient(900px 480px at 100% -4%, var(--fv-glow-2), transparent 62%), var(--fv-bg);
@@ -165,7 +166,8 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :has(.st-key-fvaccount) { animation: none; }
 @media (max-width: 640px) {  /* téléphone : une icône (le texte reste lu par les lecteurs d'écran), loin du menu ⋮ */
   .st-key-fvaccount { right: 3.9rem; }
-  .st-key-fvaccount a { padding: .4rem; }
+  .st-key-fvaccount a, .st-key-fvaccount .st-key-fvsearch_open button { width: 2.5rem; height: 2.5rem; min-height: 0;
+    padding: 0; justify-content: center; border-radius: 50%; }  /* deux ronds de même taille (search.py : la loupe) */
   .st-key-fvaccount a p { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   [data-testid="stStatusWidget"] button { display: none; }  /* « Stop » : inutile au visiteur, il chevauchait le compte */
 }
