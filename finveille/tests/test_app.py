@@ -115,10 +115,10 @@ def test_resume_affiche(app):
     assert any(b.label == "Fermer le résumé" for b in app.button)
 
 
-def test_les_trois_vues_des_marches(app):
+def test_les_vues_des_marches(app):
     app.run()
     app.switch_page("views/markets.py").run()
-    for view in ["CAC 40", "Devises", "Monde"]:
+    for view in ["France", "Canada", "États-Unis", "Devises", "Monde"]:
         app.segmented_control(key="markets_view").set_value(view).run()
         assert not app.exception, view
 

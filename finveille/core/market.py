@@ -114,7 +114,7 @@ PLACES = {
 
 
 # Yahoo refuse parfois l'indice de Toronto : à sa place, le fonds qui suit le S&P/TSX 60 (symbole, nom affiché)
-FALLBACKS = {"^GSPTSX": ("XIU.TO", "S&P/TSX 60")}
+FALLBACKS = {"^GSPTSX": ("XIU.TO", "S&P/TSX 60 (fonds XIU)")}
 
 
 def place_of(symbol: str) -> str | None:
