@@ -36,7 +36,8 @@ def all_texts(cfg):
 def test_config_sans_secrets():
     cfg = legal.config_from({})
     assert cfg == legal.LegalConfig()
-    assert (cfg.contact, cfg.database, cfg.email_provider, cfg.logins, cfg.ai) == (None, None, None, (), ())
+    assert cfg.contact == legal.CONTACT  # l'adresse du site, même sans réglage
+    assert (cfg.database, cfg.email_provider, cfg.logins, cfg.ai) == (None, None, (), ())
     assert cfg.site_url == "https://finveille.streamlit.app" and cfg.hosting == "streamlit"
     assert not cfg.email_accounts
 
@@ -155,12 +156,18 @@ def test_hebergeur_inconnu_sans_adresse_inventee():
     assert "**autre**" in text and "Adresse" not in text and "Snowflake" not in text
 
 
-def test_contact_a_venir_quand_il_manque():
-    for name, text in all_texts(legal.config_from({})).items():
+def test_l_adresse_du_site_par_defaut():
+    assert legal.config_from({}).contact == "contact.finveille@gmail.com"
+    for text in (legal.mentions_legales, legal.confidentialite, legal.conditions):
+        assert "[contact.finveille@gmail.com](mailto:contact.finveille@gmail.com)" in text(legal.config_from({}))
+
+
+def test_contact_a_venir_quand_aucune_adresse():
+    for name, text in all_texts(legal.LegalConfig(contact=None)).items():
         assert "mailto:" not in text, name
     assert legal.NO_CONTACT == "l'adresse de contact (à venir)"
     for text in (legal.mentions_legales, legal.confidentialite, legal.conditions):
-        assert legal.NO_CONTACT in text(legal.config_from({}))
+        assert legal.NO_CONTACT in text(legal.LegalConfig(contact=None))
     with_contact = legal.mentions_legales(legal.config_from(FULL))
     assert "[contact@example.org](mailto:contact@example.org)" in with_contact and "à venir" not in with_contact
 
@@ -198,12 +205,12 @@ def set_secrets(monkeypatch, secrets: dict) -> None:
     monkeypatch.setattr(views_legal, "get_secret", secrets.get)
 
 
-def test_avertissement_quand_le_contact_manque(monkeypatch):
+def test_sans_reglage_l_adresse_du_site(monkeypatch):
     set_secrets(monkeypatch, {})
     page = open_page("cookies_page")
-    assert [warning.value for warning in page.warning] == [
-        "L'adresse de contact n'est pas encore renseignée (réglage CONTACT_EMAIL)."]
+    assert not page.exception and not page.warning
     assert "Les traceurs de l'hébergeur" in shown(page)
+    assert "contact.finveille@gmail.com" in shown(open_page("mentions_page"))
 
 
 def test_pas_d_avertissement_avec_un_contact(monkeypatch):

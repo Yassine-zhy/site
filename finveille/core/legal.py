@@ -14,7 +14,8 @@ from urllib.parse import urlparse
 UPDATED = "22 octobre 2026"
 EDITOR = "Yassine Zouhair"
 DEFAULT_SITE_URL = "https://finveille.streamlit.app"
-NO_CONTACT = "l'adresse de contact (à venir)"  # tant que le réglage CONTACT_EMAIL manque
+CONTACT = "contact.finveille@gmail.com"  # l'adresse de contact du site ; le réglage CONTACT_EMAIL peut la remplacer
+NO_CONTACT = "l'adresse de contact (à venir)"  # si une configuration n'en donne aucune
 
 # L'hébergeur de l'application ; un autre hébergeur s'ajoute ici (le réglage HOSTING donne sa clé)
 HOSTS = {
@@ -52,7 +53,7 @@ AI_KEYS = [("GEMINI_API_KEY", "Gemini"), ("GROQ_API_KEY", "Groq")]
 @dataclass(frozen=True)
 class LegalConfig:
     editor: str = EDITOR
-    contact: str | None = None  # secret CONTACT_EMAIL
+    contact: str | None = CONTACT  # secret CONTACT_EMAIL, sinon l'adresse du site
     site_url: str = DEFAULT_SITE_URL
     hosting: str = "streamlit"
     database: str | None = None  # None : SQLite, sur le serveur de l'appli
@@ -101,7 +102,7 @@ def config_from(secrets: Mapping) -> LegalConfig:
     smtp_host = _text(secrets, "SMTP_HOST")
     email_provider = (_first_match(smtp_host, EMAIL_PROVIDERS) or UNKNOWN_EMAIL_PROVIDER) if smtp_host else None
     return LegalConfig(
-        contact=_text(secrets, "CONTACT_EMAIL"),
+        contact=_text(secrets, "CONTACT_EMAIL") or CONTACT,
         site_url=(_text(secrets, "SITE_URL") or DEFAULT_SITE_URL).rstrip("/"),
         hosting=(_text(secrets, "HOSTING") or "streamlit").lower(),
         database=database,
