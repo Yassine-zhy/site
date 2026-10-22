@@ -11,6 +11,7 @@ from core import analytics, capacity, images, storage
 from core.aggregator import filter_region, prefer_french
 from core.config import API_KEYS, CATEGORIES, REGIONS
 from core.filters import filter_articles
+from core.market import align_session
 from theme import esc
 from ui import (NO_STATUS, api_keys, article_card, current_user, flush_toast, hero_quotes, known_cac40, load_articles,
                 load_trends, setting, warm_cac40)
@@ -231,7 +232,8 @@ def rail_blocks(filtered, collected):
 
 def tell(cac40) -> None:
     """Le récit, avec la une du moment (la même que dans le fil, calculée une fois pour tous les visiteurs)."""
-    index = next(iter(hero_quotes("^FCHI")), None)
+    # L'indice et ses valeurs viennent de deux téléchargements : on les ramène à la même séance
+    index, cac40, _ = align_session(next(iter(hero_quotes("^FCHI")), None), list(cac40 or []))
     lead = echoes = None
     if articles:
         lead_id, echoes, _ = lead_for(tuple(a.id for a in articles[:150]))

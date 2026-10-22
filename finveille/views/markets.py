@@ -6,7 +6,7 @@ import streamlit as st
 
 import theme
 from core import market
-from core.market import CURRENCIES, PLACES, convert, mood, resolve_view, top_moves
+from core.market import CURRENCIES, PLACES, align_session, convert, mood, resolve_view, top_moves
 from theme import esc
 from ui import hero_quotes, load_euro_rates, load_place, load_quotes, search_companies
 
@@ -205,7 +205,7 @@ def place_view(key: str) -> None:
     """Une place (clé de PLACES) : son indice, l'ambiance de sa cote, sa carte par secteur, ses plus fortes hausses et
     baisses, et le tableau de ses valeurs."""
     name = PLACES[key][0]
-    index, quotes = load_place(key)
+    index, quotes, _ = align_session(*load_place(key))  # l'indice et ses valeurs, sur la même séance
     if not quotes:
         st.warning(f"Les cours de la place « {name} » ne sont pas disponibles pour le moment.", icon=":material/cloud_off:")
         return

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, replace
 from datetime import date
 
 import pandas as pd
@@ -155,10 +156,43 @@ class Quote:
         return (self.last / start - 1) * 100 if start else 0.0
 
 
+def _hourly(symbols: list[str]) -> pd.DataFrame:
+    return yf.download(symbols, period="5d", interval="60m", group_by="ticker", progress=False, auto_adjust=False)
+
+
+def fill_last_closes(data: pd.DataFrame, symbols: list[str], hourly=_hourly) -> pd.DataFrame:
+    """Yahoo publie parfois la clôture quotidienne d'une action des heures après celle de son indice : la dernière
+    ligne reste vide (NaN) alors que la séance a bien eu lieu, et la page mélangerait deux séances. On la complète
+    avec le dernier cours horaire de ce jour-là, en une seule requête de plus, pour les seuls instruments concernés.
+    Un instrument sans cours horaire ce jour-là (jour férié de sa place) reste vide."""
+    if data.empty or data.columns.nlevels < 2:
+        return data
+    last = data.index[-1]
+    present = set(data.columns.get_level_values(0))
+    missing = [s for s in symbols if s in present and pd.isna(data[s]["Close"].iloc[-1])]
+    if not missing:
+        return data
+    try:
+        bars = hourly(missing)
+    except Exception:  # le complément échoue : on garde les clôtures publiées
+        return data
+    if bars is None or bars.empty or bars.columns.nlevels < 2:
+        return data
+    for symbol in missing:
+        if symbol not in set(bars.columns.get_level_values(0)):
+            continue
+        closes = bars[symbol]["Close"].dropna()
+        same_day = closes[[stamp.date() == last.date() for stamp in closes.index]]
+        if len(same_day):
+            data.loc[last, (symbol, "Close")] = float(same_day.iloc[-1])
+    return data
+
+
 def fetch_quotes(watchlist: list[tuple[str, str, str, str]] = WATCHLIST, period: str = "3mo") -> list[Quote]:
     """Télécharge en une seule requête les cours quotidiens de tous les instruments."""
     symbols = [symbol for symbol, *_ in watchlist]
     data = yf.download(symbols, period=period, interval="1d", group_by="ticker", progress=False, auto_adjust=False)
+    data = fill_last_closes(data, symbols)
 
     quotes = []
     for symbol, name, group, unit in watchlist:
@@ -170,6 +204,29 @@ def fetch_quotes(watchlist: list[tuple[str, str, str, str]] = WATCHLIST, period:
             continue
         quotes.append(Quote(symbol, name, group, unit, float(closes.iloc[-1]), float(closes.iloc[-2]), closes))
     return quotes
+
+
+def _until(quote: Quote, day: date) -> Quote:
+    """Le cours tel qu'il était à la clôture du jour `day` (inchangé s'il n'a rien de plus récent)."""
+    history = quote.history[[stamp.date() <= day for stamp in quote.history.index]]
+    if len(history) < 2 or len(history) == len(quote.history):
+        return quote
+    return replace(quote, last=float(history.iloc[-1]), previous=float(history.iloc[-2]), history=history)
+
+
+def align_session(index: Quote | None, members: list[Quote], share: float = 0.8) -> tuple[Quote | None, list[Quote], date | None]:
+    """Un indice et ses valeurs ramenés à la même séance : la plus récente que l'indice et au moins 80 % des valeurs
+    ont tous les deux (sinon le récit dirait « le CAC 40 monte » d'une séance et « 16 valeurs en hausse » d'une
+    autre). Renvoie (indice, valeurs, date de la séance) ; tels quels si aucune séance commune n'est trouvée."""
+    if not members:
+        return index, members, None
+    counts = Counter(day for q in members for day in {stamp.date() for stamp in q.history.index})
+    index_days = {stamp.date() for stamp in index.history.index} if index else None
+    session = next((day for day in sorted(counts, reverse=True)
+                    if counts[day] >= share * len(members) and (index_days is None or day in index_days)), None)
+    if session is None:
+        return index, members, None
+    return (_until(index, session) if index else None), [_until(q, session) for q in members], session
 
 
 def fetch_quotes_with_fallback(watchlist: list[tuple[str, str, str, str]] = WATCHLIST, period: str = "3mo",
