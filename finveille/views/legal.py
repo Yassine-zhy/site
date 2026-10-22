@@ -56,7 +56,7 @@ def mentions_page() -> None:
 
 
 def privacy_page() -> None:
-    show("Ta vie", "privée.", "Quelles données FinVeille traite, pourquoi, et comment tu gardes la main dessus.",
+    show("La", "confidentialité.", "Quelles données FinVeille traite, pourquoi, et comment tu gardes la main dessus.",
          legal.confidentialite)
 
 

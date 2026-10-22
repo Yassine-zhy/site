@@ -17,6 +17,15 @@ FIXTURES = Path(__file__).parent / "fixtures"
 TEST_DATABASE_URL = os.environ.get("FINVEILLE_TEST_DATABASE_URL", "")
 
 
+@pytest.fixture(autouse=True)
+def no_favicon_network(monkeypatch):
+    """Les logos des sources sont téléchargés par le serveur (ui._download_favicon) : jamais pendant les tests."""
+    def refuse(domain):
+        raise OSError("pas de réseau pendant les tests")
+
+    monkeypatch.setattr("ui._download_favicon", refuse)
+
+
 @pytest.fixture
 def db(tmp_path, monkeypatch):
     """Une base SQLite neuve et temporaire pour chaque test : on ne touche jamais à tes vraies données."""
