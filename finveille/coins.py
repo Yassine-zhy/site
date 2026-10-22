@@ -19,7 +19,7 @@ from theme import esc, safe_url
 from ui import _network, _not_empty, _resilient
 
 CHART_PERIODS = {"24 h": "1", "7 jours": "7", "30 jours": "30", "1 an": "365", "Depuis le début": "max"}
-COIN_ID = re.compile(r"[a-z0-9][a-z0-9._-]{0,99}")  # la forme des identifiants CoinGecko
+COIN_ID = re.compile(r"[a-z0-9-]{1,64}")  # la forme des identifiants CoinGecko
 
 # La fiche : "ok", ou la raison pour laquelle on n'a rien à montrer
 OK, UNKNOWN, UNAVAILABLE = "ok", "unknown", "unavailable"

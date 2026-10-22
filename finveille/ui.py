@@ -455,6 +455,9 @@ def setting(user: str | None, key: str, default=None):
 # - pendant l'attente du réseau, le visiteur rend sa place dans la file d'attente (@_network).
 
 LAST_GOOD = capacity.Memory(max_entries=1000, ttl=24 * 3600)
+# Cache négatif : un symbole ou un identifiant inconnu (réponse vide) est retenu 5 minutes, sans rappeler le réseau
+# à chaque rerun ; mémoire bornée, séparée de LAST_GOOD (qui ne reçoit jamais d'inconnu).
+UNKNOWN = capacity.Memory(max_entries=1000, ttl=300)
 
 
 def _network(func):
@@ -469,11 +472,21 @@ def _network(func):
 def _resilient(name: str, fetch, *args, empty=None):
     """Appelle `fetch(*args)` (une fonction en cache) ; en cas d'échec, la dernière réponse réussie, sinon `empty`."""
     key = f"{name}|{args!r}"
+    if (known := UNKNOWN.get(key)) is not None:  # déjà vu inconnu il y a moins de 5 minutes
+        return known[0]
     try:
         value = fetch(*args)
+    except LookupError:  # réponse vide : inconnu, sauf si on a déjà eu mieux ; retenu 5 minutes
+        found = LAST_GOOD.get(key)
+        if found is None:
+            UNKNOWN.put(key, (empty,))
+        return empty if found is None else found
     except Exception:  # réseau, quota (429), format inattendu… : rien n'est mis en cache, on réessaiera
         found = LAST_GOOD.get(key)
         return empty if found is None else found
+    if value is None:  # inconnu confirmé (ex. identifiant CoinGecko) : pas de None dans LAST_GOOD
+        UNKNOWN.put(key, (None,))
+        return None
     LAST_GOOD.put(key, value)
     return value
 

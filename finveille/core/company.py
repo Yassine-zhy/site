@@ -45,11 +45,16 @@ PERFORMANCE_PERIODS = [
 # --- Quelle sorte de valeur ? ------------------------------------------------------------------
 
 
+SYMBOL_OK = re.compile(r"[A-Z0-9.^=_-]*")
+
+
 def normalize_symbol(raw) -> str:
-    """Le symbole lu dans l'adresse (`?s=mc.pa` → « MC.PA ») ; chaîne vide s'il n'y en a pas."""
+    """Le symbole lu dans l'adresse (`?s=mc.pa` → « MC.PA ») ; chaîne vide s'il n'y en a pas, ou s'il est invalide
+    (20 caractères au plus, parmi lettres, chiffres et . ^ = _ -)."""
     if isinstance(raw, (list, tuple)):
         raw = raw[0] if raw else ""
-    return str(raw or "").strip().upper()
+    symbol = str(raw or "").strip().upper()[:20]
+    return symbol if SYMBOL_OK.fullmatch(symbol) else ""
 
 
 def guess_type(symbol: str) -> str:
@@ -310,7 +315,10 @@ def _from_metadata(symbol: str) -> dict:
 def fetch_overview(symbol: str) -> dict:
     """La fiche Yahoo d'une valeur (`info`) ; à défaut, la fiche minimale tirée de l'historique. Vide si Yahoo ne
     connaît pas le symbole."""
-    info = market.company_profile(symbol)
+    try:
+        info = market.company_profile(symbol)
+    except Exception:  # Yahoo refuse (429, 401, 404…) ou renvoie un format inattendu : on passe au secours
+        info = {}
     return info or _from_metadata(symbol)
 
 

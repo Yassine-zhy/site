@@ -5,6 +5,7 @@ d'entreprise (cours, graphique annoté, indicateurs, agenda, analyse), les secti
 résultats, analystes, dividendes, actualités, valeurs du secteur) et leurs chargements en cache (`st.cache_data`).
 """
 
+import math
 import re
 from datetime import date
 from urllib.parse import quote as url_quote
@@ -98,7 +99,8 @@ def display_name(symbol: str) -> str:
 
 
 def format_indicator(value, kind: str, currency: str) -> str:
-    if value is None:
+    # Yahoo renvoie parfois une chaîne (« Infinity ») ou NaN : pas de chiffre à montrer
+    if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value):
         return "—"
     if kind == "money":
         return theme.compact_money(value, currency)
@@ -219,7 +221,8 @@ def price_block(symbol: str, currency: str, articles, stats: dict, unit: str = "
     if unit == "pb":
         day, span = (last - previous) * 100, (last - first) * 100
     else:
-        day, span = (last / previous - 1) * 100, (last / first - 1) * 100
+        day = (last / previous - 1) * 100 if previous else 0.0
+        span = (last / first - 1) * 100 if first else 0.0
     stats["Variation sur la période affichée (%)"] = round(span, 1)
     stats["Période affichée"] = period or "6 mois"
     st.html(
@@ -342,7 +345,8 @@ def market_sheet(symbol: str, name: str, profile: dict, kind: str, articles=()) 
             year = load_history(symbol, "1y")
             if year is not None and not year.empty:
                 closes = year["Close"].dropna()
-                low, high, current = float(closes.min()), float(closes.max()), float(closes.iloc[-1])
+                if len(closes):  # que des NaN : pas de fourchette
+                    low, high, current = float(closes.min()), float(closes.max()), float(closes.iloc[-1])
         exchange = profile.get("fullExchangeName")
         facts = [("Symbole", symbol), ("Type", company.KIND_NAMES.get(kind, "—")),
                  *([("Place de cotation", exchange)] if exchange and exchange != "CCY" else []),
@@ -424,7 +428,7 @@ def results_section(symbol: str, currency: str) -> None:
         st.caption("Les résultats annuels ne sont pas disponibles pour cette valeur (Yahoo n'en donne pas).")
         return
     divisor, suffix = scaled([r["revenue"] for r in rows] + [r["net"] for r in rows if r["net"] is not None])
-    unit = f"{suffix} {currency}".strip()
+    unit = f"{suffix} {currency or ''}".strip()
     names = {"revenue": "Chiffre d'affaires", "net": "Résultat net"}
     data = pd.DataFrame(
         [{"exercice": str(r["year"]), "série": names[key], "montant": r[key] / divisor,

@@ -64,7 +64,7 @@ if detail is None:
                       "chiffres clés, ou choisis-en une parmi les plus grosses.",
                       eyebrow="Crypto", accent="cryptomonnaie.", art="crypto")
     if state == coins.UNKNOWN:
-        st.warning(f"Je ne connais pas de cryptomonnaie nommée « {coin_id[:60]} ». Essaie de la chercher par son nom.",
+        st.warning(f"Je ne connais pas de cryptomonnaie nommée {theme.md_code(coin_id)}. Essaie de la chercher par son nom.",
                    icon=":material/search_off:")
     elif state == coins.UNAVAILABLE:
         st.warning("La fiche de cette cryptomonnaie est indisponible pour le moment (CoinGecko limite le nombre de "
@@ -137,7 +137,8 @@ with st.container(key="fvchart_coin"):
         st.altair_chart(theme.french((area + line + rule + dot).properties(height=300, background="transparent")),
                         width="stretch")
         first, last = series[0][1], series[-1][1]
-        st.caption(f"{period} : {theme.signed((last / first - 1) * 100)} · de {coins.euros(low)} à {coins.euros(high)}.")
+        change = theme.signed((last / first - 1) * 100) if first else "—"  # pas de variation depuis un cours nul
+        st.caption(f"{period} : {change} · de {coins.euros(low)} à {coins.euros(high)}.")
 
 # Les chiffres clés
 kpis = []

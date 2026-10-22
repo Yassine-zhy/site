@@ -29,7 +29,7 @@ if not known:  # pas de symbole, ou un symbole inconnu de Yahoo : on propose de 
                       "un symbole pour ouvrir sa fiche (cours, graphique, indicateurs, performances).",
                       eyebrow="Marchés", accent="")
     if symbol:
-        st.warning(f"Yahoo Finance ne connaît pas « {symbol} », ou ne répond pas pour le moment. Vérifie le symbole "
+        st.warning(f"Yahoo Finance ne connaît pas {theme.md_code(symbol)}, ou ne répond pas pour le moment. Vérifie le symbole "
                    "ou cherche la valeur par son nom.", icon=":material/search_off:")
     sheet.search_box()
     theme.section("Quelques fiches")
@@ -43,7 +43,9 @@ currency = overview.get("currency", "")
 unit = "pb" if symbol in company.RATE_SYMBOLS else "%"
 
 # Le titre de l'onglet du navigateur : le nom de la valeur (st.set_page_config n'est permis qu'une fois, dans app.py)
-st.html(f"<script>document.title = {json.dumps(f'{name} · FinVeille')};</script>", unsafe_allow_javascript=True)
+# json.dumps n'échappe pas « </script> » : on remplace < > & par leur écriture \\u pour ne pas fermer la balise
+title = json.dumps(f"{name} · FinVeille").replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+st.html(f"<script>document.title = {title};</script>", unsafe_allow_javascript=True)
 
 crumbs, finder = st.columns([3, 2], gap="large", vertical_alignment="center")
 crumbs.html(sheet.breadcrumb(symbol, name, kind))
