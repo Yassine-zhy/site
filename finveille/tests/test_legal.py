@@ -118,8 +118,8 @@ def test_les_textes_donnent_l_essentiel(cfg):
     assert "Commission d'accès à l'information" in texts["confidentialite"] and "priv.gc.ca" in texts["confidentialite"]
     assert "Yassine Zouhair" in texts["confidentialite"] and "Yassine Zouhair" in texts["conditions"]
     assert "pas de conseil en investissement" in texts["conditions"].lower()
-    assert "droit applicable au Canada" in texts["conditions"]
-    assert "résidant au Canada" in texts["mentions_legales"]
+    assert "droit applicable au Québec" in texts["conditions"]
+    assert "résidant au Québec" in texts["mentions_legales"]
     assert "_streamlit_xsrf" in texts["cookies"] and "fv_session" in texts["cookies"]
 
 
