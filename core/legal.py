@@ -207,7 +207,8 @@ concernée : l'éditeur y répond dès que possible.
 
 ## Crédits
 
-- Polices IBM Plex, sous licence SIL Open Font License.
+- Polices IBM Plex, Newsreader et Schibsted Grotesk, sous licence SIL Open Font License, servies par le site
+  lui-même.
 - Three.js, sous licence MIT.
 - GSAP, sous la licence gratuite « Standard No Charge » de GreenSock (Webflow).
 - Icônes Material Symbols, sous licence Apache 2.0.
@@ -264,7 +265,8 @@ def confidentialite(cfg: LegalConfig) -> str:
                      "Ton consentement, que tu peux retirer à tout moment", "Jusqu'à ce que tu les désactives"])
     if cfg.ai:
         rows.append(["Tes questions à l'assistant IA et les dépêches utiles à la réponse", "Rédiger la réponse",
-                     "Exécution du service", "FinVeille n'enregistre rien"])
+                     "Exécution du service", "Rien n'est enregistré. La réponse est gardée 30 minutes dans la "
+                     "mémoire du serveur, sans lien avec toi, pour répondre plus vite à la même question."])
     table = _table(["Ce qui est traité", "Pourquoi", "Sur quelle base", "Combien de temps"], rows)
     transfers = ("Certains destinataires sont établis aux États-Unis, hors de l'Union européenne. Le transfert "
                  "s'appuie alors sur le Data Privacy Framework UE–États-Unis quand le prestataire y adhère, sinon "
