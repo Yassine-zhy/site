@@ -176,7 +176,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :has(.st-key-fvaccount) { animation: none; }
 @media (max-width: 640px) {  /* téléphone : une icône (le texte reste lu par les lecteurs d'écran), loin du menu ⋮ */
   .st-key-fvaccount { right: 3.9rem; }
-  .st-key-fvaccount a, .st-key-fvaccount .st-key-fvsearch_open button { width: 2.5rem; height: 2.5rem; min-height: 0;
+  .st-key-fvaccount a, .st-key-fvaccount .st-key-fvsearch_open button { width: 44px; height: 44px; min-height: 0;
     padding: 0; justify-content: center; border-radius: 50%; }  /* deux ronds de même taille (search.py : la loupe) */
   .st-key-fvaccount a p { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   [data-testid="stStatusWidget"] button { display: none; }  /* « Stop » : inutile au visiteur, il chevauchait le compte */
