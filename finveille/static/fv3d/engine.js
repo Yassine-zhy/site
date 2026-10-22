@@ -877,7 +877,7 @@ function installShortcut() {
     const field = document.querySelector('[role="dialog"] .st-key-fvsearch_q input');
     if (field && !field.dataset.fvFocused) {
       field.dataset.fvFocused = "1";
-      if (!document.activeElement || !document.activeElement.closest('[role="dialog"]')) field.focus();
+      if (!typing(document.activeElement)) field.focus();   // Streamlit met le focus sur le dialogue lui-même
     }
   };
   new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(focusField); } })

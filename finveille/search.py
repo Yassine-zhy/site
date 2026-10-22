@@ -64,7 +64,8 @@ CSS = """<style>
 .st-key-fvaccount .st-key-fvsearch_open button:hover { border-color: var(--fv-brand); }
 .st-key-fvaccount .st-key-fvsearch_open button p { font-size: .85rem; font-weight: 500; }
 @media (max-width: 640px) {  /* téléphone : l'icône seule, le texte reste lu par les lecteurs d'écran */
-  .st-key-fvaccount .st-key-fvsearch_open button { padding: .4rem; }
+  .st-key-fvaccount .st-key-fvsearch_open button { min-width: 2.3rem; min-height: 2.3rem; padding: .4rem; gap: 0;
+    justify-content: center; }
   .st-key-fvaccount .st-key-fvsearch_open button p { position: absolute; width: 1px; height: 1px; overflow: hidden;
     clip-path: inset(50%); }
 }
@@ -77,8 +78,7 @@ CSS = """<style>
 .st-key-fvsearch_q { margin-bottom: 0; }
 .fvs-note { margin: -.4rem 0 .6rem; font-size: .76rem; color: var(--fv-muted); }
 .fvs-group { margin: .9rem 0 0; }
-.fvs-title { margin: 0 0 .35rem; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--fv-muted); }
+.fvs-title { margin: 0 0 .35rem; font-size: .8rem; font-weight: 600; color: var(--fv-muted); }
 .fvs-list { display: flex; flex-direction: column; gap: .3rem; }
 a.fvs-hit { display: flex; align-items: center; justify-content: space-between; gap: .8rem; min-height: 44px;
   padding: .45rem .8rem; border: 1px solid var(--fv-line); border-radius: 10px; background: var(--fv-surface);
@@ -184,7 +184,7 @@ def open_dialog() -> None:
     """Le champ de recherche et ses résultats ; un clic sur un résultat ouvre la fiche (le dialogue se ferme avec la
     page). Appelé par le bouton de la barre du haut (app.py)."""
     query = st.text_input("Chercher", key="fvsearch_q", label_visibility="collapsed", icon=":material/search:",
-                          placeholder="Une action, un indice, une crypto, une page…", max_chars=60).strip()
+                          placeholder="Action, indice, crypto, page…").strip()[:60]
     st.html('<p class="fvs-note">Entrée pour chercher</p>')
     if len(query) < MIN_CHARS:
         st.html(shortcuts_html())
