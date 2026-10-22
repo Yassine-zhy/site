@@ -735,7 +735,8 @@ a.fv-cell:hover, a.fv-cell:focus-visible { border-color: var(--fv-brand); box-sh
   filter: brightness(1.06); position: relative; z-index: 1; }
 a.fv-float { transition: border-color .15s, box-shadow .2s; }
 a.fv-float:hover, a.fv-float:focus-visible { border-color: var(--fv-brand); }
-a.fv-tick { transition: background-color .15s; }
+a.fv-tick { padding-block: .3rem; margin-block: -.3rem; border-radius: 6px; transition: background-color .15s; }
+a.fv-tick:focus-visible { outline-offset: -2px; }
 a.fv-tick:hover, a.fv-tick:focus-visible { background: var(--fv-sunken); }
 a.fv-tick:hover b, a.fv-tick:focus-visible b { color: var(--fv-brand); }
 .fv-ranking li:has(.fv-rank-link) { position: relative; transition: background-color .15s; }
