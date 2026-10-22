@@ -59,6 +59,18 @@ def test_fournisseurs_de_base(url, name):
     assert legal.config_from({"DATABASE_URL": url}).database == name
 
 
+@pytest.mark.parametrize("url,place", [("postgresql://u:p@ep-cool-123.us-east-2.aws.neon.tech/db", "Ohio, États-Unis"),
+                                       ("postgresql://u:p@ep-x.ca-central-1.aws.neon.tech/db", "Montréal, Canada"),
+                                       ("postgresql://u:p@db.example.com/db", None)])
+def test_region_de_la_base(url, place):
+    assert legal.config_from({"DATABASE_URL": url}).database_region == place
+
+
+def test_region_de_la_base_dans_la_confidentialite():
+    cfg = legal.config_from({"DATABASE_URL": "postgresql://u:p@ep-cool-123.us-east-2.aws.neon.tech/db"})
+    assert "serveurs : Ohio, États-Unis" in legal.confidentialite(cfg)
+
+
 @pytest.mark.parametrize("host,name", [("smtp-relay.sendinblue.com", "Brevo (France)"),
                                        ("in-v3.mailjet.com", "Mailjet (France)"),
                                        ("smtp.mail.ovh.net", "OVHcloud (France)"), ("smtp.gmail.com", "Google (Gmail)"),
@@ -103,9 +115,11 @@ def test_les_textes_donnent_l_essentiel(cfg):
     assert "106 East Babcock Street, Bozeman" in texts["mentions_legales"]
     assert "Snowflake Inc." in texts["mentions_legales"]
     assert "CNIL" in texts["confidentialite"] and "3 place de Fontenoy" in texts["confidentialite"]
+    assert "Commission d'accès à l'information" in texts["confidentialite"] and "priv.gc.ca" in texts["confidentialite"]
     assert "Yassine Zouhair" in texts["confidentialite"] and "Yassine Zouhair" in texts["conditions"]
     assert "pas de conseil en investissement" in texts["conditions"].lower()
-    assert "droit français" in texts["conditions"]
+    assert "droit applicable au Canada" in texts["conditions"]
+    assert "résidant au Canada" in texts["mentions_legales"]
     assert "_streamlit_xsrf" in texts["cookies"] and "fv_session" in texts["cookies"]
 
 
