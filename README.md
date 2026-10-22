@@ -35,6 +35,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Mes suivis** | Entreprises (recherche par nom) et thèmes, avec un fil dédié pour chacun. |
 | **Fiches entreprises** | Logo, cours, graphique interactif (1 mois à 5 ans) avec les dépêches placées sur la courbe, 10 indicateurs clés expliqués (PER, VE/EBITDA, ROE, rendement, bêta…), fourchette sur 52 semaines, agenda (résultats, dividende, consensus). |
 | **Recherche** | Un bouton « Rechercher » en haut de chaque page (ou la touche / ) : une valeur, une crypto, une page ou un terme du glossaire, et sa fiche s'ouvre (guide 39). |
+| **Vie privée** | Mentions légales, politique de confidentialité, politique des cookies et conditions d'utilisation (guide 40) ; polices et logos servis par le site (aucune requête vers Google) ; comptes inactifs effacés après 3 ans ; export et suppression des données depuis « Mon compte ». |
 | **Fiches des valeurs** | Une fiche pour chaque action, indice, devise et crypto, ouverte d'un clic depuis tuile, carte, classement ou bandeau : cours, graphique, résultats, analystes, dividendes, actualités (guide 38). |
 | **Marchés par place** | France (CAC 40), Canada (S&P/TSX 60), États-Unis (Dow Jones) et monde, chacun avec sa carte par secteur et ses palmarès (guide 38). |
 | **Marchés** | Bandeau défilant des cours sur toutes les pages ; 20 instruments mondiaux avec mini-courbes et carte des performances ; carte du CAC 40 par secteur (40 valeurs, palmarès) ; convertisseur de devises. |
@@ -97,7 +98,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-39 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+40 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 
