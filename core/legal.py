@@ -192,7 +192,7 @@ def mentions_legales(cfg: LegalConfig) -> str:
 ## Éditeur du site
 
 FinVeille ({cfg.site_url}) est un site personnel, non professionnel, édité par **{cfg.editor}**, personne physique
-résidant au Canada. Le site s'adresse surtout à des lecteurs francophones, en France et au Canada.
+résidant au Québec (Canada). Le site s'adresse surtout à des lecteurs francophones, en France et au Canada.
 
 - Directeur de la publication : {cfg.editor}
 - Contact : {contact}
@@ -499,8 +499,8 @@ Ces conditions peuvent changer ; la date de mise à jour figure en haut de cette
 
 ## Droit applicable
 
-Ces conditions relèvent du droit applicable au Canada, où réside l'éditeur. Si tu vis dans l'Union européenne ou au
-Québec, tu gardes la protection des règles impératives de ton lieu de résidence (consommation, données
+Ces conditions relèvent du droit applicable au Québec, où réside l'éditeur. Si tu vis ailleurs (Union européenne,
+autre province…), tu gardes la protection des règles impératives de ton lieu de résidence (consommation, données
 personnelles). En cas de litige, on cherche d'abord une solution amiable : écris à {contact}.
 
 {_see_also("terms")}"""
