@@ -14,7 +14,8 @@ import streamlit as st
 import search
 import theme
 from core import alerts, capacity, storage
-from ui import PageEnd, current_user, get_secret, is_admin, load_quotes, load_symbol_quotes, local_mode, sync_cookie
+from ui import (PageEnd, accounts_at_risk, current_user, get_secret, is_admin, load_quotes, load_symbol_quotes,
+                local_mode, sync_cookie)
 from views import legal
 
 # Le logo : un « F » dont la barre du milieu est une courbe qui monte (tools/make_logo.py) ; le nom
@@ -119,6 +120,10 @@ page = st.navigation(pages, position="top")
 theme.nav_active(next(i for i, entries in enumerate(pages.values())
                       if any(entry.url_path == page.url_path for entry in entries)))
 account_bar()  # après st.navigation : st.page_link a besoin que les pages soient déclarées
+if accounts_at_risk() and is_admin(current_user()):  # visible par l'administrateur seulement
+    st.error("**Les comptes ne sont pas conservés.** Sans base de données en ligne (secret `DATABASE_URL`), ils sont "
+             "effacés à chaque mise à jour du site. Marche à suivre : menu Outils → Configuration.",
+             icon=":material/database:")
 
 # La file d'attente (core/capacity.py) : quelques pages s'affichent à la fois, les autres attendent leur tour
 # sans ralentir tout le serveur (le menu du haut, lui, s'affiche tout de suite).
