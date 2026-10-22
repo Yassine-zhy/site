@@ -184,6 +184,20 @@ export async function installMotion() {
   try { gsap = await loadGsap(); } catch { return; }   // sans GSAP : pas de rouleaux ni d'impression, rien ne casse
   const ST = window.ScrollTrigger;
   let current = null, queued = false, refresh = 0;
+  // Pour mesurer, ScrollTrigger remet la page en haut un instant. Un menu déroulant se ferme dès que la page défile :
+  // sur téléphone, le clavier qui sort change la hauteur de la fenêtre, la mesure ferme le menu, qui se redessine, ce
+  // qui relançait une mesure… et on ne pouvait plus rien écrire. Donc : pas de mesure quand seule la hauteur change
+  // (le clavier), ni pendant un menu ouvert ou, sur écran tactile, une saisie (elle attend la fin).
+  ST.config({ ignoreMobileResize: true, autoRefreshEvents: "visibilitychange,DOMContentLoaded,load" });
+  const busy = () => !!document.querySelector('[role="listbox"], [role="dialog"], [data-testid="stPopoverBody"]')
+    || (matchMedia("(pointer: coarse)").matches
+      && !!document.activeElement?.matches("input, textarea, select, [contenteditable='true']"));
+  const measure = (delay = 250) => {
+    clearTimeout(refresh);
+    refresh = setTimeout(() => (busy() ? measure(500) : ST.refresh()), delay);
+  };
+  let width = innerWidth;
+  window.addEventListener("resize", () => { if (innerWidth !== width) { width = innerWidth; measure(); } });
   const scan = () => {
     queued = false;
     const sc = scroller();
@@ -195,12 +209,16 @@ export async function installMotion() {
     }
     odometers(gsap, ST);
     wires(gsap, ST);
-    clearTimeout(refresh);
-    refresh = setTimeout(() => ST.refresh(), 250);
+    measure();
   };
   // seulement quand un élément arrive : un cours qui change n'échange qu'un texte, et chaque refresh remet la page
-  // en haut un instant (il mesure), ce qui coupe un défilement en cours (le clic sur une maquette)
-  const added = (records) => records.some((r) => [...r.addedNodes].some((n) => n.nodeType === 1));
+  // en haut un instant (il mesure), ce qui coupe un défilement en cours (le clic sur une maquette) ; les listes des
+  // menus déroulants et les bulles d'aide ne comptent pas (elles n'ont rien à animer). Un élément déjà reparti non
+  // plus : pour mesurer, ScrollTrigger pose un instant un bloc de 100vh dans la page, et le compter relançait une mesure,
+  // qui en posait un autre… une boucle, deux à trois fois par seconde.
+  const POPUPS = '[data-rac], [role="listbox"], [role="tooltip"], [data-baseweb="popover"], [data-baseweb="layer"]';
+  const added = (records) => records.some((r) => [...r.addedNodes].some((n) => n.nodeType === 1 && n.isConnected
+    && !n.closest(POPUPS)));
   new MutationObserver((records) => { if (!queued && added(records)) { queued = true; setTimeout(scan, 120); } })
     .observe(document.body, { childList: true, subtree: true });
   scan();

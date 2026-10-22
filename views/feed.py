@@ -11,10 +11,10 @@ from core import analytics, capacity, images, storage
 from core.aggregator import filter_region, prefer_french
 from core.config import API_KEYS, CATEGORIES, REGIONS
 from core.filters import filter_articles
-from core.market import align_session
+from core.market import PLACES, align_session, resolve_view
 from theme import esc
-from ui import (NO_STATUS, api_keys, article_card, current_user, flush_toast, hero_quotes, known_cac40, load_articles,
-                load_trends, setting, warm_cac40)
+from ui import (LAST_GOOD, NO_STATUS, api_keys, article_card, current_user, flush_toast, hero_quotes, known_cac40,
+                load_articles, load_place, load_trends, setting, warm_cac40)
 
 user = current_user()  # None : visiteur non connecté (il voit le fil, sans favoris ni « lu »)
 PAGE_SIZE = setting(user, "page_size", 20)  # nombre d'articles affichés par « page » (réglable)
@@ -23,6 +23,18 @@ PAGE_SIZE = setting(user, "page_size", 20)  # nombre d'articles affichés par «
 def show_more():
     """Appelée au clic sur « Afficher plus » : on agrandit la fenêtre d'articles visibles."""
     st.session_state.visible_count += PAGE_SIZE
+
+
+def place_from_url(value) -> str:
+    """La place racontée demandée par le paramètre d'adresse `place` ; la France si elle est absente ou inconnue."""
+    place = resolve_view(value, "france")
+    return place if place in PLACES else "france"
+
+
+def keep_place() -> None:
+    """Le choix de la place ne se désélectionne pas : un clic sur la place choisie revient à la France."""
+    if st.session_state.story_place is None:
+        st.session_state.story_place = "france"
 
 
 def search_for(term: str) -> None:
@@ -41,8 +53,21 @@ articles, errors, fetched_at = load_articles(keys)
 scene3d.page("feed")
 
 
-# --- Le récit de la séance (guide 32) : le CAC 40, sa plus forte hausse, sa plus forte baisse, l'histoire du jour.
-# Rempli plus bas, une fois la une connue ; les horloges des places tournent dans le navigateur (motion.js).
+# --- Le récit de la séance (guide 32) : l'indice de la place choisie (le CAC 40 par défaut), sa plus forte hausse, sa
+# plus forte baisse, l'histoire du jour. Rempli plus bas, une fois la une connue ; les horloges des places tournent dans
+# le navigateur (motion.js). La place suit l'adresse (`?place=canada`), comme la page Marchés avec `?view=`.
+with st.container(horizontal=True, vertical_alignment="center", gap="small", key="fvplace"):
+    st.html('<span class="fv-place-label">La séance :</span>', width="content")
+    choice = st.segmented_control(
+        "Place racontée", options=list(PLACES), format_func=lambda key: PLACES[key][0], key="story_place",
+        default=place_from_url(st.query_params.get("place")), label_visibility="collapsed", on_change=keep_place,
+    )
+place = choice or "france"  # on ne peut pas désélectionner : la France revient
+if st.query_params.get("place") != (None if place == "france" else place):  # la France est la place par défaut
+    if place == "france":
+        del st.query_params["place"]
+    else:
+        st.query_params["place"] = place
 story = st.empty()
 
 # --- Barre d'outils : recherche, filtres, actualisation -----------------------------------------
@@ -230,23 +255,45 @@ def rail_blocks(filtered, collected):
     )
 
 
-def tell(cac40) -> None:
-    """Le récit, avec la une du moment (la même que dans le fil, calculée une fois pour tous les visiteurs)."""
+def known_place(key: str):
+    """Les cours d'une place (indice, valeurs) déjà en mémoire (aucun appel réseau), ou None si personne ne les a
+    demandés. Même clé que `ui.load_place`."""
+    return LAST_GOOD.get(f"place|{(key,)!r}")
+
+
+def tell(place: str, index, quotes) -> None:
+    """Le récit de la place, avec la une du moment (la même que dans le fil, calculée une fois pour tous les
+    visiteurs). Au Canada, la une est cherchée parmi les dépêches canadiennes, aux États-Unis parmi celles du monde."""
     # L'indice et ses valeurs viennent de deux téléchargements : on les ramène à la même séance
-    index, cac40, _ = align_session(next(iter(hero_quotes("^FCHI")), None), list(cac40 or []))
+    index, quotes, _ = align_session(index, list(quotes or []))
+    region = {"canada": "ca", "usa": "monde"}.get(place)
+    pool = (filter_region(articles, region) if region else articles) or articles
     lead = echoes = None
-    if articles:
-        lead_id, echoes, _ = lead_for(tuple(a.id for a in articles[:150]))
-        lead = next((a for a in articles if a.id == lead_id), articles[0])
+    if pool:
+        lead_id, echoes, _ = lead_for(tuple(a.id for a in pool[:150]))
+        lead = next((a for a in pool if a.id == lead_id), pool[0])
     with story:
-        st.html(theme.story_html(index, cac40, lead, echoes or 0, city=scene3d.city_data(cac40)))
+        st.html(theme.story_html(index, quotes, lead, echoes or 0, city=scene3d.city_data(quotes, place), place=place))
 
 
-tell(known_cac40())
+if place == "france":
+    tell(place, next(iter(hero_quotes("^FCHI")), None), known_cac40())
+elif (known := known_place(place)) is not None:
+    tell(place, *known)
+else:  # première visite de cette place : le récit garde sa hauteur pendant que les cours arrivent
+    with story:
+        st.html('<div class="fv-story-wait" role="status"><p>Chargement des cours : '
+                f"{esc(PLACES[place][0])}…</p></div>")
 body(region, query, categories, sources, hide_read, show_hidden, compact, pictures_on)
 
-# Premier visiteur depuis le démarrage : les couleurs des tours (la séance du CAC 40) arrivent une fois la page affichée
-if not known_cac40():
-    with capacity.QUEUE.released():  # attente réseau : on laisse sa place dans la file
-        if cac40 := warm_cac40():
-            tell(cac40)
+# Première visite de la place depuis le démarrage : ses cours (et les couleurs des tours) arrivent une fois la page affichée
+if place == "france":
+    if not known_cac40():
+        with capacity.QUEUE.released():  # attente réseau : on laisse sa place dans la file
+            if cac40 := warm_cac40():
+                tell(place, next(iter(hero_quotes("^FCHI")), None), cac40)
+elif known_place(place) is None:
+    with capacity.QUEUE.released():
+        with st.container(key="fvquiet"):  # le conteneur « fvquiet » cache l'indicateur de chargement (theme.py)
+            data = load_place(place)
+    tell(place, *data)

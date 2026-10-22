@@ -19,8 +19,15 @@ st.html(
     f"<h3>{esc(word)}</h3><p>{esc(definition)}</p></div>"
 )
 
-query = st.text_input("Chercher un terme", placeholder="PER, inflation, bêta…", icon=":material/search:",
-                      label_visibility="collapsed")
+# Le dialogue « Rechercher » (search.py) mène ici par `glossary?q=terme` : le champ s'en remplit, une fois par adresse
+# (le visiteur peut ensuite l'effacer sans que l'adresse le remplisse de nouveau)
+asked = st.query_params.get("q", "")[:60]
+if st.session_state.get("glossary_asked") != asked:
+    st.session_state["glossary_asked"] = asked
+    if asked:
+        st.session_state["glossary_q"] = asked
+query = st.text_input("Chercher un terme", key="glossary_q", placeholder="PER, inflation, bêta…",
+                      icon=":material/search:", label_visibility="collapsed")
 chosen = st.pills("Rubriques", SECTIONS, selection_mode="multi", label_visibility="collapsed")
 
 wanted = normalize(query)

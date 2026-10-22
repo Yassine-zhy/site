@@ -9,8 +9,13 @@
 // de nettoyage appelée quand la page se ferme.
 
 import * as THREE from "./three.module.min.js";
-import { installMotion } from "./motion.js";
 import { installVitrines } from "./vitrines.js";
+
+// motion.js arrive avec la version de ce fichier (?v=…, scene3d.py) : un correctif y est pris tout de suite, au lieu
+// d'attendre que le navigateur oublie l'ancienne copie (le serveur ne dit pas combien de temps la garder)
+const VERSION = new URL(import.meta.url).search;
+const installMotion = () => import(`./motion.js${VERSION}`).then((m) => m.installMotion())
+  .catch((error) => console.warn("FinVeille : animations indisponibles", error));
 
 // --- Palettes : les couleurs de la marque (theme.py), en clair et en sombre -------------------------------------
 const PALETTES = {
@@ -850,11 +855,62 @@ function installChat() {
     .observe(document.body, { childList: true, subtree: true });
 }
 
+// --- Les dialogues de Streamlit (« Rechercher ») : le thème de la page ------------------------------------------------
+// Streamlit ne donne le thème (color-scheme) qu'à .stApp, et ses dialogues sont posés à côté : sans lui, les couleurs
+// light-dark() de theme.py y restaient claires en mode sombre (un champ blanc, un texte presque invisible).
+function installDialogTheme() {
+  if (window.__fvDialogTheme) return;
+  window.__fvDialogTheme = true;
+  let queued = false;
+  const sync = () => {
+    queued = false;
+    const app = document.querySelector(".stApp");
+    if (!app) return;
+    const scheme = getComputedStyle(app).colorScheme;
+    for (const dialog of document.querySelectorAll('[data-testid="stDialog"]')) {
+      if (dialog.style.colorScheme !== scheme) dialog.style.colorScheme = scheme;
+    }
+  };
+  new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(sync); } })
+    .observe(document.body, { childList: true, subtree: true });
+}
+
+// --- La recherche du site : la touche « / » ou Ctrl+K (Cmd+K) ouvre le dialogue « Rechercher » (search.py) ---------
+function installShortcut() {
+  if (window.__fvShortcut) return;
+  window.__fvShortcut = true;
+  const typing = (el) => el instanceof Element && !!el.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
+  document.addEventListener("keydown", (e) => {
+    if (e.defaultPrevented || e.altKey || e.isComposing) return;
+    const slash = e.key === "/" && !e.ctrlKey && !e.metaKey && !typing(e.target);
+    const palette = (e.key === "k" || e.key === "K") && (e.ctrlKey || e.metaKey) && !e.shiftKey;
+    if (!slash && !palette) return;
+    const button = document.querySelector(".st-key-fvsearch_open button");
+    if (!button || document.querySelector('[role="dialog"]')) return;   // déjà ouvert : la touche reste à la page
+    e.preventDefault();
+    button.click();
+  });
+  // Quand le dialogue s'ouvre, le curseur va dans son champ (sur téléphone, le navigateur peut refuser : tant pis)
+  let queued = false;
+  const focusField = () => {
+    queued = false;
+    const field = document.querySelector('[role="dialog"] .st-key-fvsearch_q input');
+    if (field && !field.dataset.fvFocused) {
+      field.dataset.fvFocused = "1";
+      if (!typing(document.activeElement)) field.focus();   // Streamlit met le focus sur le dialogue lui-même
+    }
+  };
+  new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(focusField); } })
+    .observe(document.body, { childList: true, subtree: true });
+}
+
 export function show(data) {
   installMotion();
   installTilt();
   installLinks();
   installChat();
+  installShortcut();
+  installDialogTheme();
   if (!webgl()) return () => {};   // pas de WebGL : les illustrations de l'étape 29 restent en place
   installVitrines();
   try {
