@@ -110,6 +110,28 @@ WEIGHTS = {
     "KER.PA": 0.9, "STMPA.PA": 0.9, "MT.AS": 0.8, "RNO.PA": 0.6, "EN.PA": 0.6, "AC.PA": 0.6, "BVI.PA": 0.6,
     "CA.PA": 0.5, "ERF.PA": 0.5, "URW.PA": 0.5, "EDEN.PA": 0.3, "TEP.PA": 0.2,
 }
+# Idem pour le S&P/TSX 60 et le Dow Jones (avec cinq géants de la tech) : la capitalisation approximative, en milliards
+# de dollars américains. Les unités n'ont pas besoin d'être les mêmes d'une table à l'autre : la hauteur d'une tour suit
+# la racine carrée de son poids relatif dans sa propre table.
+TSX_WEIGHTS = {
+    "RY.TO": 180, "TD.TO": 125, "BMO.TO": 80, "BNS.TO": 68, "CM.TO": 65, "NA.TO": 40, "MFC.TO": 55, "SLF.TO": 35,
+    "IFC.TO": 37, "GWO.TO": 37, "POW.TO": 25, "FFH.TO": 40, "BN.TO": 100, "BAM.TO": 90, "X.TO": 8, "ENB.TO": 100,
+    "CNQ.TO": 65, "SU.TO": 50, "TRP.TO": 50, "CVE.TO": 30, "IMO.TO": 40, "TOU.TO": 15, "CCO.TO": 30, "AEM.TO": 70,
+    "ABX.TO": 40, "WPM.TO": 45, "FNV.TO": 35, "K.TO": 25, "AGI.TO": 15, "TECK-B.TO": 20, "FM.TO": 15, "NTR.TO": 28,
+    "CCL-B.TO": 10, "CNR.TO": 63, "CP.TO": 70, "WCN.TO": 48, "WSP.TO": 25, "CAE.TO": 8, "TFII.TO": 7, "SHOP.TO": 190,
+    "CSU.TO": 70, "GIB-A.TO": 22, "OTEX.TO": 8, "CLS.TO": 30, "TRI.TO": 80, "ATD.TO": 50, "L.TO": 50, "DOL.TO": 40,
+    "QSR.TO": 30, "MRU.TO": 13, "WN.TO": 22, "SAP.TO": 8, "CTC-A.TO": 7, "MG.TO": 12, "BCE.TO": 22, "T.TO": 23,
+    "RCI-B.TO": 15, "FTS.TO": 25, "EMA.TO": 12, "H.TO": 22,
+}
+USA_WEIGHTS = {
+    "AAPL": 3500, "MSFT": 3800, "NVDA": 4400, "GOOGL": 2800, "META": 1900, "AVGO": 1500, "CSCO": 270, "IBM": 250,
+    "CRM": 240, "AMZN": 2400, "TSLA": 1300, "WMT": 820, "HD": 380, "MCD": 220, "NKE": 100, "KO": 300, "PG": 370,
+    "NFLX": 520, "DIS": 210, "VZ": 180, "JPM": 830, "GS": 220, "V": 680, "AXP": 220, "TRV": 60, "UNH": 300, "JNJ": 420,
+    "MRK": 210, "AMGN": 160, "CAT": 200, "BA": 170, "HON": 140, "MMM": 85, "SHW": 90, "CVX": 300,
+}
+# Par place : la table des poids et le poids d'une valeur qui n'y figure pas (une petite valeur)
+CITY_WEIGHTS = {"france": (WEIGHTS, 0.5), "canada": (TSX_WEIGHTS, 8), "usa": (USA_WEIGHTS, 60)}
+CITY_TOWERS = 40  # la maquette n'a que 8 × 5 cases (models.js::city)
 PLACES = ("^FCHI", "^GDAXI", "^FTSE", "^GSPC", "^N225", "^HSI", "000001.SS")  # les places du globe (models.js)
 
 
@@ -125,14 +147,24 @@ def show(scene: str, key: str = "fv3d", **data) -> None:
         _component(key=key, data={"scene": scene, "v": VERSION, **data})
 
 
-def city_data(quotes) -> dict:
-    """La maquette du CAC 40 (le récit de l'accueil) : une tour par valeur, sa hauteur suit son poids dans l'indice,
-    son toit la séance si on la connaît."""
+def city_data(quotes, place: str = "france") -> dict:
+    """La maquette d'une place (le récit de l'accueil) : une tour par valeur, sa hauteur suit son poids dans l'indice,
+    son toit la séance si on la connaît. Elle n'a que 40 cases : on garde les plus lourdes, mais toujours les 3 plus
+    fortes hausses et les 3 plus fortes baisses de la séance, que la caméra du récit vise (parmi les tours)."""
     from core import market
 
+    place = place if place in market.PLACES else "france"
+    weights, default = CITY_WEIGHTS[place]
     change = {quote.symbol: round(quote.change, 2) for quote in quotes}
-    return {"towers": [{"n": name, "w": WEIGHTS.get(symbol, 0.5), "c": change.get(symbol)}
-                       for symbol, name, _ in market.CAC40], "act": CITY_ACT}
+    towers = [{"n": name, "w": weights.get(symbol, default), "c": change.get(symbol)}
+              for symbol, name, _ in market.PLACES[place][3]]
+    if len(towers) > CITY_TOWERS:
+        moved = sorted((tower for tower in towers if tower["c"] is not None), key=lambda tower: tower["c"])
+        must = {id(tower) for tower in moved[:3] + moved[-3:]}
+        heaviest = sorted((tower for tower in towers if id(tower) not in must), key=lambda tower: -tower["w"])
+        kept = {id(tower) for tower in heaviest[:CITY_TOWERS - len(must)]} | must
+        towers = [tower for tower in towers if id(tower) in kept]
+    return {"towers": towers, "act": CITY_ACT}
 
 
 def vitrine(kind: str, data: dict | None = None, label: str = "", caption: str = "", fallback: str | None = None,

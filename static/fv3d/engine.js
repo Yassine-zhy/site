@@ -855,11 +855,41 @@ function installChat() {
     .observe(document.body, { childList: true, subtree: true });
 }
 
+// --- La recherche du site : la touche « / » ou Ctrl+K (Cmd+K) ouvre le dialogue « Rechercher » (search.py) ---------
+function installShortcut() {
+  if (window.__fvShortcut) return;
+  window.__fvShortcut = true;
+  const typing = (el) => el instanceof Element && !!el.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
+  document.addEventListener("keydown", (e) => {
+    if (e.defaultPrevented || e.altKey || e.isComposing) return;
+    const slash = e.key === "/" && !e.ctrlKey && !e.metaKey && !typing(e.target);
+    const palette = (e.key === "k" || e.key === "K") && (e.ctrlKey || e.metaKey) && !e.shiftKey;
+    if (!slash && !palette) return;
+    const button = document.querySelector(".st-key-fvsearch_open button");
+    if (!button || document.querySelector('[role="dialog"]')) return;   // déjà ouvert : la touche reste à la page
+    e.preventDefault();
+    button.click();
+  });
+  // Quand le dialogue s'ouvre, le curseur va dans son champ (sur téléphone, le navigateur peut refuser : tant pis)
+  let queued = false;
+  const focusField = () => {
+    queued = false;
+    const field = document.querySelector('[role="dialog"] .st-key-fvsearch_q input');
+    if (field && !field.dataset.fvFocused) {
+      field.dataset.fvFocused = "1";
+      if (!document.activeElement || !document.activeElement.closest('[role="dialog"]')) field.focus();
+    }
+  };
+  new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(focusField); } })
+    .observe(document.body, { childList: true, subtree: true });
+}
+
 export function show(data) {
   installMotion();
   installTilt();
   installLinks();
   installChat();
+  installShortcut();
   if (!webgl()) return () => {};   // pas de WebGL : les illustrations de l'étape 29 restent en place
   installVitrines();
   try {

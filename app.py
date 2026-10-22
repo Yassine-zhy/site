@@ -11,6 +11,7 @@ from pathlib import Path
 
 import streamlit as st
 
+import search
 import theme
 from core import alerts, capacity, storage
 from ui import PageEnd, current_user, get_secret, is_admin, load_quotes, load_symbol_quotes, local_mode, sync_cookie
@@ -38,14 +39,18 @@ sync_cookie()  # pose ou efface le cookie « rester connecté » après une conn
 
 
 def account_bar() -> None:
-    """Dans la barre du haut, à droite : « Se connecter », ou le prénom de l'utilisateur connecté.
+    """Dans la barre du haut, à droite : « Rechercher », puis « Se connecter » ou le prénom de l'utilisateur connecté.
 
-    Rien en mode local. Le conteneur porte la clé « fvaccount » : theme.py le place dans la barre du haut.
+    Le lien du compte n'existe pas en mode local. Le conteneur porte la clé « fvaccount » : theme.py le place dans la
+    barre du haut. Le raccourci clavier du bouton (touche « / », Ctrl+K) est dans static/fv3d/engine.js.
     """
-    if local_mode():
-        return
-    user = current_user()
+    st.html(search.CSS)
+    user = None if local_mode() else current_user()
     with st.container(horizontal=True, vertical_alignment="center", key="fvaccount"):
+        if st.button("Rechercher", icon=":material/search:", key="fvsearch_open", type="tertiary"):
+            search.open_dialog()
+        if local_mode():
+            return
         if user:
             name = (storage.get_user(user) or {}).get("name") or "Mon compte"
             st.page_link("views/account.py", label=name.split()[0] if name.split() else name,
