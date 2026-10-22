@@ -4,6 +4,8 @@ Les textes viennent de core/legal.py (fonctions pures) ; cette page y ajoute la 
 les secrets : seuls les services configurés y figurent. app.py déclare les quatre fonctions comme des pages cachées.
 """
 
+import re
+
 import streamlit as st
 
 import theme
@@ -33,6 +35,11 @@ def config() -> legal.LegalConfig:
     return legal.config_from(secrets)
 
 
+def same_tab(text: str) -> str:
+    """Les liens vers les autres pages s'ouvrent dans l'onglet courant (st.markdown ouvre un nouvel onglet)."""
+    return re.sub(r"\[([^\]]+)\]\((\./[^)]+)\)", r'<a href="\2" target="_self">\1</a>', text)
+
+
 def show(title: str, accent: str, dek: str, text) -> None:
     cfg = config()
     theme.page_header(title, dek, eyebrow="Informations légales", accent=accent)
@@ -40,7 +47,7 @@ def show(title: str, accent: str, dek: str, text) -> None:
     with st.container(key="fvlegal"):
         if not cfg.contact:
             st.warning("L'adresse de contact n'est pas encore renseignée (réglage CONTACT_EMAIL).")
-        st.markdown(text(cfg))
+        st.markdown(same_tab(text(cfg)), unsafe_allow_html=True)
 
 
 def mentions_page() -> None:
