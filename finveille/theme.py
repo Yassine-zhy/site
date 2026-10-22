@@ -128,6 +128,15 @@ CSS = """
   background-attachment: fixed;
 }
 [data-testid="stMainBlockContainer"] { max-width: 1240px; padding-top: 4.4rem; padding-bottom: 4rem; }
+/* Le plein écran de Streamlit (graphiques, tableaux) : son cadre est fixé à l'écran, mais un ancêtre qui porte un effet
+   (verre dépoli, transformation, filtre, animation) devient son repère : le graphique sortait décalé, coupé, sous le
+   reste de la page. Pendant le plein écran (le bouton devient « Close fullscreen », suivi de la description de
+   l'élément s'il en a une), ses ancêtres perdent ces effets. */
+:has([data-testid="stElementToolbar"] button[aria-label^="Close fullscreen"]):not([data-testid="stFullScreenFrame"]) {
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important; filter: none !important;
+  transform: none !important; translate: none !important; scale: none !important; rotate: none !important;
+  animation: none !important; contain: none !important; will-change: auto !important; z-index: auto !important;
+}
 
 /* Streamlit décale les listes de st.html (padding-left: 2rem) : on annule pour nos listes « fv-… » */
 .stApp ul[class^="fv-"], .stApp ol[class^="fv-"], .stApp dl[class^="fv-"] { padding-left: 0; margin-left: 0; }
