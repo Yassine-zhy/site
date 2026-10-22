@@ -1482,7 +1482,7 @@ def fallback_icon(domain: str) -> str:
     """Petite icône neutre (la première lettre du domaine sur un fond gris doux), en `data:` : jamais d'adresse
     externe, donc aucune requête du navigateur quand le vrai logo n'a pas pu être récupéré."""
     letter = domain[:1].upper() if domain[:1].isalnum() else "?"
-    svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" '
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" '
            'fill="#e2e7f0"/><text x="32" y="44" font-family="Arial,sans-serif" font-size="34" font-weight="600" '
            f'text-anchor="middle" fill="#566176">{letter}</text></svg>')
     return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
