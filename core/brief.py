@@ -78,8 +78,9 @@ class Brief:
     agenda: list[tuple[str, str]] = field(default_factory=list)  # (date formatée, événement)
     word: tuple[str, str] | None = None  # (terme, définition)
 
-    def to_markdown(self) -> str:
-        """Le brief au format Markdown : un fichier texte lisible partout (et joli sur GitHub ou Notion)."""
+    def to_markdown(self, site_url: str = "") -> str:
+        """Le brief au format Markdown : un fichier texte lisible partout (et joli sur GitHub ou Notion).
+        Avec `site_url` (le texte de l'e-mail), il se termine par le lien pour ne plus le recevoir."""
         lines = [f"# FinVeille · Le brief du {self.date_label}", "", "## Les marchés", "", self.market or "—", ""]
         if self.headlines:
             lines += ["## À la une", ""] + [f"- **{rubric}** · [{title}]({url}) ({source})"
@@ -95,6 +96,8 @@ class Brief:
             lines += ["## Le mot du jour", "", f"**{self.word[0]}** : {self.word[1]}", ""]
         lines += ["---", "Brief rédigé automatiquement par FinVeille à partir de sources publiques. "
                   "Ce n'est pas un conseil en investissement."]
+        if site_url:
+            lines.append(f"Pour ne plus recevoir ce brief : {site_url}/settings (Réglages → Notifications par e-mail).")
         return "\n".join(lines)
 
     def to_html(self, site_url: str = "") -> str:
@@ -138,9 +141,11 @@ class Brief:
                       f'<p style="{font};font-size:15px;line-height:1.5;margin:0"><b>{esc(self.word[0])}</b> : '
                       f"{esc(self.word[1])}</p>"]
         link = f' · <a href="{esc(site_url)}" style="color:#1f4ed8">Ouvrir FinVeille</a>' if site_url else ""
+        settings = (f'<a href="{esc(site_url)}/settings" style="color:#1f4ed8">Réglages → Notifications par e-mail</a>'
+                    if site_url else "Réglages → Notifications par e-mail")
         parts += [f'<p style="{muted};margin-top:28px;border-top:1px solid #e4e8ee;padding-top:12px">Brief rédigé '
                   f"automatiquement à partir de sources publiques, sans conseil en investissement{link}. Pour ne plus "
-                  "le recevoir : Réglages → Notifications par e-mail.</p></div>"]
+                  f"le recevoir : {settings}.</p></div>"]
         return "".join(parts)
 
 

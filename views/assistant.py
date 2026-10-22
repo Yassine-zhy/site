@@ -13,12 +13,14 @@ from ui import (
     ai_quota,
     api_keys,
     current_user,
+    favicons,
     load_articles,
     load_quotes,
     local_mode,
     stream_ai,
 )
 
+AI_SERVICES = {"Gemini": "Google Gemini", "Groq": "Groq"}  # les moteurs de core/assistant.py, nommés pour le visiteur
 LOGO = str(Path(__file__).parent.parent / "assets" / "logo.svg")
 SUGGESTIONS = [
     "Que s'est-il passé sur les marchés aujourd'hui ?",
@@ -60,7 +62,8 @@ def show_sources(turn: dict) -> None:
     shown = assistant.cited(turn["content"], sources) if turn["engine"] != "Sans IA" else sources
     if shown:
         st.html(theme.sources_html([s.to_dict() for s in shown],
-                                   "Sources citées" if turn["engine"] != "Sans IA" else "Dépêches trouvées"))
+                                   "Sources citées" if turn["engine"] != "Sans IA" else "Dépêches trouvées",
+                                   favicons(s.url for s in shown)))  # logos récupérés par le serveur, en parallèle
     caption = {"Sans IA": "Recherche dans les dépêches et le glossaire, sans IA"}.get(turn["engine"],
                                                                                     f"Rédigé par {turn['engine']}")
     if turn.get("cached"):
@@ -116,6 +119,10 @@ theme.page_header("Pose ta question,", "En français, sur l'actualité, les marc
 # ne saute plus tout en bas à l'ouverture, et chaque nouvelle question remonte en haut de l'écran (engine.js).
 panel = st.container(key="fvchat")
 log = panel.container(key="fvchatlog")
+if engines:  # vie privée : la question part chez un tiers
+    service = " ou ".join(AI_SERVICES.get(name, name) for name in engines)
+    panel.caption(f"Ta question est envoyée au service d'IA qui rédige la réponse ({service}) ; FinVeille ne "
+                  "l'enregistre pas. N'y écris pas d'informations personnelles.")
 question = panel.chat_input("Pose ta question : « Pourquoi le pétrole monte ? », « C'est quoi un ETF ? »…",
                             max_chars=assistant.MAX_QUESTION_CHARS)
 question = question or st.session_state.pop("fv_chat_pending", None)

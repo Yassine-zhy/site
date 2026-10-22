@@ -41,10 +41,15 @@ class SmtpSettings:
         )
 
 
-def make_message(sender: str, to: str, subject: str, text: str, html_body: str) -> EmailMessage:
-    """Un e-mail en deux versions : texte brut (lu par toutes les messageries) et HTML (mis en forme)."""
+def make_message(sender: str, to: str, subject: str, text: str, html_body: str,
+                 unsubscribe: str = "") -> EmailMessage:
+    """Un e-mail en deux versions : texte brut (lu par toutes les messageries) et HTML (mis en forme).
+    `unsubscribe` : l'adresse de la page où l'on ne reçoit plus ces e-mails ; elle va dans l'en-tête List-Unsubscribe,
+    qui fait apparaître un bouton « Se désabonner » dans Gmail ou Apple Mail (brief et alertes, pas les codes)."""
     message = EmailMessage()
     message["From"], message["To"], message["Subject"] = sender, to, subject
+    if unsubscribe:
+        message["List-Unsubscribe"] = f"<{unsubscribe}>"
     message.set_content(text)
     message.add_alternative(html_body, subtype="html")
     return message
@@ -81,17 +86,21 @@ def alerts_email(fired: list[tuple[dict, object]], site_url: str = "") -> tuple[
              for alert, quote in fired]
     text = "Alertes déclenchées :\n\n" + "\n".join(f"- {line}" for line in lines)
     text += f"\n\nGérer mes alertes : {site_url}/alerts" if site_url else ""
+    text += ("\n\nPour ne plus recevoir ces e-mails : " +
+             (f"{site_url}/settings (Réglages → Notifications par e-mail)." if site_url
+              else "Réglages → Notifications par e-mail."))
     items = "".join(f'<li style="margin:0 0 8px">{html.escape(line)}</li>' for line in lines)
     link = (f'<p><a href="{html.escape(site_url)}/alerts" style="color:#1f4ed8">Gérer mes alertes</a></p>'
             if site_url else "")
+    settings = (f'<a href="{html.escape(site_url)}/settings" style="color:#1f4ed8">Réglages → Notifications par '
+                'e-mail</a>' if site_url else "Réglages → Notifications par e-mail")
     html_body = (
         '<div style="max-width:600px;margin:0 auto;padding:24px 20px;font-family:Arial,Helvetica,sans-serif;'
         'color:#0f1724"><p style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#a66300;margin:0">'
         f'FinVeille · alerte{plural}</p><h1 style="font-size:22px;margin:6px 0 14px">{html.escape(subject[12:])}</h1>'
         f'<ul style="padding-left:18px;font-size:15px;line-height:1.5">{items}</ul>{link}'
         '<p style="color:#5b6677;font-size:13px;margin-top:24px">Cours différés (Yahoo Finance). Chaque alerte est '
-        "envoyée au plus une fois par jour. Pour ne plus recevoir ces e-mails : Réglages → Notifications par "
-        "e-mail.</p></div>"
+        f"envoyée au plus une fois par jour. Pour ne plus recevoir ces e-mails : {settings}.</p></div>"
     )
     return subject, text, html_body
 
