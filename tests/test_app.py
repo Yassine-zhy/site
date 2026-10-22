@@ -295,6 +295,26 @@ def test_assistant_de_configuration_reserve_a_l_administrateur(app, db, monkeypa
     assert any("Connexion par e-mail" in element.value for element in app.get("html"))
 
 
+def test_alerte_comptes_non_conserves_pour_l_administrateur(app, db, monkeypatch):
+    monkeypatch.delenv("LOCAL_MODE")
+    monkeypatch.setenv("ADMIN_EMAILS", "alice@example.com")
+    db.touch_user("mail:alice@example.com", "alice@example.com", "Alice")
+    monkeypatch.setattr(ui, "current_user", lambda: "mail:alice@example.com")
+    app.run()
+    assert not app.exception
+    assert any("ne sont pas conservés" in e.value for e in app.error)
+
+
+def test_pas_d_alerte_avec_une_base_en_ligne(app, db, monkeypatch):
+    monkeypatch.delenv("LOCAL_MODE")
+    monkeypatch.setenv("ADMIN_EMAILS", "alice@example.com")
+    db.touch_user("mail:alice@example.com", "alice@example.com", "Alice")
+    monkeypatch.setattr(ui, "current_user", lambda: "mail:alice@example.com")
+    monkeypatch.setattr(ui.storage, "backend", lambda: "postgres")
+    app.run()
+    assert not any("ne sont pas conservés" in e.value for e in app.error)
+
+
 @pytest.fixture
 def mailbox(monkeypatch):
     """Un faux serveur d'envoi d'e-mails : les messages « envoyés » sont rangés dans une liste."""
