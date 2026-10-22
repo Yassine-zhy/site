@@ -94,3 +94,17 @@ def test_marketaux_moyenne_du_sentiment_des_entreprises():
         article = sources.fetch_marketaux_news("cle")[0]
     assert article.tickers == ["MC.PA", "KER.PA"]
     assert abs(article.sentiment - 0.2) < 1e-9
+
+
+def test_clean_html_strips_double_escaped_tags():
+    """Un flux qui échappe son HTML deux fois ne doit pas laisser de balises dans le résumé."""
+    from core.sources import clean_html
+
+    text = clean_html('&lt;link type="text/css" href="x.css"&gt;Le bitcoin &lt;b&gt;monte&lt;/b&gt;')
+    assert "<" not in text and "link" not in text and text == "Le bitcoin monte"
+
+
+def test_clean_html_keeps_comparisons():
+    from core.sources import clean_html
+
+    assert clean_html("<p>Prix : 3 &lt; 5 et 7 &gt; 2</p>") == "Prix : 3 < 5 et 7 > 2"

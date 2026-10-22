@@ -9,7 +9,7 @@
 
 Un projet étudiant, conçu et développé par **Yassine Zouhair**.
 
-FinVeille rassemble l'actualité de 12 flux RSS et de 4 API financières, la classe par rubrique, suit les
+FinVeille rassemble l'actualité de 43 flux RSS et de 4 API financières, la classe par rubrique, suit les
 entreprises et les thèmes de son utilisateur, affiche les cours des marchés mondiaux et résume les articles par IA.
 Application web en Python (Streamlit), construite pas à pas : chaque étape est un commit, documenté dans
 [`guide/`](guide/README.md).
@@ -24,7 +24,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 
 | | |
 | --- | --- |
-| **Agrégation** | 12 flux RSS gratuits (CNBC, BBC, Le Monde, BFM Bourse, The Economist, Fed, BCE, CoinDesk…) + Finnhub, NewsAPI, Marketaux et Alpha Vantage si les clés sont renseignées. Téléchargement en parallèle, dédoublonnage. |
+| **Agrégation** | 43 flux RSS gratuits rangés par région : France (Le Figaro, La Tribune, BFM Business, AMF…), Canada (Radio-Canada, La Presse, The Globe and Mail, Banque du Canada…), Monde (MarketWatch, Financial Times, The Guardian, The Block…) + Finnhub, NewsAPI, Marketaux et Alpha Vantage si les clés sont renseignées. Téléchargement en parallèle, dédoublonnage. |
 | **Le fil** | En haut de l'accueil, **la séance racontée au défilement**, en quatre chapitres que la maquette 3D du CAC 40 joue : le CAC 40, sa plus forte hausse, sa plus forte baisse (la caméra file vers leur tour), l'histoire du jour (guide 32). Puis une mise en page de journal : « À la une » en grand avec sa photo, trois vignettes, puis « En continu ». Une image seulement si c'est la vraie (la photo de partage de l'article) ; sans photo, l'article passe en version texte, avec le liseré de couleur de sa rubrique. L'histoire à la une est celle reprise par le plus de sources ; rubriques Marchés / Crypto / Entreprises / Macro (classement par mots-clés), tendances cliquables, filtre par source, recherche avancée (`"expression exacte"`, `-exclure`, `source:cnbc`), vue compacte, mise à jour automatique toutes les 5 minutes. |
 | **Assistant IA** | Des questions en français sur l'actualité, les marchés ou un terme financier ; des réponses rédigées par Gemini ou Groq (gratuits) **à partir des dépêches du moment**, qui citent leurs sources [1], [2]… (recherche par pertinence avec traductions français → anglais, puis génération : « RAG »). Réponse affichée au fil de l'eau, conversation suivie. Également : analyse pédagogique des fiches entreprises, édito du brief rédigé chaque heure. Sans clé : définitions du glossaire et dépêches pertinentes. Quotas, limiteur et mémoire partagée pour tenir la charge. |
 | **Le brief** | L'édition du jour rédigée automatiquement : la séance en une phrase, l'histoire la plus reprise de chaque rubrique, les sujets qui montent, l'agenda de mes entreprises, le mot du jour. Téléchargeable en Markdown, **envoyé par e-mail chaque matin** aux abonnés. |
@@ -34,6 +34,8 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 | **Favoris, lu, masqué** | Enregistrés dans une base SQLite, conservés d'une session à l'autre ; notes personnelles ; export CSV des favoris. |
 | **Mes suivis** | Entreprises (recherche par nom) et thèmes, avec un fil dédié pour chacun. |
 | **Fiches entreprises** | Logo, cours, graphique interactif (1 mois à 5 ans) avec les dépêches placées sur la courbe, 10 indicateurs clés expliqués (PER, VE/EBITDA, ROE, rendement, bêta…), fourchette sur 52 semaines, agenda (résultats, dividende, consensus). |
+| **Fiches des valeurs** | Une fiche pour chaque action, indice, devise et crypto, ouverte d'un clic depuis tuile, carte, classement ou bandeau : cours, graphique, résultats, analystes, dividendes, actualités (guide 38). |
+| **Marchés par place** | France (CAC 40), Canada (S&P/TSX 60), États-Unis (Dow Jones) et monde, chacun avec sa carte par secteur et ses palmarès (guide 38). |
 | **Marchés** | Bandeau défilant des cours sur toutes les pages ; 20 instruments mondiaux avec mini-courbes et carte des performances ; carte du CAC 40 par secteur (40 valeurs, palmarès) ; convertisseur de devises. |
 | **Économie** | Tableau de bord des statistiques officielles (BCE, Réserve fédérale) : inflation et inflation sous-jacente, taux directeurs et taux réels, taux à 10 ans, chômage, croissance, pour la zone euro, la France et les États-Unis ; courbes des taux avec détection d'inversion. |
 | **Crypto** | Les 20 premières cryptomonnaies en euros (CoinGecko) avec variations et mini-courbes, capitalisation totale, dominance du bitcoin, indice « peur et avidité » sur un an, dépêches crypto. |
@@ -94,7 +96,7 @@ Application web en Python (Streamlit), construite pas à pas : chaque étape est
 Python 3.11+ · Streamlit (+ OpenID Connect) · requests · feedparser · yfinance · pandas · NumPy · Altair · trafilatura ·
 SQLite / PostgreSQL (psycopg) · pytest
 
-37 étapes documentées dans [`guide/`](guide/README.md), une par commit.
+38 étapes documentées dans [`guide/`](guide/README.md), une par commit.
 
 ## Lancer le projet
 

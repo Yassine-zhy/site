@@ -24,6 +24,8 @@ from core.sources import (
 )
 from core.filters import matches_query
 
+WORKERS = 12  # requêtes en parallèle (une quarantaine de flux)
+
 # Une « tâche » = (nom affiché, fonction à appeler, arguments de la fonction)
 Task = tuple[str, Callable[..., list[Article]], tuple]
 
@@ -62,17 +64,17 @@ def _run(task: Task) -> tuple[list[Article], str | None]:
     name, function, args = task
     try:
         return function(*args), None
-    except (requests.RequestException, SourceError, ValueError) as exc:
-        # Une source en panne ne doit pas faire tomber toute l'application.
-        # ValueError couvre les réponses qui ne sont pas du JSON valide.
+    except Exception as exc:
+        # Une source en panne ne doit pas faire tomber toute l'application : un flux mal formé ne doit pas
+        # faire tomber les autres (réseau, SourceError, JSON invalide, erreur d'analyse…).
         return [], f"{name} : {describe_error(exc)}"
 
 
 def run_tasks(tasks: list[Task]) -> tuple[list[Article], list[str]]:
     """Lance toutes les tâches **en parallèle**, puis classe, dédoublonne et trie les articles."""
-    # Chaque requête passe l'essentiel de son temps à attendre le réseau : en lancer 8 à la fois
-    # divise le temps total par ~8, sans effort pour le processeur.
-    with ThreadPoolExecutor(max_workers=8) as pool:
+    # Chaque requête passe l'essentiel de son temps à attendre le réseau : en lancer 12 à la fois
+    # divise le temps total par ~12, sans effort pour le processeur.
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         results = list(pool.map(_run, tasks))
 
     articles = [article for found, _ in results for article in found]
@@ -116,7 +118,7 @@ def collect_followed(
             tasks.append((f"NewsAPI · {follow['label']}", fetch_newsapi_headlines, (key, follow["value"])))
             owners.append(owner)
 
-    with ThreadPoolExecutor(max_workers=8) as pool:
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         results = list(pool.map(_run, tasks))
 
     feeds: dict[tuple[str, str], list[Article]] = {(f["kind"], f["value"]): [] for f in follows}
@@ -140,3 +142,16 @@ def collect_followed(
         found.sort(key=lambda article: article.published, reverse=True)
         feeds[owner] = found
     return feeds, errors
+
+
+def filter_region(articles: list[Article], region: str | None) -> list[Article]:
+    """Garde les articles d'une région (« fr », « ca », « monde ») ; None ou « tout » : tous."""
+    if not region or region == "tout":
+        return articles
+    return [article for article in articles if article.region == region]
+
+
+def prefer_french(ranked: list[tuple[Article, int]]) -> tuple[Article, int]:
+    """Parmi les histoires à égalité de reprises en tête du classement, préfère une histoire française."""
+    top = ranked[0][1]
+    return next((item for item in ranked if item[1] == top and item[0].region == "fr"), ranked[0])

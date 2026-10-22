@@ -78,6 +78,10 @@ pages = {
         st.Page("views/economy.py", title="Économie", icon=":material/account_balance:"),
         st.Page("views/crypto.py", title="Crypto", icon=":material/currency_bitcoin:"),
         st.Page("views/compare.py", title="Comparer", icon=":material/compare_arrows:"),
+        # Les fiches (une par valeur, une par cryptomonnaie) : hors du menu, on y arrive en cliquant sur une valeur
+        st.Page("views/quote.py", title="Fiche", icon=":material/query_stats:", url_path="fiche", visibility="hidden"),
+        st.Page("views/coin.py", title="Fiche crypto", icon=":material/currency_bitcoin:", url_path="fiche-crypto",
+                visibility="hidden"),
     ],
     "Mon espace": [
         st.Page("views/following.py", title="Mes suivis", icon=":material/star:"),
