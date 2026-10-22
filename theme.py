@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import base64
 import html
+from collections.abc import Mapping
 import time as clock_module
 from datetime import datetime, time, timezone
 from pathlib import Path
@@ -52,7 +53,7 @@ _MONTHS_SHORT = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "ao�
 
 CSS = """
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Schibsted+Grotesk:wght@500;600;700;800&display=swap");
+/* Newsreader et Schibsted Grotesk sont servies par le site (.streamlit/config.toml, static/fonts/), pas par Google. */
 
 /* =============================================================================================
    1. Jetons de design, en trois couches (guide 26) :
@@ -128,6 +129,15 @@ CSS = """
   background-attachment: fixed;
 }
 [data-testid="stMainBlockContainer"] { max-width: 1240px; padding-top: 4.4rem; padding-bottom: 4rem; }
+/* Le plein écran de Streamlit (graphiques, tableaux) : son cadre est fixé à l'écran, mais un ancêtre qui porte un effet
+   (verre dépoli, transformation, filtre, animation) devient son repère : le graphique sortait décalé, coupé, sous le
+   reste de la page. Pendant le plein écran (le bouton devient « Close fullscreen », suivi de la description de
+   l'élément s'il en a une), ses ancêtres perdent ces effets. */
+:has([data-testid="stElementToolbar"] button[aria-label^="Close fullscreen"]):not([data-testid="stFullScreenFrame"]) {
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important; filter: none !important;
+  transform: none !important; translate: none !important; scale: none !important; rotate: none !important;
+  animation: none !important; contain: none !important; will-change: auto !important; z-index: auto !important;
+}
 
 /* Streamlit décale les listes de st.html (padding-left: 2rem) : on annule pour nos listes « fv-… » */
 .stApp ul[class^="fv-"], .stApp ol[class^="fv-"], .stApp dl[class^="fv-"] { padding-left: 0; margin-left: 0; }
@@ -166,7 +176,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :has(.st-key-fvaccount) { animation: none; }
 @media (max-width: 640px) {  /* téléphone : une icône (le texte reste lu par les lecteurs d'écran), loin du menu ⋮ */
   .st-key-fvaccount { right: 3.9rem; }
-  .st-key-fvaccount a, .st-key-fvaccount .st-key-fvsearch_open button { width: 2.5rem; height: 2.5rem; min-height: 0;
+  .st-key-fvaccount a, .st-key-fvaccount .st-key-fvsearch_open button { width: 44px; height: 44px; min-height: 0;
     padding: 0; justify-content: center; border-radius: 50%; }  /* deux ronds de même taille (search.py : la loupe) */
   .st-key-fvaccount a p { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   [data-testid="stStatusWidget"] button { display: none; }  /* « Stop » : inutile au visiteur, il chevauchait le compte */
@@ -1194,6 +1204,9 @@ html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .
   padding-top: 1rem; border-top: 1px solid var(--fv-line); }
 .fv-footer-note { margin: 0; max-width: 80ch; }
 .fv-footer-top-link { font-size: .8rem; font-weight: 600; color: var(--fv-brand) !important; text-decoration: none !important; white-space: nowrap; }
+.fv-footer-legal { display: flex; flex-wrap: wrap; gap: .2rem 1.4rem; margin-top: .7rem; }
+.fv-footer-legal a { font-size: .76rem; color: var(--fv-muted) !important; text-decoration: none !important; }
+.fv-footer-legal a:hover { color: var(--fv-brand) !important; text-decoration: underline !important; }
 @media (max-width: 640px) { .fv-footer-top { grid-template-columns: 1fr; } .fv-footer-links { justify-content: start; } }
 
 /* La page « À propos » */
@@ -1328,7 +1341,7 @@ html:not(.fv-story-on) .fv-story-rail { display: none; }
   [data-testid="stBaseButton-elementToolbar"], [data-testid="stNumberInputStepDown"], [data-testid="stNumberInputStepUp"],
   [data-testid="stChatInputSubmitButton"] { min-width: 44px; min-height: 44px; }
   [data-testid="stTooltipHoverTarget"] { padding: .7rem; margin: -.7rem; }  /* la bulle d'aide « ? » : zone élargie */
-  .fv-footer-links a, .fv-footer-top-link { display: inline-flex; align-items: center; min-height: 44px; }
+  .fv-footer-links a, .fv-footer-top-link, .fv-footer-legal a { display: inline-flex; align-items: center; min-height: 44px; }
   .stApp [role="tab"] { min-height: 44px; }
   .fv-headline a { padding-block: .9rem; }  /* zone de toucher agrandie, sans rien déplacer (lien en ligne) */
   ul[class^="fv-"] li > a { display: inline-flex; align-items: center; min-height: 44px; }  /* listes de dépêches */
@@ -1459,10 +1472,28 @@ def safe_url(url: str | None) -> str:
     return esc(url) if url and url.startswith(("http://", "https://")) else "#"
 
 
-def favicon_url(url: str) -> str:
-    """Logo (favicon) du site d'un article, via le service public de Google."""
-    domain = urlparse(url).netloc.removeprefix("www.")
-    return f"https://www.google.com/s2/favicons?domain={esc(domain)}&sz=64"
+def domain_of(url: str) -> str:
+    """Le nom de domaine d'une adresse (sans « www. »), ou une chaîne vide."""
+    url = url or ""
+    return (urlparse(url if "//" in url else f"//{url}").hostname or "").removeprefix("www.").lower()
+
+
+def fallback_icon(domain: str) -> str:
+    """Petite icône neutre (la première lettre du domaine sur un fond gris doux), en `data:` : jamais d'adresse
+    externe, donc aucune requête du navigateur quand le vrai logo n'a pas pu être récupéré."""
+    letter = domain[:1].upper() if domain[:1].isalnum() else "?"
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" '
+           'fill="#e2e7f0"/><text x="32" y="44" font-family="Arial,sans-serif" font-size="34" font-weight="600" '
+           f'text-anchor="middle" fill="#566176">{letter}</text></svg>')
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+
+
+def favicon_url(url: str, icons: Mapping[str, str] | None = None) -> str:
+    """Logo (favicon) du site d'une adresse. `icons` : {domaine: image en `data:`} déjà récupérée par le serveur
+    (ui.favicons) ; sans elle, ou pour un domaine absent, l'icône neutre. Jamais d'adresse externe : le navigateur
+    du visiteur ne contacte aucun tiers (son adresse IP n'est pas envoyée à Google)."""
+    domain = domain_of(url)
+    return esc((icons or {}).get(domain) or fallback_icon(domain))
 
 
 def fr_number(value: float, decimals: int = 2) -> str:
@@ -1778,8 +1809,9 @@ def showcase_html() -> str:
     )
 
 
-def sources_html(sources: list[dict], title: str = "Sources") -> str:
-    """Les dépêches citées par l'IA, numérotées comme dans sa réponse, avec un lien vers chacune."""
+def sources_html(sources: list[dict], title: str = "Sources", icons: Mapping[str, str] | None = None) -> str:
+    """Les dépêches citées par l'IA, numérotées comme dans sa réponse, avec un lien vers chacune.
+    `icons` : les logos des sites déjà récupérés (voir `favicon_url`)."""
     items = []
     for source in sources:
         try:
@@ -1789,7 +1821,7 @@ def sources_html(sources: list[dict], title: str = "Sources") -> str:
         items.append(
             f'<a class="fv-cite" href="{safe_url(source["url"])}" target="_blank" rel="noopener">'
             f'<span class="fv-cite-n">{int(source["n"])}</span>'
-            f'<img src="{favicon_url(source["url"])}" alt="" loading="lazy">'
+            f'<img src="{favicon_url(source["url"], icons)}" alt="" loading="lazy">'
             f'<span class="fv-cite-text"><b>{esc(source["title"])}</b>'
             f'<small>{esc(source["source"])}{" · " + esc(when) if when else ""}</small></span></a>'
         )
@@ -2052,6 +2084,8 @@ def ticker_tape(quotes) -> None:
 LOGO_URI = svg_uri((Path(__file__).parent / "assets" / "logo.svg").read_text())  # le symbole, pour le pied de page
 FOOTER_LINKS = [("Le fil", ""), ("Le brief", "brief"), ("Assistant IA", "assistant"), ("Marchés", "markets"),
                 ("Économie", "economy"), ("Crypto", "crypto"), ("Glossaire", "glossary"), ("À propos", "about")]
+LEGAL_LINKS = [("Mentions légales", "mentions-legales"), ("Confidentialité", "confidentialite"),
+               ("Cookies", "cookies"), ("Conditions d'utilisation", "conditions")]  # pages de views/legal.py
 AUTHOR = "Yassine Zouhair"  # l'auteur du site : pied de page et page « À propos »
 
 
@@ -2069,6 +2103,7 @@ def footer() -> None:
     """Le pied de page, sur toutes les pages : la marque et la signature de l'auteur, les rubriques, le nom du site en
     très grand (décoratif), les sources et l'avertissement."""
     links = "".join(f'<a href="./{path}" target="_self">{esc(label)}</a>' for label, path in FOOTER_LINKS)
+    legal = "".join(f'<a href="./{path}" target="_self">{esc(label)}</a>' for label, path in LEGAL_LINKS)
     st.html(
         '<footer class="fv-footer"><div class="fv-footer-top">'
         f'<div class="fv-footer-brand"><span class="fv-footer-mark"><img src="{LOGO_URI}" alt="" width="28" height="28">'
@@ -2080,7 +2115,8 @@ def footer() -> None:
         '<div class="fv-footer-bottom"><p class="fv-footer-note">Sources : flux RSS des médias cités, Yahoo Finance '
         "(cours différés), BCE, Réserve fédérale, CoinGecko. Résumés et réponses de l'IA à vérifier dans les articles. "
         f"Informations pédagogiques : pas un conseil en investissement. © {datetime.now().year} {esc(AUTHOR)}.</p>"
-        '<a class="fv-footer-top-link" href="#fv-top" target="_self">Haut de page ↑</a></div></footer>'
+        '<a class="fv-footer-top-link" href="#fv-top" target="_self">Haut de page ↑</a></div>'
+        f'<nav class="fv-footer-legal" aria-label="Informations légales">{legal}</nav></footer>'
     )
 
 

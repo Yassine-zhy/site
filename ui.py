@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import base64
 import functools
 import math
 import os
+import re
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import date, datetime, timezone
 
 import streamlit as st
 import streamlit.components.v1 as components
+from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 
 import theme
 import requests
@@ -206,6 +211,8 @@ def current_user() -> str | None:
         st.session_state["fv_cookie_checked"] = token
         if user := accounts.session_user(token):
             st.session_state["fv_user"], st.session_state["fv_token"] = user, token
+            profile = storage.get_user(user) or {}
+            storage.touch_user(user, profile.get("email"), profile.get("name"))  # visite d'un compte déjà connecté
             return user
         st.session_state["fv_cookie_set"] = ""  # jeton expiré ou inconnu : on efface le cookie
     return None
@@ -254,6 +261,8 @@ def login_buttons(key: str) -> None:
         label, icon = PROVIDERS.get(provider, (f"Continuer avec {str(provider).capitalize()}", ":material/login:"))
         st.button(label, icon=icon, key=f"{key}_{provider}", width="stretch",
                   on_click=st.login, args=(provider,) if provider else ())
+    st.caption(f"En te connectant, tu acceptes les [conditions d'utilisation]({TERMS_URL}). Tes données sont traitées "
+               f"selon la [politique de confidentialité]({PRIVACY_URL}).")
 
 
 def _attempt_allowed() -> bool:
@@ -295,6 +304,12 @@ def _login_form(key: str) -> None:
                 st.rerun()
 
 
+TERMS_URL, PRIVACY_URL = "./conditions", "./confidentialite"
+CONSENT_LABEL = (f"J'accepte les [conditions d'utilisation]({TERMS_URL}) et j'ai lu la "
+                 f"[politique de confidentialité]({PRIVACY_URL})")
+CONSENT_MISSING = "Pour créer ton compte, coche la case ci-dessus : tu acceptes les conditions d'utilisation."
+
+
 def _signup_form(key: str) -> None:
     with st.form(f"{key}_signup", border=False):
         name = st.text_input("Prénom ou pseudo", max_chars=40, autocomplete="given-name", key=f"{key}_signup_name")
@@ -304,7 +319,11 @@ def _signup_form(key: str) -> None:
                                  key=f"{key}_signup_password")
         confirm = st.text_input("Confirme le mot de passe", type="password", autocomplete="new-password",
                                 key=f"{key}_signup_confirm")
+        consent = st.checkbox(CONSENT_LABEL, key=f"{key}_signup_consent")  # décochée par défaut, obligatoire (RGPD)
         if st.form_submit_button("Créer mon compte", type="primary", width="stretch") and _attempt_allowed():
+            if not consent:
+                st.error(CONSENT_MISSING)
+                return
             if password != confirm:
                 st.error("Les deux mots de passe sont différents.")
                 return
@@ -511,8 +530,10 @@ def load_articles(keys: dict[str, str | None]):
 
     Renvoie (articles, erreurs, heure de la collecte).
     """
-    return _resilient("articles", _articles, keys,
-                      empty=([], ["Aucune source ne répond pour le moment"], datetime.now(timezone.utc)))
+    loaded = _resilient("articles", _articles, keys,
+                        empty=([], ["Aucune source ne répond pour le moment"], datetime.now(timezone.utc)))
+    warm_favicons(article.url for article in loaded[0])  # les logos des sources, avant d'afficher le fil
+    return loaded
 
 
 load_articles.clear = _articles.clear  # bouton « Actualiser » du fil
@@ -554,7 +575,9 @@ def _followed(follows: tuple[tuple[str, str, str], ...], keys: dict[str, str | N
 
 def load_followed(follows: tuple[tuple[str, str, str], ...], keys: dict[str, str | None]):
     """Fils dédiés aux suivis. `follows` est un tuple (et pas une liste) pour pouvoir servir de clé de cache."""
-    return _resilient("followed", _followed, follows, keys, empty=({}, ["Fils dédiés indisponibles"]))
+    loaded = _resilient("followed", _followed, follows, keys, empty=({}, ["Fils dédiés indisponibles"]))
+    warm_favicons(article.url for articles in loaded[0].values() for article in articles)
+    return loaded
 
 
 @st.cache_data(ttl=3600, max_entries=500, show_spinner=False)
@@ -796,6 +819,78 @@ def _save_note(user: str, article_id: str, widget_key: str) -> None:
     st.session_state["fv_toast"] = "Note enregistrée"
 
 
+# --- Logos des sources, servis par le site (vie privée) -------------------------------------------------
+# Le navigateur du visiteur ne contacte jamais Google : c'est le serveur qui va chercher chaque logo (c'est donc
+# l'adresse IP du serveur qui part chez Google, pas celle du visiteur), le garde en mémoire une semaine et l'insère
+# dans la page en `data:`. En cas d'échec : une icône neutre (theme.fallback_icon), jamais une adresse externe.
+FAVICON_SERVICE = "https://www.google.com/s2/favicons?domain={domain}&sz=64"
+FAVICON_MAX_BYTES = 16_000
+FAVICON_TYPES = ("image/png", "image/x-icon", "image/vnd.microsoft.icon", "image/jpeg", "image/gif", "image/webp")
+_DOMAIN_RE = re.compile(r"[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?")
+_NO_FAVICON = capacity.Memory(max_entries=500, ttl=600)  # domaines sans logo : pas de nouvel essai avant 10 minutes
+_WARM = capacity.Memory(max_entries=2000, ttl=3600)  # domaines déjà chargés : pas besoin de les redemander en parallèle
+
+
+def _download_favicon(domain: str) -> str:
+    """Le logo d'un site, en `data:` (base64). Lève une exception s'il manque, n'est pas une image ou est trop gros."""
+    if not _DOMAIN_RE.fullmatch(domain):
+        raise ValueError("domaine invalide")
+    response = requests.get(FAVICON_SERVICE.format(domain=domain), timeout=4, headers={"User-Agent": "FinVeille"})
+    response.raise_for_status()
+    kind = response.headers.get("Content-Type", "").split(";")[0].strip().lower()
+    if kind not in FAVICON_TYPES or not 0 < len(response.content) <= FAVICON_MAX_BYTES:
+        raise ValueError("logo inutilisable")
+    return f"data:{kind};base64,{base64.b64encode(response.content).decode()}"
+
+
+@st.cache_data(ttl=7 * 86400, max_entries=500, show_spinner=False)
+@_network
+def _favicon(domain: str) -> str:
+    return _download_favicon(domain)
+
+
+def favicon(url: str) -> str:
+    """Le logo du site d'une adresse, en `data:` ; l'icône neutre si le serveur n'a pas pu le récupérer."""
+    domain = theme.domain_of(url)
+    if not domain or _NO_FAVICON.get(domain):
+        return theme.fallback_icon(domain)
+    try:
+        return _favicon(domain)
+    except Exception:  # service en panne, domaine inconnu, image refusée : rien n'est mis en cache, on réessaiera
+        _NO_FAVICON.put(domain, True)
+        return theme.fallback_icon(domain)
+
+
+def warm_favicons(urls, deadline: float = 6.0) -> None:
+    """Récupère en parallèle (6 fils) les logos pas encore en mémoire, avant d'afficher une liste, pour ne pas les
+    attendre un par un. Au bout de `deadline` secondes, les retardataires sont laissés de côté (icône neutre pendant
+    une minute) : un service lent ne doit pas bloquer la page."""
+    cold = sorted({d for url in urls if (d := theme.domain_of(url)) and not _WARM.get(d)})
+    if len(cold) > 1:
+        context = get_script_run_ctx()  # sans lui, un fil ne peut pas lire le cache de Streamlit
+
+        def attach() -> None:
+            if context:
+                add_script_run_ctx(threading.current_thread(), context)
+
+        pool = ThreadPoolExecutor(max_workers=6, initializer=attach)
+        jobs = {pool.submit(favicon, f"https://{domain}"): domain for domain in cold}
+        with capacity.QUEUE.released():  # l'attente du réseau ne garde pas la place de ce visiteur dans la file
+            _, late = wait(jobs, timeout=deadline)
+        pool.shutdown(wait=False, cancel_futures=True)
+        for job in late:
+            _NO_FAVICON.put(jobs[job], True, ttl=60)
+    for domain in cold:
+        _WARM.put(domain, True)
+
+
+def favicons(urls) -> dict[str, str]:
+    """Les logos de plusieurs sites : {domaine: data URI}, à passer à `theme.favicon_url` ou `theme.sources_html`."""
+    urls = list(urls)
+    warm_favicons(urls)
+    return {domain: favicon(f"https://{domain}") for url in urls if (domain := theme.domain_of(url))}
+
+
 def article_html(article: Article, read: bool, layout: str = "row", echoes: int = 0, image: str | None = None) -> str:
     """Le HTML d'un article, selon sa présentation :
 
@@ -810,7 +905,7 @@ def article_html(article: Article, read: bool, layout: str = "row", echoes: int 
     label = CATEGORIES.get(article.category, article.category)
     kicker = [theme.category_tag(article.category, label)]
     if layout != "tile":
-        kicker.append(f'<span class="fv-src"><img src="{theme.favicon_url(article.url)}" alt="" loading="lazy">'
+        kicker.append(f'<span class="fv-src"><img src="{favicon(article.url)}" alt="" loading="lazy">'
                       f"{esc(article.source)}</span>")
     kicker += [f'<time class="fv-time" datetime="{article.published.isoformat()}">{theme.clock(article.published)}</time>',
                f'<span class="fv-ago">{theme.time_ago(article.published)}</span>']
@@ -829,7 +924,7 @@ def article_html(article: Article, read: bool, layout: str = "row", echoes: int 
         f'<div class="fv-kicker">{"".join(kicker)}</div>'
         f'<{heading} class="fv-headline"><a {link}>{title}</a></{heading}>'
         + (f'<p class="fv-dek">{esc(article.summary)}</p>' if with_dek else "")
-        + (f'<p class="fv-tile-src"><img src="{theme.favicon_url(article.url)}" alt="" loading="lazy">'
+        + (f'<p class="fv-tile-src"><img src="{favicon(article.url)}" alt="" loading="lazy">'
            f"{esc(article.source)}</p>" if layout == "tile" else "")
     )
     classes = f'fv-item layout-{layout}{" is-read" if read else ""}{" is-compact" if layout == "compact" else ""}'

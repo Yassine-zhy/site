@@ -15,6 +15,7 @@ import search
 import theme
 from core import alerts, capacity, storage
 from ui import PageEnd, current_user, get_secret, is_admin, load_quotes, load_symbol_quotes, local_mode, sync_cookie
+from views import legal
 
 # Le logo : un « F » dont la barre du milieu est une courbe qui monte (tools/make_logo.py) ; le nom
 # « FinVeille » est écrit à côté en CSS, pour suivre le thème clair ou sombre (theme.py)
@@ -101,6 +102,14 @@ pages = {
         st.Page("views/settings.py", title="Réglages", icon=":material/settings:"),
         st.Page("views/account.py", title="Mon compte", icon=":material/account_circle:"),
         st.Page("views/about.py", title="À propos", icon=":material/info:"),
+        # Les pages légales : hors du menu, on y arrive par le pied de page et par la recherche
+        st.Page(legal.mentions_page, title="Mentions légales", icon=":material/gavel:", url_path="mentions-legales",
+                visibility="hidden"),
+        st.Page(legal.privacy_page, title="Confidentialité", icon=":material/privacy_tip:", url_path="confidentialite",
+                visibility="hidden"),
+        st.Page(legal.cookies_page, title="Cookies", icon=":material/cookie:", url_path="cookies", visibility="hidden"),
+        st.Page(legal.terms_page, title="Conditions d'utilisation", icon=":material/description:",
+                url_path="conditions", visibility="hidden"),
     ],
 }
 if is_admin(current_user()):  # l'assistant de configuration n'est visible que par l'administrateur

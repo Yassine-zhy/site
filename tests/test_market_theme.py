@@ -129,3 +129,14 @@ def test_chaque_maquette_a_une_action():
         if act["type"] == "reveal":
             assert act["in"] and act["keyed"], name
     assert scene3d.CITY_ACT["type"] == "search" and scene3d.CITY_ACT["then"] == "#fv-fil"
+
+
+def test_le_plein_ecran_libere_ses_ancetres():
+    """Pendant le plein écran, les ancêtres du cadre perdent leurs effets (verre dépoli, transformation…), sinon le
+    cadre « fixé à l'écran » se cale sur eux. Le bouton s'appelle « Close fullscreen », suivi de la description de
+    l'élément s'il en a une (« Close fullscreen: Cours et variations… ») : la règle vise le début de l'étiquette."""
+    assert 'button[aria-label^="Close fullscreen"]' in theme.CSS
+    rule = theme.CSS.split('button[aria-label^="Close fullscreen"]', 1)[1].split("}", 1)[0]
+    assert ':not([data-testid="stFullScreenFrame"])' in rule  # le cadre garde son propre z-index
+    for effect in ("backdrop-filter: none", "transform: none", "filter: none", "animation: none"):
+        assert effect in rule

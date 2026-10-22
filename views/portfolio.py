@@ -10,7 +10,7 @@ import theme
 from core import company, metrics, portfolio, storage
 from sheet import display_name
 from theme import esc
-from ui import (company_choices, end_page, flush_toast, load_closes, load_euro_rates, load_profile,
+from ui import (company_choices, end_page, favicons, flush_toast, load_closes, load_euro_rates, load_profile,
                 load_symbol_quotes, require_user)
 
 PERIODS = {"1 mois": "1mo", "6 mois": "6mo", "1 an": "1y"}
@@ -36,10 +36,9 @@ def load_example(user: str) -> None:
             add_position(user, symbol, label, quantity, round(price, 2), start)
 
 
-def logo(symbol: str) -> str:
-    """Logo de l'entreprise à partir de son site web (fiche Yahoo), ou chaîne vide."""
-    website = load_profile(symbol).get("website")
-    return theme.favicon_url(website) if website else ""
+def website(symbol: str) -> str:
+    """Le site web de l'entreprise (fiche Yahoo), ou une chaîne vide."""
+    return load_profile(symbol).get("website") or ""
 
 
 def performance_chart(data: pd.DataFrame, period: str) -> alt.LayerChart:
@@ -168,9 +167,10 @@ st.caption("Prix de revient converti en euros au taux de change actuel (simplifi
            "totale.")
 
 theme.section("Répartition")
+icons = favicons(website(line.position["symbol"]) for line in lines)  # logos récupérés par le serveur, en parallèle
 bars = "".join(
     f'<li title="{esc(line.position["label"])} : {theme.fr_number(line.weight, 1)} %">'
-    f'<img src="{logo(line.position["symbol"])}" alt="">'
+    f'<img src="{theme.favicon_url(website(line.position["symbol"]), icons)}" alt="">'
     f'<span>{esc(line.position["label"])}</span><span class="fv-track"><i style="width:{line.weight:.1f}%"></i></span>'
     f'<span class="fv-num">{theme.fr_number(line.weight, 0)} %</span></li>'
     for line in sorted(lines, key=lambda line: line.weight, reverse=True)

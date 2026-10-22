@@ -10,7 +10,7 @@ import theme
 from core import analytics
 from core.config import CATEGORIES, COMPANIES
 from theme import esc
-from ui import api_keys, load_articles
+from ui import api_keys, favicons, load_articles
 
 articles, _, collected = load_articles(api_keys())
 day_ago = datetime.now(timezone.utc) - timedelta(hours=24)
@@ -80,9 +80,10 @@ with left:
     top = mentions.most_common(10)
     if top:
         largest = top[0][1]
+        icons = favicons(f"https://{COMPANIES[t][1]}" for t, _ in top)  # logos récupérés par le serveur, en parallèle
         rows = "".join(
             f'<li title="{esc(COMPANIES[t][0])} : {n} dépêche{"s" if n > 1 else ""}">'
-            f'<img src="https://www.google.com/s2/favicons?domain={COMPANIES[t][1]}&sz=64" alt="" loading="lazy">'
+            f'<img src="{theme.favicon_url(COMPANIES[t][1], icons)}" alt="" loading="lazy">'
             f'<span>{esc(COMPANIES[t][0])}<small>{esc(t)}</small></span>'
             f'<span class="fv-track"><i style="width:{n / largest:.0%}"></i></span><span class="fv-num">{n}</span></li>'
             for t, n in top

@@ -43,5 +43,6 @@ Chaque étape explique **ce que fait le code et pourquoi**, puis les erreurs qu'
 37. [Une bande-annonce qui montre ce qu'il y a dedans](37-bande-annonce-contenu.md)
 38. [Une fiche pour chaque valeur, des marchés par place, plus de sources](38-fiches-et-places.md)
 39. [Les menus déroulants réparés, une recherche partout, l'accueil par place](39-recherche-et-places.md)
+40. [Le plein écran réparé, un site conforme au RGPD](40-plein-ecran-et-rgpd.md)
 
 Mémo : [toutes les erreurs fréquentes et comment les déboguer](debogage.md).

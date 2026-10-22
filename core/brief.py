@@ -78,8 +78,10 @@ class Brief:
     agenda: list[tuple[str, str]] = field(default_factory=list)  # (date formatée, événement)
     word: tuple[str, str] | None = None  # (terme, définition)
 
-    def to_markdown(self) -> str:
-        """Le brief au format Markdown : un fichier texte lisible partout (et joli sur GitHub ou Notion)."""
+    def to_markdown(self, site_url: str | None = None) -> str:
+        """Le brief au format Markdown : un fichier texte lisible partout (et joli sur GitHub ou Notion).
+        Pour le texte d'un e-mail, `site_url` (vide si l'adresse du site est inconnue) ajoute la façon de ne plus le
+        recevoir, avec le lien des réglages quand on le connaît."""
         lines = [f"# FinVeille · Le brief du {self.date_label}", "", "## Les marchés", "", self.market or "—", ""]
         if self.headlines:
             lines += ["## À la une", ""] + [f"- **{rubric}** · [{title}]({url}) ({source})"
@@ -95,6 +97,10 @@ class Brief:
             lines += ["## Le mot du jour", "", f"**{self.word[0]}** : {self.word[1]}", ""]
         lines += ["---", "Brief rédigé automatiquement par FinVeille à partir de sources publiques. "
                   "Ce n'est pas un conseil en investissement."]
+        if site_url is not None:
+            where = f"{site_url}/settings (Réglages → Notifications par e-mail)" if site_url else (
+                "Réglages → Notifications par e-mail")
+            lines.append(f"Pour ne plus recevoir ce brief : {where}.")
         return "\n".join(lines)
 
     def to_html(self, site_url: str = "") -> str:
@@ -138,9 +144,11 @@ class Brief:
                       f'<p style="{font};font-size:15px;line-height:1.5;margin:0"><b>{esc(self.word[0])}</b> : '
                       f"{esc(self.word[1])}</p>"]
         link = f' · <a href="{esc(site_url)}" style="color:#1f4ed8">Ouvrir FinVeille</a>' if site_url else ""
+        settings = (f'<a href="{esc(site_url)}/settings" style="color:#1f4ed8">Réglages → Notifications par e-mail</a>'
+                    if site_url else "Réglages → Notifications par e-mail")
         parts += [f'<p style="{muted};margin-top:28px;border-top:1px solid #e4e8ee;padding-top:12px">Brief rédigé '
                   f"automatiquement à partir de sources publiques, sans conseil en investissement{link}. Pour ne plus "
-                  "le recevoir : Réglages → Notifications par e-mail.</p></div>"]
+                  f"le recevoir : {settings}.</p></div>"]
         return "".join(parts)
 
 
