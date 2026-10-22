@@ -45,8 +45,6 @@ def show(title: str, accent: str, dek: str, text) -> None:
     theme.page_header(title, dek, eyebrow="Informations légales", accent=accent)
     st.html(CSS)
     with st.container(key="fvlegal"):
-        if not cfg.contact:
-            st.warning("L'adresse de contact n'est pas encore renseignée (réglage CONTACT_EMAIL).")
         st.markdown(same_tab(text(cfg)), unsafe_allow_html=True)
 
 

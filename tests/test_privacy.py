@@ -35,7 +35,7 @@ def fake_logos(monkeypatch):
         return "data:image/png;base64,iVBORw0KGgo="
 
     st.cache_data.clear()
-    for memory in (ui._NO_FAVICON, ui._WARM):
+    for memory in (ui._NO_FAVICON, ui._WARM, ui.UNKNOWN):  # UNKNOWN : « inconnu » retenu par un test précédent
         memory._items.clear()
     monkeypatch.setattr(ui, "_download_favicon", download)
     return calls
