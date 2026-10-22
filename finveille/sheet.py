@@ -21,7 +21,8 @@ from core.market import INDICATORS, PLACES, Quote, place_of
 from core.sources import fetch_yahoo_ticker_news
 from theme import esc
 from ui import (NO_STATUS, _network, _not_empty, _resilient, ai_count, ai_enabled, ai_quota, api_keys, article_card,
-                complete_ai, load_articles, load_calendar, load_history, load_symbol_quotes, search_companies)
+                complete_ai, favicon, favicons, load_articles, load_calendar, load_history, load_symbol_quotes,
+                search_companies)
 
 CHART_PERIODS = {"1 mois": "1mo", "6 mois": "6mo", "1 an": "1y", "5 ans": "5y"}
 
@@ -245,7 +246,7 @@ def company_sheet(symbol: str, label: str, articles=(), user: str | None = None)
     name = profile.get("longName") or profile.get("shortName") or label
     currency = profile.get("currency", "")
     website = profile.get("website") or (f"https://{COMPANIES[symbol][1]}" if symbol in COMPANIES else "")
-    logo = theme.favicon_url(website) if website else ""
+    logo = favicon(website) if website else ""
     details = " · ".join(
         esc(part) for part in [symbol, profile.get("fullExchangeName"), profile.get("sector"), profile.get("country")]
         if part
@@ -309,7 +310,8 @@ def analysis(symbol: str, name: str, profile: dict, stats: dict, articles: list,
     with st.container(key=f"fvanalysis_{symbol}"):
         st.markdown(assistant.linkify(text, sources))
     if result["text"] and (used := assistant.cited(text, sources)):
-        st.html(theme.sources_html([s.to_dict() for s in used], "Dépêches citées"))
+        st.html(theme.sources_html([s.to_dict() for s in used], "Dépêches citées",
+                                   favicons(s.url for s in used)))
     origin = f"Rédigé par {result['engine']}" if result["text"] else "Lecture automatique des indicateurs, sans IA"
     note = f" ({result['note']})" if result["note"] and not result["text"] else ""
     st.caption(f"{origin}{note}. Analyse pédagogique, pas un conseil en investissement.")

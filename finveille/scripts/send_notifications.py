@@ -45,6 +45,11 @@ def my_companies(user: str) -> dict[str, str]:
     return mine
 
 
+def unsubscribe_url(site_url: str) -> str:
+    """La page des réglages, où l'on choisit de ne plus recevoir d'e-mails (vide si l'adresse du site est inconnue)."""
+    return f"{site_url}/settings" if site_url else ""
+
+
 def brief_emails(now: datetime, sender: str, site_url: str) -> list[tuple[str, object]]:
     """Un brief par compte abonné : [(user_id, e-mail)]. Les comptes déjà servis aujourd'hui sont sautés."""
     today = now.date().isoformat()
@@ -83,8 +88,8 @@ def brief_emails(now: datetime, sender: str, site_url: str) -> list[tuple[str, o
         )
         subject = f"Le brief FinVeille du {brief.date_label}"
         emails.append((user["user_id"], notify.make_message(
-            sender=sender, to=user["email"], subject=subject, text=brief.to_markdown(),
-            html_body=brief.to_html(site_url))))
+            sender=sender, to=user["email"], subject=subject, text=brief.to_markdown(site_url),
+            html_body=brief.to_html(site_url), unsubscribe=unsubscribe_url(site_url))))
     return emails
 
 
@@ -99,8 +104,25 @@ def alert_emails(today: str, sender: str, site_url: str) -> list[tuple[str, obje
         due = notify.not_yet_sent(fired, storage.get_setting(user["user_id"], "alerts_sent", {}), today)
         if due:
             subject, text, html_body = notify.alerts_email(due, site_url)
-            emails.append((user["user_id"], notify.make_message(sender, user["email"], subject, text, html_body), due))
+            message = notify.make_message(sender, user["email"], subject, text, html_body,
+                                          unsubscribe=unsubscribe_url(site_url))
+            emails.append((user["user_id"], message, due))
     return emails
+
+
+def purge(now: datetime, dry_run: bool = False) -> int:
+    """Durée de conservation (RGPD) : efface les comptes sans visite depuis 3 ans, puis les sessions et codes expirés.
+    Écrit seulement des nombres dans le journal, jamais d'adresses. Avec `dry_run`, rien n'est effacé, seulement compté.
+    Renvoie le nombre de comptes concernés."""
+    before = now - timedelta(days=storage.RETENTION_DAYS)
+    if dry_run:
+        accounts = len(storage.inactive_users(before))
+        print(f"{accounts} compte(s) inactif(s) depuis plus de 3 ans seraient effacés (essai à blanc : rien n'est effacé)")
+        return accounts
+    accounts = len(storage.purge_inactive(before))
+    expired = storage.purge_expired(now)
+    print(f"{accounts} compte(s) inactif(s) depuis plus de 3 ans effacé(s), {expired} session(s) ou code(s) expiré(s) effacé(s)")
+    return accounts
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -112,6 +134,8 @@ def main(argv: list[str] | None = None) -> int:
     if os.environ.get("DATABASE_URL"):
         storage.configure(os.environ["DATABASE_URL"])
     storage.init_db()
+    if args.what == "brief":  # une fois par jour : la durée de conservation des données, avant tout envoi
+        purge(datetime.now(timezone.utc), args.dry_run)
     settings = notify.SmtpSettings.from_env()
     if settings is None and not args.dry_run:
         print("SMTP non configuré (SMTP_HOST, SMTP_USER…) : rien n'est envoyé.", file=sys.stderr)

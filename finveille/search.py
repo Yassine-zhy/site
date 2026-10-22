@@ -49,6 +49,11 @@ PAGES: list[tuple[str, str, str]] = [
     ("Réglages", "./settings", "paramètres préférences sources thème"),
     ("Mon compte", "./account", "connexion profil mot de passe inscription"),
     ("À propos", "./about", "projet auteur contact"),
+    ("Mentions légales", "./mentions-legales", "éditeur hébergeur contact directeur de la publication lcen légal"),
+    ("Confidentialité", "./confidentialite",
+     "politique de confidentialité rgpd données personnelles vie privée cnil droits"),
+    ("Cookies", "./cookies", "politique des cookies traceurs consentement"),
+    ("Conditions d'utilisation", "./conditions", "cgu conditions générales utilisation responsabilité"),
 ]
 
 # Ce qu'on propose avant que le visiteur ait tapé : (libellé, symbole, place) ou (libellé, identifiant, symbole)

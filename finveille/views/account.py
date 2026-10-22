@@ -83,5 +83,6 @@ with st.container(horizontal=True, gap="small"):
             st.toast("Toutes tes données ont été supprimées")
             st.rerun()
 
-st.caption("Conformément au RGPD, tu peux à tout moment télécharger ou supprimer tes données. FinVeille enregistre "
-           "ton e-mail et ton nom pour identifier ton compte, et rien d'autre à ton sujet.")
+st.caption("Conformément au RGPD, tu peux à tout moment télécharger ou supprimer tes données. Un compte sans "
+           "connexion pendant 3 ans est effacé automatiquement. Le détail : la "
+           "[politique de confidentialité](./confidentialite).")

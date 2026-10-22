@@ -228,7 +228,10 @@ def test_notifications_par_e_mail_dans_les_reglages(app, db, monkeypatch):
 
 def fill(app, values: dict) -> None:
     for key, value in values.items():
-        app.text_input(key=key).input(value)
+        if isinstance(value, bool):  # une case à cocher (le consentement à l'inscription)
+            app.checkbox(key=key).set_value(value)
+        else:
+            app.text_input(key=key).input(value)
 
 
 def click(app, label: str):
@@ -241,7 +244,8 @@ def test_inscription_par_email_puis_espace_personnel(app, db, monkeypatch):
     app.switch_page("views/favorites.py").run()
     assert any(b.label == "Créer mon compte" for b in app.button)  # l'espace personnel demande un compte
     fill(app, {"require_signup_name": "Alice", "require_signup_email": "alice@example.com",
-               "require_signup_password": "Bourse2026!", "require_signup_confirm": "Bourse2026!"})
+               "require_signup_password": "Bourse2026!", "require_signup_confirm": "Bourse2026!",
+               "require_signup_consent": True})
     click(app, "Créer mon compte")
     assert not app.exception
     assert app.session_state["fv_user"] == "mail:alice@example.com"
@@ -254,7 +258,8 @@ def test_mots_de_passe_differents(app, monkeypatch):
     app.run()
     app.switch_page("views/account.py").run()
     fill(app, {"account_signup_email": "alice@example.com", "account_signup_password": "Bourse2026!",
-               "account_signup_confirm": "Bourse2027!"})
+               "account_signup_confirm": "Bourse2027!",
+               "account_signup_consent": True})
     click(app, "Créer mon compte")
     assert "différents" in app.error[0].value and "fv_user" not in app.session_state
 
@@ -322,7 +327,7 @@ def test_inscription_avec_code_de_confirmation(app, db, monkeypatch, mailbox):
     app.run()
     app.switch_page("views/account.py").run()
     fill(app, {"account_signup_email": "alice@example.com", "account_signup_password": "Bourse2026!",
-               "account_signup_confirm": "Bourse2026!"})
+               "account_signup_confirm": "Bourse2026!", "account_signup_consent": True})
     click(app, "Créer mon compte")
     assert "fv_user" not in app.session_state  # pas encore connecté : l'adresse doit être confirmée
     assert mailbox[0]["To"] == "alice@example.com"

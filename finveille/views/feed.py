@@ -13,8 +13,8 @@ from core.config import API_KEYS, CATEGORIES, REGIONS
 from core.filters import filter_articles
 from core.market import PLACES, align_session, resolve_view
 from theme import esc
-from ui import (LAST_GOOD, NO_STATUS, api_keys, article_card, current_user, flush_toast, hero_quotes, known_cac40,
-                load_articles, load_place, load_trends, setting, warm_cac40)
+from ui import (LAST_GOOD, NO_STATUS, api_keys, article_card, current_user, favicons, flush_toast, hero_quotes,
+                known_cac40, load_articles, load_place, load_trends, setting, warm_cac40)
 
 user = current_user()  # None : visiteur non connecté (il voit le fil, sans favoris ni « lu »)
 PAGE_SIZE = setting(user, "page_size", 20)  # nombre d'articles affichés par « page » (réglable)
@@ -242,8 +242,9 @@ def rail_blocks(filtered, collected):
     )
     sources = Counter(article.source for article in filtered).most_common(8)
     domains = {article.source: article.url for article in filtered}
+    icons = favicons(domains[name] for name, _ in sources)  # logos récupérés par le serveur, en parallèle
     source_rows = "".join(
-        f'<li><img src="{theme.favicon_url(domains[name])}" alt="" loading="lazy"><span>{esc(name)}</span>'
+        f'<li><img src="{theme.favicon_url(domains[name], icons)}" alt="" loading="lazy"><span>{esc(name)}</span>'
         f"<span>{count}</span></li>"
         for name, count in sources
     )

@@ -29,6 +29,7 @@ DB_PATH = Path(os.environ.get("FINVEILLE_DB", Path(__file__).resolve().parent.pa
 DATABASE_URL = os.environ.get("FINVEILLE_DATABASE_URL", "")
 
 LOCAL_USER = "local"  # l'utilisateur unique quand les comptes ne sont pas configurés
+RETENTION_DAYS = 3 * 365  # un compte sans visite depuis 3 ans est effacé (scripts/send_notifications.py)
 SCHEMA_VERSION = 1  # 0 = étapes 3 à 13 (un seul utilisateur), 1 = comptes utilisateurs
 
 SCHEMA = """
@@ -318,6 +319,56 @@ def delete_user_data(user: str) -> None:
         if user.startswith("mail:") and profile and profile.get("email"):  # compte e-mail + mot de passe
             for table in ("credentials", "email_codes"):
                 conn.execute(f"DELETE FROM {table} WHERE email = ?", (profile["email"],))
+
+
+def _utc(moment: datetime) -> datetime:
+    """Une date sans fuseau est lue comme UTC : les dates de la base sont toutes en UTC."""
+    return moment.replace(tzinfo=timezone.utc) if moment.tzinfo is None else moment.astimezone(timezone.utc)
+
+
+def inactive_users(before: datetime) -> list[str]:
+    """Les comptes dont la dernière visite précède `before` (sans rien effacer). L'utilisateur unique du mode local
+    est épargné."""
+    limit = _utc(before)
+    with connect() as conn:
+        rows = conn.execute("SELECT user_id, last_seen FROM users").fetchall()
+    old = []
+    for row in rows:
+        try:
+            seen = _utc(datetime.fromisoformat(row["last_seen"]))
+        except (TypeError, ValueError):  # date illisible : dans le doute, on garde le compte
+            continue
+        if seen < limit and row["user_id"] != LOCAL_USER:
+            old.append(row["user_id"])
+    return old
+
+
+def purge_inactive(before: datetime) -> list[str]:
+    """Durée de conservation (RGPD) : efface les comptes dont la dernière visite précède `before`, avec toutes leurs
+    données (delete_user_data). Renvoie les identifiants effacés."""
+    old = inactive_users(before)
+    for user in old:
+        delete_user_data(user)
+    return old
+
+
+def purge_expired(now: datetime) -> int:
+    """Efface les sessions de connexion et les codes e-mail expirés (ils ne servent plus à rien, mais restent
+    liés à une adresse e-mail). Renvoie leur nombre."""
+    moment = _utc(now)
+    removed = 0
+    with connect() as conn:
+        for table, keys in (("sessions", ("token_hash",)), ("email_codes", ("email", "purpose"))):
+            for row in conn.execute(f"SELECT {', '.join(keys)}, expires_at FROM {table}").fetchall():
+                try:
+                    expired = _utc(datetime.fromisoformat(row["expires_at"])) <= moment
+                except (TypeError, ValueError):
+                    expired = True  # date illisible : le code ou la session ne pourrait de toute façon pas servir
+                if expired:
+                    where = " AND ".join(f"{key} = ?" for key in keys)
+                    conn.execute(f"DELETE FROM {table} WHERE {where}", tuple(row[key] for key in keys))
+                    removed += 1
+    return removed
 
 
 # --- Comptes e-mail + mot de passe (la logique est dans core/accounts.py) -----------------------------
