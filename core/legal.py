@@ -38,6 +38,12 @@ HOSTS = {
 DATABASES = [("neon", "Neon"), ("supabase", "Supabase"), ("render", "Render"), ("aiven", "Aiven"),
              ("railway", "Railway")]
 UNKNOWN_DATABASE = "un hébergeur de bases de données"
+# Région des serveurs, lue dans l'adresse de la base (ex. « ep-x-123.us-east-2.aws.neon.tech ») : (code, lieu affiché)
+DATABASE_REGIONS = {"us-east-1": "Virginie, États-Unis", "us-east-2": "Ohio, États-Unis",
+                    "us-west-2": "Oregon, États-Unis", "ca-central-1": "Montréal, Canada",
+                    "eu-central-1": "Francfort, Allemagne", "eu-west-2": "Londres, Royaume-Uni",
+                    "ap-southeast-1": "Singapour", "ap-southeast-2": "Sydney, Australie",
+                    "sa-east-1": "São Paulo, Brésil"}
 EMAIL_PROVIDERS = [("brevo", "Brevo (France)"), ("sendinblue", "Brevo (France)"), ("mailjet", "Mailjet (France)"),
                    ("ovh", "OVHcloud (France)"), ("gmail", "Google (Gmail)"), ("google", "Google (Gmail)"),
                    ("sendgrid", "SendGrid (États-Unis)"), ("mailgun", "Mailgun (États-Unis)"),
@@ -57,6 +63,7 @@ class LegalConfig:
     site_url: str = DEFAULT_SITE_URL
     hosting: str = "streamlit"
     database: str | None = None  # None : SQLite, sur le serveur de l'appli
+    database_region: str | None = None  # lieu des serveurs, s'il se lit dans l'adresse
     email_provider: str | None = None  # None : aucun e-mail envoyé
     logins: tuple[str, ...] = ()
     ai: tuple[str, ...] = ()
@@ -95,10 +102,11 @@ def _logins(auth) -> tuple[str, ...]:
 def config_from(secrets: Mapping) -> LegalConfig:
     """La configuration légale d'après les secrets : on n'y lit que des noms de clés et des noms d'hôtes."""
     database_url = _text(secrets, "DATABASE_URL")
-    database = None
+    database = database_region = None
     if database_url:
         host = urlparse(database_url).hostname or database_url.rpartition("@")[2]
         database = _first_match(host, DATABASES) or UNKNOWN_DATABASE
+        database_region = next((place for code, place in DATABASE_REGIONS.items() if f".{code}." in f".{host}."), None)
     smtp_host = _text(secrets, "SMTP_HOST")
     email_provider = (_first_match(smtp_host, EMAIL_PROVIDERS) or UNKNOWN_EMAIL_PROVIDER) if smtp_host else None
     return LegalConfig(
@@ -106,6 +114,7 @@ def config_from(secrets: Mapping) -> LegalConfig:
         site_url=(_text(secrets, "SITE_URL") or DEFAULT_SITE_URL).rstrip("/"),
         hosting=(_text(secrets, "HOSTING") or "streamlit").lower(),
         database=database,
+        database_region=database_region,
         email_provider=email_provider,
         logins=_logins(secrets.get("auth")),
         ai=tuple(label for key, label in AI_KEYS if _text(secrets, key)),
@@ -183,7 +192,7 @@ def mentions_legales(cfg: LegalConfig) -> str:
 ## Éditeur du site
 
 FinVeille ({cfg.site_url}) est un site personnel, non professionnel, édité par **{cfg.editor}**, personne physique
-résidant en France.
+résidant au Canada. Le site s'adresse surtout à des lecteurs francophones, en France et au Canada.
 
 - Directeur de la publication : {cfg.editor}
 - Contact : {contact}
@@ -224,7 +233,8 @@ def _recipients(cfg: LegalConfig) -> str:
     items = [f"- **L'hébergeur** : {host['name']}" + (f" ({host['company']})" if host.get("company") else "")
              + ", qui fait tourner le site et reçoit ton adresse IP dans ses journaux techniques."]
     if cfg.database:
-        items.append(f"- **La base de données** : {cfg.database}, où sont gardées les données de ton compte.")
+        region = f" (serveurs : {cfg.database_region})" if cfg.database_region else ""
+        items.append(f"- **La base de données** : {cfg.database}, où sont gardées les données de ton compte{region}.")
     else:
         items.append("- **La base de données** : elle est sur le serveur de l'application, chez l'hébergeur.")
     if cfg.email_provider:
@@ -285,6 +295,12 @@ Cette page explique quelles données personnelles FinVeille traite, pourquoi et 
 
 Le responsable du traitement est **{cfg.editor}**, éditeur du site. Pour toute question : {contact}.
 
+## Quelles règles s'appliquent ?
+
+FinVeille applique à tout le monde, où que tu vives, les règles du RGPD européen, parmi les plus protectrices.
+Elles vont dans le même sens que les lois canadiennes et québécoises sur les renseignements personnels : tes droits
+sont les mêmes, que tu lises FinVeille depuis la France, le Québec ou ailleurs.
+
 ## Ce qui est traité
 
 {table}
@@ -335,8 +351,14 @@ des directives sur le sort de tes données après ton décès.
 
 ## Réclamation
 
-Si tu estimes que tes droits ne sont pas respectés, tu peux saisir la CNIL : [www.cnil.fr](https://www.cnil.fr),
-3 place de Fontenoy, TSA 80715, 75334 Paris Cedex 07.
+Si tu estimes que tes droits ne sont pas respectés, écris d'abord à {contact}. Tu peux aussi saisir l'autorité de
+protection des données de l'endroit où tu vis :
+
+- **En France** : la CNIL, [www.cnil.fr](https://www.cnil.fr), 3 place de Fontenoy, TSA 80715, 75334 Paris Cedex 07.
+  Ailleurs dans l'Union européenne : l'autorité de ton pays.
+- **Au Québec** : la Commission d'accès à l'information, [www.cai.gouv.qc.ca](https://www.cai.gouv.qc.ca).
+- **Ailleurs au Canada** : le Commissariat à la protection de la vie privée du Canada,
+  [www.priv.gc.ca](https://www.priv.gc.ca).
 
 {_see_also("privacy")}"""
 
@@ -477,7 +499,8 @@ Ces conditions peuvent changer ; la date de mise à jour figure en haut de cette
 
 ## Droit applicable
 
-Ces conditions relèvent du droit français. En cas de litige, on cherche d'abord une solution amiable : écris à
-{contact}.
+Ces conditions relèvent du droit applicable au Canada, où réside l'éditeur. Si tu vis dans l'Union européenne ou au
+Québec, tu gardes la protection des règles impératives de ton lieu de résidence (consommation, données
+personnelles). En cas de litige, on cherche d'abord une solution amiable : écris à {contact}.
 
 {_see_also("terms")}"""
