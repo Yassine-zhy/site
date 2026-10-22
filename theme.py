@@ -1423,6 +1423,12 @@ def esc(text: str | None) -> str:
     return html.escape(text or "", quote=True)
 
 
+def md_code(text, limit: int = 40) -> str:
+    """Un texte venu de l'adresse, rendu inoffensif dans du Markdown (st.warning…) : coupé, sans accent grave,
+    entre accents graves (un `[lien](https://…)` s'affiche alors tel quel au lieu d'un lien)."""
+    return "`" + str(text or "").replace("`", "")[:limit] + "`"
+
+
 def safe_url(url: str | None) -> str:
     """N'accepte que les liens web : un lien « javascript:… » pourrait exécuter du code."""
     return esc(url) if url and url.startswith(("http://", "https://")) else "#"

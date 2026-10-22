@@ -64,9 +64,9 @@ def _run(task: Task) -> tuple[list[Article], str | None]:
     name, function, args = task
     try:
         return function(*args), None
-    except (requests.RequestException, SourceError, ValueError) as exc:
-        # Une source en panne ne doit pas faire tomber toute l'application.
-        # ValueError couvre les réponses qui ne sont pas du JSON valide.
+    except Exception as exc:
+        # Une source en panne ne doit pas faire tomber toute l'application : un flux mal formé ne doit pas
+        # faire tomber les autres (réseau, SourceError, JSON invalide, erreur d'analyse…).
         return [], f"{name} : {describe_error(exc)}"
 
 

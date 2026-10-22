@@ -145,12 +145,14 @@ class Quote:
         """Variation sur la dernière séance : en % (ou en points de base pour un taux)."""
         if self.unit == "pb":
             return (self.last - self.previous) * 100  # 1 point de pourcentage = 100 points de base
-        return (self.last / self.previous - 1) * 100
+        return (self.last / self.previous - 1) * 100 if self.previous else 0.0
 
     def change_over(self, sessions: int) -> float:
         """Variation sur les N dernières séances (même unité que `change`)."""
         start = self.history.iloc[-min(sessions + 1, len(self.history))]
-        return (self.last - start) * 100 if self.unit == "pb" else (self.last / start - 1) * 100
+        if self.unit == "pb":
+            return (self.last - start) * 100
+        return (self.last / start - 1) * 100 if start else 0.0
 
 
 def fetch_quotes(watchlist: list[tuple[str, str, str, str]] = WATCHLIST, period: str = "3mo") -> list[Quote]:
@@ -228,7 +230,7 @@ def mood(quotes: list[Quote], sessions: int = 1) -> dict | None:
 def top_moves(quotes: list[Quote], sessions: int = 1, count: int = 5) -> tuple[list, list]:
     """Les plus fortes hausses et les plus fortes baisses : deux listes de (variation, cours), les extrêmes d'abord."""
     changes = sorted(((q.change_over(sessions), q) for q in quotes), key=lambda item: item[0], reverse=True)
-    return changes[:count], changes[::-1][:count]
+    return [c for c in changes if c[0] > 0][:count], [c for c in changes[::-1] if c[0] < 0][:count]
 
 
 # Les vues de la page Marchés, et les autres écritures acceptées dans l'adresse (`markets?view=…`)

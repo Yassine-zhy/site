@@ -6,6 +6,7 @@ import html
 import re
 import textwrap
 from datetime import datetime, timezone
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 import feedparser
@@ -108,7 +109,7 @@ def fetch_yahoo_ticker_news(ticker: str) -> list[Article]:
     """Actualités d'une entreprise via le flux RSS de Yahoo Finance (gratuit, sans clé, toutes Bourses)."""
     feed = {
         "name": "Yahoo Finance",
-        "url": f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}&region=US&lang=en-US",
+        "url": f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={quote(ticker, safe='')}&region=US&lang=en-US",
         "category": "entreprises",
     }
     articles = fetch_rss(feed)
