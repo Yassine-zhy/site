@@ -449,10 +449,21 @@ def require_user() -> str:
     return user
 
 
+def on_this_computer() -> bool:
+    """Vrai si le visiteur ouvre le site sur l'ordinateur qui le fait tourner."""
+    host = (st.context.headers.get("Host") or "").split(":")[0]
+    return host in ("localhost", "127.0.0.1")
+
+
+def accounts_at_risk() -> bool:
+    """Vrai si le site, en ligne avec des comptes, les enregistre dans un fichier SQLite : sur un hébergement gratuit,
+    ce fichier est effacé à chaque mise à jour, et les comptes avec lui (il faut DATABASE_URL, guide 20)."""
+    return storage.backend() == "sqlite" and not local_mode() and not on_this_computer()
+
+
 def is_admin(user: str | None) -> bool:
     """Administrateur : e-mail listé dans ADMIN_EMAILS, ou visite depuis l'ordinateur qui fait tourner le site."""
-    host = (st.context.headers.get("Host") or "").split(":")[0]
-    if host in ("localhost", "127.0.0.1"):
+    if on_this_computer():
         return True
     admins = {a.strip().lower() for a in str(get_secret("ADMIN_EMAILS") or "").split(",") if a.strip()}
     email = ((storage.get_user(user) or {}).get("email") or "").lower() if user else ""
