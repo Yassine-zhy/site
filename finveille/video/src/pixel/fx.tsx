@@ -71,13 +71,13 @@ export const Shot: React.FC<{
   return <div style={style}>{children}</div>;
 };
 
-// --- Les mots : minuscules, petits, centrés ; chacun arrive en 9 images (fondu net, montée de 18 px qui dépasse un peu, flou qui
-// se dissipe), et le bloc respire (flotte d'un pixel ou deux) sans jamais être figé ------------------------------------------------------
+// --- Les mots : minuscules, centrés, en 56 px (lisibles sur un téléphone) ; chacun arrive en 7 images (fondu net, montée de 18 px
+// qui dépasse un peu, flou qui se dissipe), et le bloc respire (flotte d'un pixel ou deux) sans jamais être figé ------------------------------------------------------
 export type PWord = { readonly t: string; readonly at: number; readonly color?: string; readonly deco?: React.ReactNode; readonly br?: boolean };
 export const Words: React.FC<{
   readonly words: readonly PWord[]; readonly f: number; readonly size?: number; readonly color?: string; readonly out?: number;
   readonly align?: "center" | "left"; readonly weight?: number; readonly style?: React.CSSProperties;
-}> = ({ words, f, size = 46, color = PX.ink, out, align = "center", weight = 600, style }) => {
+}> = ({ words, f, size = 56, color = PX.ink, out, align = "center", weight = 600, style }) => {
   const lines: PWord[][] = [];
   words.forEach((w, i) => { if (i === 0 || w.br) lines.push([]); lines[lines.length - 1].push(w); });
   const breathe = Math.sin(f / 58 + words[0].at) * 1.6;
@@ -86,7 +86,7 @@ export const Words: React.FC<{
       {lines.map((line, li) => (
         <div key={li} style={{ display: "flex", justifyContent: align === "center" ? "center" : "flex-start", columnGap: "0.3em", whiteSpace: "nowrap" }}>
           {line.map((w) => {
-            const a = ramp(f, w.at, w.at + 9, 0, 1, BACK), fade = ramp(f, w.at, w.at + 5, 0, 1, LIN), gone = out === undefined ? 0 : ramp(f, out, out + 7, 0, 1, IN);
+            const a = ramp(f, w.at, w.at + 7, 0, 1, BACK), fade = ramp(f, w.at, w.at + 4, 0, 1, LIN), gone = out === undefined ? 0 : ramp(f, out, out + 7, 0, 1, IN);
             const blur = (1 - clamp(a, 0, 1)) * 5 + gone * 7;
             return (
               <span key={w.t + w.at} style={{
@@ -232,12 +232,17 @@ export const Win: React.FC<{
   );
 };
 
-// --- Une séquence filmée : recadrée en « cover » ; si elle est plus courte que son plan, on la ralentit (jamais d'écran vide) -------
+// --- Une séquence filmée : recadrée en « cover » ; si elle est plus courte que son plan, on la ralentit (jamais d'écran vide) ;
+// `rate` impose la vitesse et `startSec` le point de départ dans la vidéo (les plans zoomés de la fenêtre : la caméra suit un déroulé
+// précis, calé sur les temps) --------------------------------------------------------------------------------------------------
 // Durées en secondes, mesurées avec ffprobe (public/footage)
 export const FOOTAGE_SEC: Readonly<Record<string, number>> = { feed: 4, heatmap: 3, ai: 5.9, alerts: 4, light: 3, globe: 5, mobile: 4 };
-export const Footage: React.FC<{ readonly name: string; readonly from: number; readonly frames: number; readonly w: number; readonly h: number }> = ({ name, from, frames, w, h }) => (
+export const Footage: React.FC<{
+  readonly name: string; readonly from: number; readonly frames: number; readonly w: number; readonly h: number; readonly rate?: number;
+  readonly startSec?: number;
+}> = ({ name, from, frames, w, h, rate, startSec }) => (
   <Sequence from={from} durationInFrames={frames} layout="none">
-    <Video src={staticFile(`footage/${name}.mp4`)} muted objectFit="cover" playbackRate={Math.min(1, (FOOTAGE_SEC[name] * 60) / frames)}
+    <Video src={staticFile(`footage/${name}.mp4`)} muted objectFit="cover" trimBefore={startSec ? Math.round(startSec * 60) : undefined} playbackRate={rate ?? Math.min(1, (FOOTAGE_SEC[name] * 60) / frames)}
       style={{ position: "absolute", inset: 0, width: w, height: h }} />
   </Sequence>
 );

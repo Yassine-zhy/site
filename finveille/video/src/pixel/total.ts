@@ -1,1 +1,1 @@
-export const PIXEL_TOTAL = 1800;
+export { PIXEL_TOTAL } from "./montage";
