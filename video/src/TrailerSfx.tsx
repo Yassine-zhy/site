@@ -79,12 +79,12 @@ const TILES: readonly Ev[] = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [
   b(84.5) + Math.round(i * b(0.5)), [0.28, 0.3, 0.32, 0.3, 0.34, 0.34, 0.36, 0.4][i],
 ] as const);
 
-const EVENTS: readonly Ev[] = [
+export const EVENTS: readonly Ev[] = [
   // --- L'ouverture (0 - 340) : le logo se dessine, le curseur vient et appuie (b(8)), l'icône s'ouvre en écran bleu (b(10) - b(11,3)) ---
   ["logo_reveal", 4, 0.42], ["tick", b(2.2), 0.12], ["tick", b(2.2) + 9, 0.1], ["tick", b(2.2) + 18, 0.1], ["tick", b(2.2) + 24, 0.14],
   ["sparkle", b(3.6), 0.12], ["swipe", b(4) + 8, 0.14],
   ["swipe", b(5) + 12, 0.2], ["riser", b(10), 0.5], ["tick", b(7) + 4, 0.16],
-  ["ui_click", b(8), 0.62], ["sub_hit", b(8), 0.34], ["ui_tap", b(9), 0.26],
+  ["ui_click", b(8), 0.52], ["sub_hit", b(8), 0.26], ["ui_tap", b(9), 0.26],
   ["whoosh_hard", b(10.7), 0.5], ["impact", b(11.3), 0.62],
   // --- L'actu (340 - 794) : le mur de dépêches, le titre, la roue des rubriques, les sources, le fil ---
   ["sparkle", b(12), 0.14], ["whoosh_soft", b(11.8), 0.3],
@@ -120,7 +120,7 @@ const EVENTS: readonly Ev[] = [
   ["swipe", b(51.5) + 3, 0.2], ["glass_tink3", b(51.5) + 12, 0.4], ["tick", b(51.5) + 56, 0.1], ["sparkle", b(51.5) + 16, 0.16],
   ["tick", b(51.4), 0.1], ["data_blips", b(52.2), 0.18],
   // --- Les outils (1587 - 2041) : la question tapée et sa réponse, la cloche et les alertes, le portefeuille ---
-  ["whoosh_hard", b(56), 0.6], ["sub_hit", b(56.1), 0.3], ["ui_tap", b(55.8) + 6, 0.26], ["sparkle", b(56), 0.1],
+  ["whoosh_hard", b(56), 0.5], ["sub_hit", b(56.1), 0.24], ["ui_tap", b(55.8) + 6, 0.26], ["sparkle", b(56), 0.1],
   ["tick", b(56), 0.14], ["tick", b(56.5), 0.12], ["ui_tap", b(56.5) + 4, 0.26], ["swipe", b(58), 0.12],
   ...TYPED,
   ["ui_tap", b(58.6), 0.22], ["send", b(59.25), 0.58], ["ui_click", b(59.25), 0.4],
@@ -129,7 +129,7 @@ const EVENTS: readonly Ev[] = [
   ["glass_tink", b(60.5), 0.34], ["glass_tink2", b(60.5) + 14, 0.24], ["glass_tink3", b(60.5) + 28, 0.28],
   ["whoosh_soft", b(62.3), 0.45], ["swipe", b(62.4), 0.24], ["sparkle", b(62.5), 0.1],
   ["tick", b(62.5), 0.14], ["tick", b(63), 0.12], ["ui_tap", b(63) + 4, 0.26],
-  ["chime", b(63.5), 0.62], ["sub_hit", b(63.5), 0.28], ["notif", b(63.75), 0.46], ["swipe", b(64), 0.1],
+  ["chime", b(63.5), 0.55], ["sub_hit", b(63.5), 0.2], ["notif", b(63.75), 0.46], ["swipe", b(64), 0.1],
   ["chime", b(65.5), 0.42], ["notif", b(65.75), 0.42],
   ["whoosh_soft", b(67.3), 0.45], ["sparkle", b(67.4), 0.2], ["sub_hit", b(67.5), 0.4], ["swipe", b(67.6), 0.22],
   ["ui_tap", b(67.5), 0.26], ["tick", b(68), 0.12], ["ui_tap", b(68) + 4, 0.26],
@@ -144,10 +144,10 @@ const EVENTS: readonly Ev[] = [
   // --- La fin (2381 - 3180) : la mosaïque, le logo qui grandit, la signature, l'arrêt net (b(106)), la traînée ---
   ["whoosh_hard", b(84), 0.62], ["sparkle", b(84.1), 0.12], ["glass_tink2", b(84.3), 0.3], ["sub_hit", b(84) + 6, 0.3],
   ...TILES,
-  ["riser", b(92), 0.5], ["impact", b(92), 0.6], ["whoosh_hard", b(93.8), 0.5], ["logo_reveal", b(93), 0.55],
+  ["riser", b(92), 0.45], ["impact", b(92), 0.55], ["whoosh_hard", b(93.8), 0.5], ["logo_reveal", b(93), 0.55],
   ["ui_tap", b(97.5), 0.24], ["swipe", b(97.5) + 6, 0.14],
   ["glass_tink", b(101.5), 0.36], ["sparkle", b(101.5) + 4, 0.15],
-  ["impact", b(106), 0.82], ["sub_hit", b(106), 0.46], ["sparkle", b(106) + 10, 0.2],
+  ["impact", b(106), 0.64], ["sub_hit", b(106), 0.34], ["sparkle", b(106) + 10, 0.2],
 ];
 
 // La traînée finale : elle finit avec la vidéo (3 s avant la dernière image), son sommet précède l'arrêt net de peu
@@ -163,7 +163,7 @@ const Sound: React.FC = () => (
       </Sequence>
     ))}
     <Sequence from={OUTRO_AT} durationInFrames={Math.ceil(LEN.outro_tail * FPS) + 1} layout="none">
-      <Audio src={staticFile("sfx-trailer/outro_tail.wav")} volume={0.7 * MASTER} />
+      <Audio src={staticFile("sfx-trailer/outro_tail.wav")} volume={0.55 * MASTER} />
     </Sequence>
   </>
 );
