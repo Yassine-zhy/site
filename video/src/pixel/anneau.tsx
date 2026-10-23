@@ -39,7 +39,7 @@ export const Anneau: React.FC<{ readonly f: number }> = ({ f }) => {
     const sx = 110 + random(`rsx${i}`) * 860, sy = 140 + random(`rsy${i}`) * 1060;
     const x = lerp(sx, CX + RX * Math.cos(th), e), y = lerp(sy, CY + RY * Math.sin(th), e);
     const k = lerp(0.62, 1.22, (depth + 1) / 2);
-    return { name, th, depth, x, y, e, k, rot: (1 - e) * (random(`rr${i}`) * 200 - 100) + 4 * Math.sin(f / 20 + i), size: 112 * lerp(1, k, e), blur: e * Math.max(0, -depth) * 3.2 + e * clamp((w - 3) * 0.35, 0, 3) };
+    return { name, th, depth, x, y, e, k, rot: (1 - e) * (random(`rr${i}`) * 200 - 100) + 4 * Math.sin(f / 20 + i), size: 104 * lerp(1, k, e), blur: e * Math.max(0, -depth) * 3.2 + e * clamp((w - 3) * 0.35, 0, 3) };
   });
   // La traînée : trois bouts d'arc de plus en plus pâles derrière chaque icône, floutés ; seulement quand l'anneau tourne vite
   const trail = clamp((w - 2.5) / 6, 0, 1);

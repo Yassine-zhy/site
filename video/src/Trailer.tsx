@@ -79,7 +79,9 @@ const Sound: React.FC = () => (
   </>
 );
 
-export const Trailer: React.FC = () => {
+// Le visuel seul (sans le son) : la composition « Trailer » y ajoute la musique et les bruitages (<Sound />), la composition
+// « TrailerSfx » (src/TrailerSfx.tsx) le rejoue à un temps remappé, avec ses propres bruitages et sans l'adresse (showUrl faux).
+export const TrailerVisual: React.FC<{ readonly showUrl?: boolean }> = ({ showUrl = true }) => {
   const f = useCurrentFrame();
   return (
     <AbsoluteFill style={{ background: C.bg, overflow: "hidden" }}>
@@ -89,9 +91,15 @@ export const Trailer: React.FC = () => {
       <Shot from={b(44)} to={b(56)} enter="whipX" exit="zoom"><Eco /></Shot>
       <Shot from={b(56)} to={b(72)} enter="zoom" exit="whipY"><Outils /></Shot>
       <Shot from={b(72)} to={b(84)} enter="whipY" exit="zoom"><Partout /></Shot>
-      <Shot from={b(84)} to={TOTAL + HALF} enter="zoom" exit="none"><Finale /></Shot>
+      <Shot from={b(84)} to={TOTAL + HALF} enter="zoom" exit="none"><Finale showUrl={showUrl} /></Shot>
       <Opening />
-      <Sound />
     </AbsoluteFill>
   );
 };
+
+export const Trailer: React.FC = () => (
+  <>
+    <TrailerVisual />
+    <Sound />
+  </>
+);

@@ -56,7 +56,7 @@ export const SFX: readonly Sfx[] = [
   ["stamp", 820, 0.3], ["blip3", 822, 0.25], ["blip5", 828, 0.25],
   ...tick(0.1, 826, 832, 839, 845),
   // la carte des marchés vit : de petits pings espacés (fond), pour ne pas laisser la scène muette sans musique
-  ["blip1", 856, 0.1], ["blip3", 892, 0.1], ["blip2", 928, 0.1], ["blip5", 964, 0.1],
+  ["blip1", 856, 0.16], ["blip3", 892, 0.16], ["blip2", 928, 0.16], ["blip5", 964, 0.16],
   // scène 8 (1000 → 1180) : la fenêtre se dissout puis revient, « une question ? », « il te dit où il l'a lu. » et le trait autour de « où »
   ["glitch1", FEN.dissolve, 0.3], ["glitch2", FEN.reform, 0.3],
   ["chime_soft", 1036, 0.2],
