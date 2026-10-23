@@ -30,7 +30,7 @@ import { Outils } from "./scenes/outils";
 import { Partout } from "./scenes/partout";
 
 const LAV = "#8C86C8", TEAL = "#3DD6C6";
-const GLOW: readonly GlowKey[] = [
+export const GLOW: readonly GlowKey[] = [
   [0, C.brand, 0.25], [b(6), C.brand, 0.6], [b(10), C.brand, 1], [b(12), C.brand, 0.8], [b(16), C.brand, 0.8],
   [b(17), C.violet, 0.85], [b(18), C.amber, 0.75], [b(19), TEAL, 0.75], [b(20.5), C.brand, 0.8], [b(28), C.brand, 0.8],
   [b(29), C.up, 0.55], [b(35.5), C.up, 0.55], [b(36.5), C.brand, 0.7], [b(44), C.brand, 0.7], [b(45), C.violet, 0.8],
