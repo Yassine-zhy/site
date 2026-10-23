@@ -9,7 +9,7 @@
 // |          |               | compteur monte à 12 ; ils se dispersent : « Et l'info importante ? » - « Ratée. »        |
 // | film     | 240 - 3 420   | la bande-annonce dans une fenêtre arrondie (1000 px) ; le bandeau de la marque en haut,  |
 // |          |               | les sous-titres en bas, une barre de progression ; le fond suit la couleur de la scène   |
-// | fin      | 3 420 - 3 660 | la fenêtre se réduit et s'efface ; le logo, « Un projet étudiant », les technos, l'adresse |
+// | fin      | 3 420 - 3 660 | la fenêtre se réduit et s'efface ; le logo, « Conçu et développé par », les technos, l'adresse |
 import { Audio } from "@remotion/media";
 import React from "react";
 import { AbsoluteFill, Img, Sequence, staticFile, useCurrentFrame } from "remotion";
@@ -213,7 +213,7 @@ const Chrome: React.FC<{ readonly f: number }> = ({ f }) => {
           </div>
         </div>
         <div style={{ width: 820, textAlign: "center", fontFamily: sans, fontWeight: 500, fontSize: 28, lineHeight: 1.3, color: C.muted, textWrap: "balance" }}>
-          Mon projet étudiant : toute la finance qui compte, en un seul site
+          Toute la finance qui compte, en un seul site
         </div>
       </div>
       <div style={{ position: "absolute", left: 90, top: 920, width: 900, height: 280 }}>
@@ -248,7 +248,7 @@ const EndCard: React.FC<{ readonly f: number }> = ({ f }) => {
         </div>
       </At>
       <At x={LW / 2} y={560}>
-        <Title f={e} size={96} align="center" words={[{ t: "Un", at: 50 }, { t: "projet", at: 54 }, { t: "étudiant", at: 60, color: C.brand }]} />
+        <Title f={e} size={96} align="center" words={[{ t: "Conçu", at: 50 }, { t: "et", at: 54 }, { t: "développé", at: 60, color: C.brand }]} />
       </At>
       <At x={LW / 2} y={685} style={{ ...focus(ramp(e, 78, 96), 14), translate: `-50% calc(-50% + ${(1 - ramp(e, 78, 96)) * 16}px)`, fontFamily: sans, fontWeight: 500, fontSize: 46, color: C.muted, whiteSpace: "nowrap" }}>
         par <span style={{ color: C.ink, fontWeight: 600 }}>Yassine Zouhair</span>
