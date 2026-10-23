@@ -55,7 +55,7 @@ export const Finale: React.FC<{ readonly f: number }> = ({ f }) => {
         <div style={{ position: "absolute", left: 0, right: 0, top: 798 }}><Words words={sub} f={f} /></div>
         <div style={{ position: "absolute", left: 0, right: 0, top: 900 }}><Words words={l1} f={f} /></div>
         <div style={{ position: "absolute", left: 0, right: 0, top: 975 }}><Words words={l3} f={f} /></div>
-        <Arrow f={f} at={1742} x={PCX} y={1088} />
+        <Arrow f={f} at={1742} x={PCX} y={1078} />
         <div style={{ position: "absolute", left: 0, right: 0, top: 1215, opacity: 0.6 }}><Words words={note} f={f} size={22} weight={500} /></div>
       </Layer>
     </Shot>
