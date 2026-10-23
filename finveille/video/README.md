@@ -12,6 +12,10 @@ musique : 127 temps par minute, `b(k)` donne l'image du temps k.
 
 - `src/Trailer.tsx` : le montage ; en tête, la table des scènes ; les transitions entre scènes (zoom à travers,
   glissés), la couleur du fond scène par scène, les sons ;
+- `src/TrailerSfx.tsx` : la version sans musique (composition `TrailerSfx`, 45 s) : le même visuel (`TrailerVisual`) rejoué à un
+  temps remappé (une vitesse par scène, de ×1,0 à ×1,5), sans l'adresse du site à la fin, avec une carte de bruitages posés sur
+  chaque événement visuel et une nappe de salle très discrète ; les bruitages sont dans `public/sfx-trailer/`, créés par
+  `tools/trailer_sfx.py` ;
 - `src/kit.tsx` : le temps musical, les courbes, le fond (lueur, vignettage, grain), le verre lumineux, les titres
   animés (`Title`), les poussières de lumière (`Sparks`), les pictogrammes, le logo ;
 - `src/scenes/` : l'ouverture, l'actu, les marchés, l'économie et la crypto, les outils, « partout », la fin ;
@@ -33,10 +37,12 @@ Depuis le dossier `finveille/`, le site lancé en local (`streamlit run app.py`)
 python tools/footage.py --url http://localhost:8501/   # les séquences du site (≈ 1 h sans carte graphique)
 python tools/trailer_assets.py                         # la musique montée (quelques secondes)
 python tools/music.py                                  # l'habillage sonore (moins d'une minute)
+python tools/trailer_sfx.py                            # les bruitages de la version sans musique (quelques secondes)
 cd video
 npm install
 npx remotion studio                                    # aperçu, image par image
 npx remotion render Trailer out/trailer.mp4            # le fichier final, 1920 × 1080, 60 im/s
+npx remotion render TrailerSfx out/trailer-sfx.mp4     # la version sans musique, bruitages seuls, sans l'adresse
 ```
 
 Remotion est gratuit pour un particulier ou une petite équipe ; une entreprise plus grande a besoin d'une licence
