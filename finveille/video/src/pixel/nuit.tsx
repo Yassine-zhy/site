@@ -5,7 +5,7 @@
 //                           un seuil. » puis « il te prévient. »
 import React from "react";
 import { Icon, Orbit, PCX, PWord, Words, bob } from "./fx";
-import { LIN, OUT, lerp, pop, ramp } from "../kit";
+import { LIN, OUT, lerp, pop, ramp, rgba } from "../kit";
 import { BELL_BLUE, BELL_WHITE } from "./sprites";
 import { PX } from "./theme";
 
@@ -23,6 +23,7 @@ export const Nuit3: React.FC<{ readonly f: number }> = ({ f }) => {
   const w2: PWord[] = [{ t: "t'as", at: 362 }, { t: "raté", at: 368 }, { t: "l'info.", at: 374 }];
   return (
     <>
+      <div style={{ position: "absolute", left: cx - 380, top: cy - 380, width: 760, height: 760, background: `radial-gradient(circle, ${rgba(PX.brandLight, 0.34)} 0%, ${rgba(PX.brand, 0.14)} 38%, transparent 68%)` }} />
       <Orbit f={f} cx={cx} cy={cy + 20} rx={290} ry={96} tilt={-16} layer="back" spin={0.45} />
       <Icon name="cloche" x={cx + shake} y={cy + bob(f, 0, 8, 38)} size={400} scale={slam} rot={bob(f, 1, 2.2, 52)} palette={BELL_BLUE} glow={PX.brand} depth={7} shade={0.22} />
       <Orbit f={f} cx={cx} cy={cy + 20} rx={290} ry={96} tilt={-16} layer="front" spin={0.45} />
@@ -42,6 +43,7 @@ export const Nuit9: React.FC<{ readonly f: number }> = ({ f }) => {
   const w2: PWord[] = [{ t: "il", at: 1262 }, { t: "te", at: 1268 }, { t: "prévient.", at: 1274 }];
   return (
     <>
+      <div style={{ position: "absolute", left: PCX - 400, top: 520 - 400, width: 800, height: 800, background: `radial-gradient(circle, ${rgba(PX.brandLight, 0.34)} 0%, ${rgba(PX.brand, 0.14)} 38%, transparent 68%)` }} />
       <Orbit f={f} cx={PCX} cy={590} rx={330} ry={104} tilt={14} layer="back" spin={-0.4} />
       {/* le pivot est au sommet de la cloche : le conteneur de taille nulle tourne autour de son coin */}
       <div style={{ position: "absolute", left: PCX, top: 364, width: 0, height: 0, transformOrigin: "0 0", rotate: `${swing}deg` }}>

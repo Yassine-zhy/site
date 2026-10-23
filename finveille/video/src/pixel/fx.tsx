@@ -3,7 +3,7 @@
 // Tout est calculé à partir du numéro de l'image `f` (jamais l'horloge).
 import { Video } from "@remotion/media";
 import React from "react";
-import { AbsoluteFill, Sequence, random, staticFile } from "remotion";
+import { AbsoluteFill, Img, Sequence, random, staticFile } from "remotion";
 import { At, CAM, LIN, OUT, clamp, display, lerp, ramp, rgba } from "../kit";
 import { Sprite } from "./Sprite";
 import { SPRITES, SpriteName, Palette } from "./sprites";
@@ -17,11 +17,12 @@ export const Paper: React.FC<{ readonly f: number; readonly dark: boolean }> = (
   return (
     <AbsoluteFill style={{ background: dark ? PX.night : PX.paper }}>
       {dark && <AbsoluteFill style={{ background: `radial-gradient(ellipse 72% 56% at 50% 48%, ${rgba(PX.nightHalo, PX.nightHaloA)}, transparent 74%)` }} />}
-      <AbsoluteFill style={{
-        backgroundImage: `url(${staticFile("grain.png")})`, backgroundSize: "256px 256px", backgroundPosition: `${gx}px ${gy}px`,
-        mixBlendMode: dark ? "screen" : "multiply", opacity: dark ? 0.07 : PX.grain, filter: dark ? undefined : "brightness(1.5)",
-      }} />
-      <AbsoluteFill style={{ background: `radial-gradient(ellipse 82% 76% at 50% 50%, transparent 52%, ${dark ? "rgba(0,0,0,0.55)" : "rgba(21,26,43,0.20)"} 100%)` }} />
+      <AbsoluteFill style={{ mixBlendMode: dark ? "screen" : "multiply", opacity: dark ? 0.07 : PX.grain, filter: dark ? undefined : "contrast(0.55) brightness(1.85)", overflow: "hidden" }}>
+        <div style={{ position: "absolute", left: gx - 256, top: gy - 256, width: 6 * 256, display: "flex", flexWrap: "wrap" }}>
+          {Array.from({ length: 6 * 7 }, (_, i) => <Img key={i} src={staticFile("grain.png")} style={{ width: 256, height: 256, display: "block" }} />)}
+        </div>
+      </AbsoluteFill>
+      <AbsoluteFill style={{ background: `radial-gradient(ellipse 82% 76% at 50% 50%, transparent 52%, ${dark ? "rgba(0,0,0,0.55)" : "rgba(21,26,43,0.15)"} 100%)` }} />
     </AbsoluteFill>
   );
 };
@@ -123,10 +124,11 @@ export const pixelClip = (w: number, h: number, cell: number, p: number, seed: s
 export const Icon: React.FC<{
   readonly name: SpriteName; readonly x: number; readonly y: number; readonly size: number; readonly rot?: number; readonly blur?: number;
   readonly opacity?: number; readonly scale?: number; readonly depth?: number; readonly palette?: Palette; readonly glow?: string; readonly scaleX?: number;
-}> = ({ name, x, y, size, rot = 0, blur = 0, opacity = 1, scale = 1, depth = 5, palette, glow, scaleX = 1 }) =>
+  readonly shade?: number;
+}> = ({ name, x, y, size, rot = 0, blur = 0, opacity = 1, scale = 1, depth = 5, palette, glow, scaleX = 1, shade }) =>
   scale <= 0.001 || opacity <= 0.001 ? null : (
     <At x={x} y={y} style={{ scale: String(scale) }}>
-      <Sprite sprite={SPRITES[name]} size={size} rot={rot} blur={blur} opacity={opacity} depth={depth} palette={palette} glow={glow} scaleX={scaleX} />
+      <Sprite sprite={SPRITES[name]} size={size} rot={rot} blur={blur} opacity={opacity} depth={depth} palette={palette} glow={glow} scaleX={scaleX} shade={shade} />
     </At>
   );
 
@@ -155,7 +157,7 @@ export const Win: React.FC<{
 
 // --- Une séquence filmée : recadrée en « cover » ; si elle est plus courte que son plan, on la ralentit (jamais d'écran vide) -------
 // Durées en secondes, mesurées avec ffprobe (public/footage)
-export const FOOTAGE_SEC: Readonly<Record<string, number>> = { feed: 4, heatmap: 3, ai: 4.5, alerts: 4, light: 3, globe: 5, mobile: 4 };
+export const FOOTAGE_SEC: Readonly<Record<string, number>> = { feed: 4, heatmap: 3, ai: 5.9, alerts: 4, light: 3, globe: 5, mobile: 4 };
 export const Footage: React.FC<{ readonly name: string; readonly from: number; readonly frames: number; readonly w: number; readonly h: number }> = ({ name, from, frames, w, h }) => (
   <Sequence from={from} durationInFrames={frames} layout="none">
     <Video src={staticFile(`footage/${name}.mp4`)} muted objectFit="cover" playbackRate={Math.min(1, (FOOTAGE_SEC[name] * 60) / frames)}
