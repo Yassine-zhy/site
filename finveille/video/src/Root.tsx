@@ -13,6 +13,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="Trailer" component={Trailer} durationInFrames={TOTAL} fps={FPS} width={W} height={H} />
       <Composition id="LinkedIn" component={LinkedIn} durationInFrames={LI_TOTAL} fps={FPS} width={1080} height={1350} />
       <Composition id="Pixel" component={Pixel} durationInFrames={PIXEL_TOTAL} fps={60} width={1080} height={1350} />
+      <Composition id="PixelSansMusique" component={Pixel} durationInFrames={PIXEL_TOTAL} fps={60} width={1080} height={1350} defaultProps={{ music: false }} />
     </>
   );
 };

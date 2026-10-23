@@ -33,7 +33,7 @@ export { PIXEL_TOTAL } from "./pixel/total";
 // Les plans sombres : la scène 3, la scène 9 et le noir final
 const isDark = (f: number) => (f >= 300 && f < 420) || (f >= 1180 && f < 1340) || f >= 1780;
 
-export const Pixel: React.FC = () => {
+export const Pixel: React.FC<{ readonly music?: boolean }> = ({ music = true }) => {
   const f = useCurrentFrame();
   return (
     <AbsoluteFill style={{ background: PX.paper, overflow: "hidden" }}>
@@ -49,7 +49,7 @@ export const Pixel: React.FC = () => {
       <Leak f={f} at={170} />
       <Leak f={f} at={598} dir={-1} angle={14} />
       <Leak f={f} at={1180} from={PX.alert} to="#FF7A3D" screen angle={-12} />
-      <Son />
+      <Son music={music} />
     </AbsoluteFill>
   );
 };
