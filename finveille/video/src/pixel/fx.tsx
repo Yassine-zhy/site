@@ -32,7 +32,7 @@ export type PWord = { readonly t: string; readonly at: number; readonly color?: 
 export const Words: React.FC<{
   readonly words: readonly PWord[]; readonly f: number; readonly size?: number; readonly color?: string; readonly out?: number;
   readonly align?: "center" | "left"; readonly weight?: number; readonly style?: React.CSSProperties;
-}> = ({ words, f, size = 36, color = PX.ink, out, align = "center", weight = 600, style }) => {
+}> = ({ words, f, size = 46, color = PX.ink, out, align = "center", weight = 600, style }) => {
   const lines: PWord[][] = [];
   words.forEach((w, i) => { if (i === 0 || w.br) lines.push([]); lines[lines.length - 1].push(w); });
   return (
