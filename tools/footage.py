@@ -425,7 +425,7 @@ def heatmap(page):
     if not page.locator('.fv-obj[data-obj="globe"]').count():   # sinon on est déjà sur Marchés (après le globe)
         go(page, "Marchés", "Marchés", "globe")
     scroll_to(page, 0)
-    page.locator('[data-testid="stButtonGroup"] button', has_text="CAC 40").first.click()   # la vue « CAC 40 »
+    page.locator('[data-testid="stButtonGroup"] button', has_text="France").first.click()   # la vue « France » : la carte du CAC 40
     page.wait_for_function("""() => [...document.querySelectorAll('.fv-section h2')]
                                    .some((h) => h.textContent.trim().startsWith('La carte du CAC 40'))""", timeout=120_000)
     settle(page)
