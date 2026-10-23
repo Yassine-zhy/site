@@ -34,7 +34,7 @@ const SEGS: readonly (readonly [number, number, number])[] = [
   [0, b(12), 1.4], [b(12), b(28), 1.1], [b(28), b(44), 1.0], [b(44), b(56), 1.15], [b(56), b(72), 1.0], [b(72), b(84), 1.1], [b(84), TOTAL, 1.5],
 ];
 // L'image (fractionnaire) de cette vidéo où commence chaque segment
-const STARTS: readonly number[] = SEGS.reduce<number[]>((acc, [a, z, v], i) => [...acc, i === 0 ? 0 : acc[i - 1] + (SEGS[i - 1][1] - SEGS[i - 1][0]) / SEGS[i - 1][2]], []);
+const STARTS: readonly number[] = SEGS.map((_, i) => SEGS.slice(0, i).reduce((t, [a, z, v]) => t + (z - a) / v, 0));
 
 // Image de la bande-annonce → image de cette vidéo
 export const toNew = (old: number): number => {
@@ -81,14 +81,14 @@ const TILES: readonly Ev[] = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [
 
 const EVENTS: readonly Ev[] = [
   // --- L'ouverture (0 - 340) : le logo se dessine, le curseur vient et appuie (b(8)), l'icône s'ouvre en écran bleu (b(10) - b(11,3)) ---
-  ["logo_reveal", 4, 0.42], ["tick", 62, 0.12], ["tick", 71, 0.1], ["tick", 80, 0.1], ["tick", 86, 0.14],
+  ["logo_reveal", 4, 0.42], ["tick", b(2.2), 0.12], ["tick", b(2.2) + 9, 0.1], ["tick", b(2.2) + 18, 0.1], ["tick", b(2.2) + 24, 0.14],
   ["sparkle", b(3.6), 0.12], ["swipe", b(4) + 8, 0.14],
   ["swipe", b(5) + 12, 0.2], ["riser", b(10), 0.5], ["tick", b(7) + 4, 0.16],
   ["ui_click", b(8), 0.62], ["sub_hit", b(8), 0.34], ["ui_tap", b(9), 0.26],
-  ["whoosh_hard", 305, 0.5], ["impact", 319, 0.62],
+  ["whoosh_hard", b(10.7), 0.5], ["impact", b(11.3), 0.62],
   // --- L'actu (340 - 794) : le mur de dépêches, le titre, la roue des rubriques, les sources, le fil ---
   ["sparkle", b(12), 0.14], ["whoosh_soft", b(11.8), 0.3],
-  ["glass_tink2", 344, 0.16], ["glass_tink", 358, 0.14], ["glass_tink3", 372, 0.12], ["glass_tink2", 388, 0.12],
+  ["glass_tink2", b(12) + 4, 0.16], ["glass_tink", b(12) + 18, 0.14], ["glass_tink3", b(12) + 32, 0.12], ["glass_tink2", b(12) + 48, 0.12],
   ["tick", b(13), 0.14], ["ui_tap", b(13.5), 0.26], ["tick", b(14), 0.14],
   ["ui_tap", b(16), 0.3], ["sub_hit", b(16), 0.22], ["ui_tap", b(17), 0.27], ["ui_tap", b(18), 0.27], ["ui_tap", b(19), 0.29], ["ui_tap", b(20), 0.34],
   ["whoosh_soft", b(20) + 24, 0.3], ["swipe", b(20) + 28, 0.22], ["tick", b(20.25), 0.14], ["tick", b(20.75), 0.14],
