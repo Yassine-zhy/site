@@ -27,9 +27,13 @@ mixage qui fait le premier plan et le fond.
     letters      820 ms   neuf petites notes 8 bits qui montent vite (gamme pentatonique de do, do5 à sol6), une par lettre
     stamp        110 ms   « tchak » sec : un souffle aigu, puis un clac plus mat
 
-Mesures (relues dans les WAV écrits, à chaque exécution ; voir aussi l'affichage) :
-    nom          durée    crête      début / fin (|échantillon|)   plus longue plage à la crête
-    voir le tableau imprimé par `python tools/pixel_sfx.py` ; la ligne « bilan » dit si une règle est enfreinte.
+Mesures, relues dans les WAV écrits (à chaque exécution le script les refait et signale toute règle enfreinte) :
+    toutes les crêtes valent -1,00 dBFS ; le premier et le dernier échantillon valent 0 (fondus de 3 ms) ; aucune plage
+    de plus de 16 échantillons consécutifs à la crête (pas d'écrêtage : la plus longue, 9, est le sommet arrondi du sub_drop).
+    durées : blip1 62 ms, blip2 70, blip3 78, blip4 84, blip5 90, coin 350, chime 1700, chime_soft 1200, whoosh_up 450,
+    whoosh_down 400, riser 1200, impact 1400, sub_drop 600, glitch1 180, glitch2 240, tick 15, swish_loop 2000, pop_logo 800,
+    letters 820, stamp 110 (millisecondes). swish_loop : écart entre la fin et le début avant les fondus = 0,048 de la crête,
+    soit un pas ordinaire du signal (0,049) : la boucle ne fait pas de saut.
 
 Depuis le dossier finveille/ (scipy est nécessaire) :
     python tools/pixel_sfx.py
