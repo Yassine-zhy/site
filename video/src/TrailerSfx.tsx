@@ -64,10 +64,12 @@ type Ev = readonly [name: Name, old: number, volume: number];
 const MASTER = 1;
 const types = [1, 2, 3, 4] as const;
 
-// Les 26 lettres de « Pourquoi l’or monte-t-il ? » (outils.tsx) : la lettre i apparaît quand l'arrondi de la rampe atteint i + 1
-const TYPED: readonly Ev[] = Array.from({ length: 26 }, (_, i) => [
-  `type${types[(i * 3 + (i >> 2)) % 4]}` as Name, Math.round(b(57) + ((i + 0.5) * (b(59) - b(57))) / 26), 0.2 + 0.05 * ((i * 7) % 4),
-] as const);
+// Les 26 lettres de « Pourquoi l’or monte-t-il ? » (outils.tsx) : la lettre i apparaît quand l'arrondi de la rampe atteint i + 1.
+// Elles arrivent toutes les 2 images : une frappe par lettre ferait un bourdonnement, on en garde une sur deux (≈ 14 par seconde)
+const TYPED: readonly Ev[] = Array.from({ length: 13 }, (_, k) => {
+  const i = k * 2;
+  return [`type${types[(k * 3 + (k >> 2)) % 4]}` as Name, Math.round(b(57) + ((i + 0.5) * (b(59) - b(57))) / 26), 0.24 + 0.05 * ((k * 7) % 4)] as const;
+});
 
 // Les tuiles du CAC 40 qui changent de valeur (marches.tsx) : à chaque temps de 39 à 43, deux ou trois, espacées de 5 images
 const TILE_TICKS: readonly Ev[] = [39, 40, 41, 42, 43].flatMap((k) =>
