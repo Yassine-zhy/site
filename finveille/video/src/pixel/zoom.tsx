@@ -33,7 +33,7 @@ export const ZoomView: React.FC<{
   };
   const v = view(f), p = view(f - 1);
   const move = Math.hypot(v.tx - p.tx, v.ty - p.ty) + Math.abs(Math.log(v.s / p.s)) * w * 0.5;  // px par image
-  const blur = clamp((move - 1.5) * 0.09, 0, 5);
+  const blur = clamp((move - 1.5) * 0.06, 0, 2.5);
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
       <div style={{ position: "absolute", left: 0, top: 0, width: w, height: h, transformOrigin: "0 0", translate: `${v.tx}px ${v.ty}px`, scale: String(v.s), filter: blur > 0.3 ? `blur(${blur}px)` : undefined }}>
