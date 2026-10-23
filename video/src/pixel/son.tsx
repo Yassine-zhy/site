@@ -29,12 +29,13 @@ const Music: React.FC = () => {
   return <Audio src={staticFile("music/edit.wav")} trimBefore={MUSIC.trim} volume={volume} />;
 };
 
-export const Son: React.FC = () => (
+// `music` faux : la version sans musique (composition « PixelSansMusique »), où les sons, seuls, sont un peu plus forts
+export const Son: React.FC<{ readonly music?: boolean }> = ({ music = true }) => (
   <>
-    <Sequence from={MUSIC.from} durationInFrames={PIXEL_TOTAL - MUSIC.from} layout="none"><Music /></Sequence>
+    {music && <Sequence from={MUSIC.from} durationInFrames={PIXEL_TOTAL - MUSIC.from} layout="none"><Music /></Sequence>}
     {SFX.map(([name, at, volume], i) => (
       <Sequence key={i} from={at} durationInFrames={150} layout="none">
-        <Audio src={staticFile(`sfx/${name}.wav`)} volume={volume} />
+        <Audio src={staticFile(`sfx/${name}.wav`)} volume={music ? volume : Math.min(1, volume * 1.4)} />
       </Sequence>
     ))}
   </>
