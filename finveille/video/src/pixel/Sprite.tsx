@@ -58,3 +58,10 @@ export const Sprite: React.FC<{
     </div>
   );
 };
+
+// Le centre visuel d'un sprite épais centré en (x, y) : la face claire est décalée d'un demi-pixel d'épaisseur vers le haut et la
+// gauche, et l'épaisseur sombre ne compte qu'en partie dans ce que l'œil voit (`share` : 0 = la face seule, 0,5 = toute la boîte)
+export const visualCenter = (x: number, y: number, size: number, depth: number, share = 0.25): readonly [number, number] => {
+  const o = ((share - 0.5) * depth * size) / 24;
+  return [x + o, y + o];
+};
