@@ -107,7 +107,7 @@ const BEDS: readonly (readonly [number, number, number, (f: number) => number])[
   // le chaos des icônes qui s'agite : de plus en plus présent
   [SCENE.chaos.from, SCENE.chaos.to, 1.15, (f) => 0.03 + 0.09 * ramp(f, SCENE.chaos.from, SCENE.chaos.from + 130, 0, 1, LIN)],
   // la nuit : l'ellipse qui tourne autour de la cloche, jusqu'au creux ; puis un souffle presque inaudible, tout le creux
-  [SCENE.nuit.from, at("nuit", NUIT3_LEN - CREUX), 0.8, () => 0.04],
+  [SCENE.nuit.from, at("nuit", NUIT3_LEN - CREUX), 0.8, () => 0.07],
   [at("nuit", NUIT3_LEN - CREUX - 4), SCENE.nuit.to, 0.6, () => 0.012],
   // l'anneau d'icônes : le volume suit sa vitesse ; une seconde couche, plus aiguë, ne s'entend qu'à pleine vitesse
   [DROP, at("anneau", ZOOM_AT), 1, (f) => 0.04 + 0.3 * ringNorm(f - DROP)],
