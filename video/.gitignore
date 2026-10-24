@@ -12,3 +12,4 @@ public/footage/
 public/models/
 # La musique (Mixkit, à ne pas redistribuer seule) : refaite par tools/trailer_assets.py
 public/music/
+public/sfx-pro/
