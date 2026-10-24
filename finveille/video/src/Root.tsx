@@ -3,6 +3,7 @@ import { FPS, H, TOTAL, W } from "./kit";
 import { LI_TOTAL, LinkedIn } from "./LinkedIn";
 import { PIXEL_TOTAL, Pixel } from "./Pixel";
 import { Trailer } from "./Trailer";
+import { TrailerDiscret } from "./TrailerDiscret";
 import { TSFX_TOTAL, TrailerSfx } from "./TrailerSfx";
 
 // La bande-annonce v4 : 1920 × 1080, 60 images par seconde (le mouvement des interfaces reste fluide), 33,33 s, sans props
@@ -13,6 +14,7 @@ export const RemotionRoot: React.FC = () => {
     <>
       <Composition id="Trailer" component={Trailer} durationInFrames={TOTAL} fps={FPS} width={W} height={H} />
       <Composition id="TrailerSfx" component={TrailerSfx} durationInFrames={TSFX_TOTAL} fps={FPS} width={W} height={H} />
+      <Composition id="TrailerDiscret" component={TrailerDiscret} durationInFrames={TOTAL} fps={FPS} width={W} height={H} />
       <Composition id="LinkedIn" component={LinkedIn} durationInFrames={LI_TOTAL} fps={FPS} width={1080} height={1350} />
       <Composition id="Pixel" component={Pixel} durationInFrames={PIXEL_TOTAL} fps={60} width={1080} height={1350} />
       <Composition id="PixelSansMusique" component={Pixel} durationInFrames={PIXEL_TOTAL} fps={60} width={1080} height={1350} defaultProps={{ music: false }} />
