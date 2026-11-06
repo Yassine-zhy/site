@@ -146,6 +146,6 @@ def test_scrypt_runs_at_most_four_at_a_time(monkeypatch):
 
 def test_caches_with_parameters_are_bounded():
     """Un cache qui dépend d'un paramètre (symbole, recherche…) sans limite finirait par saturer la mémoire."""
-    for name in ["_followed", "_search", "_profile", "_history", "_calendar", "_closes", "_articles", "load_trends",
+    for name in ["_followed", "_search", "_profile", "_history", "_calendar", "_closes", "load_trends",
                  "load_macro", "_yield_curves"]:
         assert getattr(ui, name)._info.max_entries is not None, name

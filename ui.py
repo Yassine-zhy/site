@@ -528,26 +528,83 @@ def _not_empty(value):
     return value
 
 
-@st.cache_data(ttl=900, max_entries=4, show_spinner="Récupération des actualités…")
-@_network
-def _articles(keys: dict[str, str | None]):
+# Les dépêches, toujours prêtes. Le serveur reste allumé (Railway, guide 25) : un fil d'arrière-plan recollecte les
+# 43 sources toutes les 15 minutes, même sans visiteur, et chaque visiteur reçoit aussitôt la dernière collecte
+# réussie. Avant, le cache expirait au bout de 15 minutes et le premier visiteur suivant attendait 10 à 15 s la
+# collecte (« Récupération des actualités… »). Seul le premier visiteur après un redémarrage attend encore, et ceux
+# qui arrivent en même temps attendent la même collecte (verrou). Une collecte ratée garde la précédente.
+ARTICLES_EVERY = int(os.environ.get("FINVEILLE_ARTICLES_EVERY", 900))  # 15 min, pour ménager les quotas des API
+ARTICLES = capacity.Memory(max_entries=4, ttl=7 * 86400)  # clé des API → (heure de la collecte, résultat)
+_ARTICLES_LOCK = threading.Lock()  # une seule collecte à la fois
+_NO_ARTICLES = ["Aucune source ne répond pour le moment"]
+
+
+def _articles_key(keys: dict[str, str | None]) -> str:
+    return repr(sorted(keys.items()))
+
+
+def _collect(keys: dict[str, str | None]) -> None:
+    """Collecte les dépêches et range le résultat ; à appeler avec le verrou. Rien n'est rangé si tout est en panne."""
     articles, errors = collect_articles(keys)
-    _not_empty(articles)  # toutes les sources en panne : on garde la collecte précédente
-    return articles, errors, datetime.now(timezone.utc)
+    _not_empty(articles)
+    ARTICLES.put(_articles_key(keys), (time.monotonic(), (articles, errors, datetime.now(timezone.utc))))
+
+
+def refresh_articles(keys: dict[str, str | None]) -> None:
+    """Recollecte en arrière-plan ; ne fait rien si une collecte est déjà en cours."""
+    if not _ARTICLES_LOCK.acquire(blocking=False):
+        return
+    try:
+        _collect(keys)
+    except Exception:  # réseau, toutes les sources en panne… : on garde la collecte précédente, on réessaiera
+        return
+    finally:
+        _ARTICLES_LOCK.release()
+    # les logos des nouvelles sources aussi (hors du verrou), pour que le visiteur suivant ne les attende pas
+    if found := ARTICLES.get(_articles_key(keys)):
+        warm_favicons((article.url for article in found[1][0]), deadline=30)
+
+
+@st.cache_resource(show_spinner=False)
+def _articles_warmer() -> threading.Thread:
+    """Le fil d'arrière-plan, lancé une seule fois par serveur, à la première visite."""
+    def loop():
+        while True:
+            time.sleep(ARTICLES_EVERY)
+            refresh_articles(api_keys())
+    thread = threading.Thread(target=loop, name="fv-articles", daemon=True)
+    thread.start()
+    return thread
 
 
 def load_articles(keys: dict[str, str | None]):
-    """Appelle les sources au plus une fois toutes les 15 minutes (900 s), pour ménager les quotas des API.
-
-    Renvoie (articles, erreurs, heure de la collecte).
-    """
-    loaded = _resilient("articles", _articles, keys,
-                        empty=([], ["Aucune source ne répond pour le moment"], datetime.now(timezone.utc)))
+    """La dernière collecte des dépêches, sans attendre : (articles, erreurs, heure de la collecte)."""
+    _articles_warmer()
+    found = ARTICLES.get(_articles_key(keys))
+    if found is None:  # rien encore depuis le démarrage : on attend la collecte (la même pour tous)
+        with st.spinner("Récupération des actualités…"), capacity.QUEUE.released(), _ARTICLES_LOCK:
+            if ARTICLES.get(_articles_key(keys)) is None:
+                try:
+                    _collect(keys)
+                except Exception:
+                    pass
+        found = ARTICLES.get(_articles_key(keys))
+        if found is None:
+            return [], _NO_ARTICLES, datetime.now(timezone.utc)
+    elif time.monotonic() - found[0] > ARTICLES_EVERY and not _ARTICLES_LOCK.locked():
+        # le fil d'arrière-plan a pris du retard (ou s'est arrêté) : on relance une collecte sans faire attendre
+        threading.Thread(target=refresh_articles, args=(keys,), daemon=True).start()
+    loaded = found[1]
     warm_favicons(article.url for article in loaded[0])  # les logos des sources, avant d'afficher le fil
     return loaded
 
 
-load_articles.clear = _articles.clear  # bouton « Actualiser » du fil
+def _clear_articles() -> None:
+    """Bouton « Actualiser » du fil : la prochaine lecture attend une collecte neuve (celle en cours, s'il y en a une)."""
+    ARTICLES.clear()
+
+
+load_articles.clear = _clear_articles
 
 
 @st.cache_data(ttl=900, max_entries=8, show_spinner=False)

@@ -118,6 +118,10 @@ Pendant une attente **réseau** (une source, la réponse de l'IA), le visiteur *
   même cours, même si le reste de leurs listes diffère.
 - Quand un cache expire, Streamlit s'assure qu'**un seul** visiteur recharge les données ; les autres attendent son
   résultat (sinon : 100 appels identiques à Yahoo au même instant, et un blocage pour quota dépassé).
+- Les dépêches ne se font plus attendre : un fil d'arrière-plan recollecte les 43 sources toutes les 15 minutes,
+  même sans visiteur (`ui.load_articles`), et chaque visiteur reçoit aussitôt la dernière collecte réussie. Avant,
+  le premier visiteur après l'expiration du cache attendait 10 à 15 s ; mesuré le 6 novembre 2026 : 1 s.
+  Il faut un serveur toujours allumé (Railway) : sur un hébergement qui s'endort, le fil s'endort avec lui.
 
 ### Une mémoire qui ne déborde jamais
 
