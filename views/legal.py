@@ -13,7 +13,7 @@ from core import legal
 from ui import get_secret
 
 SECRET_NAMES = ("CONTACT_EMAIL", "SITE_URL", "HOSTING", "DATABASE_URL", "SMTP_HOST", "GEMINI_API_KEY", "GROQ_API_KEY",
-                "RAILWAY_PROJECT_ID", "RAILWAY_PUBLIC_DOMAIN")  # posées par Railway (guide 25)
+                "RAILWAY_PROJECT_ID")  # posée par Railway (guide 25)
 
 # Largeur de lecture confortable ; un tableau trop large défile seul, sans faire défiler la page (téléphone)
 CSS = """<style>

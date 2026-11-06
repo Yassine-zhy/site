@@ -193,8 +193,9 @@ Le fichier `railway.json` (à la racine de l'appli) dit à Railway :
    démarrage). Ou une variable par clé (`DATABASE_URL`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `SMTP_…`,
    `ADMIN_EMAILS`…) : `ui.get_secret` les lit aussi. Sans `DATABASE_URL`, les comptes ne sont pas gardés.
 4. **Settings** → **Networking** → **Generate Domain** : le site reçoit une adresse en `.up.railway.app`. Les pages
-   légales se mettent à jour seules : Railway pose sur son serveur `RAILWAY_PROJECT_ID` et `RAILWAY_PUBLIC_DOMAIN`,
-   que `core/legal.py` lit pour afficher l'hébergeur (Railway Corporation) et l'adresse du site.
+   légales se mettent à jour seules : Railway pose sur son serveur `RAILWAY_PROJECT_ID`, que `core/legal.py` lit pour
+   afficher l'hébergeur (Railway Corporation) ; l'adresse du site est `https://finveille.com` (`SITE_URL` pour une
+   autre).
 5. Mets un plafond de dépense : dans les réglages d'usage du compte (**Usage**), une limite stricte, par exemple
    10 $US. Au-delà, Railway arrête le site plutôt que de facturer.
 6. Facultatif, un nom de domaine à toi (environ 15 $/an) : **Settings** → **Networking** → **Custom Domain**,
@@ -203,6 +204,11 @@ Le fichier `railway.json` (à la racine de l'appli) dit à Railway :
 
 Si la connexion Google (`[auth]`) est configurée, change `redirect_uri` pour la nouvelle adresse
 (`https://…/oauth2callback`) dans les secrets **et** dans la console Google Cloud.
+
+La page de départ de Streamlit (le HTML envoyé avant que l'appli démarre) disait « Streamlit » : c'est le titre
+de l'onglet pendant le chargement, et ce que montre un lien partagé sur LinkedIn ou WhatsApp, qui ne lancent pas
+l'appli. `deploy/brand_index.py` la réécrit à la construction de l'image : titre, langue, description, aperçu
+des liens (`static/og.png`) et icône (`static/favicon.png`), produits par `docs/branding/render.py`.
 
 Vérifié le 6 novembre 2026 : image construite avec ce `Dockerfile` (1 Go), conteneur lancé comme sur Railway
 (`PORT=8080`, variables `RAILWAY_…`) : accueil, crypto et pages légales sans erreur sur ordinateur et téléphone ;
