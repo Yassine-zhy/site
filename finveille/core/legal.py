@@ -32,6 +32,20 @@ HOSTS = {
         "dpf": True,  # adhère au Data Privacy Framework UE–États-Unis
         "tracks": True,  # la plateforme ajoute ses propres traceurs autour de l'application
     },
+    # Railway (guide 25) : un conteneur toujours allumé ; aucun traceur ajouté autour de l'application. Relevé le
+    # 6 novembre 2026 sur railway.com/legal/terms et railway.com/legal/privacy.
+    "railway": {
+        "name": "Railway",
+        "company": "Railway Corporation",
+        "address": "548 Market St PMB 68956, San Francisco, Californie 94104, États-Unis",
+        "phone": "+1 415 707 7675",
+        "site": "https://railway.com",
+        "privacy": "https://railway.com/legal/privacy",
+        "privacy_email": "railway-corp@gdpr-rep.com",  # le contact du représentant dans l'UE
+        "eu_representative": "DP-Dock GmbH, Attn.: Railway Corp, Ballindamm 39, 20095 Hambourg, Allemagne",
+        "dpf": True,
+        "tracks": False,
+    },
 }
 
 # (mot cherché dans l'adresse, nom affiché) : le premier qui correspond l'emporte
@@ -109,10 +123,13 @@ def config_from(secrets: Mapping) -> LegalConfig:
         database_region = next((place for code, place in DATABASE_REGIONS.items() if f".{code}." in f".{host}."), None)
     smtp_host = _text(secrets, "SMTP_HOST")
     email_provider = (_first_match(smtp_host, EMAIL_PROVIDERS) or UNKNOWN_EMAIL_PROVIDER) if smtp_host else None
+    # Railway pose ces variables sur son serveur : l'hébergeur et l'adresse du site s'y déduisent sans réglage
+    railway_url = f"https://{_text(secrets, 'RAILWAY_PUBLIC_DOMAIN')}" if _text(secrets, "RAILWAY_PUBLIC_DOMAIN") else ""
+    on_railway = bool(_text(secrets, "RAILWAY_PROJECT_ID"))
     return LegalConfig(
         contact=_text(secrets, "CONTACT_EMAIL") or CONTACT,
-        site_url=(_text(secrets, "SITE_URL") or DEFAULT_SITE_URL).rstrip("/"),
-        hosting=(_text(secrets, "HOSTING") or "streamlit").lower(),
+        site_url=(_text(secrets, "SITE_URL") or railway_url or DEFAULT_SITE_URL).rstrip("/"),
+        hosting=(_text(secrets, "HOSTING") or ("railway" if on_railway else "streamlit")).lower(),
         database=database,
         database_region=database_region,
         email_provider=email_provider,

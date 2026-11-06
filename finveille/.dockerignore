@@ -14,3 +14,9 @@ guide
 tests
 tools
 requirements-dev.txt
+# Inutiles pour faire tourner le site (Railway, Docker) : vidéos, guide, tests, outils, images de documentation
+video
+guide
+tests
+tools
+docs

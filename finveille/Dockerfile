@@ -1,4 +1,4 @@
-# FinVeille dans un conteneur Docker (guide 25) : le même environnement sur ton ordinateur, sur Hugging Face
+# FinVeille dans un conteneur Docker (guide 25) : le même environnement sur ton ordinateur, sur Railway, Hugging Face
 # Spaces, Render ou n'importe quel serveur.
 #   docker build -t finveille .
 #   docker run -p 8501:8501 --env-file .env finveille        → http://localhost:8501
