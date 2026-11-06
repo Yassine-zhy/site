@@ -23,6 +23,8 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY --chown=finveille:finveille . .
+# La page de départ de Streamlit aux couleurs du site : titre, aperçu des liens partagés, icône (deploy/brand_index.py)
+RUN python deploy/brand_index.py
 RUN mkdir -p data && chown finveille:finveille data && chmod +x deploy/entrypoint.sh
 USER finveille
 

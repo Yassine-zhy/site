@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 
 UPDATED = "22 octobre 2026"
 EDITOR = "Yassine Zouhair"
-DEFAULT_SITE_URL = "https://finveille.streamlit.app"
+DEFAULT_SITE_URL = "https://finveille.com"
 CONTACT = "contact.finveille@gmail.com"  # l'adresse de contact du site ; le réglage CONTACT_EMAIL peut la remplacer
 NO_CONTACT = "l'adresse de contact (à venir)"  # si une configuration n'en donne aucune
 
@@ -123,12 +123,10 @@ def config_from(secrets: Mapping) -> LegalConfig:
         database_region = next((place for code, place in DATABASE_REGIONS.items() if f".{code}." in f".{host}."), None)
     smtp_host = _text(secrets, "SMTP_HOST")
     email_provider = (_first_match(smtp_host, EMAIL_PROVIDERS) or UNKNOWN_EMAIL_PROVIDER) if smtp_host else None
-    # Railway pose ces variables sur son serveur : l'hébergeur et l'adresse du site s'y déduisent sans réglage
-    railway_url = f"https://{_text(secrets, 'RAILWAY_PUBLIC_DOMAIN')}" if _text(secrets, "RAILWAY_PUBLIC_DOMAIN") else ""
-    on_railway = bool(_text(secrets, "RAILWAY_PROJECT_ID"))
+    on_railway = bool(_text(secrets, "RAILWAY_PROJECT_ID"))  # posée par Railway sur son serveur : rien à régler
     return LegalConfig(
         contact=_text(secrets, "CONTACT_EMAIL") or CONTACT,
-        site_url=(_text(secrets, "SITE_URL") or railway_url or DEFAULT_SITE_URL).rstrip("/"),
+        site_url=(_text(secrets, "SITE_URL") or DEFAULT_SITE_URL).rstrip("/"),
         hosting=(_text(secrets, "HOSTING") or ("railway" if on_railway else "streamlit")).lower(),
         database=database,
         database_region=database_region,

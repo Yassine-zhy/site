@@ -38,7 +38,7 @@ def test_config_sans_secrets():
     assert cfg == legal.LegalConfig()
     assert cfg.contact == legal.CONTACT  # l'adresse du site, même sans réglage
     assert (cfg.database, cfg.email_provider, cfg.logins, cfg.ai) == (None, None, (), ())
-    assert cfg.site_url == "https://finveille.streamlit.app" and cfg.hosting == "streamlit"
+    assert cfg.site_url == "https://finveille.com" and cfg.hosting == "streamlit"
     assert not cfg.email_accounts
 
 
@@ -274,12 +274,11 @@ def test_les_adresses_de_la_recherche_sont_celles_des_pages():
 
 
 def test_railway_se_deduit_des_variables_du_serveur():
-    cfg = legal.config_from({"RAILWAY_PROJECT_ID": "p-123", "RAILWAY_PUBLIC_DOMAIN": "finveille.up.railway.app"})
-    assert cfg.hosting == "railway" and cfg.site_url == "https://finveille.up.railway.app"
-    # un nom de domaine à soi (SITE_URL) et un hébergeur imposé (HOSTING) l'emportent
-    cfg = legal.config_from({"RAILWAY_PROJECT_ID": "p-123", "RAILWAY_PUBLIC_DOMAIN": "finveille.up.railway.app",
-                             "SITE_URL": "https://finveille.com/", "HOSTING": "Streamlit"})
-    assert cfg.hosting == "streamlit" and cfg.site_url == "https://finveille.com"
+    cfg = legal.config_from({"RAILWAY_PROJECT_ID": "p-123"})
+    assert cfg.hosting == "railway" and cfg.site_url == "https://finveille.com"
+    # une autre adresse (SITE_URL) et un hébergeur imposé (HOSTING) l'emportent
+    cfg = legal.config_from({"RAILWAY_PROJECT_ID": "p-123", "SITE_URL": "https://exemple.fr/", "HOSTING": "Streamlit"})
+    assert cfg.hosting == "streamlit" and cfg.site_url == "https://exemple.fr"
 
 
 def test_railway_dans_les_textes_legaux():
