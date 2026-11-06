@@ -924,7 +924,16 @@ function installShortcut() {
     .observe(document.body, { childList: true, subtree: true });
 }
 
+// Après une mise en ligne, une page restée ouverte se reconnecte et charge la nouvelle version de ce fichier (VERSION,
+// « ?v=… ») par-dessus l'ancienne, toujours active (deux décors, les maquettes de l'ancienne) : la page est alors
+// rechargée une fois, proprement. `__fvObjs` sans `__fvVersion` : une version d'avant ce contrôle.
+
 export function show(data) {
+  if (window.__fvVersion ? window.__fvVersion !== VERSION : !!window.__fvObjs) {
+    location.reload();
+    return () => {};
+  }
+  window.__fvVersion = VERSION;
   installMotion();
   installTilt();
   installLinks();

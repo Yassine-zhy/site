@@ -112,9 +112,19 @@ class Vitrine {
     this.kind = el.dataset.obj;
     let data = {};
     try { data = JSON.parse(el.dataset.objData || "{}"); } catch { /* données illisibles : l'objet par défaut */ }
-    this.canvas = el.querySelector("canvas.fv-obj-canvas") || el.insertBefore(Object.assign(document.createElement("canvas"),
-      { className: "fv-obj-canvas" }), el.firstChild);
+    // toujours une toile neuve : une toile dont le contexte a été perdu le reste (Chrome y dessine une icône triste)
+    el.querySelectorAll("canvas.fv-obj-canvas").forEach((old) => old.remove());
+    this.canvas = el.insertBefore(Object.assign(document.createElement("canvas"), { className: "fv-obj-canvas" }), el.firstChild);
     this.canvas.setAttribute("aria-hidden", "true");
+    // Le téléphone peut retirer le contexte de lui-même (mémoire graphique pleine…) : la toile est cachée aussitôt, et
+    // le moteur (installVitrines) recrée la maquette sur une toile neuve
+    this.canvas.addEventListener("webglcontextlost", (e) => {
+      e.preventDefault();
+      if (this.disposed) return;   // perte voulue (dispose) : rien à réparer
+      this.lost = true;
+      this.canvas.style.visibility = "hidden";
+      el.dispatchEvent(new CustomEvent("fv-obj-lost", { bubbles: true }));   // jusqu'au moteur (document)
+    });
     this.lens = new Lens(this.canvas, dark);
     this.data = data;
     this.build(dark);
@@ -134,6 +144,8 @@ class Vitrine {
     this.resize();
     this.listen();
   }
+  // contexte perdu : l'évènement « webglcontextlost » arrive un peu après la perte, d'où la question posée au contexte
+  get dead() { return this.lost || this.lens.renderer.getContext().isContextLost(); }
   build(dark) {   // la scène, aux couleurs du thème
     this.scene = new THREE.Scene();
     this.scene.environment = this.lens.env;
@@ -333,6 +345,7 @@ class Vitrine {
     for (const [id, node] of this.labels) if (!seen.has(id)) { node.remove(); this.labels.delete(id); }
   }
   dispose() {
+    this.disposed = true;
     recent.set(this.kind, performance.now());
     this.resizer.disconnect();
     clearTimeout(this.forget);
@@ -435,9 +448,10 @@ export function installVitrines() {
     const dark = darkMode(), page = pageColor().getHexString();
     if (dark !== state.dark || page !== state.page) {   // le thème a changé : les objets changent de matière
       Object.assign(state, { dark, page });
-      for (const v of live.values()) v.retheme(dark);
+      for (const v of live.values()) if (!v.dead) v.retheme(dark);
     }
     for (const el of document.querySelectorAll(".fv-obj[data-obj]")) {
+      if (Number(el.dataset.fvLost || 0) > 3) continue;   // perdue trop souvent : elle reste cachée
       const sig = `${el.dataset.obj}|${el.dataset.objData || ""}`;
       const old = live.get(el);
       if (old && old.sig === sig) continue;
@@ -453,6 +467,13 @@ export function installVitrines() {
     }
     for (const [el, v] of live) if (!el.isConnected) { v.dispose(); live.delete(el); seen.unobserve(el); }
   };
+  document.addEventListener("fv-obj-lost", (e) => {
+    const el = e.target, v = live.get(el);
+    if (v) { v.dispose(); live.delete(el); seen.unobserve(el); }
+    el.dataset.fvLost = String(Number(el.dataset.fvLost || 0) + 1);
+    if (Number(el.dataset.fvLost) > 3) { el.classList.add("is-fallback"); return; }
+    setTimeout(rescan, 400);   // on laisse le navigateur souffler, puis la maquette revient sur une toile neuve
+  });
   let queued = false;
   const rescan = () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; scan(); }); } };
   new MutationObserver(rescan).observe(document.body, { childList: true, subtree: true });
@@ -474,7 +495,7 @@ export function installVitrines() {
     if (!document.hidden && !window.__fvObjs.manual) {
       const story = window.__fvStory?.el ? window.__fvStory : null;
       const shown = [];
-      for (const v of live.values()) if (inView(v)) shown.push(v);
+      for (const v of live.values()) if (!v.dead && inView(v)) shown.push(v);   // contexte perdu : rien à dessiner
       // téléphone : la maquette la plus visible joue son montage et ses mouvements ; les autres sautent le montage
       // (elles s'affichent finies) et ne se redessinent que si quelque chose change (toucher, taille, retour à l'écran)
       const lead = phone ? shown.reduce((a, b) => (b.area > (a?.area ?? -1) ? b : a), null) : null;
