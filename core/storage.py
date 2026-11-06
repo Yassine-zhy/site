@@ -191,8 +191,13 @@ def _postgres_pool():
         from psycopg.rows import dict_row  # importés seulement si PostgreSQL est utilisé
         from psycopg_pool import ConnectionPool
 
+        # Une connexion gardée peut être morte : Neon (offre gratuite) s'endort après 5 minutes sans requête et coupe
+        # les siennes. Le visiteur suivant recevait cette connexion, sa requête échouait, et la page affichait un
+        # encadré d'erreur rouge jusqu'au rafraîchissement suivant. check : chaque connexion est vérifiée avant d'être
+        # prêtée (une morte est remplacée) ; max_idle : une connexion inutilisée 4 minutes est fermée avant Neon.
         _pools[DATABASE_URL] = ConnectionPool(
             DATABASE_URL, min_size=1, max_size=POOL_SIZE, open=True, timeout=15,
+            check=ConnectionPool.check_connection, max_idle=240,
             # dict_row : les lignes sont des dictionnaires (row["is_read"]) ;
             # prepare_threshold=None : compatible avec les « poolers » de Supabase (PgBouncer)
             kwargs={"row_factory": dict_row, "prepare_threshold": None},

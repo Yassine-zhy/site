@@ -7,7 +7,8 @@ import sqlite3
 
 import pytest
 
-from conftest import make_article
+from conftest import TEST_DATABASE_URL, empty_postgres, make_article
+from core import storage
 
 ME = "moi@example.com"
 
@@ -156,3 +157,18 @@ def test_comptes_abonnes_a_un_reglage(store):
     store.set_setting("bob@example.com", "email_brief", False)
     store.set_setting("local", "email_brief", True)  # pas de compte (mode local) : ignoré
     assert [u["email"] for u in store.users_with_setting("email_brief")] == ["alice@example.com"]
+
+
+@pytest.mark.skipif(not TEST_DATABASE_URL, reason="FINVEILLE_TEST_DATABASE_URL non renseignée")
+def test_une_connexion_coupee_par_le_serveur_est_remplacee(monkeypatch):
+    """Neon (offre gratuite) coupe ses connexions quand il s'endort : la requête suivante d'un visiteur ne doit pas
+    échouer (avant, la page affichait un encadré d'erreur rouge jusqu'au rafraîchissement suivant)."""
+    empty_postgres(monkeypatch)
+    with storage.connect() as conn:
+        assert conn.execute("SELECT 1 AS ok").fetchone()["ok"] == 1
+    with storage.connect() as conn:  # le serveur coupe toutes les autres connexions de la réserve
+        conn.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                     "WHERE datname = current_database() AND pid <> pg_backend_pid()")
+    for _ in range(3):
+        with storage.connect() as conn:
+            assert conn.execute("SELECT 1 AS ok").fetchone()["ok"] == 1
