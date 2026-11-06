@@ -271,3 +271,21 @@ def test_la_recherche_trouve_les_pages_legales(query, title):
 def test_les_adresses_de_la_recherche_sont_celles_des_pages():
     addresses = dict(search.page_hits("mentions")) | dict(search.page_hits("cookies"))
     assert addresses["Mentions légales"] == "./mentions-legales" and addresses["Cookies"] == "./cookies"
+
+
+def test_railway_se_deduit_des_variables_du_serveur():
+    cfg = legal.config_from({"RAILWAY_PROJECT_ID": "p-123", "RAILWAY_PUBLIC_DOMAIN": "finveille.up.railway.app"})
+    assert cfg.hosting == "railway" and cfg.site_url == "https://finveille.up.railway.app"
+    # un nom de domaine à soi (SITE_URL) et un hébergeur imposé (HOSTING) l'emportent
+    cfg = legal.config_from({"RAILWAY_PROJECT_ID": "p-123", "RAILWAY_PUBLIC_DOMAIN": "finveille.up.railway.app",
+                             "SITE_URL": "https://finveille.com/", "HOSTING": "Streamlit"})
+    assert cfg.hosting == "streamlit" and cfg.site_url == "https://finveille.com"
+
+
+def test_railway_dans_les_textes_legaux():
+    cfg = legal.LegalConfig(hosting="railway")
+    mentions = legal.mentions_legales(cfg)
+    assert "Railway Corporation" in mentions and "548 Market St" in mentions and "Snowflake" not in mentions
+    privacy = legal.confidentialite(cfg)
+    assert "Data Privacy Framework" in privacy and "DP-Dock GmbH" in privacy and "railway-corp@gdpr-rep.com" in privacy
+    assert "_ga" not in legal.cookies(cfg)  # Railway n'ajoute aucun traceur autour de l'application
