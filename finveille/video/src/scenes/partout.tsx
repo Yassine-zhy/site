@@ -56,7 +56,7 @@ export const Partout: React.FC = () => {
           <div style={{ height: WIN.bar, display: "flex", alignItems: "center", gap: 9, padding: "0 18px", background: light > 0.5 ? "#e3e7f0" : "#141824" }}>
             {["#ff5f57", "#febc2e", "#28c840"].map((c) => <span key={c} style={{ width: 13, height: 13, borderRadius: 7, background: c }} />)}
             <div style={{ marginLeft: 22, height: 28, padding: "0 18px", borderRadius: 14, display: "flex", alignItems: "center", fontFamily: sans, fontWeight: 500, fontSize: 17,
-              color: light > 0.5 ? "#4b5568" : C.muted, background: light > 0.5 ? "#f7f8fb" : "#1c2232" }}>finveille.streamlit.app</div>
+              color: light > 0.5 ? "#4b5568" : C.muted, background: light > 0.5 ? "#f7f8fb" : "#1c2232" }}>finveille.com</div>
           </div>
           <div style={{ position: "relative", width: WIN.w, height: WIN_H - WIN.bar, overflow: "hidden" }}>
             <Footage name="markets" from={b(71.5)} w={WIN.w} h={WIN_H - WIN.bar} />

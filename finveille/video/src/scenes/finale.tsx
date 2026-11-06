@@ -171,7 +171,7 @@ export const Finale: React.FC<{ readonly showUrl?: boolean }> = ({ showUrl = tru
       </At>
       {showUrl && (
         <At x={960} y={790} style={{ ...focus(url, 14), translate: `-50% calc(-50% + ${(1 - url) * 16}px)`, fontFamily: sans, fontWeight: 600, fontSize: 44, color: C.brand, whiteSpace: "nowrap", letterSpacing: "0.01em" }}>
-          finveille.streamlit.app
+          finveille.com
         </At>
       )}
       <At x={960} y={showUrl ? 884 : 810} style={{ opacity: clamp(free * 1.4, 0, 1), scale: String(lerp(0.7, 1, free)) }}>
