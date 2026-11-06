@@ -1,0 +1,49 @@
+{
+ "id": "btc-bitcoin",
+ "name": "Bitcoin",
+ "symbol": "BTC",
+ "rank": 1,
+ "is_new": false,
+ "is_active": true,
+ "type": "coin",
+ "logo": "https://static.coinpaprika.com/coin/btc-bitcoin/logo.png",
+ "tags": [
+  {
+   "id": "segwit",
+   "name": "Segwit",
+   "coin_counter": 12,
+   "ico_counter": 0
+  },
+  {
+   "id": "cryptocurrency",
+   "name": "Cryptocurrency",
+   "coin_counter": 1281,
+   "ico_counter": 40
+  },
+  {
+   "id": "proof-of-work",
+   "name": "Proof Of Work",
+   "coin_counter": 712,
+   "ico_counter": 0
+  }
+ ],
+ "description": "Bitcoin (BTC) is a decentralized digital currency that enables peer-to-peer transactions without intermediaries, using blockchain technology to ensure security and transparency. It was created in 2009 by an anonymous entity known as Satoshi Nakamoto. Source: CoinPaprika.com",
+ "open_source": true,
+ "started_at": "2009-01-03T00:00:00Z",
+ "development_status": "Working product",
+ "hardware_wallet": true,
+ "proof_type": "Proof of Work",
+ "org_structure": "Decentralized",
+ "hash_algorithm": "SHA256",
+ "links": {
+  "website": [
+   "https://bitcoin.org/"
+  ]
+ },
+ "whitepaper": {
+  "link": "https://static.coinpaprika.com/whitepapers/btc-bitcoin/whitepaper.pdf",
+  "thumbnail": "https://static.coinpaprika.com/whitepapers/btc-bitcoin/thumb.jpg"
+ },
+ "first_data_at": "2010-07-17T00:00:00Z",
+ "last_data_at": "2026-11-06T02:37:00Z"
+}

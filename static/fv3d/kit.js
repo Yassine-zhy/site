@@ -1,8 +1,8 @@
 // FinVeille — la boîte à outils des maquettes (guide 33) : matières, lumière, sol, gravures.
 //
-// Les maquettes sont faites de la matière du site : du verre sombre (les cartes), des arêtes de lumière bleue (la
-// grille et la ligne de cours des en-têtes), des données en lumière (hausse en vert, baisse en rouge) et une
-// poussière de particules (le décor). Rien de blanc ni d'opaque : l'objet semble sortir de l'interface.
+// Les maquettes sont faites de la matière du site : du verre (bleu nuit en thème sombre, givré presque blanc en thème
+// clair), des arêtes de lumière bleue (la grille et la ligne de cours des en-têtes), des données en lumière (hausse en
+// vert, baisse en rouge) et une poussière de particules (le décor) : l'objet semble sortir de l'interface.
 //
 // Une maquette ne choisit pas ses matières : elle donne un rôle (une couleur de la palette) et mat() en fait du
 // verre (porcelain, relief, shade, plinth) ou de la lumière (up, down, brand, ink). Les arêtes sont ajoutées par la
@@ -11,16 +11,16 @@
 import * as THREE from "./three.module.min.js";
 import { RoundedBoxGeometry } from "./addons/RoundedBoxGeometry.js";
 import { LAND, LAND_W, LAND_H } from "./land.js";
+import { isPhone } from "./phone.js";
 
 export { THREE, RoundedBoxGeometry };
 
 let current = null;   // la palette de la maquette en cours de construction (une à la fois)
 
 export function palette(dark) {
-  current = {
+  current = dark ? {
     dark,
-    // le verre : la matière des volumes, du plus présent au plus effacé ; sombre dans les deux thèmes (sur une page
-    // claire, l'objet se détache comme un objet de verre fumé photographié sur fond blanc)
+    // le verre : la matière des volumes, du plus présent au plus effacé ; en thème sombre, un verre bleu nuit poli
     porcelain: new THREE.Color(0x22346a),
     relief: new THREE.Color(0x26386e),
     shade: new THREE.Color(0x101830),
@@ -29,6 +29,18 @@ export function palette(dark) {
     ink: new THREE.Color(0x9db0ff),
     up: new THREE.Color(0x2fbf71), down: new THREE.Color(0xef5361), brand: new THREE.Color(0x5b7cff),
     violet: new THREE.Color(0x8b6cff),
+  } : {
+    dark,
+    // en thème clair, un verre givré bleuté, presque blanc : l'objet appartient à la page claire au lieu d'y faire une
+    // tache sombre ; le socle, un ton plus soutenu, l'ancre au sol
+    porcelain: new THREE.Color(0xe3e9f6),
+    relief: new THREE.Color(0xd2dbee),
+    shade: new THREE.Color(0xaab7d1),
+    plinth: new THREE.Color(0xc4cfe4),
+    // la lumière : des tons plus soutenus, pour rester lisibles sur le blanc
+    ink: new THREE.Color(0x3b63f0),
+    up: new THREE.Color(0x14a05a), down: new THREE.Color(0xe0414f), brand: new THREE.Color(0x2f5bea),
+    violet: new THREE.Color(0x7048e8),
   };
   return current;
 }
@@ -94,8 +106,8 @@ export function outline(root, pal) {
     if (mesh.geometry.attributes.position.count > 30000) continue;
     const light = mesh.material.userData.role === "light";
     const lines = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 32), new THREE.LineBasicMaterial({
-      color: light ? mesh.material.userData.tone : 0x8ea4ff, transparent: true,
-      opacity: light ? 0.9 : 0.62, depthWrite: false,
+      color: light ? mesh.material.userData.tone : pal.dark ? 0x8ea4ff : 0x2f5bea, transparent: true,
+      opacity: light ? 0.9 : pal.dark ? 0.62 : 0.32, depthWrite: false,
     }));
     lines.userData.noEdges = true;
     lines.raycast = () => {};   // le pointeur vise les volumes, pas les traits
@@ -104,17 +116,21 @@ export function outline(root, pal) {
 }
 
 // La lumière d'atelier : peu de lumière directe, de l'environnement (reflets dans le verre), deux contre-jours aux
-// couleurs de la marque (bleu à droite, violet à gauche) qui dessinent les silhouettes. `reach` : la zone des ombres.
-export function lights(scene, pal, { reach = 7, map = 1024, sun = [-6, 11, 7] } = {}) {
+// couleurs de la marque (bleu à droite, violet à gauche) qui dessinent les silhouettes. `reach` : la zone des ombres ;
+// `shadow` : faux pour une maquette sans ombre portée. Sur téléphone, la carte d'ombres tient en 512 px (filtrée de
+// près : l'ombre reste douce) ; vitrines.js y règle aussi le type d'ombre, le plus simple.
+export function lights(scene, pal, { reach = 7, map = 1024, sun = [-6, 11, 7], shadow = true } = {}) {
+  const phone = isPhone();
+  if (phone) map = Math.min(map, 512);
   const sky = new THREE.HemisphereLight(0xc8d4ff, pal.dark ? 0x060912 : 0xdfe5f2, pal.dark ? 0.35 : 1.0);
   const key = new THREE.DirectionalLight(0xffffff, pal.dark ? 1.3 : 1.7);
   key.position.set(...sun);
-  key.castShadow = true;
+  key.castShadow = shadow;
   key.shadow.mapSize.set(map, map);
   Object.assign(key.shadow.camera, { left: -reach, right: reach, top: reach, bottom: -reach, near: 0.5, far: 60 });
   key.shadow.bias = -0.0004;
   key.shadow.normalBias = 0.025;
-  key.shadow.radius = 6;   // une ombre douce (filtrage PCF élargi)
+  key.shadow.radius = phone ? 2 : 6;   // une ombre douce (filtrage PCF élargi) ; plus serrée sur téléphone
   const rim = new THREE.DirectionalLight(pal.brand, pal.dark ? 2.6 : 1.1);
   rim.position.set(8, 4, -9);
   const rim2 = new THREE.DirectionalLight(pal.violet, pal.dark ? 1.6 : 0.6);
@@ -347,9 +363,10 @@ export function lightTube(curve, color, radius = 0.01, segments = 96) {
   return m;
 }
 
-// Le métal sombre et vernis des pièces et des pièces de précision (pieds, anneaux, axes).
+// Le métal vernis des pièces et des pièces de précision (pieds, anneaux, axes) : bleu nuit en thème sombre, argent
+// bleuté en thème clair (un métal sombre ferait une tache sur la page claire).
 export function metal(pal, o = {}) {
-  const m = new THREE.MeshPhysicalMaterial({ color: o.color ?? 0x2a3a6e, metalness: 0.9,
+  const m = new THREE.MeshPhysicalMaterial({ color: o.color ?? (pal.dark ? 0x2a3a6e : 0xc3cee6), metalness: 0.9,
     roughness: o.rough ?? 0.28, clearcoat: 1, clearcoatRoughness: 0.12, emissive: o.emissive ?? 0x000000,
     emissiveMap: o.emissiveMap ?? null, emissiveIntensity: o.glow ?? 1, bumpMap: o.bump ?? null, bumpScale: o.bumpScale ?? 1 });
   m.userData.role = "glass";

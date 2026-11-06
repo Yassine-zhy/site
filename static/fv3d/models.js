@@ -15,6 +15,7 @@ import {
   isLand, onSphere, random, tag, pickFrom, facadeTexture, facadeBox, cardTexture, atmosphere, lightTube,
 } from "./kit.js";
 import { ATELIER } from "./atelier.js";
+import { isPhone } from "./phone.js";
 
 // --- Le CAC 40 en maquette (l'accueil) ---------------------------------------------------------------------------
 // Une tour par valeur : sa hauteur suit son poids dans l'indice, son toit la séance. Les plus lourdes au centre, sur
@@ -48,16 +49,19 @@ function streetPlan(pal, W, D, xs, zs) {   // le plan gravé : avenues, lignes p
   return t;
 }
 
-function skin(pal) {   // la façade : du verre sombre et réfléchissant, ses fenêtres allumées
-  const m = new THREE.MeshStandardMaterial({ color: 0x101c40, metalness: 0.65, roughness: 0.2,
-    emissive: 0xffffff, emissiveMap: facadeTexture(), emissiveIntensity: 0, transparent: true });
+function skin(pal) {   // la façade : du verre réfléchissant (sombre, ou givré en thème clair), ses fenêtres allumées
+  // en thème clair, des fenêtres bleues : une lumière blanche disparaîtrait sur une façade claire
+  const m = new THREE.MeshStandardMaterial({ color: pal.dark ? 0x101c40 : 0xd9e1f1, metalness: pal.dark ? 0.65 : 0.3,
+    roughness: 0.2, emissive: pal.dark ? 0xffffff : 0x2f5bea, emissiveMap: facadeTexture(), emissiveIntensity: 0,
+    transparent: true });
   m.userData.role = "glass";
   m.userData.lit = pal.dark ? 1.3 : 1.0;
   return m;
 }
 
 function city(data, pal, scene) {
-  lights(scene, pal, { reach: 8, map: 2048, sun: [-7, 12, 6] });
+  // 40 immeubles dans une carte d'ombres de 2048 px : trop lourd pour un téléphone, qui garde la lumière sans l'ombre
+  lights(scene, pal, { reach: 8, map: 2048, sun: [-7, 12, 6], shadow: !isPhone() });
   const root = new THREE.Group(), rnd = random(11);
   const cols = 8, rows = 5, cell = 1.22, fw = 0.8, gap = 0.18;
   const W = cols * cell + gap + 1.1, D = rows * cell + 1.1;
@@ -450,8 +454,8 @@ function coins(data, pal, scene) {
 // Une coque de verre ; dedans, un réseau de neurones en lumière autour d'un cœur ; autour, trois orbites portent les
 // fiches des dépêches dont l'assistant se sert pour répondre.
 function sourceCard(pal, seed, w = 0.66, h = 0.45) {
-  const m = new THREE.MeshStandardMaterial({ color: 0x0f1a3a, metalness: 0.4, roughness: 0.25,
-    emissive: 0xffffff, emissiveMap: cardTexture(seed), emissiveIntensity: 1.1 });
+  const m = new THREE.MeshStandardMaterial({ color: pal.dark ? 0x0f1a3a : 0xe6ecf8, metalness: 0.4, roughness: 0.25,
+    emissive: pal.dark ? 0xffffff : 0x2f5bea, emissiveMap: cardTexture(seed), emissiveIntensity: 1.1 });
   m.userData.role = "glass";
   const card = new THREE.Mesh(new RoundedBoxGeometry(w, h, 0.025, 2, 0.02), m);
   card.castShadow = true;

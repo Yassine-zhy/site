@@ -1,6 +1,7 @@
 // La fin (temps 84 → 112) : tout ce qu'on a vu, en une mosaïque de 3 × 3 tuiles qui s'allument une à une autour du logo ;
 // les tuiles s'envolent, le logo reste et grandit ; la phrase de la marque, l'adresse ; la musique s'arrête net au
-// temps 106 (la cymbale résonne) ; fondu au noir.
+// temps 106 (la cymbale résonne) ; fondu au noir. `showUrl` (vrai par défaut) montre l'adresse du site ; la version « TrailerSfx »
+// la retire (la pastille « Gratuit, sans publicité » remonte alors d'un cran pour rester centrée sous la phrase).
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { At, C, CAM, Glyph, GlyphName, Halo, IN, LogoMark, Sparks, TOTAL, b, clamp, display, focus, glass, lerp, pop, ramp, rnd, sans } from "../kit";
@@ -103,7 +104,7 @@ const Mini: React.FC<{ readonly kind: Tile["mini"]; readonly f: number; readonly
   );
 };
 
-export const Finale: React.FC = () => {
+export const Finale: React.FC<{ readonly showUrl?: boolean }> = ({ showUrl = true }) => {
   const f = useCurrentFrame();
   if (f < b(83.5)) return null;
 
@@ -168,10 +169,12 @@ export const Finale: React.FC = () => {
       <At x={960} y={690} style={{ ...focus(tag, 14), translate: `-50% calc(-50% + ${(1 - tag) * 16}px)`, fontFamily: sans, fontWeight: 500, fontSize: 46, color: C.ink, whiteSpace: "nowrap" }}>
         Toute la finance qui compte, en un seul site.
       </At>
-      <At x={960} y={790} style={{ ...focus(url, 14), translate: `-50% calc(-50% + ${(1 - url) * 16}px)`, fontFamily: sans, fontWeight: 600, fontSize: 44, color: C.brand, whiteSpace: "nowrap", letterSpacing: "0.01em" }}>
-        finveille.streamlit.app
-      </At>
-      <At x={960} y={884} style={{ opacity: clamp(free * 1.4, 0, 1), scale: String(lerp(0.7, 1, free)) }}>
+      {showUrl && (
+        <At x={960} y={790} style={{ ...focus(url, 14), translate: `-50% calc(-50% + ${(1 - url) * 16}px)`, fontFamily: sans, fontWeight: 600, fontSize: 44, color: C.brand, whiteSpace: "nowrap", letterSpacing: "0.01em" }}>
+          finveille.streamlit.app
+        </At>
+      )}
+      <At x={960} y={showUrl ? 884 : 810} style={{ opacity: clamp(free * 1.4, 0, 1), scale: String(lerp(0.7, 1, free)) }}>
         <div style={{ padding: "12px 30px", borderRadius: 30, ...glass(1.5, 16, C.up, ["#10201a", "#0a120e"]), fontFamily: sans, fontWeight: 600, fontSize: 32, color: C.up, whiteSpace: "nowrap" }}>
           Gratuit, sans publicité
         </div>

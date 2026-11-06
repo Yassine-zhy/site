@@ -8,15 +8,16 @@ import streamlit as st
 
 import theme
 from coins import CSS as SEARCH_CSS, search_box
-from core.crypto import fear_greed_label
+from core.crypto import fear_greed_label, source_label
 from theme import esc, safe_url
 from ui import api_keys, load_articles, load_crypto, load_fear_greed
 
 coins, overview = load_crypto()
+source = source_label(coins[0].source if coins else "CoinGecko")  # CoinGecko, ou le secours qui a répondu
 theme.page_header(
     "Les cryptomonnaies,",
     "Les 20 premières cryptomonnaies par capitalisation, la taille du marché et l'humeur des investisseurs. "
-    "Cours en euros (CoinGecko), mis à jour toutes les 5 minutes.",
+    f"Cours en euros ({source}), mis à jour toutes les 5 minutes.",
     eyebrow="Crypto", accent="en euros.", art="crypto",
     # la maquette : les trois premières, hors pièces stables (leur cours ne bouge pas, leur filet ne dirait rien)
     obj_data={"coins": [{"sym": c.symbol.upper(), "name": c.name, "price": f"{theme.price(c.price)} €",
@@ -46,10 +47,11 @@ if overview.get("market_cap"):
                   (theme.change(change) + " sur 24 h") if change is not None else ""))
 if overview.get("btc_dominance") is not None:
     items.append(("Dominance du bitcoin", f"{theme.fr_number(overview['btc_dominance'], 1)} %",
-                  f"ether : {theme.fr_number(overview.get('eth_dominance') or 0, 1)} % de la capitalisation"))
+                  f"ether : {theme.fr_number(overview['eth_dominance'], 1)} % de la capitalisation"
+                  if overview.get("eth_dominance") is not None else ""))  # un secours peut ne pas la donner
 if overview.get("volume"):
     items.append(("Volume échangé (24 h)", theme.compact_money(overview["volume"], "EUR"),
-                  f"{theme.fr_number(overview.get('coins') or 0, 0)} cryptomonnaies recensées"))
+                  f"{theme.fr_number(overview['coins'], 0)} cryptomonnaies recensées" if overview.get("coins") else ""))
 if history:
     _, value, label = history[-1]
     items.append(("Peur et avidité", f"{value}<small style='font-size:.9rem;font-weight:500'> / 100</small>", label))
@@ -59,8 +61,8 @@ if items:
         f'<div class="fv-kpi-sub">{sub}</div></div>' for label, value, sub in items) + "</div>")
 
 if not coins:
-    st.warning("Les cours des cryptomonnaies ne sont pas disponibles pour le moment (CoinGecko limite le nombre de "
-               "requêtes gratuites). Réessaie dans quelques minutes.", icon=":material/cloud_off:")
+    st.warning("Les cours des cryptomonnaies ne sont pas disponibles pour le moment (CoinGecko, CoinPaprika et CoinLore "
+               "limitent le nombre de requêtes gratuites). Réessaie dans quelques minutes.", icon=":material/cloud_off:")
 
 # --- Classement ------------------------------------------------------------------------------------
 if coins:
@@ -77,9 +79,12 @@ if coins:
         change = theme.signed(coin.change_7d) if coin.change_7d is not None else "—"
         return f'<img class="fv-spark" src="{theme.sparkline_uri(points, kind, 96, 28)}" alt="Sept jours : {esc(change)}">'
 
+    def image(coin) -> str:  # les secours ne connaissent pas l'icône : pas d'image plutôt qu'une image cassée
+        return f"<img src='{safe_url(coin.image)}' alt='' loading='lazy'>" if coin.image else ""
+
     rows = "".join(
         f"<tr><td><a class='fv-coin' href='{theme.coin_url(coin.id)}' target='_self'><small>{coin.rank}</small>"
-        f"<img src='{safe_url(coin.image)}' alt='' loading='lazy'>{esc(coin.name)} <small>{esc(coin.symbol)}</small>"
+        f"{image(coin)}{esc(coin.name)} <small>{esc(coin.symbol)}</small>"
         f"</a></td><td>{theme.price(coin.price)} €</td><td>{pct(coin.change_24h)}</td><td>{pct(coin.change_7d)}</td>"
         f"<td>{pct(coin.change_30d)}</td><td>{theme.compact_money(coin.market_cap, 'EUR')}</td><td>{spark(coin)}</td></tr>"
         for coin in coins
@@ -152,5 +157,5 @@ if news:
     st.html(theme.card(f'<ul class="fv-front">{items}</ul>'))
 
 st.caption("Les cryptomonnaies sont des actifs très volatils, non garantis : leur cours peut perdre plus de la moitié "
-           "de sa valeur en quelques mois. Sources : CoinGecko (cours, capitalisations), alternative.me (indice "
+           f"de sa valeur en quelques mois. Sources : {source} (cours, capitalisations), alternative.me (indice "
            "Crypto Fear & Greed). Données fournies à titre informatif.")

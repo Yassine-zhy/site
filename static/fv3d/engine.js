@@ -10,6 +10,7 @@
 
 import * as THREE from "./three.module.min.js";
 import { installVitrines } from "./vitrines.js";
+import { isPhone } from "./phone.js";
 
 // motion.js arrive avec la version de ce fichier (?v=…, scene3d.py) : un correctif y est pris tout de suite, au lieu
 // d'attendre que le navigateur oublie l'ancienne copie (le serveur ne dit pas combien de temps la garder)
@@ -444,9 +445,9 @@ const SCENES = { terrain: terrainScene };
 class World {
   constructor() {
     const media = (q) => window.matchMedia(q).matches;
-    this.small = media("(pointer: coarse)") || window.innerWidth < 760;
+    this.small = isPhone();
     this.reduced = media("(prefers-reduced-motion: reduce)");
-    this.n = this.small ? 9000 : 20000;
+    this.n = this.small ? 3500 : 20000;   // un téléphone dessine ~3 fois moins de particules (le fond reste lisible)
     this.host = document.createElement("div");
     this.host.id = "fv3d";
     this.host.setAttribute("aria-hidden", "true");
@@ -456,7 +457,7 @@ class World {
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: !this.small, alpha: true,
       powerPreference: "high-performance" });
     this.renderer.setClearColor(0x000000, 0);
-    this.dpr = Math.min(window.devicePixelRatio || 1, this.small ? 1.5 : 1.75);
+    this.dpr = Math.min(window.devicePixelRatio || 1, this.small ? 1 : 1.75);   // des points fins : 1 suffit sur téléphone
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 300);
     this.scene = new THREE.Scene();
     this.mode = this.detectMode();
@@ -471,7 +472,7 @@ class World {
     this.current = null; this.leaving = [];
     this.key = ""; this.refs = 0; this.p = 0; this.clock = 0; this.last = performance.now();
     this.pointer = [0, 0]; this.look = [0, 0];
-    this.slowFrames = 0; this.frames = 0;
+    this.slowFrames = 0; this.frames = 0; this.movedAt = 0;
     this.onResize = () => this.resize();
     this.raycaster = new THREE.Raycaster();
     this.onPointer = (e) => {
@@ -580,7 +581,7 @@ class World {
     this.pu.uWobble.value = 0;
     if (update) { this.started = this.clock - 6; this.camFrom = null; def.uniforms.uFade.value = 1; }
     this.pu.uCenter.value.fromArray(def.center || [0, 0, 0]);
-    this.pu.uSize.value = def.size || 0.05;
+    this.pu.uSize.value = (def.size || 0.05) * (this.small ? 1.25 : 1);   // moins de points, un peu plus gros
     this.u.uRippleC.value.set(0, 0, 0);
     this.dirty = true;
   }
@@ -648,6 +649,10 @@ class World {
   frame(now) {
     this.raf = 0;
     if (this.stopped) return;
+    if (this.small && !this.manual) {
+      if (document.hidden) return;   // onglet caché : arrêt complet (onVisible relance la boucle)
+      if (now - this.last < 30) { this.loop(); return; }   // téléphone : 30 images par seconde au plus
+    }
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
     if (!this.reduced) this.clock += dt;
@@ -724,9 +729,17 @@ class World {
     this.host.style.setProperty("--amb", ambient.toFixed(3));
 
     // Économie : un écran lent rend moins de points par seconde ; au repos (décor discret, rien ne bouge), on
-    // dessine une image sur trois.
-    const busy = !this.reduced && (age < 4.5 || Math.abs(p - before) > 0.0005 || p < 0.9);
-    if (busy || this.dirty || (!this.reduced && this.frames % 3 === 0)) {
+    // dessine une image sur trois. Sur téléphone, « au repos » veut dire : ni arrivée, ni défilement depuis 1,5 s
+    // (même en haut de page, où le décor est pourtant en vue) ; et alors une image sur quatre.
+    let busy, rest = 3;
+    if (this.small) {
+      if (Math.abs(p - before) > 0.0005 || Math.abs(target - p) > 0.0005) this.movedAt = now;
+      busy = !this.reduced && (age < 4.5 || now - this.movedAt < 1500 || this.leaving.length > 0);
+      rest = 4;
+    } else {
+      busy = !this.reduced && (age < 4.5 || Math.abs(p - before) > 0.0005 || p < 0.9);
+    }
+    if (busy || this.dirty || (!this.reduced && this.frames % rest === 0)) {
       this.renderer.render(this.scene, this.camera);
       this.dirty = false;
       this.host.classList.add("is-on");

@@ -1,12 +1,16 @@
-"""Cryptomonnaies : cours et capitalisations (CoinGecko) et indice de sentiment « peur et avidité ».
+"""Cryptomonnaies : cours et capitalisations (CoinGecko, avec deux secours) et indice de sentiment « peur et avidité ».
 
-Deux API publiques, gratuites et sans clé :
+API publiques, gratuites et sans clé :
 - CoinGecko (https://www.coingecko.com/api) : les 20 premières cryptomonnaies par capitalisation, en euros ;
+- CoinPaprika (https://api.coinpaprika.com) puis CoinLore (https://api.coinlore.net) : les secours quand CoinGecko
+  refuse ou ne répond pas. CoinPaprika sait donner les cours en euros ; CoinLore ne les donne qu'en dollars, convertis
+  avec le taux de Coinbase (https://api.coinbase.com/v2/exchange-rates) ;
 - alternative.me (https://alternative.me/crypto/fear-and-greed-index/) : l'indice Crypto Fear & Greed, de 0
   (peur extrême) à 100 (avidité extrême), calculé chaque jour à partir de la volatilité, des volumes, des
   réseaux sociaux et de la dominance du bitcoin.
 
-L'offre gratuite de CoinGecko limite le nombre de requêtes par minute : l'interface les garde en cache.
+L'offre gratuite de CoinGecko limite le nombre de requêtes par minute : l'interface les garde en cache, et les
+secours prennent le relais quand la limite est atteinte.
 """
 
 from __future__ import annotations
@@ -20,8 +24,14 @@ from urllib.parse import quote
 import requests
 
 COINGECKO = "https://api.coingecko.com/api/v3"
+COINPAPRIKA = "https://api.coinpaprika.com/v1"
+COINLORE = "https://api.coinlore.net/api"
+COINBASE_RATES = "https://api.coinbase.com/v2/exchange-rates"
 FEAR_GREED = "https://api.alternative.me/fng/"
 TIMEOUT = 15
+TIMEOUT_SECOURS = 8  # quand un secours existe : trois délais de 15 s feraient attendre près d'une minute
+# Ce qui fait passer au secours suivant (réseau, limite atteinte, réponse illisible ou vide)
+PANNES = (requests.RequestException, ValueError, LookupError, KeyError, TypeError, AttributeError)
 
 FEAR_GREED_LABELS = {
     "Extreme Fear": "Peur extrême",
@@ -47,12 +57,67 @@ class Coin:
     from_ath: float | None  # écart avec le plus haut historique, en %
     sparkline: list[float]  # cours horaires sur 7 jours
     id: str = ""  # identifiant CoinGecko (« bitcoin ») : il sert aux liens vers la fiche
+    source: str = "CoinGecko"  # d'où viennent les cours : CoinGecko, ou l'un des secours
 
 
-def _get(url: str, params: dict | None = None):
-    response = requests.get(url, params=params, timeout=TIMEOUT)
+def _get(url: str, params: dict | None = None, timeout: float = TIMEOUT):
+    response = requests.get(url, params=params, timeout=timeout)
     response.raise_for_status()
     return response.json()
+
+
+def source_label(source: str) -> str:
+    """La source des cours pour l'affichage : « CoinGecko », ou « CoinPaprika, CoinGecko indisponible »."""
+    return source if source in ("", "CoinGecko") else f"{source}, CoinGecko indisponible"
+
+
+def _first_answer(*attempts):
+    """Essaie chaque source à son tour (des fonctions sans argument) : la première qui donne quelque chose gagne.
+
+    Si toutes échouent, l'erreur de la première (CoinGecko) remonte, comme avant l'arrivée des secours.
+    """
+    first = None
+    for attempt in attempts:
+        try:
+            answer = attempt()
+            if answer:
+                return answer
+            error = LookupError("réponse vide")
+        except PANNES as caught:
+            error = caught
+        first = first or error
+    raise first
+
+
+def _float(value) -> float | None:
+    """Un nombre lu dans une réponse (CoinLore donne ses chiffres en texte : « 76045.71 »), ou None."""
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number == number and abs(number) != float("inf") else None
+
+
+def _gecko_id(identifier: str | None) -> str:
+    """L'identifiant CoinPaprika (« btc-bitcoin ») → celui de CoinGecko (« bitcoin ») : la partie après le premier tiret."""
+    identifier = identifier or ""
+    return identifier.split("-", 1)[1] if "-" in identifier else identifier
+
+
+def parse_usd_eur(payload: dict) -> float | None:
+    """Réponse de Coinbase → euros pour un dollar, ou None si le taux manque."""
+    rate = _float(((payload or {}).get("data") or {}).get("rates", {}).get("EUR"))
+    return rate if rate and rate > 0 else None
+
+
+def fetch_usd_eur() -> float:
+    """Le taux dollar → euro de Coinbase ; LookupError s'il manque (les secours en dollars sont alors abandonnés)."""
+    rate = parse_usd_eur(_get(COINBASE_RATES, {"currency": "USD"}, TIMEOUT_SECOURS))
+    if rate is None:
+        raise LookupError("taux dollar-euro introuvable")
+    return rate
 
 
 def parse_markets(rows: list[dict]) -> list[Coin]:
@@ -79,12 +144,86 @@ def parse_markets(rows: list[dict]) -> list[Coin]:
     return coins
 
 
+def parse_paprika_markets(rows: list[dict]) -> list[Coin]:
+    """Réponse de CoinPaprika /tickers?quotes=EUR → liste de Coin (déjà en euros, triée par rang).
+
+    Les champs absents deviennent None (jamais d'erreur) ; CoinPaprika ne donne ni image ni courbe sur 7 jours.
+    """
+    coins = []
+    for row in rows if isinstance(rows, list) else []:
+        quote = ((row.get("quotes") or {}).get("EUR") or {}) if isinstance(row, dict) else {}
+        price = _float(quote.get("price"))
+        if price is None:
+            continue
+        coins.append(Coin(
+            rank=row.get("rank") or len(coins) + 1,
+            name=row.get("name") or "",
+            symbol=(row.get("symbol") or "").upper(),
+            image="",
+            price=price,
+            market_cap=_float(quote.get("market_cap")) or 0.0,
+            volume=_float(quote.get("volume_24h")) or 0.0,
+            change_24h=_float(quote.get("percent_change_24h")),
+            change_7d=_float(quote.get("percent_change_7d")),
+            change_30d=_float(quote.get("percent_change_30d")),
+            from_ath=_float(quote.get("percent_from_price_ath")),
+            sparkline=[],
+            id=_gecko_id(row.get("id")),
+            source="CoinPaprika",
+        ))
+    return coins
+
+
+def parse_coinlore_markets(payload: dict, usd_eur: float) -> list[Coin]:
+    """Réponse de CoinLore /tickers → liste de Coin, ses montants en dollars convertis en euros avec `usd_eur`.
+
+    CoinLore ne donne ni la variation sur 30 jours ni l'écart au plus haut (None), ni image ni courbe sur 7 jours.
+    """
+    rows = payload.get("data") if isinstance(payload, dict) else payload
+    coins = []
+    for row in rows if isinstance(rows, list) else []:
+        dollars = _float(row.get("price_usd")) if isinstance(row, dict) else None
+        if dollars is None:
+            continue
+        coins.append(Coin(
+            rank=int(_float(row.get("rank")) or 0) or len(coins) + 1,
+            name=row.get("name") or "",
+            symbol=(row.get("symbol") or "").upper(),
+            image="",
+            price=dollars * usd_eur,
+            market_cap=(_float(row.get("market_cap_usd")) or 0.0) * usd_eur,
+            volume=(_float(row.get("volume24")) or 0.0) * usd_eur,
+            change_24h=_float(row.get("percent_change_24h")),
+            change_7d=_float(row.get("percent_change_7d")),
+            change_30d=None,
+            from_ath=None,
+            sparkline=[],
+            id=row.get("nameid") or "",
+            source="CoinLore",
+        ))
+    return coins
+
+
+def _paprika_markets(count: int) -> list[Coin]:
+    return parse_paprika_markets(_get(f"{COINPAPRIKA}/tickers", {"quotes": "EUR", "limit": count}, TIMEOUT_SECOURS))
+
+
+def _coinlore_markets(count: int) -> list[Coin]:
+    usd_eur = fetch_usd_eur()  # sans taux, inutile d'interroger CoinLore
+    return parse_coinlore_markets(
+        _get(f"{COINLORE}/tickers/", {"start": 0, "limit": min(count, 100)}, TIMEOUT_SECOURS), usd_eur)
+
+
 def fetch_markets(count: int = 20) -> list[Coin]:
-    rows = _get(f"{COINGECKO}/coins/markets", {
-        "vs_currency": "eur", "order": "market_cap_desc", "per_page": count, "page": 1,
-        "sparkline": "true", "price_change_percentage": "24h,7d,30d",
-    })
-    return parse_markets(rows)
+    """Les premières cryptomonnaies : CoinGecko, sinon CoinPaprika, sinon CoinLore (converti en euros)."""
+    return _first_answer(
+        lambda: parse_markets(_get(f"{COINGECKO}/coins/markets", {
+            "vs_currency": "eur", "order": "market_cap_desc", "per_page": count, "page": 1,
+            "sparkline": "true", "price_change_percentage": "24h,7d,30d",
+        }, TIMEOUT_SECOURS)),
+        lambda: _paprika_markets(count),
+        lambda: _coinlore_markets(count),
+    )
 
 
 def parse_global(payload: dict) -> dict:
@@ -101,8 +240,50 @@ def parse_global(payload: dict) -> dict:
     }
 
 
+def parse_paprika_global(payload: dict, usd_eur: float) -> dict:
+    """Réponse de CoinPaprika /global (en dollars, convertis avec `usd_eur`) → les mêmes chiffres que parse_global.
+
+    CoinPaprika ne donne pas la dominance de l'ether : eth_dominance vaut None.
+    """
+    payload = payload if isinstance(payload, dict) else {}
+    return {
+        "market_cap": (_float(payload.get("market_cap_usd")) or 0.0) * usd_eur,
+        "volume": (_float(payload.get("volume_24h_usd")) or 0.0) * usd_eur,
+        "change_24h": _float(payload.get("market_cap_change_24h")),
+        "btc_dominance": _float(payload.get("bitcoin_dominance_percentage")),
+        "eth_dominance": None,
+        "coins": payload.get("cryptocurrencies_number"),
+    }
+
+
+def parse_coinlore_global(payload: list | dict, usd_eur: float) -> dict:
+    """Réponse de CoinLore /global/ (une liste d'un élément, en dollars convertis avec `usd_eur`)."""
+    data = (payload[0] if payload else {}) if isinstance(payload, list) else payload
+    data = data if isinstance(data, dict) else {}
+    return {
+        "market_cap": (_float(data.get("total_mcap")) or 0.0) * usd_eur,
+        "volume": (_float(data.get("total_volume")) or 0.0) * usd_eur,
+        "change_24h": _float(data.get("mcap_change")),
+        "btc_dominance": _float(data.get("btc_d")),
+        "eth_dominance": _float(data.get("eth_d")),
+        "coins": data.get("coins_count"),
+    }
+
+
+def _with_market_cap(overview: dict) -> dict:
+    """Un résumé sans capitalisation est une réponse vide : on passe au secours suivant."""
+    return overview if overview.get("market_cap") else {}
+
+
 def fetch_global() -> dict:
-    return parse_global(_get(f"{COINGECKO}/global"))
+    """Les chiffres du marché : CoinGecko, sinon CoinPaprika, sinon CoinLore (convertis en euros)."""
+    return _first_answer(
+        lambda: _with_market_cap(parse_global(_get(f"{COINGECKO}/global", timeout=TIMEOUT_SECOURS))),
+        lambda: _with_market_cap(parse_paprika_global(
+            _get(f"{COINPAPRIKA}/global", timeout=TIMEOUT_SECOURS), fetch_usd_eur())),
+        lambda: _with_market_cap(parse_coinlore_global(
+            _get(f"{COINLORE}/global/", timeout=TIMEOUT_SECOURS), fetch_usd_eur())),
+    )
 
 
 def parse_fear_greed(payload: dict) -> list[tuple[datetime, int, str]]:
@@ -173,6 +354,7 @@ class CoinDetail:
     created: date | None
     description: str  # texte brut, paragraphes séparés par une ligne vide
     description_lang: str  # « fr » ou « en »
+    source: str = "CoinGecko"  # d'où viennent les chiffres : CoinGecko, ou CoinPaprika en secours
 
 
 def _number(value) -> float | None:
@@ -257,15 +439,101 @@ def parse_coin(payload: dict) -> CoinDetail:
     )
 
 
+def parse_paprika_coin(ticker: dict, info: dict | None = None, coin_id: str = "") -> CoinDetail:
+    """Réponses de CoinPaprika /tickers/{id}?quotes=EUR et /coins/{id} → CoinDetail (secours de parse_coin).
+
+    Les champs absents deviennent None ou vides (jamais d'erreur). Pas de plus bas historique, d'offre en circulation
+    ni de valorisation diluée chez CoinPaprika ; la description n'existe qu'en anglais. `info` peut manquer.
+    """
+    ticker = ticker if isinstance(ticker, dict) else {}
+    info = info if isinstance(info, dict) else {}
+    market = (ticker.get("quotes") or {}).get("EUR") or {}
+    links = info.get("links") or {}
+    paprika_id = ticker.get("id") or info.get("id") or ""
+    try:
+        created = date.fromisoformat(str(info.get("started_at") or "")[:10])
+    except ValueError:
+        created = None
+    return CoinDetail(
+        id=coin_id or _gecko_id(paprika_id),
+        name=ticker.get("name") or info.get("name") or "",
+        symbol=(ticker.get("symbol") or info.get("symbol") or "").upper(),
+        rank=ticker.get("rank") or None,
+        image=info.get("logo") or "",
+        price=_number(market.get("price")),
+        market_cap=_number(market.get("market_cap")),
+        volume=_number(market.get("volume_24h")),
+        change_1h=_number(market.get("percent_change_1h")),
+        change_24h=_number(market.get("percent_change_24h")),
+        change_7d=_number(market.get("percent_change_7d")),
+        change_30d=_number(market.get("percent_change_30d")),
+        change_1y=_number(market.get("percent_change_1y")),
+        ath=_number(market.get("ath_price")),
+        ath_date=_moment(market.get("ath_date")),
+        ath_change=_number(market.get("percent_from_price_ath")),
+        atl=None,
+        atl_date=None,
+        atl_change=None,
+        circulating=None,
+        total_supply=_number(ticker.get("total_supply")),
+        max_supply=_number(ticker.get("max_supply")),
+        fdv=None,
+        categories=[tag["name"] for tag in info.get("tags") or [] if isinstance(tag, dict) and tag.get("name")],
+        website=next((url for url in links.get("website") or [] if url), ""),
+        whitepaper=(info.get("whitepaper") or {}).get("link") or "",
+        created=created,
+        description=clean_description(info.get("description")),
+        description_lang="en",
+        source="CoinPaprika",
+    )
+
+
+def _paprika_ticker(coin_id: str) -> dict:
+    """Le ticker CoinPaprika (en euros) d'un identifiant CoinGecko ; LookupError s'il n'est pas retrouvé.
+
+    La recherche de CoinPaprika donne les identifiants « btc-bitcoin » : celui dont la partie après le premier tiret
+    est `coin_id` est le bon. À défaut (la recherche ignore les tirets : « binance-coin »), on cherche parmi les
+    100 premiers.
+    """
+    for query in dict.fromkeys([coin_id, coin_id.replace("-", " ")]):
+        found = _get(f"{COINPAPRIKA}/search/", {"q": query, "c": "currencies", "limit": 10}, TIMEOUT_SECOURS)
+        for row in (found.get("currencies") or []) if isinstance(found, dict) else []:
+            if row.get("id") and _gecko_id(row["id"]) == coin_id:
+                return _get(f"{COINPAPRIKA}/tickers/{quote(row['id'], safe='')}", {"quotes": "EUR"}, TIMEOUT_SECOURS)
+    for row in _get(f"{COINPAPRIKA}/tickers", {"quotes": "EUR", "limit": 100}, TIMEOUT_SECOURS):
+        if _gecko_id(row.get("id")) == coin_id:
+            return row
+    raise LookupError(coin_id)
+
+
+def _paprika_coin(coin_id: str) -> CoinDetail:
+    ticker = _paprika_ticker(coin_id)
+    try:  # la description et les liens sont un plus : sans eux, la fiche garde son cours
+        info = _get(f"{COINPAPRIKA}/coins/{quote(ticker['id'], safe='')}", timeout=TIMEOUT_SECOURS)
+    except PANNES:
+        info = None
+    return parse_paprika_coin(ticker, info, coin_id)
+
+
 def fetch_coin(coin_id: str) -> CoinDetail:
-    """La fiche d'une cryptomonnaie ; UnknownCoin si l'identifiant n'existe pas."""
-    response = requests.get(f"{COINGECKO}/coins/{quote(coin_id, safe='')}", timeout=TIMEOUT, params={
-        "localization": "true", "tickers": "false", "community_data": "false", "developer_data": "false",
-        "market_data": "true", "sparkline": "false"})
-    if response.status_code == 404:
-        raise UnknownCoin(coin_id)
-    response.raise_for_status()
-    return parse_coin(response.json())
+    """La fiche d'une cryptomonnaie ; UnknownCoin si l'identifiant n'existe pas.
+
+    Si CoinGecko refuse (limite atteinte, panne) ou ne connaît pas l'identifiant (celui d'une liste de secours
+    n'est pas toujours le sien), CoinPaprika donne ce qu'il a. Sans réponse du secours, l'erreur de CoinGecko remonte.
+    """
+    try:
+        response = requests.get(f"{COINGECKO}/coins/{quote(coin_id, safe='')}", timeout=TIMEOUT_SECOURS, params={
+            "localization": "true", "tickers": "false", "community_data": "false", "developer_data": "false",
+            "market_data": "true", "sparkline": "false"})
+        if response.status_code == 404:
+            raise UnknownCoin(coin_id)
+        response.raise_for_status()
+        return parse_coin(response.json())
+    except (requests.RequestException, ValueError, UnknownCoin) as error:
+        try:
+            return _paprika_coin(coin_id)
+        except PANNES:
+            raise error from None
 
 
 # Les périodes du graphique : jours demandés à CoinGecko → (période, intervalle) de Yahoo Finance pour le secours

@@ -30,7 +30,7 @@ import { Outils } from "./scenes/outils";
 import { Partout } from "./scenes/partout";
 
 const LAV = "#8C86C8", TEAL = "#3DD6C6";
-const GLOW: readonly GlowKey[] = [
+export const GLOW: readonly GlowKey[] = [
   [0, C.brand, 0.25], [b(6), C.brand, 0.6], [b(10), C.brand, 1], [b(12), C.brand, 0.8], [b(16), C.brand, 0.8],
   [b(17), C.violet, 0.85], [b(18), C.amber, 0.75], [b(19), TEAL, 0.75], [b(20.5), C.brand, 0.8], [b(28), C.brand, 0.8],
   [b(29), C.up, 0.55], [b(35.5), C.up, 0.55], [b(36.5), C.brand, 0.7], [b(44), C.brand, 0.7], [b(45), C.violet, 0.8],
@@ -79,7 +79,9 @@ const Sound: React.FC = () => (
   </>
 );
 
-export const Trailer: React.FC = () => {
+// Le visuel seul (sans le son) : la composition « Trailer » y ajoute la musique et les bruitages (<Sound />), la composition
+// « TrailerSfx » (src/TrailerSfx.tsx) le rejoue à un temps remappé, avec ses propres bruitages et sans l'adresse (showUrl faux).
+export const TrailerVisual: React.FC<{ readonly showUrl?: boolean }> = ({ showUrl = true }) => {
   const f = useCurrentFrame();
   return (
     <AbsoluteFill style={{ background: C.bg, overflow: "hidden" }}>
@@ -89,9 +91,15 @@ export const Trailer: React.FC = () => {
       <Shot from={b(44)} to={b(56)} enter="whipX" exit="zoom"><Eco /></Shot>
       <Shot from={b(56)} to={b(72)} enter="zoom" exit="whipY"><Outils /></Shot>
       <Shot from={b(72)} to={b(84)} enter="whipY" exit="zoom"><Partout /></Shot>
-      <Shot from={b(84)} to={TOTAL + HALF} enter="zoom" exit="none"><Finale /></Shot>
+      <Shot from={b(84)} to={TOTAL + HALF} enter="zoom" exit="none"><Finale showUrl={showUrl} /></Shot>
       <Opening />
-      <Sound />
     </AbsoluteFill>
   );
 };
+
+export const Trailer: React.FC = () => (
+  <>
+    <TrailerVisual />
+    <Sound />
+  </>
+);
