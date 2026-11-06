@@ -1474,11 +1474,27 @@ THEME_SYNC_JS = """<script>(() => {
   new MutationObserver(sync).observe(app, {attributes: true, attributeFilter: ['class']});
 })();</script>"""
 
+# L'infobulle des graphiques (Vega : « Date / Cours ») est posée à la racine de la page, en position fixe. À la souris,
+# elle disparaît quand le pointeur quitte le graphique ; au doigt, rien ne la referme : après un appui, elle restait à
+# l'écran en défilant et d'une page à l'autre. Elle se referme donc dès qu'on fait défiler la page ou qu'on touche
+# ailleurs que sur un graphique (lien, menu, autre page…).
+CHART_TIP_JS = """<script>(() => {
+  if (window.fvChartTip) return;
+  window.fvChartTip = 1;
+  const hide = () => document.getElementById('vg-tooltip-element')?.classList.remove('visible');
+  const opts = {capture: true, passive: true};
+  addEventListener('scroll', hide, opts);
+  addEventListener('pointerdown', (e) => {
+    if (!e.target.closest?.('.vega-embed, [data-testid="stVegaLiteChart"]')) hide();
+  }, opts);
+  addEventListener('popstate', hide);
+})();</script>"""
+
 
 def inject_css() -> None:
     """Ajoute la feuille de style à la page (à appeler une fois par exécution, dans app.py), avec la barre de lecture et
     l'intro de la visite (guide 31). Cet élément reste en place d'une page à l'autre : l'intro ne se rejoue pas."""
-    st.html(CSS + THEME_SYNC_JS + '<span id="fv-top"></span><div class="fv-progress" aria-hidden="true"></div>'
+    st.html(CSS + THEME_SYNC_JS + CHART_TIP_JS + '<span id="fv-top"></span><div class="fv-progress" aria-hidden="true"></div>'
             f'<div class="fv-intro" aria-hidden="true"><div class="fv-intro-inner"><img src="{LOGO_URI}" alt="">'
             '<span class="fv-intro-word">Fin<em>Veille</em></span><i class="fv-intro-line"></i>'
             f'<span class="fv-intro-by">Un projet étudiant de {esc(AUTHOR)}</span></div></div>',
