@@ -66,8 +66,9 @@ class Lens {
     if (!this.composer) {   // l'image passe par trois étapes : la scène, le halo, puis les couleurs de l'écran
       const target = new THREE.WebGLRenderTarget(w * dpr, h * dpr, { type: THREE.HalfFloatType, samples: coarse() ? 2 : 4 });
       this.composer = new EffectComposer(this.renderer, target);
-      this.composer.addPass(new RenderPass(scene, camera));
-      const bloom = new UnrealBloomPass(new THREE.Vector2(w, h), this.dark ? 0.5 : 0.22, 0.32, this.dark ? 0.72 : 0.9);
+      this.pass = new RenderPass(scene, camera);
+      this.composer.addPass(this.pass);
+      const bloom = (this.bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0, 0.32, 0));
       // le halo s'ajoute à la couleur sans toucher à la transparence : autour de l'objet, il éclaire la page
       Object.assign(bloom.blendMaterial, { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
         blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor });
@@ -76,12 +77,19 @@ class Lens {
       pass.fragmentShader = pass.fragmentShader.replace(read, `${read}
         if (any(isnan(texel)) || any(isinf(texel))) texel = vec4(0.0);
         texel = min(texel, vec4(64.0));`);
-      bloom.enabled = this.dark;   // sur une page claire, un halo additif blanchirait le fond
       this.composer.addPass(bloom);
       this.composer.addPass(new OutputPass());
+      this.retheme(this.dark);
     }
+    this.pass.scene = scene;   // la scène a pu être refaite (changement de thème)
     this.composer.setPixelRatio(dpr);
     this.composer.setSize(w, h);
+  }
+  retheme(dark) {   // le halo suit le thème ; le contexte WebGL, lui, reste le même
+    this.dark = dark;
+    if (!this.bloom) return;
+    Object.assign(this.bloom, { strength: dark ? 0.5 : 0.22, threshold: dark ? 0.72 : 0.9 });
+    this.bloom.enabled = dark;   // sur une page claire, un halo additif blanchirait le fond
   }
   draw() {
     if (this.composer) this.composer.render();
@@ -108,16 +116,8 @@ class Vitrine {
       { className: "fv-obj-canvas" }), el.firstChild);
     this.canvas.setAttribute("aria-hidden", "true");
     this.lens = new Lens(this.canvas, dark);
-    this.scene = new THREE.Scene();
-    this.scene.environment = this.lens.env;
-    this.scene.environmentIntensity = dark ? 0.9 : 0.8;
-    this.pal = palette(dark);
     this.data = data;
-    this.model = (MODELS[this.kind] || MODELS.paper)(data, this.pal, this.scene);
-    outline(this.model.root, this.pal);   // les arêtes de lumière, sur tous les volumes
-    this.pivot = new THREE.Group();   // l'objet tourne dans la lumière, qui reste fixe
-    this.pivot.add(this.model.root);
-    this.scene.add(this.pivot);
+    this.build(dark);
     const view = this.model.view;
     this.camera = new THREE.PerspectiveCamera(view.fov || 28, 1, 0.1, 400);
     this.cam = { pos: new THREE.Vector3(...view.pos), look: new THREE.Vector3(...view.look) };
@@ -133,6 +133,38 @@ class Vitrine {
     this.tip.setAttribute("aria-hidden", "true");
     this.resize();
     this.listen();
+  }
+  build(dark) {   // la scène, aux couleurs du thème
+    this.scene = new THREE.Scene();
+    this.scene.environment = this.lens.env;
+    this.scene.environmentIntensity = dark ? 0.9 : 0.8;
+    this.pal = palette(dark);
+    this.model = (MODELS[this.kind] || MODELS.paper)(this.data, this.pal, this.scene);
+    outline(this.model.root, this.pal);   // les arêtes de lumière, sur tous les volumes
+    this.pivot = new THREE.Group();   // l'objet tourne dans la lumière, qui reste fixe
+    this.pivot.add(this.model.root);
+    this.scene.add(this.pivot);
+  }
+  // Le visiteur change de thème : même toile, même contexte WebGL, la scène est refaite aux nouvelles couleurs. Avant,
+  // la vitrine était détruite (contexte rendu au navigateur) puis recréée sur la même toile : sur téléphone, le
+  // contexte rendu restait perdu, et les immeubles laissaient place à l'icône d'image cassée.
+  retheme(dark) {
+    this.clearScene();
+    this.build(dark);
+    this.lens.retheme(dark);
+    this.hover = null;
+    this.t = 99;   // pas de nouveau montage : seules les couleurs changent
+    this.resize();
+  }
+  clearScene() {   // libère la mémoire de la carte graphique : formes, matières, textures, cartes d'ombre
+    this.scene.traverse((o) => {
+      o.geometry?.dispose();
+      for (const m of [].concat(o.material || [])) {
+        for (const value of Object.values(m)) if (value?.isTexture) value.dispose();
+        m.dispose();
+      }
+      if (o.isLight) o.shadow?.dispose?.();
+    });
   }
   resize() {
     const w = Math.max(1, this.el.clientWidth), h = Math.max(1, this.el.clientHeight);
@@ -310,11 +342,9 @@ class Vitrine {
     this.el.removeEventListener("pointercancel", this.onUp);
     this.el.removeEventListener("pointerleave", this.onLeave);
     for (const node of this.labels.values()) node.remove();
-    this.scene.traverse((o) => {
-      o.geometry?.dispose();
-      for (const m of [].concat(o.material || [])) { m.map?.dispose(); m.bumpMap?.dispose(); m.emissiveMap?.dispose(); m.dispose(); }
-    });
+    this.clearScene();
     this.lens.dispose();
+    this.canvas.remove();   // son contexte est rendu (perdu pour de bon) : une prochaine vitrine prendra une toile neuve
   }
 }
 
@@ -405,7 +435,7 @@ export function installVitrines() {
     const dark = darkMode(), page = pageColor().getHexString();
     if (dark !== state.dark || page !== state.page) {   // le thème a changé : les objets changent de matière
       Object.assign(state, { dark, page });
-      for (const [el, v] of live) { v.dispose(); live.delete(el); seen.unobserve(el); }
+      for (const v of live.values()) v.retheme(dark);
     }
     for (const el of document.querySelectorAll(".fv-obj[data-obj]")) {
       const sig = `${el.dataset.obj}|${el.dataset.objData || ""}`;
@@ -424,8 +454,12 @@ export function installVitrines() {
     for (const [el, v] of live) if (!el.isConnected) { v.dispose(); live.delete(el); seen.unobserve(el); }
   };
   let queued = false;
-  new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; scan(); }); } })
-    .observe(document.body, { childList: true, subtree: true });
+  const rescan = () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; scan(); }); } };
+  new MutationObserver(rescan).observe(document.body, { childList: true, subtree: true });
+  // Streamlit change de thème en changeant la classe de .stApp, sans ajouter d'élément : sans cette veille, les
+  // maquettes gardaient les couleurs de l'ancien thème (immeubles sombres sur une page claire)
+  const app = document.querySelector(".stApp");
+  if (app) new MutationObserver(rescan).observe(app, { attributes: true, attributeFilter: ["class"] });
   scan();
 
   let pointer = null;

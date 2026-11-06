@@ -790,11 +790,18 @@ class World {
 }
 
 let world = null;
+// WebGL est-il là ? Testé une seule fois, et le contexte du test est rendu aussitôt. Avant, chaque affichage (un
+// changement de thème, une mise à jour de la page) créait un contexte de test jamais rendu : un téléphone n'en garde
+// que quelques-uns d'actifs et coupe alors le plus ancien, celui des immeubles, remplacé par l'icône d'image cassée.
+let hasWebGL = null;
 function webgl() {
+  if (hasWebGL !== null) return hasWebGL;
   try {
-    const c = document.createElement("canvas");
-    return !!(window.WebGL2RenderingContext && c.getContext("webgl2"));
-  } catch { return false; }
+    const gl = window.WebGL2RenderingContext && document.createElement("canvas").getContext("webgl2");
+    hasWebGL = !!gl;
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+  } catch { hasWebGL = false; }
+  return hasWebGL;
 }
 
 // --- Les cartes d'actualité en relief : elles s'inclinent vers la souris, un reflet suit le pointeur ----------------
