@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 
 UPDATED = "22 octobre 2026"
 EDITOR = "Yassine Zouhair"
-DEFAULT_SITE_URL = "https://finveille.streamlit.app"
+DEFAULT_SITE_URL = "https://finveille.com"
 CONTACT = "contact.finveille@gmail.com"  # l'adresse de contact du site ; le réglage CONTACT_EMAIL peut la remplacer
 NO_CONTACT = "l'adresse de contact (à venir)"  # si une configuration n'en donne aucune
 
@@ -31,6 +31,20 @@ HOSTS = {
                              "1082 ME Amsterdam, Pays-Bas",
         "dpf": True,  # adhère au Data Privacy Framework UE–États-Unis
         "tracks": True,  # la plateforme ajoute ses propres traceurs autour de l'application
+    },
+    # Railway (guide 25) : un conteneur toujours allumé ; aucun traceur ajouté autour de l'application. Relevé le
+    # 6 novembre 2026 sur railway.com/legal/terms et railway.com/legal/privacy.
+    "railway": {
+        "name": "Railway",
+        "company": "Railway Corporation",
+        "address": "548 Market St PMB 68956, San Francisco, Californie 94104, États-Unis",
+        "phone": "+1 415 707 7675",
+        "site": "https://railway.com",
+        "privacy": "https://railway.com/legal/privacy",
+        "privacy_email": "railway-corp@gdpr-rep.com",  # le contact du représentant dans l'UE
+        "eu_representative": "DP-Dock GmbH, Attn.: Railway Corp, Ballindamm 39, 20095 Hambourg, Allemagne",
+        "dpf": True,
+        "tracks": False,
     },
 }
 
@@ -109,10 +123,11 @@ def config_from(secrets: Mapping) -> LegalConfig:
         database_region = next((place for code, place in DATABASE_REGIONS.items() if f".{code}." in f".{host}."), None)
     smtp_host = _text(secrets, "SMTP_HOST")
     email_provider = (_first_match(smtp_host, EMAIL_PROVIDERS) or UNKNOWN_EMAIL_PROVIDER) if smtp_host else None
+    on_railway = bool(_text(secrets, "RAILWAY_PROJECT_ID"))  # posée par Railway sur son serveur : rien à régler
     return LegalConfig(
         contact=_text(secrets, "CONTACT_EMAIL") or CONTACT,
         site_url=(_text(secrets, "SITE_URL") or DEFAULT_SITE_URL).rstrip("/"),
-        hosting=(_text(secrets, "HOSTING") or "streamlit").lower(),
+        hosting=(_text(secrets, "HOSTING") or ("railway" if on_railway else "streamlit")).lower(),
         database=database,
         database_region=database_region,
         email_provider=email_provider,

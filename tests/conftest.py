@@ -26,6 +26,16 @@ def no_favicon_network(monkeypatch):
     monkeypatch.setattr("ui._download_favicon", refuse)
 
 
+@pytest.fixture(autouse=True)
+def fresh_articles(monkeypatch):
+    """Les dépêches gardées en mémoire (ui.ARTICLES) repartent de zéro à chaque test, sans fil d'arrière-plan."""
+    import ui
+    from core import capacity
+
+    monkeypatch.setattr(ui, "ARTICLES", capacity.Memory(max_entries=4, ttl=7 * 86400))
+    monkeypatch.setattr(ui, "_articles_warmer", lambda: None)
+
+
 @pytest.fixture
 def db(tmp_path, monkeypatch):
     """Une base SQLite neuve et temporaire pour chaque test : on ne touche jamais à tes vraies données."""

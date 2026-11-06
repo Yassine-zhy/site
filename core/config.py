@@ -64,7 +64,7 @@ RSS_FEEDS = [
 
 MAX_ARTICLES_PER_FEED = 25  # on garde les N articles les plus récents de chaque flux
 REQUEST_TIMEOUT = 10  # secondes d'attente maximum par requête
-USER_AGENT = "Mozilla/5.0 (compatible; FinVeille/1.0; +https://finveille.streamlit.app)"
+USER_AGENT = "Mozilla/5.0 (compatible; FinVeille/1.0; +https://finveille.com)"
 
 # Mots-clés qui signalent une catégorie (en minuscules, sans accents ; anglais et français).
 # Sert à reclasser les articles des flux généralistes (voir core/classifier.py).

@@ -118,6 +118,10 @@ Pendant une attente **réseau** (une source, la réponse de l'IA), le visiteur *
   même cours, même si le reste de leurs listes diffère.
 - Quand un cache expire, Streamlit s'assure qu'**un seul** visiteur recharge les données ; les autres attendent son
   résultat (sinon : 100 appels identiques à Yahoo au même instant, et un blocage pour quota dépassé).
+- Les dépêches ne se font plus attendre : un fil d'arrière-plan recollecte les 43 sources toutes les 15 minutes,
+  même sans visiteur (`ui.load_articles`), et chaque visiteur reçoit aussitôt la dernière collecte réussie. Avant,
+  le premier visiteur après l'expiration du cache attendait 10 à 15 s ; mesuré le 6 novembre 2026 : 1 s.
+  Il faut un serveur toujours allumé (Railway) : sur un hébergement qui s'endort, le fil s'endort avec lui.
 
 ### Une mémoire qui ne déborde jamais
 
@@ -162,9 +166,53 @@ Un seul processus sert environ **18 pages par seconde** (200 pages en 11 s), soi
 
 | Hébergeur | Prix | À savoir |
 | --- | --- | --- |
-| **Streamlit Community Cloud** | Gratuit | Fait pour Streamlit ; déploie directement depuis ce dépôt ; l'appli s'endort sans visites et se réveille en quelques secondes. |
+| **Streamlit Community Cloud** | Gratuit | Fait pour Streamlit ; déploie directement depuis ce dépôt ; l'appli s'endort après environ 12 h sans visites et se réveille en quelques secondes. |
+| **Railway** (Docker) | ~5 $US/mois | Toujours allumé, jamais en veille ; se branche sur le dépôt GitHub et redéploie à chaque mise à jour de la branche `finveille-app` ; `railway.json` règle tout. |
 | **Hugging Face Spaces** (Docker) | Abonnement PRO | Depuis octobre 2026, Hugging Face refuse les Spaces Docker gratuits (« 402 Payment Required » : vécu lors du premier essai de publication). |
 | **Ton ordinateur / un serveur** | Selon l'hébergeur | `docker run`, voir ci-dessous. |
+
+### Railway (toujours en ligne) : 10 minutes
+
+Le forfait Hobby coûte 5 $US par mois et inclut 5 $ d'usage. La mémoire est facturée 10 $US par Go et par mois.
+Mesuré le 6 novembre 2026 : environ 200 Mo au repos dans le conteneur, environ 300 Mo avec 4 visiteurs en même
+temps. Cela fait environ 3 $US de mémoire par mois, dans les 5 $ inclus.
+
+Le fichier `railway.json` (à la racine de l'appli) dit à Railway :
+
+- de construire avec le `Dockerfile` ;
+- de choisir la région US East (Virginie), la plus proche de la base Neon (Ohio) ;
+- de ne jamais mettre le site en veille (`sleepApplication: false`) ;
+- de vérifier qu'il répond sur `/_stcore/health`, et de le redémarrer s'il plante ;
+- de garder l'ancienne version en ligne 20 s pendant une mise à jour (pas de coupure).
+
+1. Sur <https://railway.com>, crée un compte avec GitHub et prends le forfait Hobby (carte bancaire demandée).
+2. **New Project** → **Deploy from GitHub repo** → choisis le dépôt ; puis **Settings** → **Source** → **Branch** :
+   `finveille-app`.
+3. **Variables** : recopie les secrets du site. Le plus simple : une seule variable `SECRETS_TOML` qui contient tout
+   le contenu des secrets de Streamlit Cloud (`deploy/entrypoint.sh` l'écrit dans `.streamlit/secrets.toml` au
+   démarrage). Ou une variable par clé (`DATABASE_URL`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `SMTP_…`,
+   `ADMIN_EMAILS`…) : `ui.get_secret` les lit aussi. Sans `DATABASE_URL`, les comptes ne sont pas gardés.
+4. **Settings** → **Networking** → **Generate Domain** : le site reçoit une adresse en `.up.railway.app`. Les pages
+   légales se mettent à jour seules : Railway pose sur son serveur `RAILWAY_PROJECT_ID`, que `core/legal.py` lit pour
+   afficher l'hébergeur (Railway Corporation) ; l'adresse du site est `https://finveille.com` (`SITE_URL` pour une
+   autre).
+5. Mets un plafond de dépense : dans les réglages d'usage du compte (**Usage**), une limite stricte, par exemple
+   10 $US. Au-delà, Railway arrête le site plutôt que de facturer.
+6. Facultatif, un nom de domaine à toi (environ 15 $/an) : **Settings** → **Networking** → **Custom Domain**,
+   recopie l'enregistrement CNAME indiqué chez le vendeur du domaine, puis ajoute la variable
+   `SITE_URL=https://ton-domaine`.
+
+Si la connexion Google (`[auth]`) est configurée, change `redirect_uri` pour la nouvelle adresse
+(`https://…/oauth2callback`) dans les secrets **et** dans la console Google Cloud.
+
+La page de départ de Streamlit (le HTML envoyé avant que l'appli démarre) disait « Streamlit » : c'est le titre
+de l'onglet pendant le chargement, et ce que montre un lien partagé sur LinkedIn ou WhatsApp, qui ne lancent pas
+l'appli. `deploy/brand_index.py` la réécrit à la construction de l'image : titre, langue, description, aperçu
+des liens (`static/og.png`) et icône (`static/favicon.png`), produits par `docs/branding/render.py`.
+
+Vérifié le 6 novembre 2026 : image construite avec ce `Dockerfile` (1 Go), conteneur lancé comme sur Railway
+(`PORT=8080`, variables `RAILWAY_…`) : accueil, crypto et pages légales sans erreur sur ordinateur et téléphone ;
+mentions légales avec Railway Corporation ; aucun traceur de l'hébergeur dans la page Cookies.
 
 ### Streamlit Community Cloud (gratuit) : 5 minutes
 

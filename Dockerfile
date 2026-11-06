@@ -1,4 +1,4 @@
-# FinVeille dans un conteneur Docker (guide 25) : le même environnement sur ton ordinateur, sur Hugging Face
+# FinVeille dans un conteneur Docker (guide 25) : le même environnement sur ton ordinateur, sur Railway, Hugging Face
 # Spaces, Render ou n'importe quel serveur.
 #   docker build -t finveille .
 #   docker run -p 8501:8501 --env-file .env finveille        → http://localhost:8501
@@ -23,6 +23,8 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY --chown=finveille:finveille . .
+# La page de départ de Streamlit aux couleurs du site : titre, aperçu des liens partagés, icône (deploy/brand_index.py)
+RUN python deploy/brand_index.py
 RUN mkdir -p data && chown finveille:finveille data && chmod +x deploy/entrypoint.sh
 USER finveille
 

@@ -269,7 +269,7 @@ const EndCard: React.FC<{ readonly f: number }> = ({ f }) => {
         </div>
       </At>
       <At x={LW / 2} y={990} style={{ ...focus(url, 14), translate: `-50% calc(-50% + ${(1 - url) * 16}px)`, fontFamily: sans, fontWeight: 600, fontSize: 54, color: C.brand, whiteSpace: "nowrap", letterSpacing: "0.01em" }}>
-        finveille.streamlit.app
+        finveille.com
       </At>
       <At x={LW / 2} y={1082} style={{ ...focus(more, 14), translate: `-50% calc(-50% + ${(1 - more) * 12}px)`, fontFamily: sans, fontWeight: 500, fontSize: 38, color: C.muted, whiteSpace: "nowrap" }}>
         Vos retours m’intéressent !
