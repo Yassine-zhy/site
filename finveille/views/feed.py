@@ -169,7 +169,7 @@ def body(region, query, categories, sources, hide_read, show_hidden, compact, pi
 
 def render_body(region, query, categories, sources, hide_read, show_hidden, compact, pictures_on):
     flush_toast()
-    current, _, collected = load_articles(keys)  # nouvelles données dès que le cache (15 min) a expiré
+    current, _, collected = load_articles(keys)  # la dernière collecte, refaite en fond toutes les 15 min
     statuses = storage.get_statuses(user) if user else {}
 
     def is_visible(article) -> bool:

@@ -124,6 +124,10 @@ class Memory:
             while len(self._items) > self.max_entries:
                 self._items.popitem(last=False)
 
+    def clear(self) -> None:
+        with self._lock:
+            self._items.clear()
+
     def __len__(self) -> int:
         return len(self._items)
 
