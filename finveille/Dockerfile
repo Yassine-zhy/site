@@ -25,6 +25,8 @@ RUN pip install -r requirements.txt
 COPY --chown=finveille:finveille . .
 # La page de départ de Streamlit aux couleurs du site : titre, aperçu des liens partagés, icône (deploy/brand_index.py)
 RUN python deploy/brand_index.py
+# La version du code dans l'adresse de chaque module 3D : jamais de copie périmée gardée par un téléphone
+RUN python deploy/version_assets.py
 RUN mkdir -p data && chown finveille:finveille data && chmod +x deploy/entrypoint.sh
 USER finveille
 
