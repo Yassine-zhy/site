@@ -8,7 +8,7 @@ import streamlit as st
 import coins
 import theme
 from core import storage
-from core.crypto import mentions
+from core.crypto import mentions, source_label
 from theme import esc, safe_url
 from ui import NO_STATUS, api_keys, article_card, current_user, end_page, load_articles, load_crypto
 
@@ -67,15 +67,16 @@ if detail is None:
         st.warning(f"Je ne connais pas de cryptomonnaie nommée {theme.md_code(coin_id)}. Essaie de la chercher par son nom.",
                    icon=":material/search_off:")
     elif state == coins.UNAVAILABLE:
-        st.warning("La fiche de cette cryptomonnaie est indisponible pour le moment (CoinGecko limite le nombre de "
-                   "requêtes gratuites). Réessaie dans quelques minutes.", icon=":material/cloud_off:")
+        st.warning("La fiche de cette cryptomonnaie est indisponible pour le moment (CoinGecko et CoinPaprika "
+                   "limitent le nombre de requêtes gratuites). Réessaie dans quelques minutes.", icon=":material/cloud_off:")
     coins.search_box("coin_search")
     top, _ = load_crypto()
     if top:
         theme.section("Les 20 premières cryptomonnaies", "par capitalisation")
         st.html('<div class="fvcoin-grid">' + "".join(
-            f'<a class="fvcoin-card" href="{theme.coin_url(c.id)}" target="_self"><img src="{safe_url(c.image)}" alt="" '
-            f'loading="lazy"><b>{esc(c.name)}</b><span>{coins.euros(c.price)}</span>'
+            f'<a class="fvcoin-card" href="{theme.coin_url(c.id)}" target="_self">'
+            + (f'<img src="{safe_url(c.image)}" alt="" loading="lazy">' if c.image else "")  # les secours n'ont pas d'icône
+            + f'<b>{esc(c.name)}</b><span>{coins.euros(c.price)}</span>'
             f'<small>{esc(c.symbol)}</small><span>{theme.change(c.change_24h) if c.change_24h is not None else "—"}</span></a>'
             for c in top if c.id) + "</div>")
     end_page()
@@ -88,7 +89,7 @@ with search_col:
 
 rank_text = f"Rang n° {detail.rank} par capitalisation. " if detail.rank else ""
 theme.page_header(
-    detail.name, f"{rank_text}Cours en euros (CoinGecko), mis à jour toutes les 10 minutes.",
+    detail.name, f"{rank_text}Cours en euros ({source_label(detail.source)}), mis à jour toutes les 10 minutes.",
     eyebrow="Crypto", accent=f"({detail.symbol})", art="crypto",
     obj_data={"coins": [{"sym": detail.symbol, "name": detail.name, "price": coins.euros(detail.price or 0),
                          "c": None if detail.change_24h is None else round(detail.change_24h, 2)}]},
@@ -97,7 +98,7 @@ theme.page_header(
 # Le cours, sa variation et le graphique
 with st.container(key="fvchart_coin"):
     if detail.price is None:
-        st.warning("CoinGecko ne donne pas de cours pour cette cryptomonnaie.", icon=":material/info:")
+        st.warning(f"{detail.source} ne donne pas de cours pour cette cryptomonnaie.", icon=":material/info:")
     else:
         st.html(f'<div class="fvcoin-price">'
                 + (f'<img src="{safe_url(detail.image)}" alt="">' if detail.image else "")
@@ -195,7 +196,7 @@ if paragraphs:
         with st.expander("Lire la suite"):
             st.html(text_html(paragraphs[2:]))
     if detail.description_lang == "en":
-        st.caption("Cette description n'existe qu'en anglais chez CoinGecko.")
+        st.caption(f"Cette description n'existe qu'en anglais chez {detail.source}.")
 else:
     st.caption("Pas de description disponible pour le moment.")
 if detail.categories:
@@ -225,4 +226,4 @@ if news:
 else:
     st.caption(f"Aucune dépêche récente du fil ne parle de {detail.name}.")
 
-st.caption("Données CoinGecko, différées. Pas un conseil en investissement.")
+st.caption(f"Données {detail.source}, différées. Pas un conseil en investissement.")

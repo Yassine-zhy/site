@@ -701,7 +701,7 @@ def load_euro_rates() -> dict[str, float]:
     return _resilient("euro_rates", _euro_rates, empty={})
 
 
-@st.cache_data(ttl=300, max_entries=2, show_spinner="Cours des cryptomonnaies (CoinGecko)…")
+@st.cache_data(ttl=300, max_entries=2, show_spinner="Cours des cryptomonnaies…")
 @_network
 def _crypto_markets() -> list:
     return _not_empty(crypto.fetch_markets())
@@ -714,7 +714,8 @@ def _crypto_overview() -> dict:
 
 
 def load_crypto() -> tuple[list, dict]:
-    """Les 20 premières cryptomonnaies et les chiffres du marché, gardés 5 minutes (quota gratuit de CoinGecko).
+    """Les 20 premières cryptomonnaies et les chiffres du marché, gardés 5 minutes (quota gratuit de CoinGecko ;
+    CoinPaprika et CoinLore prennent le relais s'il refuse, voir core/crypto.py).
 
     Une erreur n'est jamais mise en cache : on réessaiera à l'affichage suivant. En attendant, on montre les
     derniers chiffres obtenus, s'il y en a.
