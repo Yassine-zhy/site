@@ -8,6 +8,8 @@
 // - les horloges des places boursières tournent dans le navigateur (la page n'a pas à se redessiner).
 // Rien n'est caché en attendant une animation : sans JavaScript, tout reste lisible.
 
+import { isPhone } from "./phone.js";
+
 const BASE = new URL(".", import.meta.url).href;
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -69,7 +71,16 @@ function roll(gsap, strips) {
       stagger: { each: 0.045, from: "end" }, overwrite: true });
 }
 
-function odometers(gsap, ST) {
+// Sur téléphone, motion.js arrive tard (une dizaine de secondes) : les cours sont alors lus depuis longtemps, et les voir
+// défiler en faux chiffres serait absurde. Les nombres déjà à l'écran quand le script s'installe restent à leur valeur ;
+// ceux qui entrent ensuite en défilant gardent leur rouleau.
+const LATE_MS = 2500;
+const onScreen = (el) => {
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.bottom > 0 && r.top < window.innerHeight;
+};
+
+function odometers(gsap, ST, settled = false) {
   for (const el of document.querySelectorAll(ODOMETERS)) {
     if (el.dataset.fvOdo) continue;
     el.dataset.fvOdo = "1";
@@ -79,8 +90,12 @@ function odometers(gsap, ST) {
     for (const s of strips) s.style.transform = "";
     gsap.set(strips, { yPercent: (i, t) => -10 * Number(t.dataset.digit) });
     el.__fvRoll = () => roll(gsap, strips);
+    const chapter = el.closest(".fv-ch");
+    // un chapitre du récit n'est « à l'écran » que s'il est celui qu'on lit
+    const seen = settled && (chapter ? chapter.classList.contains("is-active") : true) && onScreen(el);
+    if (seen) { el.__fvStill = true; continue; }   // déjà à l'écran : pas de rouleau (et pas de déclencheur)
     // dans le récit de l'accueil, c'est le changement de chapitre qui lance le rouleau
-    if (!el.closest(".fv-ch")) ST.create({ trigger: el, start: "top 95%", once: true, onEnter: el.__fvRoll });
+    if (!chapter) ST.create({ trigger: el, start: "top 95%", once: true, onEnter: el.__fvRoll });
   }
 }
 
@@ -198,6 +213,9 @@ export async function installMotion() {
   };
   let width = innerWidth;
   window.addEventListener("resize", () => { if (innerWidth !== width) { width = innerWidth; measure(); } });
+  // la première passe : sur téléphone et si l'on arrive tard, les nombres déjà visibles ne roulent pas
+  let firstPass = true;
+  const late = isPhone() && performance.now() > LATE_MS;
   const scan = () => {
     queued = false;
     const sc = scroller();
@@ -207,7 +225,8 @@ export async function installMotion() {
       current = sc;
       ST.defaults({ scroller: sc });
     }
-    odometers(gsap, ST);
+    odometers(gsap, ST, late && firstPass);
+    firstPass = false;
     wires(gsap, ST);
     measure();
   };
@@ -225,6 +244,9 @@ export async function installMotion() {
   // le chapitre affiché au chargement fait rouler ses chiffres
   setTimeout(() => {
     const s = window.__fvStory;
-    if (s?.el && s.chapters[s.chapter]) for (const el of s.chapters[s.chapter].querySelectorAll(".fv-odo")) el.__fvRoll?.();
+    if (s?.el && s.chapters[s.chapter]) for (const el of s.chapters[s.chapter].querySelectorAll(".fv-odo")) {
+      if (el.__fvStill) delete el.__fvStill;   // arrivé tard : il reste à sa valeur ; il roulera au prochain chapitre
+      else el.__fvRoll?.();
+    }
   }, 400);
 }

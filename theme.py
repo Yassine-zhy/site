@@ -1348,6 +1348,21 @@ html:not(.fv-story-on) .fv-story-rail { display: none; }
   ul[class^="fv-"] li > a { display: inline-flex; align-items: center; min-height: 44px; }  /* listes de dépêches */
   [data-testid="stPageLink-NavLink"] { min-height: 44px; }
 }
+/* Les commandes propres au site, sur téléphone (écran tactile ou étroit) : 44 px de haut aussi */
+@media (pointer: coarse), (max-width: 640px) {
+  .stApp .st-key-fvplace { min-height: 44px; }
+  .stApp .st-key-fvplace [data-variant="segmented_control"] { min-height: 44px; }   /* France, Canada, États-Unis */
+  .fv-table a.fv-coin { min-height: 44px; }   /* une cryptomonnaie : la ligne entière est le lien (crypto.py) */
+  .fv-table td:has(> a.fv-coin) { padding-block: 0; }   /* la ligne ne grossit presque pas : le lien prend la place du remplissage */
+}
+/* Le bandeau des cours : chaque cours est un lien. Le doigt en demande 44 px de haut ; le bandeau ne grossit pas : le
+   remplissage du lien est annulé par une marge négative, et le bandeau laisse déborder cette zone de toucher
+   (le masque du dégradé coupe le dessin, jamais le toucher ; vers les côtés, le bandeau coupe toujours). */
+@media (pointer: coarse) {
+  .fv-tape, .fv-tape-window { overflow-x: clip; overflow-y: visible; }
+  .fv-tape-label { border-radius: 12px 0 0 12px; }   /* le bandeau ne coupe plus les coins : le libellé les arrondit */
+  a.fv-tick { box-sizing: border-box; min-height: 44px; padding-block: 14px; margin-block: -14px; }
+}
 .stApp button, .stApp a[href], .stApp [role="tab"], .stApp summary { cursor: pointer; touch-action: manipulation; }
 
 /* ==== 16. Les maquettes (guide 33) ===============================================================================

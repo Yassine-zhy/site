@@ -11,6 +11,7 @@
 import * as THREE from "./three.module.min.js";
 import { RoundedBoxGeometry } from "./addons/RoundedBoxGeometry.js";
 import { LAND, LAND_W, LAND_H } from "./land.js";
+import { isPhone } from "./phone.js";
 
 export { THREE, RoundedBoxGeometry };
 
@@ -115,17 +116,21 @@ export function outline(root, pal) {
 }
 
 // La lumière d'atelier : peu de lumière directe, de l'environnement (reflets dans le verre), deux contre-jours aux
-// couleurs de la marque (bleu à droite, violet à gauche) qui dessinent les silhouettes. `reach` : la zone des ombres.
-export function lights(scene, pal, { reach = 7, map = 1024, sun = [-6, 11, 7] } = {}) {
+// couleurs de la marque (bleu à droite, violet à gauche) qui dessinent les silhouettes. `reach` : la zone des ombres ;
+// `shadow` : faux pour une maquette sans ombre portée. Sur téléphone, la carte d'ombres tient en 512 px (filtrée de
+// près : l'ombre reste douce) ; vitrines.js y règle aussi le type d'ombre, le plus simple.
+export function lights(scene, pal, { reach = 7, map = 1024, sun = [-6, 11, 7], shadow = true } = {}) {
+  const phone = isPhone();
+  if (phone) map = Math.min(map, 512);
   const sky = new THREE.HemisphereLight(0xc8d4ff, pal.dark ? 0x060912 : 0xdfe5f2, pal.dark ? 0.35 : 1.0);
   const key = new THREE.DirectionalLight(0xffffff, pal.dark ? 1.3 : 1.7);
   key.position.set(...sun);
-  key.castShadow = true;
+  key.castShadow = shadow;
   key.shadow.mapSize.set(map, map);
   Object.assign(key.shadow.camera, { left: -reach, right: reach, top: reach, bottom: -reach, near: 0.5, far: 60 });
   key.shadow.bias = -0.0004;
   key.shadow.normalBias = 0.025;
-  key.shadow.radius = 6;   // une ombre douce (filtrage PCF élargi)
+  key.shadow.radius = phone ? 2 : 6;   // une ombre douce (filtrage PCF élargi) ; plus serrée sur téléphone
   const rim = new THREE.DirectionalLight(pal.brand, pal.dark ? 2.6 : 1.1);
   rim.position.set(8, 4, -9);
   const rim2 = new THREE.DirectionalLight(pal.violet, pal.dark ? 1.6 : 0.6);

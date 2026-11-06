@@ -15,6 +15,7 @@ import {
   isLand, onSphere, random, tag, pickFrom, facadeTexture, facadeBox, cardTexture, atmosphere, lightTube,
 } from "./kit.js";
 import { ATELIER } from "./atelier.js";
+import { isPhone } from "./phone.js";
 
 // --- Le CAC 40 en maquette (l'accueil) ---------------------------------------------------------------------------
 // Une tour par valeur : sa hauteur suit son poids dans l'indice, son toit la séance. Les plus lourdes au centre, sur
@@ -59,7 +60,8 @@ function skin(pal) {   // la façade : du verre réfléchissant (sombre, ou givr
 }
 
 function city(data, pal, scene) {
-  lights(scene, pal, { reach: 8, map: 2048, sun: [-7, 12, 6] });
+  // 40 immeubles dans une carte d'ombres de 2048 px : trop lourd pour un téléphone, qui garde la lumière sans l'ombre
+  lights(scene, pal, { reach: 8, map: 2048, sun: [-7, 12, 6], shadow: !isPhone() });
   const root = new THREE.Group(), rnd = random(11);
   const cols = 8, rows = 5, cell = 1.22, fw = 0.8, gap = 0.18;
   const W = cols * cell + gap + 1.1, D = rows * cell + 1.1;

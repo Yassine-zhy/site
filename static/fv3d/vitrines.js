@@ -5,6 +5,10 @@
 // ce qui brille : fenêtres, arêtes, données. Les bords de la toile se fondent dans la page (CSS) : l'objet défile avec
 // elle, passe sous les menus, et semble posé dans l'interface.
 //
+// Sur téléphone (phone.js), le rendu est allégé : pas de halo (donc pas de composeur ni de cible multi-échantillonnée,
+// l'objet est dessiné directement), une résolution plus basse, des ombres simples, 30 images par seconde au plus, et
+// une seule maquette animée à la fois (la plus visible) ; les autres ne se redessinent que si quelque chose change.
+//
 // Les objets répondent : au survol, leur nom et leur chiffre ; on les fait tourner du doigt ou à la souris ; ils se
 // tournent un peu vers le pointeur. Au repos, rien n'est redessiné. « Moins d'animations » : ni montage, ni parallaxe.
 
@@ -16,6 +20,7 @@ import { UnrealBloomPass } from "./addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "./addons/postprocessing/OutputPass.js";
 import { MODELS } from "./models.js";
 import { outline, palette } from "./kit.js";
+import { isPhone } from "./phone.js";
 
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const finePointer = () => window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -40,12 +45,13 @@ class Lens {
   constructor(canvas, dark) {
     // une toile transparente : la page (ses dégradés, ses particules) se voit derrière l'objet ; le halo s'y ajoute
     // comme une lumière (alpha nul, couleur prémultipliée)
+    this.phone = isPhone();   // décidé une fois : le rendu direct et le composeur ne se mélangent pas
     const r = (this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true, premultipliedAlpha: true,
       powerPreference: "high-performance" }));
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.toneMapping = THREE.NoToneMapping;   // les couleurs d'information restent exactes ; le halo adoucit les lumières
     r.shadowMap.enabled = true;
-    r.shadowMap.type = THREE.PCFSoftShadowMap;
+    r.shadowMap.type = this.phone ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;   // l'ombre douce coûte cher en pixels
     const pmrem = new THREE.PMREMGenerator(r);
     this.env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;   // une pièce claire : des reflets doux dans le verre
     pmrem.dispose();
@@ -55,6 +61,8 @@ class Lens {
   setup(scene, camera, w, h, dpr) {
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(w, h, false);
+    this.scene = scene; this.camera = camera;
+    if (this.phone) return;   // téléphone : ni halo ni composeur, draw() rend la scène directement
     if (!this.composer) {   // l'image passe par trois étapes : la scène, le halo, puis les couleurs de l'écran
       const target = new THREE.WebGLRenderTarget(w * dpr, h * dpr, { type: THREE.HalfFloatType, samples: coarse() ? 2 : 4 });
       this.composer = new EffectComposer(this.renderer, target);
@@ -75,7 +83,10 @@ class Lens {
     this.composer.setPixelRatio(dpr);
     this.composer.setSize(w, h);
   }
-  draw() { this.composer.render(); }
+  draw() {
+    if (this.composer) this.composer.render();
+    else this.renderer.render(this.scene, this.camera);
+  }
   dispose() {
     this.composer?.dispose();
     this.env.dispose();
@@ -126,7 +137,7 @@ class Vitrine {
   resize() {
     const w = Math.max(1, this.el.clientWidth), h = Math.max(1, this.el.clientHeight);
     // un téléphone dessine moins de pixels : l'objet reste net, la batterie tient
-    const dpr = Math.min(window.devicePixelRatio || 1, coarse() || w * h > 400_000 ? 1.5 : 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, isPhone() ? 1.25 : coarse() || w * h > 400_000 ? 1.5 : 2);
     this.css = [w, h];
     this.lens.setup(this.scene, this.camera, w, h, dpr);
     this.camera.aspect = w / h;
@@ -386,6 +397,8 @@ export function installVitrines() {
     const now = r.width > 0 && r.bottom > -160 && r.top < window.innerHeight + 160;
     if (now && !v.visible) v.dirty = true;
     v.visible = now;
+    // la surface réellement à l'écran : la maquette la plus visible est la seule à s'animer sur téléphone
+    v.area = now ? Math.max(0, Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0)) * r.width : 0;
     return now;
   };
   const scan = () => {
@@ -419,16 +432,27 @@ export function installVitrines() {
   if (finePointer()) window.addEventListener("pointermove", (e) => { pointer = { x: e.clientX, y: e.clientY }; }, { passive: true });
   let last = performance.now();
   const frame = (now) => {
+    requestAnimationFrame(frame);
+    const phone = isPhone();
+    if (phone && now - last < 30) return;   // téléphone : 30 images par seconde au plus (dt s'accumule)
     const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
     last = now;
     if (!document.hidden && !window.__fvObjs.manual) {
       const story = window.__fvStory?.el ? window.__fvStory : null;
-      for (const v of live.values()) {
-        if (!inView(v)) continue;
-        if (v.step(dt, pointer, v.el.closest(".fv-story") ? story : null)) v.lens.draw();
+      const shown = [];
+      for (const v of live.values()) if (inView(v)) shown.push(v);
+      // téléphone : la maquette la plus visible joue son montage et ses mouvements ; les autres sautent le montage
+      // (elles s'affichent finies) et ne se redessinent que si quelque chose change (toucher, taille, retour à l'écran)
+      const lead = phone ? shown.reduce((a, b) => (b.area > (a?.area ?? -1) ? b : a), null) : null;
+      for (const v of shown) {
+        if (phone && v !== lead) {
+          if (v.t < 99) { v.t = 99; v.dirty = true; }
+          if (!v.dirty && !v.moving) continue;
+        }
+        v.moving = v.step(dt, pointer, v.el.closest(".fv-story") ? story : null);
+        if (v.moving) v.lens.draw();
       }
     }
-    requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
   // pour le tournage de la bande-annonce (tools/footage.py) : avancer le temps image par image
