@@ -93,6 +93,22 @@ def test_chaque_page_s_affiche(app, page):
     assert not app.exception
 
 
+def test_page_crypto_avec_les_cours_d_un_secours(app, monkeypatch):
+    """CoinPaprika a répondu : ni image ni courbe ni dominance de l'ether, et la source est citée."""
+    fixtures = Path(__file__).parent / "fixtures"
+    monkeypatch.setattr(crypto, "fetch_markets",
+                        lambda count=20: crypto.parse_paprika_markets(json.loads((fixtures / "paprika_tickers.json").read_text())))
+    monkeypatch.setattr(crypto, "fetch_global", lambda: crypto.parse_paprika_global(
+        json.loads((fixtures / "paprika_global.json").read_text()), 0.9))
+    app.run()
+    app.switch_page("views/crypto.py").run()
+    assert not app.exception
+    page = " ".join(element.value for element in app.get("html"))
+    assert "CoinPaprika, CoinGecko indisponible" in page and "Bitcoin" in page
+    assert "src='#'" not in page and 'src="#"' not in page  # pas d'image cassée
+    assert "ether :" not in page  # CoinPaprika ne donne pas cette dominance
+
+
 def test_le_pied_de_page_reste_quand_une_page_s_arrete_tot(app):
     app.run()
     app.switch_page("views/quiz.py").run()  # l'accueil du quiz s'arrête avant les questions (ui.end_page)
