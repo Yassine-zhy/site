@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, replace
-from datetime import date
+from concurrent.futures import ThreadPoolExecutor
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import yfinance as yf
@@ -203,7 +205,67 @@ def fetch_quotes(watchlist: list[tuple[str, str, str, str]] = WATCHLIST, period:
         if len(closes) < 2:
             continue
         quotes.append(Quote(symbol, name, group, unit, float(closes.iloc[-1]), float(closes.iloc[-2]), closes))
-    return quotes
+    return with_official_prices(quotes)
+
+
+# Les indices racontés par l'accueil (theme.story_html) : leur dernier cours doit être exact au centième de point.
+STORY_INDEXES = frozenset(place[1] for place in PLACES.values())
+
+
+def official_price(symbol: str) -> dict | None:
+    """Le cours officiel affiché par Yahoo (regularMarketPrice), sa date et le fuseau de la place : une requête."""
+    ticker = yf.Ticker(symbol)
+    ticker.history(period="5d", interval="1d", timeout=8)
+    meta = ticker.history_metadata or {}
+    return {key: meta.get(key) for key in ("regularMarketPrice", "regularMarketTime", "exchangeTimezoneName")}
+
+
+def apply_official(quote: Quote, meta: dict | None) -> Quote:
+    """Le dernier cours quotidien remplacé par le cours officiel de la même séance, ou complété d'une séance de plus.
+
+    Le cours quotidien de Yahoo pour la séance du jour est parfois faux pendant des heures (vendredi 6 novembre 2026 :
+    8 130,54 pour le CAC 40, soit −0,91 %, au lieu de 8 139,00, −0,81 %), ou absent. Un cours officiel invraisemblable
+    (écart de plus de 15 %) ou d'une séance plus ancienne est ignoré."""
+    price, stamp = (meta or {}).get("regularMarketPrice"), (meta or {}).get("regularMarketTime")
+    if not price or not stamp or not len(quote.history) or not hasattr(quote.history.index[-1], "date"):
+        return quote
+    zone = ZoneInfo((meta or {}).get("exchangeTimezoneName") or "UTC")
+    # yfinance donne un horodatage (pandas), l'API brute un nombre de secondes
+    moment = pd.Timestamp(stamp).tz_localize("UTC") if hasattr(stamp, "date") and pd.Timestamp(stamp).tzinfo is None \
+        else pd.Timestamp(stamp) if hasattr(stamp, "date") else pd.Timestamp(datetime.fromtimestamp(int(stamp), zone))
+    day, last_day = moment.tz_convert(zone).date(), quote.history.index[-1].date()
+    if abs(float(price) / quote.last - 1) > 0.15 or day < last_day:
+        return quote
+    history = quote.history.copy()
+    if day == last_day:
+        history.iloc[-1] = float(price)
+        return replace(quote, last=float(price), history=history)
+    stamp_day = pd.Timestamp(day, tz=history.index.tz) if history.index.tz is not None else pd.Timestamp(day)
+    history.loc[stamp_day] = float(price)
+    return replace(quote, last=float(price), previous=quote.last, history=history)
+
+
+def with_official_prices(quotes: list[Quote], fetch=official_price) -> list[Quote]:
+    """Les indices racontés corrigés par leur cours officiel (en parallèle) ; une source en panne ne change rien."""
+    wanted = [quote for quote in quotes if quote.symbol in STORY_INDEXES]
+    if not wanted:
+        return quotes
+
+    def one(symbol: str) -> dict | None:
+        try:
+            return fetch(symbol)
+        except Exception:  # réseau, quota, format inattendu : on garde le cours quotidien
+            return None
+
+    with ThreadPoolExecutor(max_workers=len(wanted)) as pool:
+        metas = dict(zip((q.symbol for q in wanted), pool.map(one, [q.symbol for q in wanted])))
+    def corrected(quote: Quote) -> Quote:
+        try:
+            return apply_official(quote, metas[quote.symbol]) if quote.symbol in metas else quote
+        except Exception:  # un format inattendu : le cours quotidien reste
+            return quote
+
+    return [corrected(quote) for quote in quotes]
 
 
 def _until(quote: Quote, day: date) -> Quote:
