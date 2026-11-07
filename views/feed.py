@@ -287,14 +287,24 @@ else:  # première visite de cette place : le récit garde sa hauteur pendant qu
                 f"{esc(PLACES[place][0])}…</p></div>")
 body(region, query, categories, sources, hide_read, show_hidden, compact, pictures_on)
 
-# Première visite de la place depuis le démarrage : ses cours (et les couleurs des tours) arrivent une fois la page affichée
+# Une fois la page affichée, les cours de la place, frais : le récit et les couleurs des tours suivent les séances.
+# Avant, les cours déjà en mémoire étaient repris tels quels pendant 24 h (LAST_GOOD) : le récit donnait le
+# pourcentage de la veille. load_cac40 et load_place sont en cache (5 et 15 minutes) : le réseau n'est appelé qu'à
+# leur expiration, et le récit n'est redessiné que si les cours ont changé.
+def _sessions(quotes) -> list:
+    return [(q.symbol, q.last, q.previous, str(q.history.index[-1])) for q in quotes or [] if q is not None]
+
+
 if place == "france":
-    if not known_cac40():
-        with capacity.QUEUE.released():  # attente réseau : on laisse sa place dans la file
-            if cac40 := warm_cac40():
-                tell(place, next(iter(hero_quotes("^FCHI")), None), cac40)
-elif known_place(place) is None:
+    known = known_cac40()
+    with capacity.QUEUE.released():  # attente réseau : on laisse sa place dans la file
+        cac40 = warm_cac40()
+    if cac40 and _sessions(cac40) != _sessions(known):
+        tell(place, next(iter(hero_quotes("^FCHI")), None), cac40)
+else:
+    known = known_place(place)
     with capacity.QUEUE.released():
         with st.container(key="fvquiet"):  # le conteneur « fvquiet » cache l'indicateur de chargement (theme.py)
             data = load_place(place)
-    tell(place, *data)
+    if known is None or _sessions([data[0], *data[1]]) != _sessions([known[0], *known[1]]):
+        tell(place, *data)

@@ -1,6 +1,7 @@
 """Le récit de l'accueil suit la place choisie (France, Canada, États-Unis) : textes, horloges, maquette 3D, sélecteur
 lié à l'adresse. Aucun réseau : les cours sont simulés."""
 
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -14,8 +15,8 @@ from conftest import make_article
 from core import market
 from core.market import PLACES, Quote
 
-DAYS = pd.date_range("2026-10-01", periods=4, freq="D")
-NOW = datetime(2026, 10, 20, 12, 0, tzinfo=timezone.utc)
+DAYS = pd.date_range("2026-10-17", periods=4, freq="D")  # la dernière séance est celle du jour de NOW
+NOW = datetime(2026, 10, 20, 12, 0, tzinfo=timezone.utc)  # un mardi : Paris ouverte (14 h)
 
 
 def make_quote(symbol, name, change, last=100.0):
@@ -200,7 +201,7 @@ def test_l_adresse_ouvre_l_accueil_sur_le_canada(app):
     assert not app.exception
     assert app.segmented_control(key="story_place").value == "canada"
     story = story_of(app)
-    assert "Le S&amp;P/TSX progresse de" in story and 'data-place="canada"' in story
+    assert re.search(r"Le S&amp;P/TSX (progresse|a progressé) de", story) and 'data-place="canada"' in story
     assert "Bank of Canada holds its rate" in story  # la une est cherchée parmi les dépêches canadiennes
     assert "Wall Street hits a record" not in story
     assert app.asked == ["canada"]
@@ -213,7 +214,7 @@ def test_changer_de_place_met_a_jour_l_adresse_et_le_recit(app):
     assert app.query_params["place"] in ("canada", ["canada"])
     assert 'data-place="canada"' in story_of(app)
     app.segmented_control(key="story_place").set_value("usa").run()
-    assert not app.exception and "Le Dow Jones progresse de" in story_of(app)
+    assert not app.exception and re.search(r"Le Dow Jones (progresse|a progressé) de", story_of(app))
     assert "Wall Street hits a record" in story_of(app)  # aux États-Unis : la une du monde
     app.segmented_control(key="story_place").set_value("france").run()
     assert not app.exception and "place" not in app.query_params  # la France est la place par défaut
@@ -236,3 +237,55 @@ def test_une_place_sans_cours_ne_fait_pas_tomber_l_accueil(app, monkeypatch):
     app.run()
     assert not app.exception
     assert "Les marchés, en direct." in story_of(app)
+
+
+# --- La séance des chiffres : en cours, close, ou une séance précédente -------------------------------------------
+
+
+def quote_until(symbol, name, change, last, day):
+    """Un cours dont la dernière séance, datée `day`, varie de `change` %."""
+    previous = last / (1 + change / 100)
+    days = pd.date_range(end=day, periods=4, freq="D")
+    return Quote(symbol, name, "G", "%", last, previous, pd.Series([previous] * 3 + [last], index=days))
+
+
+def test_avant_l_ouverture_le_recit_donne_la_seance_precedente_au_passe():
+    """À 8 h à Paris, les chiffres sont ceux de la veille : le récit le dit, au passé (avant : « Mardi 20 octobre,
+    08 h 00 … progresse de », comme si c'était la séance du jour)."""
+    index = quote_until("^FCHI", "CAC 40", 0.34, 8205.37, "2026-10-19")
+    members = [quote_until(s, n, 0.1, 100.0, "2026-10-19") for s, n, _ in PLACES["france"][3]]
+    html = theme.story_html(index, members, now=datetime(2026, 10, 20, 6, 0, tzinfo=timezone.utc))
+    assert "Séance du lundi 19 octobre" in html and "Mardi 20 octobre" not in html
+    assert "Le CAC 40 a progressé de" in html and "Il a terminé à 8 205,37 points." in html.replace("\u202f", " ")
+
+
+def test_le_week_end_le_recit_donne_la_seance_du_vendredi():
+    index = quote_until("^FCHI", "CAC 40", -0.5, 8100.0, "2026-10-23")
+    html = theme.story_html(index, now=datetime(2026, 10, 24, 12, 0, tzinfo=timezone.utc))
+    assert "Séance du vendredi 23 octobre" in html and "Le CAC 40 a reculé de" in html
+
+
+def test_apres_la_cloture_le_recit_parle_de_la_cloture():
+    index = quote_until("^FCHI", "CAC 40", 0.0, 8100.0, "2026-10-20")
+    html = theme.story_html(index, now=datetime(2026, 10, 20, 17, 0, tzinfo=timezone.utc))  # 19 h à Paris
+    assert "Mardi 20 octobre, à la clôture" in html and "Le CAC 40 est resté stable, à" in html
+
+
+def test_pendant_la_seance_le_recit_est_au_present_avec_l_heure():
+    index = quote_until("^FCHI", "CAC 40", 0.8, 8100.0, "2026-10-20")
+    html = theme.story_html(index, now=datetime(2026, 10, 20, 9, 30, tzinfo=timezone.utc))  # 11 h 30 à Paris
+    assert "Mardi 20 octobre, 11 h 30" in html and "Le CAC 40 progresse de" in html
+    assert "Il s&#x27;établit à 8 100,00 points." in html.replace("\u202f", " ")
+
+
+def test_des_cours_d_hier_en_memoire_sont_remplaces_par_ceux_du_jour(app):
+    """Avant, l'accueil reprenait tels quels les cours du CAC 40 gardés en mémoire (jusqu'à 24 h) : le récit et les
+    tours restaient sur la séance de la veille. Les cours du jour les remplacent maintenant."""
+    import ui
+
+    ui.LAST_GOOD.put("cac40|()", [quote_until(s, n, -3.0, 100.0, "2026-10-19") for s, n, _ in PLACES["france"][3]])
+    app.run()
+    story = story_of(app)
+    assert not app.exception
+    assert "Séance du mardi 20 octobre" in story and " 0 en baisse." in story
+    assert "lundi 19 octobre" not in story

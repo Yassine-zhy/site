@@ -18,7 +18,7 @@ import base64
 import html
 from collections.abc import Mapping
 import time as clock_module
-from datetime import datetime, time, timezone
+from datetime import date, datetime, time, timezone
 from pathlib import Path
 from urllib.parse import quote as url_quote, urlparse
 from zoneinfo import ZoneInfo
@@ -1696,6 +1696,28 @@ STORY_PLACES = {
 FUND_SYMBOLS = {"XIU.TO": "XIU"}  # l'indice de secours : un fonds, dont le cours n'est pas un niveau d'indice
 
 
+def story_session(index, members, town: str, now: datetime) -> tuple[str, date | None]:
+    """De quelle séance parlent les chiffres, et à quel temps le dire : (« live », « closed » ou « past », date).
+
+    La date est le dernier jour de l'historique des cours. « live » : la séance du jour, pas encore close (présent,
+    avec l'heure) ; « closed » : celle du jour, close ; « past » : une séance précédente (avant l'ouverture, le week-end,
+    un jour férié). Avant, le récit datait toujours les chiffres du moment présent : à 8 h, il donnait la séance de la
+    veille comme celle du jour. Historique sans dates, ou place inconnue : « live », comme avant."""
+    session = None
+    for quote in ([index] if index is not None else []) + list(members or []):
+        stamps = quote.history.index
+        if len(stamps) and hasattr(stamps[-1], "date"):
+            session = stamps[-1].date()
+            break
+    exchange = next((e for e in EXCHANGES if e[0] == town), None)
+    if session is None or exchange is None:
+        return "live", session
+    local = now.astimezone(ZoneInfo(exchange[1]))
+    if session < local.date():
+        return "past", session
+    return ("closed" if local.time() >= exchange[3] else "live"), session
+
+
 def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None = None, city: dict | None = None,
                place: str = "france") -> str:
     """L'accueil raconte la séance, un chapitre par écran de défilement (guide 32) : l'indice de la place (le CAC 40
@@ -1707,6 +1729,14 @@ def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None
     name, short, town, news_kicker, model_label = STORY_PLACES.get(place, STORY_PLACES["france"])
     local = (now or datetime.now(timezone.utc)).astimezone(DISPLAY_TZ)
     day = fr_date(local).rsplit(" ", 1)[0].capitalize()  # « Mardi 20 octobre »
+    state, session = story_session(index, cac40, town, now or datetime.now(timezone.utc))
+    live = state == "live"
+    if live:
+        when = f"{day}, {local:%H} h {local:%M}"
+    elif state == "closed":
+        when = f"{day}, à la clôture"
+    else:  # « Séance du jeudi 5 novembre »
+        when = f"Séance du {_DAYS[session.weekday()]} {fr_day(session)}"
 
     def chapter(kind: str, label: str, kicker: str, title: str, body: str, first: bool = False) -> tuple[str, str]:
         tag = "h1" if first else "h2"
@@ -1717,22 +1747,24 @@ def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None
     chapters = []
     if index is not None:
         move = index.change
-        verb = "progresse de" if move >= 0.05 else "recule de" if move <= -0.05 else "est stable, à"
+        verb = (("progresse de", "recule de", "est stable, à") if live else
+                ("a progressé de", "a reculé de", "est resté stable, à"))[0 if move >= 0.05 else 1 if move <= -0.05 else 2]
         amount = (f'<span class="fv-odo">{fr_number(abs(move))}</span>\u202f%' if abs(move) >= 0.05
                   else f'<span class="fv-odo">{fr_number(move)}</span>\u202f%')
         fund = FUND_SYMBOLS.get(index.symbol)
         if fund:  # le fonds de secours suit le S&P/TSX 60 : on ne parle pas de points, son cours n'est pas un niveau
             name = "Le S&P/TSX\u00a060"
-            text = f"D'après son fonds {fund}, qui s'échange à {price(index.last)}\u202f$."
+            trades = "s'échange" if live else "a terminé"
+            text = f"D'après son fonds {fund}, qui {trades} à {price(index.last)}\u202f$."
         else:
-            text = f"Il s'établit à {price(index.last)} points."
+            text = f"Il s'établit à {price(index.last)} points." if live else f"Il a terminé à {price(index.last)} points."
         title = f'{esc(name)} {verb} <span class="fv-move is-{"up" if move >= 0 else "down"}">{amount}</span>'
     else:
         title, text = "Les marchés, en direct.", ""
     if cac40:
         rising = sum(1 for quote in cac40 if quote.change > 0)
         text += f" {_plural(rising, 'valeur')} en hausse, {len(cac40) - rising} en baisse."
-    chapters.append(chapter("overview", "La séance", f"{day}, {local:%H} h {local:%M}", title,
+    chapters.append(chapter("overview", "La séance", when, title,
                             f'<p class="fv-ch-text">{esc(text.strip())}</p>'
                             f'{sessions_html(now or datetime.now(timezone.utc), town)}', first=True))
     ranked = sorted(cac40, key=lambda quote: quote.change, reverse=True)
