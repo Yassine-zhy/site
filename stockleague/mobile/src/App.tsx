@@ -26,6 +26,12 @@ import { RulesScreen } from './screens/Rules';
 import { ShareSheet } from './screens/ShareSheet';
 import { StockScreen } from './screens/Stock';
 import { WelcomeScreen } from './screens/Welcome';
+import { InboxScreen } from './screens/Inbox';
+import { RevealScreen } from './screens/Reveal';
+import { SeasonPassScreen } from './screens/SeasonPass';
+import { StoryScreen } from './screens/Story';
+import { SwipeScreen } from './screens/Swipe';
+import { TauntSheet } from './screens/TauntSheet';
 import { BAR_COLORS, setSystemBars } from './lib/native';
 import { NavProvider, useNav, type Route } from './state/nav';
 import { StoreProvider, useStore } from './state/store';
@@ -62,6 +68,11 @@ function routeView(r: Route): ReactNode {
     case 'history': return <HistoryScreen />;
     case 'rules': return <RulesScreen />;
     case 'activity': return <ActivityScreen />;
+    case 'swipe': return <SwipeScreen />;
+    case 'reveal': return <RevealScreen eventId={r.eventId} />;
+    case 'pass': return <SeasonPassScreen />;
+    case 'story': return <StoryScreen />;
+    case 'inbox': return <InboxScreen />;
     case 'login': return null;
   }
 }
@@ -99,6 +110,7 @@ function Shell({ dark }: { dark: boolean }) {
       {sheet?.name === 'predict' ? <PredictSheet key={sheet.eventId} eventId={sheet.eventId} /> : null}
       {sheet?.name === 'share' ? <ShareSheet /> : null}
       {sheet?.name === 'glossary' ? <GlossarySheet /> : null}
+      {sheet?.name === 'taunt' ? <TauntSheet playerId={sheet.playerId} /> : null}
       {!tutorialDone ? <Tutorial /> : null}
     </>
   );

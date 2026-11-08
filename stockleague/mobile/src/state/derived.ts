@@ -1,5 +1,5 @@
 /** Calculs dérivés partagés par les écrans : classement, rendement, points. */
-import { ACTIVE_LEAGUE, EARNINGS, ME, MY_RANK_YESTERDAY, MY_SELLS, PLAYERS, RIVALS, STARTING_CASH, TITLES, type TitleKey } from '../data/demo';
+import { ACTIVE_LEAGUE, EARNINGS, LIVE_RESULTS, ME, MY_RANK_YESTERDAY, MY_SELLS, PLAYERS, RIVALS, STARTING_CASH, TITLES, type TitleKey } from '../data/demo';
 import { TICKER_MAP } from '../data/tickers';
 import { outcomeOf, portfolioPoints, predictionPoints, streakBonuses, type Outcome } from '../lib/scoring';
 import { portfolioValue, type Holding } from '../lib/trading';
@@ -42,10 +42,20 @@ export function standings(cash: number, holdings: Holding[], picks: Record<strin
     }
     const r = RIVALS[p.id];
     const portfolioPts = portfolioPoints(r.returnPct);
-    return { id: p.id, rankYesterday: r.rankYesterday, portfolioPts, predPts: r.predPoints, total: portfolioPts + r.predPoints, returnPct: r.returnPct, accuracy: r.correct / r.total, correct: r.correct, decided: r.total, streak: r.streak, titles: r.titles, sells: r.sells };
+    const predPts = r.predPoints + liveBonus(p.id);
+    return { id: p.id, rankYesterday: r.rankYesterday, portfolioPts, predPts, total: portfolioPts + predPts, returnPct: r.returnPct, accuracy: r.correct / r.total, correct: r.correct, decided: r.total, streak: r.streak, titles: r.titles, sells: r.sells };
   });
   return rows.sort((a, b) => b.total - a.total).map((r, i) => ({ ...r, rank: i + 1 }));
 }
 
 export const titleOf = (k: TitleKey) => TITLES[k];
 export const daysLeft = () => Math.max(0, Math.ceil((ACTIVE_LEAGUE.end.getTime() - Date.now()) / 86400000));
+
+/** Points gagnés par un ami sur les résultats révélés en direct (barème normal : +10 si juste). */
+export function liveBonus(id: string): number {
+  return Object.keys(LIVE_RESULTS).reduce((sum, eid) => {
+    const e = EARNINGS.find((x) => x.id === eid);
+    if (!e || e.actual === null || !e.picks[id]) return sum;
+    return sum + (outcomeOf(e.picks[id], e.estimate, e.actual) === 'correct' ? 10 : 0);
+  }, 0);
+}

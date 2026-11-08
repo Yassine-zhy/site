@@ -164,3 +164,4 @@
 @media (prefers-reduced-motion: reduce) {
   .anim-toast, .anim-ring, .anim-flame, .anim-shake { animation: none; }
 }
+@keyframes story-bar { from { width: 0; } to { width: 100%; } }

@@ -18,12 +18,18 @@ export type Route =
   | { name: 'history' }
   | { name: 'rules' }
   | { name: 'activity' }
+  | { name: 'swipe' }
+  | { name: 'reveal'; eventId: string }
+  | { name: 'pass' }
+  | { name: 'story' }
+  | { name: 'inbox' }
   | { name: 'login' };
 export type Sheet =
   | { name: 'order'; ticker: string; side: 'buy' | 'sell' }
   | { name: 'predict'; eventId: string }
   | { name: 'share' }
-  | { name: 'glossary' };
+  | { name: 'glossary' }
+  | { name: 'taunt'; playerId: string };
 
 type Nav = {
   tab: Tab; stack: Route[]; sheet: Sheet | null;

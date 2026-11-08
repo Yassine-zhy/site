@@ -123,7 +123,7 @@ export const EARNINGS: EarningsEvent[] = [
   ev('e-meta', 'META', -7, 'amc', 'T3 2026', 7.25, { yanis: 'beat', lea: 'beat', mehdi: 'beat', camille: 'miss', ines: 'miss' }),
   ev('e-nke', 'NKE', -4, 'amc', 'T1 2027', 0.34, { yanis: 'miss', lea: 'beat', mehdi: 'beat', camille: 'beat', ines: 'miss' }),
   // Verrouillé, résultat attendu
-  ev('e-dis', 'DIS', 0, 'bmo', 'T4 2026', null, { yanis: 'beat', lea: 'beat', mehdi: 'miss', camille: 'beat', ines: 'miss' }),
+  ev('e-dis', 'DIS', 0, 'bmo', 'T4 2026', null, { yanis: 'beat', lea: 'miss', mehdi: 'miss', camille: 'beat', ines: 'miss' }),
   // À venir
   ev('e-hd', 'HD', 1, 'bmo', 'T3 2026', null, {}),
   ev('e-nvda', 'NVDA', 2, 'amc', 'T3 2027', null, {}),
@@ -136,6 +136,18 @@ export const EARNINGS: EarningsEvent[] = [
 ];
 // Le verrouillage de Disney est passé (démo : on le force dans le passé quelle que soit l'heure).
 EARNINGS.find((e) => e.id === 'e-dis')!.lockAt = new Date(now.getTime() - 3 * 3600000);
+
+/** Résultats publiés « ce soir » dans la démo : révélés en direct par le joueur. */
+export const LIVE_RESULTS: Record<string, number> = { 'e-dis': 1.12 };
+/** Applique les résultats déjà révélés (appelé au chargement et après chaque révélation). */
+export function applyReveals(revealed: Record<string, boolean>) {
+  for (const [id, actual] of Object.entries(LIVE_RESULTS)) {
+    const e = EARNINGS.find((x) => x.id === id);
+    if (e) e.actual = revealed[id] ? actual : null;
+  }
+}
+/** Sentiment de tous les joueurs StockLeague (part qui pense « bat »). */
+export const crowdBeat = (id: string) => 42 + ([...id].reduce((a, c) => a + c.charCodeAt(0), 0) % 36);
 
 export type MyPick = { choice: Choice; confidence: Confidence; at: Date };
 export const MY_PICKS: Record<string, MyPick> = {
@@ -155,7 +167,7 @@ const h = (n: number) => new Date(now.getTime() - n * 3600000);
 export const FEED: FeedItem[] = [
   { id: 'f1', at: h(1.2), actor: 'mehdi', kind: 'buy', ticker: 'TSLA', text: 'a acheté 4 actions Tesla' },
   { id: 'f2', at: h(2.6), actor: 'lea', kind: 'predict', ticker: 'NVDA', text: 'a pronostiqué que Nvidia battrait les attentes' },
-  { id: 'f3', at: h(3), kind: 'result', ticker: 'DIS', text: 'Pronostics verrouillés pour Disney : 4 joueurs sur 6 voient un BPA au-dessus des attentes', emoji: 'locked' },
+  { id: 'f3', at: h(3), kind: 'result', ticker: 'DIS', text: 'Pronostics verrouillés pour Disney : 3 joueurs sur 6 voient un BPA au-dessus des attentes', emoji: 'locked' },
   { id: 'f4', at: h(7), actor: 'yanis', kind: 'rank', text: 'prend la tête du classement général', emoji: 'top-hat' },
   { id: 'f5', at: h(7.1), actor: 'ines', kind: 'title', text: 'hérite du titre « La lanterne rouge »', emoji: 'red-paper-lantern' },
   { id: 'f6', at: h(21), actor: 'camille', kind: 'badge', text: 'a débloqué le badge « Lève-tôt »', emoji: 'telescope' },
@@ -199,3 +211,33 @@ export const REACTION_COUNTS: Record<string, Partial<Record<'fire' | 'laugh' | '
   f1: { fire: 2, shock: 1 }, f2: { clap: 1 }, f4: { fire: 2, clap: 2 }, f5: { laugh: 4 }, f6: { clap: 3 },
   f7: { fire: 1, clap: 2 }, f8: { fire: 3, shock: 1 }, f10: { clap: 2 },
 };
+
+// --------------------------------------------------------------------------- passe de saison
+export type FrameKey = 'carbon' | 'gold' | 'neon' | 'legend';
+export const FRAMES: Record<FrameKey, { label: string; css: string }> = {
+  carbon: { label: 'Carbone', css: 'repeating-linear-gradient(45deg,#2a313c 0 3px,#11161d 3px 6px)' },
+  gold: { label: 'Or massif', css: 'linear-gradient(135deg,#ffe08a,#f2b705 45%,#a87700)' },
+  neon: { label: 'Néon', css: 'linear-gradient(135deg,#22d3ee,#a855f7 55%,#f43f5e)' },
+  legend: { label: 'Légende', css: 'conic-gradient(from 0deg,#f2b705,#fff3c4,#f2b705,#a87700,#f2b705)' },
+};
+export type PassReward =
+  | { kind: 'frame'; frame: FrameKey }
+  | { kind: 'freeze' }
+  | { kind: 'title'; title: string }
+  | { kind: 'xp'; amount: number };
+export const PASS_TIER_XP = 80;
+/** XP déjà gagnée avant le début de la saison (le passe compte l'XP de la saison). */
+export const PASS_BASE_XP = 380;
+export const PASS: PassReward[] = [
+  { kind: 'frame', frame: 'carbon' }, { kind: 'freeze' }, { kind: 'frame', frame: 'gold' }, { kind: 'title', title: 'Le Sniper' },
+  { kind: 'xp', amount: 100 }, { kind: 'freeze' }, { kind: 'frame', frame: 'neon' }, { kind: 'title', title: 'Le Loup de Wall Street' },
+  { kind: 'freeze' }, { kind: 'frame', frame: 'legend' },
+];
+
+// --------------------------------------------------------------------------- chambrer
+export const TAUNTS = [
+  'Profite de ta place, elle ne va pas durer.',
+  'Ton portefeuille fait moins bien qu’un livret A.',
+  'Je t’attends au prochain pronostic.',
+  'Diamond hands ? Plutôt paper hands.',
+];

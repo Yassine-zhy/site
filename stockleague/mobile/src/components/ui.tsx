@@ -2,7 +2,7 @@
 import { ArrowDownRight, ArrowUpRight, CaretLeft, Minus } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import type { GlyphName } from '../data/glyphs';
-import { ME, PLAYER_MAP } from '../data/demo';
+import { FRAMES, ME, PLAYER_MAP } from '../data/demo';
 import logoDarkBg from '../data/logo-dark-bg.json';
 import { TICKER_MAP } from '../data/tickers';
 import { formatSignedPercent, formatSignedUSD, trendOf } from '../lib/format';
@@ -28,15 +28,18 @@ const RING = { gold: 'var(--gold)', silver: 'var(--silver)', bronze: 'var(--bron
 
 /** Photo d'un joueur, carrée à angles nets (la mienne vient de mon profil). */
 export function Avatar({ id, size = 40, ring, className }: { id: string; size?: number; ring?: keyof typeof RING; className?: string }) {
-  const { photo } = useStore();
+  const { photo, frame } = useStore();
   const p = PLAYER_MAP[id] ?? { avatar: id, pseudo: id };
   const src = id === ME && photo ? photo : asset(`avatars/${p.avatar}.jpg`);
+  // Cadre débloqué dans le passe de saison (visible par tous sur ma photo).
+  const f = id === ME && frame && !ring ? FRAMES[frame] : null;
+  const pad = f ? Math.max(2, Math.round(size * 0.07)) : 0;
   return (
     <span
       className={cx('relative block shrink-0 overflow-hidden rounded-[2px] bg-card-2', className)}
-      style={{ width: size, height: size, boxShadow: ring ? `0 0 0 2px var(--bg), 0 0 0 4px ${RING[ring]}` : undefined }}
+      style={{ width: size, height: size, background: f?.css, boxShadow: ring ? `0 0 0 2px var(--bg), 0 0 0 4px ${RING[ring]}` : undefined }}
     >
-      <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+      <img src={src} alt="" className="absolute h-[calc(100%-var(--p)*2)] w-[calc(100%-var(--p)*2)] object-cover" style={{ top: pad, left: pad, ['--p' as string]: `${pad}px` }} draggable={false} />
     </span>
   );
 }

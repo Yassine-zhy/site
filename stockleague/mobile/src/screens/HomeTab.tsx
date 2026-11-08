@@ -1,4 +1,4 @@
-import { CaretRight, Lightning } from '@phosphor-icons/react';
+import { Bell, CaretRight, HandSwipeRight, Lightning } from '@phosphor-icons/react';
 import { useMemo, useState } from 'react';
 import { Sparkline } from '../components/charts';
 import { Avatar, Bar, CompanyLogo, Glyph, Trend, cx } from '../components/ui';
@@ -11,6 +11,9 @@ import { myPortfolio, standings } from '../state/derived';
 import { useNav } from '../state/nav';
 import { useName, useStore, type Mission } from '../state/store';
 import { FeedRow } from './Activity';
+import { passProgress, rewardLabel } from './SeasonPass';
+import { useNotifications } from '../state/notifications';
+import { PASS } from '../data/demo';
 
 const greeting = () => { const h = new Date().getHours(); return h < 6 ? 'Bonne nuit' : h < 18 ? 'Salut' : 'Bonsoir'; };
 
@@ -21,10 +24,11 @@ export function HomeTab() {
   const name = useName();
   const lvl = levelOf(s.xp);
   const now = Date.now();
-  const rows = useMemo(() => standings(s.cash, s.holdings, s.picks), [s.cash, s.holdings, s.picks]);
+  const rows = useMemo(() => standings(s.cash, s.holdings, s.picks), [s.cash, s.holdings, s.picks, s.revealed]); // eslint-disable-line react-hooks/exhaustive-deps
   const me = rows.find((r) => r.id === ME)!;
   const above = rows[me.rank - 2];
   const p = myPortfolio(s.cash, s.holdings);
+  const duelMine = DUEL.mine + (s.revealed['e-dis'] && s.picks['e-dis']?.choice === 'beat' ? 10 : 0);
   const value = useCountUp(p.value);
 
   const nextOpen = EARNINGS.filter((e) => e.lockAt.getTime() > now).sort((a, b) => a.lockAt.getTime() - b.lockAt.getTime());
@@ -40,6 +44,11 @@ export function HomeTab() {
   ];
   const doneCount = missions.filter((m) => done[m.id]).length;
   const chest = s.chests[day];
+  const notifs = useNotifications();
+  const unread = notifs.filter((n) => !s.readNotifs.includes(n.id)).length;
+  const pass = passProgress(s.xp);
+  const claimable = PASS.findIndex((_, i) => i < pass.reached && !s.claimedTiers.includes(i));
+  const storyNew = s.storySeen !== day;
 
   return (
     <div className="px-4 pt-[max(env(safe-area-inset-top),14px)] pb-28">
@@ -56,11 +65,49 @@ export function HomeTab() {
             <span className="nums">{lvl.toNext} XP</span>
           </div>
         </div>
-        <button onClick={() => setTab('profil')} className="press flex flex-col items-center rounded-[2px] border border-line bg-card px-2.5 py-1.5" aria-label={`Série de ${s.visitStreak} jours`}>
-          <Glyph name="fire" size={26} className="anim-flame" />
-          <span className="display text-lg leading-none nums">{s.visitStreak}</span>
+        <button onClick={() => setTab('profil')} className="press flex h-12 items-center gap-1 border border-line bg-card px-2" aria-label={`Série de ${s.visitStreak} jours`}>
+          <Glyph name="fire" size={24} className="anim-flame" />
+          <span className="display text-xl leading-none nums">{s.visitStreak}</span>
+        </button>
+        <button onClick={() => push({ name: 'inbox' })} className="press relative grid size-12 place-items-center border border-line bg-card" aria-label={`Notifications${unread ? `, ${unread} non lues` : ''}`}>
+          <Bell size={24} weight={unread ? 'fill' : 'regular'} />
+          {unread ? <span className="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center bg-loss px-1 text-[11px] font-bold text-white nums">{unread}</span> : null}
         </button>
       </header>
+
+      {/* ------------------------------------------------ stories */}
+      <div className="no-scrollbar -mx-4 mt-4 flex gap-3 overflow-x-auto px-4">
+        <button onClick={() => push({ name: 'story' })} className="flex w-[72px] shrink-0 flex-col items-center gap-1.5">
+          <span className="p-[3px]" style={{ background: storyNew ? 'linear-gradient(135deg,#ffe08a,#f2b705,#ff8a3d)' : 'var(--line-2)' }}><Avatar id={ME} size={60} /></span>
+          <span className="text-[11px] font-semibold">Ta semaine</span>
+        </button>
+        <button onClick={() => push({ name: 'pass' })} className="flex w-[72px] shrink-0 flex-col items-center gap-1.5">
+          <span className="grid size-[66px] place-items-center bg-board p-[3px]" style={{ background: claimable >= 0 ? 'linear-gradient(135deg,#ffe08a,#f2b705,#ff8a3d)' : 'var(--line-2)' }}><span className="grid size-full place-items-center bg-board"><Glyph name="path" size={30} /></span></span>
+          <span className="text-[11px] font-semibold">Passe</span>
+        </button>
+        <button onClick={() => push({ name: 'swipe' })} className="flex w-[72px] shrink-0 flex-col items-center gap-1.5">
+          <span className="grid size-[66px] place-items-center p-[3px]" style={{ background: todo.length ? 'linear-gradient(135deg,#ffe08a,#f2b705,#ff8a3d)' : 'var(--line-2)' }}><span className="grid size-full place-items-center bg-board"><Glyph name="swipe" size={30} /></span></span>
+          <span className="text-[11px] font-semibold">Rafale</span>
+        </button>
+        {['lea', 'yanis', 'mehdi'].map((id) => (
+          <button key={id} onClick={() => push({ name: 'player', id })} className="flex w-[72px] shrink-0 flex-col items-center gap-1.5">
+            <span className="bg-line-2 p-[3px]"><Avatar id={id} size={60} /></span>
+            <span className="text-[11px] font-semibold">{name(id)}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ------------------------------------------------ résultat à révéler */}
+      {!s.revealed['e-dis'] && s.picks['e-dis'] ? (
+        <button onClick={() => push({ name: 'reveal', eventId: 'e-dis' })} className="press mt-4 flex w-full items-center gap-3 bg-gold p-4 text-left text-gold-ink">
+          <CompanyLogo ticker="DIS" size={48} />
+          <span className="flex-1">
+            <span className="block text-xs font-bold">Résultat tombé il y a 12 min</span>
+            <span className="display block text-[26px] leading-tight">Disney : révèle ton pronostic</span>
+          </span>
+          <CaretRight size={22} weight="bold" />
+        </button>
+      ) : null}
 
       {/* ------------------------------------------------ à faire maintenant */}
       {urgent ? (
@@ -74,14 +121,21 @@ export function HomeTab() {
             </div>
             <CaretRight size={20} weight="bold" className="opacity-70" />
           </div>
-          {todo.length > 1 ? <p className="border-t border-white/10 bg-board-2 px-4 py-2 text-xs">+ {todo.length - 1} autre{todo.length > 2 ? 's' : ''} pronostic{todo.length > 2 ? 's' : ''} à faire cette semaine</p> : null}
         </button>
-      ) : (
+      ) : null}
+      {urgent && todo.length > 1 ? (
+        <button onClick={() => push({ name: 'swipe' })} className="press flex w-full items-center gap-2 border-t border-white/10 bg-board-2 px-4 py-3 text-left text-xs text-board-ink">
+          <HandSwipeRight size={18} weight="fill" className="text-gold" />
+          <span className="flex-1"><b>{todo.length} pronostics à faire</b> : enchaîne-les en 30 secondes</span>
+          <CaretRight size={14} weight="bold" />
+        </button>
+      ) : null}
+      {!urgent ? (
         <div className="mt-4 flex items-center gap-3 rounded-[2px] border border-line bg-card p-4">
           <Glyph name="check-mark-button" size={36} />
           <p className="text-sm"><b>Tout est à jour.</b> Tes pronostics de la semaine sont faits.</p>
         </div>
-      )}
+      ) : null}
 
       {/* ------------------------------------------------ missions du jour */}
       <section className="mt-3 rounded-[2px] border border-line bg-card">
@@ -113,6 +167,18 @@ export function HomeTab() {
         </div>
       </section>
 
+      {/* ------------------------------------------------ passe de saison */}
+      {claimable >= 0 ? (
+        <button onClick={() => push({ name: 'pass' })} className="press mt-3 flex w-full items-center gap-3 border-l-[3px] border-gold bg-card p-4 text-left">
+          <Glyph name="path" size={30} />
+          <span className="flex-1">
+            <span className="block text-xs font-semibold text-muted">Passe de saison, palier {claimable + 1}</span>
+            <span className="block font-bold">{rewardLabel(PASS[claimable])} à récupérer</span>
+          </span>
+          <CaretRight size={18} weight="bold" className="text-muted" />
+        </button>
+      ) : null}
+
       {/* ------------------------------------------------ défi éclair */}
       <FlashChallenge />
 
@@ -125,15 +191,15 @@ export function HomeTab() {
         <div className="mt-3 flex items-center gap-3">
           <Avatar id={ME} size={44} />
           <div className="flex-1">
-            <div className="flex justify-between text-sm font-bold nums"><span>{DUEL.mine} pts</span><span>{DUEL.theirs} pts</span></div>
+            <div className="flex justify-between text-sm font-bold nums"><span>{duelMine} pts</span><span>{DUEL.theirs} pts</span></div>
             <div className="mt-1.5 flex h-2.5 overflow-hidden rounded-[2px]">
-              <span className="bg-gold" style={{ width: `${(DUEL.mine / (DUEL.mine + DUEL.theirs)) * 100}%` }} />
+              <span className="bg-gold" style={{ width: `${(duelMine / (duelMine + DUEL.theirs)) * 100}%` }} />
               <span className="flex-1 bg-board dark:bg-line-2" />
             </div>
           </div>
           <Avatar id={DUEL.opponent} size={44} />
         </div>
-        <p className="mt-2.5 text-xs text-ink-2">Il te manque <b className="text-ink nums">{DUEL.theirs - DUEL.mine + 1} pts</b> pour passer devant {name(DUEL.opponent)}. Un pronostic juste en « sûr de moi » suffit.</p>
+        <p className="mt-2.5 text-xs text-ink-2">{duelMine > DUEL.theirs ? <>Tu mènes de <b className="text-ink nums">{duelMine - DUEL.theirs} pts</b> contre {name(DUEL.opponent)}. Tiens jusqu’à vendredi.</> : <>Il te manque <b className="text-ink nums">{DUEL.theirs - duelMine + 1} pts</b> pour passer devant {name(DUEL.opponent)}. Un pronostic juste en « sûr de moi » suffit.</>}</p>
       </button>
 
       {/* ------------------------------------------------ classement et portefeuille */}

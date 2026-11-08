@@ -1,7 +1,7 @@
 import { CaretRight, LockSimple } from '@phosphor-icons/react';
 import { useMemo, useState } from 'react';
 import { Avatar, CompanyLogo, Glyph, EmptyState, Segmented, Tag, cx } from '../components/ui';
-import { EARNINGS, ME, PLAYERS, type EarningsEvent, type MyPick } from '../data/demo';
+import { EARNINGS, LIVE_RESULTS, ME, PLAYERS, type EarningsEvent, type MyPick } from '../data/demo';
 import { TICKER_MAP } from '../data/tickers';
 import { formatCountdown, formatDayLong, formatPoints, formatUSD } from '../lib/format';
 import { outcomeOf, predictionPoints, SCORING } from '../lib/scoring';
@@ -13,8 +13,8 @@ type View = 'open' | 'locked' | 'done';
 const eps = (n: number) => formatUSD(n);
 
 export function PronosTab() {
-  const { picks } = useStore();
-  const { openSheet } = useNav();
+  const { picks, revealed } = useStore();
+  const { openSheet, push } = useNav();
   const [view, setView] = useState<View>('open');
   const now = Date.now();
   const stats = myPredictionStats(picks);
@@ -23,7 +23,7 @@ export function PronosTab() {
     open: EARNINGS.filter((e) => e.lockAt.getTime() > now).sort((a, b) => a.lockAt.getTime() - b.lockAt.getTime()),
     locked: EARNINGS.filter((e) => e.lockAt.getTime() <= now && e.actual === null),
     done: EARNINGS.filter((e) => e.actual !== null).sort((a, b) => b.date.localeCompare(a.date)),
-  }), [now]);
+  }), [now, revealed]); // eslint-disable-line react-hooks/exhaustive-deps
   const toPick = groups.open.filter((e) => !picks[e.id]).length;
   const nextBonus = SCORING.streak.threshold + 1 - stats.streak;
 
@@ -50,6 +50,14 @@ export function PronosTab() {
           <div className="p-3"><dt className="text-[11px] font-semibold text-muted">Justes</dt><dd className="display mt-1 text-2xl nums">{stats.correct}/{stats.decided}</dd></div>
         </dl>
       </div>
+
+      {toPick > 0 ? (
+        <button onClick={() => push({ name: 'swipe' })} className="press mt-3 flex w-full items-center gap-3 bg-gold p-3.5 text-left text-gold-ink">
+          <Glyph name="swipe" size={28} color="#0a0d12" />
+          <span className="flex-1"><span className="block font-bold">Mode rafale</span><span className="block text-xs">{toPick} pronostics à faire : glisse, c’est fait.</span></span>
+          <CaretRight size={18} weight="bold" />
+        </button>
+      ) : null}
 
       <Segmented
         className="mt-4"
@@ -170,7 +178,7 @@ function LockedCard({ e, pick }: { e: EarningsEvent; pick?: MyPick }) {
         <Tag><LockSimple size={11} weight="bold" /> Verrouillé</Tag>
       </div>
       <div className="mt-3 border-t border-line pt-3"><PicksSplit e={e} mine={pick} /></div>
-      <p className="mt-3 text-[11px] text-muted">Résultat récupéré automatiquement après la publication, puis points attribués.</p>
+      <RevealButton id={e.id} />
     </div>
   );
 }
@@ -204,5 +212,16 @@ function ResultCard({ e, pick }: { e: EarningsEvent; pick?: MyPick }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** Résultat publié et pas encore révélé : on invite le joueur à le découvrir. */
+function RevealButton({ id }: { id: string }) {
+  const { push } = useNav();
+  if (!(id in LIVE_RESULTS)) return <p className="mt-3 text-[11px] text-muted">Résultat récupéré automatiquement après la publication, puis points attribués.</p>;
+  return (
+    <button onClick={() => push({ name: 'reveal', eventId: id })} className="press mt-3 flex h-12 w-full items-center justify-center gap-2 bg-gold font-bold text-gold-ink">
+      <Glyph name="bell" size={20} color="#0a0d12" /> Résultat tombé : révéler
+    </button>
   );
 }

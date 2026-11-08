@@ -2,7 +2,8 @@ import { BellRinging, BookOpen, Camera, CaretRight, ClockCounterClockwise, Moon,
 import { useState, type ReactNode } from 'react';
 import { PhotoPicker } from '../components/photo-picker';
 import { Avatar, Button, Glyph, Medallion, Ring, Segmented, cx } from '../components/ui';
-import { BADGES, LEAGUES, ME } from '../data/demo';
+import { BADGES, FRAMES, LEAGUES, ME, PASS, type FrameKey } from '../data/demo';
+import { passProgress } from './SeasonPass';
 import { DISCLAIMER } from '../lib/constants';
 import { formatDate } from '../lib/format';
 import { levelOf, LEVELS, todayKey } from '../lib/xp';
@@ -39,7 +40,7 @@ export function ProfileTab() {
               <PencilSimple size={18} className="text-muted" />
             </button>
           )}
-          <p className="text-[13px] text-muted">alex@exemple.com</p>
+          {store.customTitle ? <p className="text-[13px] font-semibold text-gold">{store.customTitle}</p> : <p className="text-[13px] text-muted">alex@exemple.com</p>}
           <p className="text-xs text-muted nums">Inscrit le {formatDate(new Date(Date.now() - 140 * 86400000))}</p>
         </div>
       </header>
@@ -67,6 +68,32 @@ export function ProfileTab() {
           </div>
         </div>
       </section>
+
+      {/* ------------------------------------------------ passe, cadres, gels */}
+      <button onClick={() => push({ name: 'pass' })} className="press mt-3 flex w-full items-center gap-3 border border-line bg-card p-4 text-left">
+        <Glyph name="path" size={30} />
+        <span className="flex-1">
+          <span className="block font-bold">Passe de saison</span>
+          <span className="block text-xs text-muted nums">Palier {Math.min(passProgress(store.xp).reached + 1, PASS.length)} sur {PASS.length}, {store.claimedTiers.length} récompense{store.claimedTiers.length > 1 ? 's' : ''} récupérée{store.claimedTiers.length > 1 ? 's' : ''}</span>
+        </span>
+        <span className="flex items-center gap-1 text-sm font-bold text-ink nums"><Glyph name="snowflake" size={20} /> {store.freezes}</span>
+      </button>
+      <div className="mt-3 border border-line bg-card p-4">
+        <p className="text-sm font-bold">Cadre de ta photo</p>
+        <div className="mt-3 flex gap-3">
+          <button onClick={() => store.patch({ frame: null })} aria-pressed={!store.frame} className={cx('grid size-14 place-items-center border text-[11px] font-semibold', !store.frame ? 'border-gold' : 'border-line')}>Aucun</button>
+          {(Object.keys(FRAMES) as FrameKey[]).map((f) => {
+            const owned = PASS.some((r, i) => r.kind === 'frame' && r.frame === f && store.claimedTiers.includes(i));
+            return (
+              <button key={f} disabled={!owned} onClick={() => store.patch({ frame: f })} aria-pressed={store.frame === f} aria-label={FRAMES[f].label} className={cx('relative size-14 p-[3px]', store.frame === f && 'outline-2 outline-offset-2 outline-gold', !owned && 'opacity-35')} style={{ background: FRAMES[f].css }}>
+                <span className="block size-full bg-card" />
+                {!owned ? <Glyph name="locked" size={16} className="absolute inset-0 m-auto" /> : null}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-xs text-muted">Débloque les cadres dans le passe de saison.</p>
+      </div>
 
       <dl className="mt-3 grid grid-cols-3 divide-x divide-line -mx-4 border-y border-line bg-card text-center">
         <div className="p-3"><dt className="text-[11px] font-semibold text-muted">Ligues</dt><dd className="display mt-1 text-[28px] nums">{LEAGUES.length}</dd></div>
@@ -111,7 +138,7 @@ export function ProfileTab() {
       </div>
 
       <button onClick={() => store.reset()} className="mt-4 w-full text-center text-sm font-semibold text-muted underline underline-offset-4">Réinitialiser la démo</button>
-      <p className="mt-6 text-center text-[11px] leading-relaxed text-muted">{DISCLAIMER}<br />StockLeague, version démo 0.3</p>
+      <p className="mt-6 text-center text-[11px] leading-relaxed text-muted">{DISCLAIMER}<br />StockLeague, version démo 0.4</p>
     </div>
   );
 }

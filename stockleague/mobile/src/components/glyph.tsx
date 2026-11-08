@@ -7,7 +7,7 @@ import {
   Confetti, Crown, Diamond, DeviceMobile, EnvelopeSimple, Eye, Eyes, Fire, FlagCheckered, Gift, HandWaving,
   HandsClapping, Handshake, Heart, Hourglass, Lightbulb, Lightning, Lock, Medal, MinusCircle, Moon, Plant, Receipt,
   Rocket, Scroll, Seal, ShoppingBag, Smiley, SmileyNervous, SmileyWink, Sparkle, Star, Sun, Sword, Target,
-  Binoculars, Ticket, Timer, Trophy, XCircle, type Icon,
+  Binoculars, Ticket, Snowflake, Megaphone, Cards, FrameCorners, HandSwipeRight, Path, ChatCircleText, ShieldCheck, Palette, IdentificationBadge, Timer, Trophy, XCircle, type Icon,
 } from '@phosphor-icons/react';
 import type { GlyphName } from '../data/glyphs';
 
@@ -30,6 +30,9 @@ export const GLYPH: Record<GlyphName, [Icon, string]> = {
   'glowing-star': [Star, GOLD], 'check-mark-button': [CheckCircle, GREEN], camera: [Camera, INK], 'waving-hand': [HandWaving, GOLD],
   'light-bulb': [Lightbulb, GOLD], 'wrapped-gift': [Gift, GOLD], 'star-struck': [Smiley, GOLD], 'mobile-phone': [DeviceMobile, INK],
   books: [Books, INK], 'red-heart': [Heart, RED], 'hundred-points': [Seal, GOLD],
+  snowflake: [Snowflake, CYAN], megaphone: [Megaphone, ORANGE], cards: [Cards, BLUE], frame: [FrameCorners, GOLD],
+  swipe: [HandSwipeRight, GOLD], path: [Path, GOLD], chat: [ChatCircleText, BLUE], shield: [ShieldCheck, GREEN],
+  palette: [Palette, PURPLE], 'id-card': [IdentificationBadge, GOLD],
 };
 
 export function Glyph({ name, size = 24, className, label, color, weight = 'duotone' }: { name: GlyphName; size?: number; className?: string; label?: string; color?: string; weight?: 'duotone' | 'fill' | 'bold' | 'regular' }) {

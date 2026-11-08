@@ -9,5 +9,6 @@ export const GLYPHS = [
   'face-with-tears-of-joy', 'clapping-hands', 'face-screaming-in-fear', 'crossed-swords', 'high-voltage',
   'glowing-star', 'check-mark-button', 'camera', 'waving-hand', 'light-bulb', 'wrapped-gift', 'star-struck',
   'mobile-phone', 'books', 'red-heart', 'hundred-points', 'rocket',
+  'snowflake', 'megaphone', 'cards', 'frame', 'swipe', 'path', 'chat', 'shield', 'palette', 'id-card',
 ] as const;
 export type GlyphName = (typeof GLYPHS)[number];

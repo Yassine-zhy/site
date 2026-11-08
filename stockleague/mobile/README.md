@@ -4,7 +4,17 @@ L'application Android de StockLeague : ligue boursière entre amis, avec portefe
 
 > Argent fictif — à but ludique et éducatif — ceci n'est pas un conseil en investissement.
 
-**Installer la démo :** copie `android/release/StockLeague-0.3-demo.apk` sur un téléphone Android 7 ou plus récent, ouvre-le et autorise « Installer des applis inconnues » pour l'appli qui l'ouvre (Fichiers, Chrome…).
+**Installer la démo :** copie `android/release/StockLeague-0.4-demo.apk` sur un téléphone Android 7 ou plus récent, ouvre-le et autorise « Installer des applis inconnues » pour l'appli qui l'ouvre (Fichiers, Chrome…).
+
+## Nouveautés de la version 0.4 : plus addictif
+
+- **Soirée résultats** : quand une entreprise publie, le joueur révèle lui-même le chiffre (compte à rebours, BPA qui défile, verdict, points), puis voit l'impact en direct : « Tu passes devant Léa ! », score du duel mis à jour.
+- **Mode rafale** : tous les pronostics de la semaine en cartes à glisser (droite = bat, gauche = manque), sentiment de tous les joueurs affiché, XP groupée à la fin.
+- **Passe de saison** : 10 paliers débloqués avec l'XP de la saison, récompenses cosmétiques (cadres photo Carbone, Or massif, Néon, Légende ; titres ; gels de série). Aucun point de classement.
+- **Gel de série** : un jour manqué est pardonné si tu en as un en réserve.
+- **« Ta semaine » en story** : récap plein écran façon réseaux sociaux (rang, meilleur coup, pronostics, objectif de la semaine).
+- **Notifications** : centre de notifications avec pastille (résultat à révéler, verrouillage proche, dépassement, chambrage).
+- **Chambrer** un ami avec un message prédéfini, visible dans le fil.
 
 ## Nouveautés de la version 0.3 : refonte visuelle
 

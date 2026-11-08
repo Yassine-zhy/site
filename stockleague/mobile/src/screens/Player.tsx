@@ -1,8 +1,10 @@
-import { Avatar, CompanyLogo, Glyph, Medallion, ScreenHeader, Trend } from '../components/ui';
+import { Avatar, Button, CompanyLogo, Glyph, Medallion, ScreenHeader, Trend } from '../components/ui';
 import { BADGES, PLAYER_MAP, RIVALS, TITLES } from '../data/demo';
 import { TICKER_MAP } from '../data/tickers';
 import { formatPoints } from '../lib/format';
 import { standings } from '../state/derived';
+import { useNav } from '../state/nav';
+import { Megaphone } from '@phosphor-icons/react';
 import { useStore } from '../state/store';
 
 export function PlayerScreen({ id }: { id: string }) {
@@ -10,6 +12,7 @@ export function PlayerScreen({ id }: { id: string }) {
   const p = PLAYER_MAP[id];
   const r = RIVALS[id];
   const s = standings(cash, holdings, picks).find((x) => x.id === id)!;
+  const { openSheet } = useNav();
 
   return (
     <div className="pb-10">
@@ -33,6 +36,8 @@ export function PlayerScreen({ id }: { id: string }) {
           </div>
         ))}
       </section>
+
+      <Button variant="gold" className="mx-4 mt-3 w-[calc(100%-2rem)]" onClick={() => openSheet({ name: 'taunt', playerId: id })}><Megaphone size={20} weight="fill" /> Chambrer {p.pseudo}</Button>
 
       <div className="mx-4 mt-3 grid grid-cols-2 gap-2">
         <Stat label="Points portefeuille" value={formatPoints(s.portfolioPts)} />

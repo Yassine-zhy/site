@@ -11,11 +11,11 @@ import { useName, useStore } from '../state/store';
 type Board = 'general' | 'portfolio' | 'pred';
 
 export function LeagueTab() {
-  const { cash, holdings, picks } = useStore();
+  const { cash, holdings, picks, revealed } = useStore();
   const { push } = useNav();
   const name = useName();
   const [board, setBoard] = useState<Board>('general');
-  const all = useMemo(() => standings(cash, holdings, picks), [cash, holdings, picks]);
+  const all = useMemo(() => standings(cash, holdings, picks), [cash, holdings, picks, revealed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sorted = useMemo(() => {
     const key = board === 'general' ? 'total' : board === 'portfolio' ? 'portfolioPts' : 'predPts';
