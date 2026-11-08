@@ -1,0 +1,188 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-board: var(--board);
+  --color-board-foreground: var(--board-foreground);
+  --color-gain: var(--gain);
+  --color-loss: var(--loss);
+  --color-gain-soft: var(--gain-soft);
+  --color-loss-soft: var(--loss-soft);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* ---- StockLeague · mode clair « tableau de marque, jour » ----
+     Encre marine, gris craie froid, un seul accent : le jaune tableau d'affichage.
+     Vert / rouge réservés aux gains / pertes (toujours accompagnés d'un signe). */
+  --background: #eef1f5;
+  --foreground: #0b1a30;
+  --card: #ffffff;
+  --card-foreground: #0b1a30;
+  --popover: #ffffff;
+  --popover-foreground: #0b1a30;
+  --primary: #0b1a30;
+  --primary-foreground: #ffffff;
+  --secondary: #e3e8ef;
+  --secondary-foreground: #0b1a30;
+  --muted: #e3e8ef;
+  --muted-foreground: #556479;
+  --accent: #e3e8ef;
+  --accent-foreground: #0b1a30;
+  --destructive: #c0352b;
+  --border: #d5dce6;
+  --input: #c9d2de;
+  --ring: #0b1a30;
+  --highlight: #f2b705;
+  --highlight-foreground: #0b1a30;
+  --board: #0b1a30;
+  --board-foreground: #ffffff;
+  --gain: #0b7a50;
+  --loss: #c0352b;
+  --gain-soft: #e1f3ea;
+  --loss-soft: #fbe7e5;
+  --chart-1: #1d4e89;
+  --chart-2: #f2b705;
+  --chart-3: #0b7a50;
+  --chart-4: #7a3e9d;
+  --chart-5: #9c4221;
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0b1a30;
+  --sidebar-primary: #0b1a30;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e3e8ef;
+  --sidebar-accent-foreground: #0b1a30;
+  --sidebar-border: #d5dce6;
+  --sidebar-ring: #0b1a30;
+}
+
+.dark {
+  /* ---- mode sombre « stade de nuit » ---- */
+  --background: #0a1524;
+  --foreground: #e8edf4;
+  --card: #101d30;
+  --card-foreground: #e8edf4;
+  --popover: #13223a;
+  --popover-foreground: #e8edf4;
+  --primary: #e8edf4;
+  --primary-foreground: #0a1524;
+  --secondary: #182840;
+  --secondary-foreground: #e8edf4;
+  --muted: #182840;
+  --muted-foreground: #8d9bb1;
+  --accent: #182840;
+  --accent-foreground: #e8edf4;
+  --destructive: #ff6b5b;
+  --border: #1f2f47;
+  --input: #2a3c58;
+  --ring: #f2b705;
+  --highlight: #f2b705;
+  --highlight-foreground: #0a1524;
+  --board: #172a45;
+  --board-foreground: #e8edf4;
+  --gain: #35c98a;
+  --loss: #ff6b5b;
+  --gain-soft: #0f2e27;
+  --loss-soft: #36191c;
+  --chart-1: #6ea4ef;
+  --chart-2: #f2b705;
+  --chart-3: #35c98a;
+  --chart-4: #c08ae0;
+  --chart-5: #f08a5d;
+  --sidebar: #101d30;
+  --sidebar-foreground: #e8edf4;
+  --sidebar-primary: #f2b705;
+  --sidebar-primary-foreground: #0a1524;
+  --sidebar-accent: #182840;
+  --sidebar-accent-foreground: #e8edf4;
+  --sidebar-border: #1f2f47;
+  --sidebar-ring: #f2b705;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+/* Titres et chiffres de score : Archivo en largeur condensée (axe variable wdth). */
+@utility font-display {
+  font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  font-variation-settings: "wdth" 66;
+  font-stretch: 66%;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  line-height: 0.95;
+}
+
+/* Chiffres alignés en colonnes (tableaux, montants). */
+@utility nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
