@@ -6,6 +6,8 @@
 
 🚧 Projet en cours de construction, phase par phase (voir la [feuille de route](#feuille-de-route)).
 
+📱 **Application mobile** : voir [`mobile/`](mobile/README.md). La démo Android installable est dans `mobile/android/release/`.
+
 ## Stack
 
 | Rôle | Choix | Pourquoi |
@@ -69,7 +71,8 @@ Ou bien, avec la CLI : `npx supabase link --project-ref <ref>` puis `npx supabas
 ## Feuille de route
 
 - [x] **Phase 1** : projet, identité visuelle, schéma complet + RLS, connexion (lien magique + Google), profil, « Mes ligues »
-- [ ] Phase 2 : ligues et invitations
+- [x] **Maquette mobile complète** : tous les écrans, données de démo, APK Android installable
+- [ ] Phase 2 : ligues et invitations (branchement de l’appli mobile sur Supabase)
 - [ ] Phase 3 : données de marché, portefeuille, achat / vente
 - [ ] Phase 4 : relevés quotidiens, classements, points de portefeuille
 - [ ] Phase 5 : calendrier des résultats, pronostics, verrouillage, résolution
