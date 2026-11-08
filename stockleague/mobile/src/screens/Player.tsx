@@ -17,7 +17,7 @@ export function PlayerScreen({ id }: { id: string }) {
   return (
     <div className="pb-10">
       <ScreenHeader title={p.pseudo} />
-      <section className="mx-4 mt-4 overflow-hidden rounded-[2px] bg-board p-4 text-board-ink">
+      <section className="mx-4 mt-4 overflow-hidden rounded-[14px] hero p-4 text-white">
         <div className="flex items-center gap-4">
           <Avatar id={id} size={72} ring={s.rank === 1 ? 'gold' : undefined} />
           <div>
@@ -27,7 +27,7 @@ export function PlayerScreen({ id }: { id: string }) {
           <span className="display ml-auto text-[30px] whitespace-nowrap nums">{formatPoints(s.total)}</span>
         </div>
         {r.titles.map((t) => (
-          <div key={t} className="mt-4 flex items-center gap-3 rounded-[2px] bg-board-2 p-3">
+          <div key={t} className="mt-4 flex items-center gap-3 rounded-[14px] bg-white/15 p-3">
             <Medallion name={TITLES[t].emoji} tier="gold" size={36} />
             <div>
               <p className="text-sm font-bold">{TITLES[t].label}</p>
@@ -42,24 +42,24 @@ export function PlayerScreen({ id }: { id: string }) {
       <div className="mx-4 mt-3 grid grid-cols-2 gap-2">
         <Stat label="Points portefeuille" value={formatPoints(s.portfolioPts)} />
         <Stat label="Points pronostics" value={formatPoints(s.predPts)} />
-        <div className="rounded-[2px] border border-line bg-card p-3"><p className="text-[11px] font-semibold text-muted">Rendement saison</p><Trend value={r.returnPct} className="mt-1 text-[17px]" /></div>
+        <div className="rounded-[18px] bg-card shadow-card p-3"><p className="text-[11px] font-semibold text-muted">Rendement saison</p><Trend value={r.returnPct} className="mt-1 text-[17px]" /></div>
         <Stat label="Pronostics justes" value={`${r.correct}/${r.total} (${Math.round((r.correct / r.total) * 100)} %)`} />
       </div>
 
       <h2 className="display mx-5 mt-7 mb-2 text-[26px]">Plus grosses positions</h2>
       <ul className="mx-4 space-y-2">
         {r.topHoldings.map((h) => (
-          <li key={h.ticker} className="flex items-center gap-3 rounded-[2px] border border-line bg-card p-3">
+          <li key={h.ticker} className="flex items-center gap-3 rounded-[18px] bg-card shadow-card p-3">
             <CompanyLogo ticker={h.ticker} size={38} />
             <div className="flex-1">
               <p className="text-sm font-bold">{TICKER_MAP[h.ticker].name}</p>
-              <div className="mt-1.5 h-1.5 overflow-hidden rounded-[2px] bg-card-2"><div className="h-full bg-board dark:bg-ink-2" style={{ width: `${h.weight}%` }} /></div>
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-[14px] bg-card-2"><div className="h-full bg-violet" style={{ width: `${h.weight}%` }} /></div>
             </div>
             <span className="w-12 text-right text-sm font-bold nums">{h.weight} %</span>
           </li>
         ))}
       </ul>
-      <div className="mx-4 mt-2 flex items-center gap-3 rounded-[2px] border border-line bg-card p-3">
+      <div className="mx-4 mt-2 flex items-center gap-3 rounded-[18px] bg-card shadow-card p-3">
         <Glyph name="money-bag" size={30} />
         <p className="text-sm"><span className="text-muted">Meilleur coup :</span> <b>{r.bestTrade}</b></p>
       </div>
@@ -67,7 +67,7 @@ export function PlayerScreen({ id }: { id: string }) {
       <h2 className="display mx-5 mt-7 mb-2 text-[26px]">Badges</h2>
       <div className="mx-4 grid grid-cols-4 gap-2">
         {r.badges.map((b) => (
-          <div key={b} className="flex flex-col items-center gap-1.5 rounded-[2px] border border-line bg-card px-1 py-3">
+          <div key={b} className="flex flex-col items-center gap-1.5 rounded-[18px] bg-card shadow-card px-1 py-3">
             <Medallion name={BADGES[b].emoji} tier="gold" size={34} />
             <span className="text-center text-[10.5px] font-semibold leading-tight">{BADGES[b].label}</span>
           </div>
@@ -79,7 +79,7 @@ export function PlayerScreen({ id }: { id: string }) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[2px] border border-line bg-card p-3">
+    <div className="rounded-[18px] bg-card shadow-card p-3">
       <p className="text-[11px] font-semibold text-muted">{label}</p>
       <p className="mt-1 text-[17px] font-bold nums">{value}</p>
     </div>

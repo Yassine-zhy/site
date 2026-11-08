@@ -15,7 +15,7 @@ export function LoginScreen({ onBack, onDone }: { onBack: () => void; onDone: ()
 
   return (
     <div className="flex min-h-dvh flex-col px-5 pt-[max(env(safe-area-inset-top),12px)] pb-[max(env(safe-area-inset-bottom),20px)]">
-      <button onClick={onBack} className="press -ml-2 grid size-11 place-items-center rounded-[2px]" aria-label="Retour"><CaretLeft size={24} weight="bold" /></button>
+      <button onClick={onBack} className="press -ml-2 grid size-11 place-items-center rounded-[14px]" aria-label="Retour"><CaretLeft size={24} weight="bold" /></button>
       <LogoMark size={44} />
       <h1 className="display mt-5 text-[46px]">{sent ? 'Regarde tes emails' : 'Connexion'}</h1>
 
@@ -30,7 +30,7 @@ export function LoginScreen({ onBack, onDone }: { onBack: () => void; onDone: ()
         <>
           <p className="mt-2 text-[14px] text-muted">Pas de mot de passe : on t’envoie un lien par email. Première fois ? Ton compte est créé automatiquement.</p>
           <label className="mt-6 block text-sm font-bold" htmlFor="email">Adresse email</label>
-          <input id="email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="prenom@exemple.com" className="mt-1.5 h-12 w-full rounded-[2px] border border-line-2 bg-card px-3 text-[15px] outline-none focus:border-ink" aria-invalid={!!error} />
+          <input id="email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="prenom@exemple.com" className="mt-1.5 h-12 w-full rounded-[14px] border border-line-2 bg-card px-3 text-[15px] outline-none focus:border-ink" aria-invalid={!!error} />
           {error ? <p className="mt-1.5 text-sm font-semibold text-loss" role="alert">{error}</p> : null}
           <Button className="mt-3 w-full" onClick={submit}>Recevoir mon lien de connexion</Button>
           <div className="my-5 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" />ou<span className="h-px flex-1 bg-line" /></div>

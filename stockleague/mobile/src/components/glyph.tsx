@@ -10,6 +10,7 @@ import {
   Binoculars, Ticket, Snowflake, Megaphone, Cards, FrameCorners, HandSwipeRight, Path, ChatCircleText, ShieldCheck, Palette, IdentificationBadge, Timer, Trophy, XCircle, type Icon,
 } from '@phosphor-icons/react';
 import type { GlyphName } from '../data/glyphs';
+import type { StickerName } from '../data/stickers';
 
 const GOLD = '#F2B705', SILVER = '#B7C2D0', BRONZE = '#C98A5A', RED = '#FF5A4E', ORANGE = '#FF8A3D', BLUE = '#5B9BFF',
   PURPLE = '#A78BFA', CYAN = '#4FD1E8', GREEN = 'var(--gain)', LOSS = 'var(--loss)', INK = 'currentColor';
@@ -35,27 +36,53 @@ export const GLYPH: Record<GlyphName, [Icon, string]> = {
   palette: [Palette, PURPLE], 'id-card': [IdentificationBadge, GOLD],
 };
 
-export function Glyph({ name, size = 24, className, label, color, weight = 'duotone' }: { name: GlyphName; size?: number; className?: string; label?: string; color?: string; weight?: 'duotone' | 'fill' | 'bold' | 'regular' }) {
+/** Illustration 3D associée à chaque pictogramme (utilisée à partir de 22 px). */
+const STICKER_OF: Partial<Record<GlyphName, StickerName>> = {
+  'top-hat': 'tophat', 'crystal-ball': 'crystal', 'gem-stone': 'gem', rocket: 'rocket', 'red-paper-lantern': 'lantern', trophy: 'trophy',
+  crown: 'crown', '1st-place-medal': 'medal1', '2nd-place-medal': 'medal2', '3rd-place-medal': 'medal3', 'sports-medal': 'medal1',
+  fire: 'fire', bullseye: 'target', handshake: 'handshake', 'money-bag': 'moneybag', 'chart-increasing': 'chartup',
+  'chart-decreasing': 'chartdown', 'party-popper': 'party', locked: 'lock', bell: 'bell', sun: 'sun', 'crescent-moon': 'moon',
+  sparkles: 'sparkles', eyes: 'eyes', 'hourglass-not-done': 'hourglass', 'spiral-calendar': 'calendar', 'chequered-flag': 'flag',
+  seedling: 'seedling', brain: 'brain', snail: 'cross', 'envelope-with-arrow': 'envelope', stopwatch: 'stopwatch',
+  'shopping-bags': 'bags', receipt: 'cardindex', 'thinking-face': 'thinking', 'flexed-biceps': 'muscle', ticket: 'ticket',
+  telescope: 'telescope', bank: 'bank', 'face-with-tears-of-joy': 'joy', 'clapping-hands': 'clap', 'face-screaming-in-fear': 'scream',
+  'crossed-swords': 'swords', 'high-voltage': 'bolt', 'glowing-star': 'star', 'check-mark-button': 'check', camera: 'camera',
+  'waving-hand': 'wave', 'light-bulb': 'bulb', 'wrapped-gift': 'gift', 'star-struck': 'star', 'mobile-phone': 'phone',
+  'hundred-points': 'hundred', snowflake: 'snow', megaphone: 'megaphone', cards: 'ab', frame: 'frame', swipe: 'joystick',
+  path: 'trophy', 'id-card': 'id', palette: 'sparkles', shield: 'check', chat: 'megaphone',
+};
+const base = (p: string) => `${import.meta.env.BASE_URL}${p}`;
+
+/** Illustration 3D seule (autocollant). */
+export function Sticker({ name, size = 48, className, gray }: { name: StickerName; size?: number; className?: string; gray?: boolean }) {
+  return <img src={base(`3d/${name}.png`)} width={size} height={size} alt="" aria-hidden draggable={false} decoding="async" className={`shrink-0 select-none ${gray ? 'opacity-40 grayscale' : ''} ${className ?? ''}`} />;
+}
+
+/**
+ * Pictogramme : illustration 3D à partir de 22 px (rendu « jeu »),
+ * icône vectorielle Phosphor en dessous ou si `vector` est demandé.
+ */
+export function Glyph({ name, size = 24, className, label, color, weight = 'duotone', vector }: { name: GlyphName; size?: number; className?: string; label?: string; color?: string; weight?: 'duotone' | 'fill' | 'bold' | 'regular'; vector?: boolean }) {
+  const sticker = STICKER_OF[name];
+  if (sticker && size >= 22 && !vector && !color) {
+    return <img src={base(`3d/${sticker}.png`)} width={size} height={size} alt={label ?? ''} aria-hidden={label ? undefined : true} draggable={false} decoding="async" className={`inline-block shrink-0 select-none ${className ?? ''}`} />;
+  }
   const [I, c] = GLYPH[name];
   return <I size={size} weight={weight} color={color ?? c} className={className ? `shrink-0 ${className}` : 'shrink-0'} aria-label={label} aria-hidden={label ? undefined : true} />;
 }
 
 const TIERS = {
-  gold: ['#FFE08A', '#F2B705', '#B07F00'], silver: ['#F1F4F8', '#B7C2D0', '#7D8899'], bronze: ['#F2C29B', '#C98A5A', '#8A5530'],
-  ink: ['#2B3647', '#1A2230', '#0E141D'], locked: ['#3A4252', '#2A303C', '#1C212A'],
+  gold: 'linear-gradient(145deg,#FFE27A,#FFB21E)', silver: 'linear-gradient(145deg,#EEF1F8,#C3CADB)', bronze: 'linear-gradient(145deg,#FFD2A8,#E58A4E)',
+  ink: 'linear-gradient(145deg,#8B6CFF,#5B2EFF)', locked: 'linear-gradient(145deg,#ECEAF3,#DAD6E6)',
 } as const;
 export type Tier = keyof typeof TIERS;
 
-/** Médaillon hexagonal (titres, badges) : métal + pictogramme, angles nets. */
+/** Tuile de badge / titre : illustration 3D sur un fond coloré en relief. */
 export function Medallion({ name, tier = 'ink', size = 48, className }: { name: GlyphName; tier?: Tier; size?: number; className?: string }) {
-  const [I, c] = GLYPH[name];
-  const [hi, mid, lo] = TIERS[tier];
-  const metal = tier === 'gold' || tier === 'silver' || tier === 'bronze';
+  const sticker = STICKER_OF[name] ?? 'star';
   return (
-    <span className={`relative grid shrink-0 place-items-center ${className ?? ''}`} style={{ width: size, height: size * 1.1, clipPath: 'polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)', background: `linear-gradient(160deg, ${hi} 0%, ${mid} 48%, ${lo} 100%)` }}>
-      <span className="absolute inset-[2px] grid place-items-center" style={{ clipPath: 'polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)', background: metal ? `linear-gradient(160deg, ${mid}, ${lo})` : `linear-gradient(160deg, ${mid}, ${lo})` }}>
-        <I size={size * 0.5} weight="fill" color={metal ? '#0B0F16' : tier === 'locked' ? '#5A6475' : c === 'currentColor' ? '#E9EEF5' : c} />
-      </span>
+    <span className={`relative grid shrink-0 place-items-center ${className ?? ''}`} style={{ width: size * 1.15, height: size * 1.15, borderRadius: size * 0.34, background: TIERS[tier], boxShadow: tier === 'locked' ? 'inset 0 -3px 0 rgb(0 0 0 / 0.06)' : 'inset 0 -4px 0 rgb(0 0 0 / 0.14), 0 6px 14px -8px rgb(91 46 255 / 0.5)' }}>
+      <Sticker name={sticker} size={size * 0.82} gray={tier === 'locked'} />
     </span>
   );
 }

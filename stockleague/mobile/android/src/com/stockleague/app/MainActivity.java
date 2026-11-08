@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public class MainActivity extends Activity {
   static final String ORIGIN = "https://appassets.androidplatform.net/";
-  static final int BOARD = 0xFF0B1A30;
+  static final int BOARD = 0xFF5B2EFF;
   static final int LIGHT_STATUS_BAR = 0x2000; // View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR (API 23)
   static final int LIGHT_NAV_BAR = 0x10; // View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR (API 26)
   static final Map<String, String> MIME = new HashMap<String, String>();

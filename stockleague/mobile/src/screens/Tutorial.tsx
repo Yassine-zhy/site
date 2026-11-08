@@ -25,7 +25,7 @@ export function Tutorial() {
           <p className="mx-auto mt-2 max-w-[34ch] text-[15px] leading-relaxed text-ink-2">{s.text}</p>
         </div>
         <div className="mt-6 flex justify-center gap-1.5" aria-hidden>
-          {STEPS.map((_, k) => <span key={k} className={cx('h-1.5 rounded-[2px] transition-all', k === i ? 'w-6 bg-ink' : 'w-1.5 bg-line-2')} />)}
+          {STEPS.map((_, k) => <span key={k} className={cx('h-1.5 rounded-[14px] transition-all', k === i ? 'w-6 bg-ink' : 'w-1.5 bg-line-2')} />)}
         </div>
         <div className="mt-6 grid grid-cols-[auto_1fr] gap-2">
           <Button variant="ghost" className="text-muted" onClick={() => patch({ tutorialDone: true })}>Passer</Button>

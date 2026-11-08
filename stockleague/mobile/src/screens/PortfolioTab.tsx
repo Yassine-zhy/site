@@ -1,10 +1,10 @@
 import { ArrowsLeftRight, MagnifyingGlass } from '@phosphor-icons/react';
 import { useMemo, useState } from 'react';
 import { ValueChart } from '../components/charts';
-import { Button, Card, CompanyLogo, EmptyState, Segmented, Tag, Trend, cx } from '../components/ui';
+import { Button, Card, CompanyLogo, EmptyState, Glyph, Segmented, Tag, Trend, cx } from '../components/ui';
 import { ACTIVE_LEAGUE, STARTING_CASH, simulatedSeries } from '../data/demo';
 import { TICKER_MAP } from '../data/tickers';
-import { formatDayShort, formatPoints, formatQuantity, formatRelative, formatUSD } from '../lib/format';
+import { formatDayShort, formatPoints, formatQuantity, formatRelative, formatSignedPercent, formatUSD } from '../lib/format';
 import { isMarketOpen } from '../lib/market-time';
 import { portfolioPoints } from '../lib/scoring';
 import { useCountUp } from '../lib/use-count-up';
@@ -38,17 +38,18 @@ export function PortfolioTab() {
       <header className="flex items-center justify-between pt-2">
         <h1 className="display text-[40px]">Portefeuille</h1>
         <Tag tone={open ? 'gain' : 'neutral'}>
-          <span className={cx('size-1.5 rounded-[2px]', open ? 'bg-gain' : 'bg-muted')} />
+          <span className={cx('size-1.5 rounded-[14px]', open ? 'bg-gain' : 'bg-muted')} />
           {open ? 'Marché ouvert' : 'Marché fermé'}
         </Tag>
       </header>
 
-      <section className="mt-4">
-        <p className="text-[13px] font-semibold text-muted">Valeur totale</p>
-        <p className="display mt-1 text-[52px] nums">{formatUSD(animatedValue)}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
-          <span className="flex items-center gap-1.5"><Trend value={p.dayChange} format="usd" /> <Trend value={p.dayChangePct} icon={false} className="font-medium" /> <span className="text-muted">aujourd’hui</span></span>
-          <span className="flex items-center gap-1.5"><Trend value={p.returnPct} /> <span className="text-muted">depuis le début</span></span>
+      <section className="grad-blue relative mt-4 overflow-hidden rounded-[22px] p-5 text-white shadow-[0_14px_30px_-14px_rgb(46_139_255/0.8)]">
+        <Glyph name="money-bag" size={92} className="absolute -right-3 -bottom-3 rotate-12 opacity-95" />
+        <p className="text-[13px] font-semibold opacity-85">Valeur totale</p>
+        <p className="display mt-1 text-[48px] nums">{formatUSD(animatedValue)}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px]">
+          <span className="rounded-[9px] bg-white/20 px-2 py-1 font-bold nums">{p.dayChange >= 0 ? '▲' : '▼'} {formatSignedPercent(p.dayChangePct)} aujourd’hui</span>
+          <span className="rounded-[9px] bg-white/20 px-2 py-1 font-bold nums">{p.returnPct >= 0 ? '▲' : '▼'} {formatSignedPercent(p.returnPct)} depuis le début</span>
         </div>
       </section>
 
@@ -64,15 +65,15 @@ export function PortfolioTab() {
       </div>
 
       {/* ------------------------------------------------ répartition */}
-      <div className="mt-3 rounded-[2px] border border-line bg-card p-3">
+      <div className="mt-3 rounded-[18px] bg-card shadow-card p-3">
         <p className="text-[13px] font-semibold text-muted">Répartition</p>
-        <div className="mt-2 flex h-3 overflow-hidden rounded-[2px]" role="img" aria-label="Répartition du portefeuille">
+        <div className="mt-2 flex h-3 overflow-hidden rounded-[14px]" role="img" aria-label="Répartition du portefeuille">
           {alloc.map((a) => <span key={a.key} style={{ width: `${(a.value / p.value) * 100}%`, background: a.color }} />)}
         </div>
         <ul className="mt-2.5 grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
           {alloc.map((a) => (
             <li key={a.key} className="flex items-center gap-1.5">
-              <span className="size-2.5 shrink-0 rounded-[2px]" style={{ background: a.color }} />
+              <span className="size-2.5 shrink-0 rounded-[14px]" style={{ background: a.color }} />
               <span className="font-semibold">{a.key}</span>
               <span className="ml-auto text-muted nums">{Math.round((a.value / p.value) * 100)} %</span>
             </li>
@@ -94,7 +95,7 @@ export function PortfolioTab() {
           Tout ton capital est en cash. À toi de jouer.
         </EmptyState>
       ) : (
-        <ul className="-mx-4 border-y border-line bg-card">
+        <ul className="overflow-hidden rounded-[20px] bg-card shadow-card">
           {sortedHoldings.map((h) => {
             const t = TICKER_MAP[h.ticker];
             const value = h.quantity * t.price;
@@ -134,7 +135,7 @@ export function PortfolioTab() {
 
 function Stat({ label, value, gold }: { label: string; value: string; gold?: boolean }) {
   return (
-    <div className={cx('rounded-[2px] border p-3', gold ? 'border-gold/50 bg-gold/10' : 'border-line bg-card')}>
+    <div className={cx('rounded-[14px] border p-3', gold ? 'border-gold/50 bg-gold/10' : 'border-line bg-card')}>
       <p className="text-[11px] font-semibold text-muted">{label}</p>
       <p className="mt-1 truncate text-[15px] font-bold nums">{value}</p>
     </div>
@@ -144,12 +145,12 @@ function Stat({ label, value, gold }: { label: string; value: string; gold?: boo
 export function TransactionList({ items }: { items: { id: string; side: 'buy' | 'sell'; ticker: string; quantity: number; price: number; at: Date }[] }) {
   if (!items.length) return <EmptyState emoji="receipt" title="Aucun ordre pour l’instant">À toi de jouer.</EmptyState>;
   return (
-    <ul className="-mx-4 border-y border-line bg-card">
+    <ul className="overflow-hidden rounded-[20px] bg-card shadow-card">
       {items.map((t) => (
         <li key={t.id} className="flex items-center gap-3 border-b border-line px-3 py-3 last:border-b-0">
           <span className="relative">
             <CompanyLogo ticker={t.ticker} size={38} />
-            <span className={cx('absolute -right-1.5 -bottom-1.5 grid size-5 place-items-center rounded-[2px] border-2 border-card', t.side === 'buy' ? 'bg-gain' : 'bg-loss')}>
+            <span className={cx('absolute -right-1.5 -bottom-1.5 grid size-5 place-items-center rounded-[14px] border-2 border-card', t.side === 'buy' ? 'bg-gain' : 'bg-loss')}>
               <ArrowsLeftRight size={10} weight="bold" className="text-white" />
             </span>
           </span>

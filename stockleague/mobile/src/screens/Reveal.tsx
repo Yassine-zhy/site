@@ -45,7 +45,7 @@ export function RevealScreen({ eventId }: { eventId: string }) {
   const duelMine = DUEL.mine + (correct ? 10 : 0);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#07090d] px-5 pt-[max(env(safe-area-inset-top),18px)] pb-[max(env(safe-area-inset-bottom),20px)] text-[#f3f5f8]">
+    <div className="flex min-h-dvh flex-col bg-[linear-gradient(165deg,#3b14b8_0%,#1c0b5c_55%,#12083d_100%)] px-5 pt-[max(env(safe-area-inset-top),18px)] pb-[max(env(safe-area-inset-bottom),20px)] text-[#f3f5f8]">
       {phase === 'result' && correct ? <Confetti /> : null}
       <div className="flex items-center gap-3">
         <CompanyLogo ticker={e.ticker} size={44} />
@@ -79,7 +79,7 @@ export function RevealScreen({ eventId }: { eventId: string }) {
 
       {phase === 'result' ? (
         <div className="anim-fade mt-6 flex-1">
-          <div className="flex items-center gap-3 border-l-[3px] border-gold bg-white/5 p-4">
+          <div className="flex items-center gap-3 rounded-[18px] bg-white/10 p-4">
             <Glyph name={correct ? 'bullseye' : 'snail'} size={36} />
             <div className="flex-1">
               <p className="font-bold">{correct ? 'Bien vu !' : 'Raté cette fois.'}</p>
@@ -100,10 +100,10 @@ export function RevealScreen({ eventId }: { eventId: string }) {
             <div className="anim-pop mt-4 flex items-center gap-3 bg-gold p-3 text-[#0a0d12]">
               <Avatar id={passed[0]} size={44} />
               <p className="flex-1 font-bold">Tu passes devant {name(passed[0])} !</p>
-              <Glyph name="rocket" size={30} color="#0a0d12" />
+              <Glyph name="rocket" size={36} />
             </div>
           ) : null}
-          <div className="mt-4 border-l-[3px] border-gold bg-white/5 p-4">
+          <div className="mt-4 rounded-[18px] bg-white/10 p-4">
             <p className="flex items-center gap-2 text-sm font-bold"><Glyph name="crossed-swords" size={20} /> Duel de la semaine</p>
             <p className="display mt-1 text-[34px] nums">{duelMine} – {DUEL.theirs}</p>
             <p className="text-xs text-[#8590a2]">{duelMine > DUEL.theirs ? `Tu mènes contre ${name(DUEL.opponent)}. Tiens jusqu’à vendredi.` : `Encore ${DUEL.theirs - duelMine + 1} pts pour passer devant ${name(DUEL.opponent)}.`}</p>

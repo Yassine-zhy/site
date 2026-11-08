@@ -31,29 +31,29 @@ export function PronosTab() {
     <div className="px-4 pt-[max(env(safe-area-inset-top),16px)] pb-28">
       <h1 className="display pt-2 text-[40px]">Pronostics</h1>
       <p className="mt-1 text-[13px] text-muted">Le bénéfice publié battra-t-il ou manquera-t-il l’estimation des analystes ?</p>
-      <button onClick={() => openSheet({ name: 'glossary' })} className="press mt-2 inline-flex items-center gap-1.5 rounded-[2px] border border-line bg-card px-2.5 py-1.5 text-xs font-semibold"><Glyph name="light-bulb" size={16} /> C’est quoi le BPA ?</button>
+      <button onClick={() => openSheet({ name: 'glossary' })} className="press mt-2 inline-flex items-center gap-1.5 rounded-[18px] bg-card shadow-card px-2.5 py-1.5 text-xs font-semibold"><Glyph name="light-bulb" size={16} /> C’est quoi le BPA ?</button>
 
       {/* ------------------------------------------------ série et stats */}
-      <div className="mt-4 -mx-4 border-y border-line bg-card">
-        <div className="flex items-center gap-3 border-b border-line p-3">
-          <Glyph name="fire" size={40} />
+      <div className="grad-pink mt-4 overflow-hidden rounded-[22px] text-white shadow-[0_14px_30px_-14px_rgb(255_61_139/0.8)]">
+        <div className="flex items-center gap-3 border-b border-white/20 p-4">
+          <Glyph name="fire" size={52} className="anim-flame" />
           <div className="flex-1">
             <p className="font-bold">Série de {stats.streak} pronostic{stats.streak > 1 ? 's' : ''} juste{stats.streak > 1 ? 's' : ''}</p>
-            <p className="text-xs text-muted">
+            <p className="text-xs opacity-85">
               {nextBonus > 0 ? `Encore ${nextBonus} pour déclencher le bonus de +${SCORING.streak.bonusPerCorrect} pts.` : `Bonus de +${SCORING.streak.bonusPerCorrect} pts à chaque nouveau pronostic juste.`}
             </p>
           </div>
         </div>
-        <dl className="grid grid-cols-3 divide-x divide-line text-center">
-          <div className="p-3"><dt className="text-[11px] font-semibold text-muted">Points</dt><dd className="display mt-1 text-2xl nums">{formatPoints(stats.points)}</dd></div>
-          <div className="p-3"><dt className="text-[11px] font-semibold text-muted">Réussite</dt><dd className="display mt-1 text-2xl nums">{stats.decided ? Math.round((stats.correct / stats.decided) * 100) : 0} %</dd></div>
-          <div className="p-3"><dt className="text-[11px] font-semibold text-muted">Justes</dt><dd className="display mt-1 text-2xl nums">{stats.correct}/{stats.decided}</dd></div>
+        <dl className="grid grid-cols-3 divide-x divide-white/20 text-center">
+          <div className="p-3"><dt className="text-[11px] font-semibold opacity-80">Points</dt><dd className="display mt-1 text-2xl nums">{formatPoints(stats.points)}</dd></div>
+          <div className="p-3"><dt className="text-[11px] font-semibold opacity-80">Réussite</dt><dd className="display mt-1 text-2xl nums">{stats.decided ? Math.round((stats.correct / stats.decided) * 100) : 0} %</dd></div>
+          <div className="p-3"><dt className="text-[11px] font-semibold opacity-80">Justes</dt><dd className="display mt-1 text-2xl nums">{stats.correct}/{stats.decided}</dd></div>
         </dl>
       </div>
 
       {toPick > 0 ? (
         <button onClick={() => push({ name: 'swipe' })} className="press mt-3 flex w-full items-center gap-3 bg-gold p-3.5 text-left text-gold-ink">
-          <Glyph name="swipe" size={28} color="#0a0d12" />
+          <Glyph name="swipe" size={34} />
           <span className="flex-1"><span className="block font-bold">Mode rafale</span><span className="block text-xs">{toPick} pronostics à faire : glisse, c’est fait.</span></span>
           <CaretRight size={18} weight="bold" />
         </button>
@@ -107,7 +107,7 @@ function OpenList({ events, picks }: { events: EarningsEvent[]; picks: Record<st
               const pick = picks[e.id];
               const left = e.lockAt.getTime() - Date.now();
               return (
-                <button key={e.id} onClick={() => openSheet({ name: 'predict', eventId: e.id })} className="press flex w-full items-center gap-3 rounded-[2px] border border-line bg-card p-3 text-left">
+                <button key={e.id} onClick={() => openSheet({ name: 'predict', eventId: e.id })} className="press flex w-full items-center gap-3 rounded-[18px] bg-card shadow-card p-3 text-left">
                   <CompanyLogo ticker={e.ticker} size={46} />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline gap-2">
@@ -126,7 +126,7 @@ function OpenList({ events, picks }: { events: EarningsEvent[]; picks: Record<st
                       {pick.confidence === 'sure' ? <Tag tone="gold">Sûr de moi</Tag> : null}
                     </span>
                   ) : (
-                    <span className="flex shrink-0 items-center gap-0.5 rounded-[2px] bg-board px-2.5 py-2 text-xs font-bold text-board-ink dark:bg-ink dark:text-bg">
+                    <span className="flex shrink-0 items-center gap-0.5 rounded-[14px] hero px-2.5 py-2 text-xs font-bold text-white">
                       Pronostiquer <CaretRight size={12} weight="bold" />
                     </span>
                   )}
@@ -148,7 +148,7 @@ export function PicksSplit({ e, mine }: { e: EarningsEvent; mine?: MyPick }) {
   const total = beat.length + miss.length || 1;
   return (
     <div>
-      <div className="flex h-2.5 overflow-hidden rounded-[2px]" role="img" aria-label={`${beat.length} bat, ${miss.length} manque`}>
+      <div className="flex h-2.5 overflow-hidden rounded-[14px]" role="img" aria-label={`${beat.length} bat, ${miss.length} manque`}>
         <span className="bg-gain" style={{ width: `${(beat.length / total) * 100}%` }} />
         <span className="bg-loss" style={{ width: `${(miss.length / total) * 100}%` }} />
       </div>
@@ -167,7 +167,7 @@ export function PicksSplit({ e, mine }: { e: EarningsEvent; mine?: MyPick }) {
 function LockedCard({ e, pick }: { e: EarningsEvent; pick?: MyPick }) {
   const t = TICKER_MAP[e.ticker];
   return (
-    <div className="rounded-[2px] border border-line bg-card p-3">
+    <div className="rounded-[18px] bg-card shadow-card p-3">
       <div className="flex items-center gap-3">
         <CompanyLogo ticker={e.ticker} size={46} />
         <div className="min-w-0 flex-1">
@@ -190,7 +190,7 @@ function ResultCard({ e, pick }: { e: EarningsEvent; pick?: MyPick }) {
   const outcome = pick ? outcomeOf(pick.choice, e.estimate, actual) : null;
   const pts = pick && outcome ? predictionPoints(outcome, pick.confidence) : 0;
   return (
-    <div className="rounded-[2px] border border-line bg-card p-3">
+    <div className="rounded-[18px] bg-card shadow-card p-3">
       <div className="flex items-center gap-3">
         <CompanyLogo ticker={e.ticker} size={42} />
         <div className="min-w-0 flex-1">

@@ -1,4 +1,5 @@
 import { CaretDown, GearSix, Info } from '@phosphor-icons/react';
+import { motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { TickerTape } from '../components/ticker-tape';
 import { Avatar, Glyph, Medallion, RankMove, Segmented, Tag, Trend, cx } from '../components/ui';
@@ -28,9 +29,9 @@ export function LeagueTab() {
   return (
     <div className="pb-28">
       {/* ------------------------------------------------ tableau de marque */}
-      <section className="bg-board pt-[max(env(safe-area-inset-top),12px)] text-board-ink">
+      <section className="hero pt-[max(env(safe-area-inset-top),12px)] text-white">
         <div className="flex items-start justify-between px-4 pt-2">
-          <button onClick={() => push({ name: 'leagues' })} className="press -ml-1 rounded-[2px] px-1 py-1 text-left" aria-label="Changer de ligue">
+          <button onClick={() => push({ name: 'leagues' })} className="press -ml-1 rounded-[14px] px-1 py-1 text-left" aria-label="Changer de ligue">
             <span className="flex items-center gap-1.5">
               <span className="display text-[34px]">{ACTIVE_LEAGUE.name}</span>
               <CaretDown size={20} weight="bold" className="mt-1 opacity-70" />
@@ -39,7 +40,7 @@ export function LeagueTab() {
           </button>
           <div className="flex items-center gap-1">
             <span className="slant bg-gold px-2.5 py-1" aria-label={`${daysLeft()} jours restants`}><span className="unslant display block text-[22px] text-gold-ink nums">J-{daysLeft()}</span></span>
-            <button onClick={() => push({ name: 'settings' })} className="press grid size-11 place-items-center rounded-[2px]" aria-label="Réglages de la ligue">
+            <button onClick={() => push({ name: 'settings' })} className="press grid size-11 place-items-center rounded-[14px]" aria-label="Réglages de la ligue">
               <GearSix size={24} />
             </button>
           </div>
@@ -57,7 +58,7 @@ export function LeagueTab() {
         />
 
         {/* ------------------------------------------------ ma position */}
-        <div className="mt-3 flex items-center gap-3 rounded-[2px] border border-line bg-card px-4 py-3">
+        <div className="mt-3 flex items-center gap-3 rounded-[18px] bg-card shadow-card px-4 py-3">
           <span className="display w-9 text-[34px] nums">{me.boardRank}<sup className="text-sm">e</sup></span>
           <p className="flex-1 text-[13px] leading-snug text-ink-2">
             {above
@@ -68,9 +69,9 @@ export function LeagueTab() {
         </div>
 
         {/* ------------------------------------------------ classement */}
-        <ol className="mt-3 -mx-4 border-y border-line bg-card">
-          {sorted.map((s) => (
-            <li key={s.id}>
+        <ol className="mt-3 overflow-hidden rounded-[20px] bg-card shadow-card">
+          {sorted.map((s, idx) => (
+            <motion.li key={s.id} layout initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ layout: { type: 'spring', stiffness: 420, damping: 34 }, delay: idx * 0.035 }}>
               <button onClick={() => (s.id === ME ? push({ name: 'badges' }) : push({ name: 'player', id: s.id }))} className={cx('press flex w-full items-center gap-3 border-b border-line px-3 py-3 text-left last:border-b-0', s.id === ME && 'bg-gold/[0.08]')}>
                 <span className="display w-6 text-center text-[26px] nums">{s.boardRank}</span>
                 <RankMove delta={board === 'general' ? s.rankYesterday - s.rank : 0} />
@@ -89,7 +90,7 @@ export function LeagueTab() {
                     : <Trend value={s.returnPct} className="text-xs" />}
                 </span>
               </button>
-            </li>
+            </motion.li>
           ))}
         </ol>
 
@@ -102,7 +103,7 @@ export function LeagueTab() {
           {(Object.keys(TITLES) as TitleKey[]).map((k) => {
             const holder = all.find((s) => s.titles.includes(k));
             return (
-              <div key={k} className="w-[156px] shrink-0 snap-start border-t-2 border-gold bg-card p-3">
+              <div key={k} className="w-[156px] shrink-0 snap-start rounded-[18px] bg-card shadow-card p-3">
                 <Medallion name={TITLES[k].emoji} tier={k === 'lanterne' ? 'ink' : 'gold'} size={40} />
                 <p className="mt-2 text-[14px] font-bold leading-tight">{TITLES[k].label}</p>
                 <p className="mt-1 text-[11px] leading-snug text-muted">{TITLES[k].rule}</p>
@@ -117,12 +118,12 @@ export function LeagueTab() {
           })}
         </div>
 
-        <button onClick={() => push({ name: 'activity' })} className="press mt-6 flex w-full items-center gap-3 rounded-[2px] border border-line bg-card px-4 py-3 text-left">
+        <button onClick={() => push({ name: 'activity' })} className="press mt-6 flex w-full items-center gap-3 rounded-[18px] bg-card shadow-card px-4 py-3 text-left">
           <Glyph name="bell" size={24} />
           <span className="flex-1 text-sm font-semibold">Activité de la ligue</span>
           <span className="text-xs text-muted">achats, pronostics, réactions</span>
         </button>
-        <button onClick={() => push({ name: 'rules' })} className="press mt-2 flex w-full items-center gap-3 rounded-[2px] border border-line bg-card px-4 py-3 text-left">
+        <button onClick={() => push({ name: 'rules' })} className="press mt-2 flex w-full items-center gap-3 rounded-[18px] bg-card shadow-card px-4 py-3 text-left">
           <Info size={22} className="text-muted" />
           <span className="flex-1 text-sm font-semibold">Règles et barème des points</span>
           <span className="text-xs text-muted">+10, +20, série…</span>
@@ -157,7 +158,7 @@ function Podium({ rows }: { rows: (Standing & { boardRank: number; score: number
         const color = tier[r.boardRank as 1 | 2 | 3];
         return (
           <button key={r.id} onClick={() => r.id !== ME && push({ name: 'player', id: r.id })} className="press relative block text-left" aria-label={`${r.boardRank}e : ${name(r.id)}, ${formatPoints(r.score)}`}>
-            <span className="relative block overflow-hidden rounded-[2px] bg-board-2" style={{ aspectRatio: first ? '3 / 4.1' : '3 / 3.7', boxShadow: `inset 0 0 0 1px ${color}` }}>
+            <span className="relative block overflow-hidden rounded-[14px] bg-white/15" style={{ aspectRatio: first ? '3 / 4.1' : '3 / 3.7', boxShadow: `inset 0 0 0 1px ${color}` }}>
               <Avatar id={r.id} size={400} className="!h-full !w-full" />
               <span className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
               <span className="display absolute top-1.5 left-2 text-[34px] leading-none text-white drop-shadow" style={{ color }}>{r.boardRank}</span>

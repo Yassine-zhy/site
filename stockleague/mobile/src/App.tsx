@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { TabBar } from './components/tab-bar';
 import { Celebrations } from './components/celebrate';
@@ -45,7 +46,7 @@ function useTheme(): boolean {
       const dark = theme === 'dark' || (theme === 'system' && mq.matches);
       document.documentElement.classList.toggle('dark', dark);
       setDark(dark);
-      document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#08121f' : '#eef1f5');
+      document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#0f0b1e' : '#f4f2fb');
     };
     apply();
     mq.addEventListener('change', apply);
@@ -98,19 +99,35 @@ function Shell({ dark }: { dark: boolean }) {
   return (
     <>
       <div aria-hidden={!!top || undefined}>
-        <Tab key={tab} />
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.16, ease: 'easeOut' }}>
+            <Tab />
+          </motion.div>
+        </AnimatePresence>
         <TabBar />
       </div>
-      {stack.map((r, i) => (
-        <div key={`${r.name}-${i}`} className="anim-slide fixed inset-0 z-40 overflow-y-auto bg-bg" style={{ visibility: i === stack.length - 1 ? 'visible' : 'hidden' }}>
-          {routeView(r)}
-        </div>
-      ))}
-      {sheet?.name === 'order' ? <OrderSheet key={sheet.ticker + sheet.side} ticker={sheet.ticker} side={sheet.side} /> : null}
-      {sheet?.name === 'predict' ? <PredictSheet key={sheet.eventId} eventId={sheet.eventId} /> : null}
-      {sheet?.name === 'share' ? <ShareSheet /> : null}
-      {sheet?.name === 'glossary' ? <GlossarySheet /> : null}
-      {sheet?.name === 'taunt' ? <TauntSheet playerId={sheet.playerId} /> : null}
+      <AnimatePresence initial={false}>
+        {stack.map((r, i) => (
+          <motion.div
+            key={`${r.name}-${i}`}
+            className="fixed inset-0 z-40 overflow-y-auto bg-bg"
+            style={{ visibility: i >= stack.length - 2 ? 'visible' : 'hidden' }}
+            initial={{ x: '100%' }}
+            animate={{ x: i === stack.length - 1 ? 0 : '-18%' }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 420, damping: 40, mass: 0.9 }}
+          >
+            {routeView(r)}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+      <AnimatePresence>
+        {sheet?.name === 'order' ? <OrderSheet key={'o' + sheet.ticker + sheet.side} ticker={sheet.ticker} side={sheet.side} /> : null}
+        {sheet?.name === 'predict' ? <PredictSheet key={'p' + sheet.eventId} eventId={sheet.eventId} /> : null}
+        {sheet?.name === 'share' ? <ShareSheet key="share" /> : null}
+        {sheet?.name === 'glossary' ? <GlossarySheet key="glossary" /> : null}
+        {sheet?.name === 'taunt' ? <TauntSheet key={'t' + sheet.playerId} playerId={sheet.playerId} /> : null}
+      </AnimatePresence>
       {!tutorialDone ? <Tutorial /> : null}
     </>
   );

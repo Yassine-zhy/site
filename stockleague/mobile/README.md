@@ -4,7 +4,14 @@ L'application Android de StockLeague : ligue boursière entre amis, avec portefe
 
 > Argent fictif — à but ludique et éducatif — ceci n'est pas un conseil en investissement.
 
-**Installer la démo :** copie `android/release/StockLeague-0.4-demo.apk` sur un téléphone Android 7 ou plus récent, ouvre-le et autorise « Installer des applis inconnues » pour l'appli qui l'ouvre (Fichiers, Chrome…).
+**Installer la démo :** copie `android/release/StockLeague-0.5-demo.apk` sur un téléphone Android 7 ou plus récent, ouvre-le et autorise « Installer des applis inconnues » pour l'appli qui l'ouvre (Fichiers, Chrome…).
+
+## Nouveautés de la version 0.5 : « arcade financière »
+
+- **Clair, lumineux, coloré** : chaque rubrique a sa couleur (orange accueil, violet ligue, bleu portefeuille, rose pronostics, menthe profil), blocs en dégradé, cartes blanches à ombre douce. Thème sombre « néon » disponible.
+- **Illustrations 3D** (trophée, flamme, fusée, coffre, médailles…) pour les missions, titres, badges, récompenses et célébrations ; icônes vectorielles conservées pour la navigation.
+- **Boutons « jeu » en relief** qui s'enfoncent sous le doigt, typographie Bricolage Grotesque.
+- **Fluidité** : transitions à ressort entre écrans (Motion), feuilles qui se ferment d'un glissement, indicateur d'onglet qui glisse, classement qui se réordonne en animation, carte de pronostic qui suit le doigt avec inertie, confettis physiques. Flous d'arrière-plan supprimés (coûteux sur Android).
 
 ## Nouveautés de la version 0.4 : plus addictif
 
@@ -58,8 +65,10 @@ Toutes les données sont fictives et stockées sur le téléphone. Les achats et
 | --- | --- | --- |
 | Logos des entreprises (démo) | financialmodelingprep.com | marques de leurs propriétaires, usage d'identification |
 | Portraits des joueurs de démo | Unsplash | licence Unsplash (usage libre) |
-| Icônes et pictogrammes | Phosphor Icons | MIT |
-| Polices | Barlow, Barlow Condensed (Jeremy Tribby) | SIL OFL |
+| Illustrations 3D | Microsoft Fluent Emoji 3D | MIT |
+| Icônes d'interface | Phosphor Icons | MIT |
+| Police | Bricolage Grotesque | SIL OFL |
+| Animations / confettis | Motion, canvas-confetti | MIT / ISC |
 
 ## Commandes
 
@@ -68,6 +77,6 @@ Toutes les données sont fictives et stockées sur le téléphone. Les achats et
 | `npm run dev` | aperçu dans le navigateur (mode téléphone conseillé) |
 | `npm test` | tests unitaires des règles du jeu |
 | `npm run build:apk` | construit l'APK signé dans `android/release/` (Node + Java 11+, sans SDK Android) |
-| `npm run assets` / `npm run icons` | télécharge logos et portraits / régénère les icônes du lanceur |
+| `npm run assets` / `npm run icons` | télécharge logos, portraits et illustrations 3D / régénère les icônes du lanceur |
 
 Pour publier une mise à jour, augmente `versionCode` dans `android/app.json` et garde la même clé (`android/keystore/`), sinon Android refuse la mise à jour.

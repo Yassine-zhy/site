@@ -9,20 +9,22 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "assets": "node tools/fetch-assets.mjs",
+    "assets": "node tools/fetch-assets.mjs && node tools/fetch-stickers.mjs",
     "icons": "node tools/icons.mjs",
     "build:apk": "node tools/build-apk.mjs"
   },
   "dependencies": {
-    "@fontsource/barlow": "^5.3.0",
-    "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
     "@phosphor-icons/react": "^2.1.10",
+    "canvas-confetti": "^1.9.4",
+    "motion": "^14.10.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.5",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

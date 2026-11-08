@@ -26,7 +26,7 @@ export function MarketScreen() {
     <div className="pb-10">
       <ScreenHeader title="Acheter une action" />
       <div className="px-4 pt-3">
-        <label className="flex h-12 items-center gap-2 rounded-[2px] border border-line-2 bg-card px-3 focus-within:border-ink">
+        <label className="flex h-12 items-center gap-2 rounded-[14px] border border-line-2 bg-card px-3 focus-within:border-ink">
           <MagnifyingGlass size={20} className="text-muted" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nom ou symbole : Apple, NKE…" className="h-full flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted" autoCapitalize="characters" aria-label="Rechercher une action" />
           {q ? <button onClick={() => setQ('')} aria-label="Effacer"><X size={18} className="text-muted" /></button> : null}
@@ -36,7 +36,7 @@ export function MarketScreen() {
         {list.length === 0 ? (
           <p className="mt-10 text-center text-sm text-muted">Aucune action ne correspond à « {q} ». Essaie le symbole boursier (ex. AAPL).</p>
         ) : (
-          <ul className="mt-2 -mx-4 border-y border-line bg-card">
+          <ul className="mt-2 overflow-hidden rounded-[20px] bg-card shadow-card">
             {list.map((t) => (
               <li key={t.ticker}>
                 <button onClick={() => push({ name: 'stock', ticker: t.ticker })} className="press flex w-full items-center gap-3 border-b border-line px-3 py-2.5 text-left last:border-b-0">

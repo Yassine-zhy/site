@@ -29,7 +29,7 @@ export function ActivityScreen() {
         {[...groups.entries()].map(([label, items]) => (
           <section key={label} className="mt-5">
             <h2 className="mb-2 px-1 text-[13px] font-bold text-ink-2">{label}</h2>
-            <ul className="-mx-4 border-y border-line bg-card">{items.map((f) => <FeedRow key={f.id} f={f} />)}</ul>
+            <ul className="overflow-hidden rounded-[20px] bg-card shadow-card">{items.map((f) => <FeedRow key={f.id} f={f} />)}</ul>
           </section>
         ))}
       </div>
@@ -74,7 +74,7 @@ export function FeedRow({ f }: { f: FeedItem }) {
                 onClick={() => react(f.id, r.key)}
                 aria-pressed={active}
                 aria-label={`${r.label}${n ? ` (${n})` : ''}`}
-                className={cx('press flex h-7 items-center gap-1 rounded-[2px] border px-1.5 text-xs font-bold nums', active ? 'border-gold bg-gold/15' : 'border-line bg-card-2', !n && 'opacity-70')}
+                className={cx('press flex h-7 items-center gap-1 rounded-[14px] border px-1.5 text-xs font-bold nums', active ? 'border-gold bg-gold/15' : 'border-line bg-card-2', !n && 'opacity-70')}
               >
                 <Glyph name={r.emoji} size={15} className={active ? 'anim-pop' : ''} />
                 {n ? n : null}

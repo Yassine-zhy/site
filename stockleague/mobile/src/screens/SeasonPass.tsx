@@ -17,7 +17,7 @@ export function SeasonPassScreen() {
   return (
     <div className="pb-10">
       <ScreenHeader title="Passe de saison" />
-      <section className="bg-board px-4 py-5 text-board-ink">
+      <section className="hero px-4 py-5 text-white">
         <p className="text-xs font-semibold text-gold">Saison 2, Ligue des Loups</p>
         <p className="display mt-1 text-[44px] leading-none">Palier {Math.min(reached + 1, PASS.length)}<span className="text-[24px] text-muted"> / {PASS.length}</span></p>
         <div className="mt-3 h-1.5 bg-white/10"><div className="h-full bg-gold" style={{ width: `${reached >= PASS.length ? 100 : inTier * 100}%` }} /></div>

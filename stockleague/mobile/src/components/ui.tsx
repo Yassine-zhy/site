@@ -1,5 +1,7 @@
 /** Briques d'interface partagées : angles nets, filets fins, accent or unique. */
 import { ArrowDownRight, ArrowUpRight, CaretLeft, Minus } from '@phosphor-icons/react';
+import { motion } from 'motion/react';
+import { useId } from 'react';
 import type { ReactNode } from 'react';
 import type { GlyphName } from '../data/glyphs';
 import { FRAMES, ME, PLAYER_MAP } from '../data/demo';
@@ -10,7 +12,7 @@ import { useNav } from '../state/nav';
 import { useStore } from '../state/store';
 import { Glyph } from './glyph';
 
-export { Glyph, Medallion } from './glyph';
+export { Glyph, Medallion, Sticker } from './glyph';
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 const asset = (p: string) => `${import.meta.env.BASE_URL}${p}`;
 
@@ -18,7 +20,7 @@ const asset = (p: string) => `${import.meta.env.BASE_URL}${p}`;
 export function CompanyLogo({ ticker, size = 40, className }: { ticker: string; size?: number; className?: string }) {
   const dark = (logoDarkBg as Record<string, number>)[ticker];
   return (
-    <span className={cx('grid shrink-0 place-items-center overflow-hidden rounded-[2px]', dark ? 'bg-[#111720]' : 'bg-white', className)} style={{ width: size, height: size }}>
+    <span className={cx('grid shrink-0 place-items-center overflow-hidden shadow-[0_1px_2px_rgb(23_19_43/0.08),inset_0_0_0_1px_rgb(23_19_43/0.06)]', dark ? 'bg-[#15121f]' : 'bg-white', className)} style={{ width: size, height: size, borderRadius: Math.round(size * 0.28) }}>
       <img src={asset(`logos/${ticker}.png`)} alt={TICKER_MAP[ticker]?.name ?? ticker} className="h-[70%] w-[70%] object-contain" draggable={false} />
     </span>
   );
@@ -36,10 +38,10 @@ export function Avatar({ id, size = 40, ring, className }: { id: string; size?: 
   const pad = f ? Math.max(2, Math.round(size * 0.07)) : 0;
   return (
     <span
-      className={cx('relative block shrink-0 overflow-hidden rounded-[2px] bg-card-2', className)}
-      style={{ width: size, height: size, background: f?.css, boxShadow: ring ? `0 0 0 2px var(--bg), 0 0 0 4px ${RING[ring]}` : undefined }}
+      className={cx('relative block shrink-0 overflow-hidden bg-card-2', className)}
+      style={{ width: size, height: size, borderRadius: Math.round(size * 0.3), background: f?.css, boxShadow: ring ? `0 0 0 2.5px var(--card), 0 0 0 5px ${RING[ring]}` : undefined }}
     >
-      <img src={src} alt="" className="absolute h-[calc(100%-var(--p)*2)] w-[calc(100%-var(--p)*2)] object-cover" style={{ top: pad, left: pad, ['--p' as string]: `${pad}px` }} draggable={false} />
+      <img src={src} alt="" decoding="async" className="absolute h-[calc(100%-var(--p)*2)] w-[calc(100%-var(--p)*2)] object-cover" style={{ top: pad, left: pad, borderRadius: Math.round(size * 0.24), ['--p' as string]: `${pad}px` }} draggable={false} />
     </span>
   );
 }
@@ -61,8 +63,8 @@ export function Ring({ value, size = 48, stroke = 4, children, color = 'var(--go
 /** Barre de progression plate. */
 export function Bar({ value, className, color = 'var(--gold)' }: { value: number; className?: string; color?: string }) {
   return (
-    <span className={cx('block h-1 overflow-hidden bg-line-2', className)}>
-      <span className="block h-full transition-[width] duration-500" style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%`, background: color }} />
+    <span className={cx('block h-2 overflow-hidden rounded-[4px] bg-line', className)}>
+      <span className="block h-full rounded-[4px] transition-[width] duration-700" style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%`, background: color }} />
     </span>
   );
 }
@@ -79,16 +81,17 @@ export function Trend({ value, format = 'percent', className, icon = true }: { v
   );
 }
 
-/** Onglets soulignés (filet or sous l'onglet actif). */
+/** Sélecteur à onglets avec indicateur qui glisse (animation à ressort). */
 export function Segmented<T extends string>({ value, onChange, options, className }: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[]; className?: string }) {
+  const id = useId();
   return (
-    <div role="tablist" className={cx('flex border-b border-line', className)}>
+    <div role="tablist" className={cx('flex gap-1 rounded-[14px] bg-card-2 p-1', className)}>
       {options.map((o) => {
         const active = value === o.value;
         return (
-          <button key={o.value} role="tab" aria-selected={active} onClick={() => onChange(o.value)} className={cx('relative h-11 flex-1 px-1 text-[15px] font-semibold transition-colors', active ? 'text-ink' : 'text-muted')}>
-            {o.label}
-            <span className={cx('absolute inset-x-2 -bottom-px h-[3px] bg-gold transition-opacity', active ? 'opacity-100' : 'opacity-0')} />
+          <button key={o.value} role="tab" aria-selected={active} onClick={() => onChange(o.value)} className={cx('relative h-10 flex-1 px-1 text-[14px] font-bold transition-colors', active ? 'text-ink' : 'text-muted')}>
+            {active ? <motion.span layoutId={`seg-${id}`} className="absolute inset-0 rounded-[11px] bg-card shadow-[0_2px_0_rgb(76_45_180/0.12),0_4px_12px_-6px_rgb(76_45_180/0.35)]" transition={{ type: 'spring', stiffness: 520, damping: 38 }} /> : null}
+            <span className="relative">{o.label}</span>
           </button>
         );
       })}
@@ -100,11 +103,11 @@ export function Segmented<T extends string>({ value, onChange, options, classNam
 export function ScreenHeader({ title, right }: { title?: string; right?: ReactNode }) {
   const { pop } = useNav();
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center gap-1 border-b border-line bg-bg/95 px-1 backdrop-blur">
-      <button onClick={pop} aria-label="Retour" className="press grid size-12 place-items-center">
+    <header className="sticky top-0 z-20 flex h-14 items-center gap-1 bg-bg px-2">
+      <button onClick={pop} aria-label="Retour" className="press grid size-11 place-items-center rounded-[12px] bg-card shadow-card">
         <CaretLeft size={24} weight="bold" />
       </button>
-      <h1 className="display min-w-0 flex-1 truncate text-[24px]">{title}</h1>
+      <h1 className="display min-w-0 flex-1 truncate px-1 text-[24px]">{title}</h1>
       {right}
     </header>
   );
@@ -123,36 +126,35 @@ export function SectionTitle({ children, action, className }: { children: ReactN
 export function Card({ children, className, onClick }: { children: ReactNode; className?: string; onClick?: () => void }) {
   const C = onClick ? 'button' : 'div';
   return (
-    <C onClick={onClick} className={cx('block w-full rounded-[2px] border border-line bg-card text-left', onClick && 'press', className)}>
+    <C onClick={onClick} className={cx('block w-full rounded-[18px] bg-card text-left shadow-card', onClick && 'press', className)}>
       {children}
     </C>
   );
 }
 
-export function Button({ children, onClick, variant = 'primary', className, disabled, type = 'button' }: { children: ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'gold' | 'buy' | 'sell' | 'ghost'; className?: string; disabled?: boolean; type?: 'button' | 'submit' }) {
-  const styles = {
-    primary: 'bg-ink text-bg',
-    secondary: 'border border-line-2 bg-transparent text-ink',
-    gold: 'bg-gold text-gold-ink',
-    buy: 'bg-gain text-white dark:text-[#03140b]',
-    sell: 'bg-loss text-white dark:text-[#1f0705]',
-    ghost: 'text-ink',
-  }[variant];
+const BTN = {
+  primary: ['bg-violet text-white', '#4219d6'],
+  secondary: ['bg-card text-ink border-2 border-line', 'var(--line-2)'],
+  gold: ['bg-gold text-gold-ink', '#e09e00'],
+  buy: ['bg-gain text-white', '#0a8048'],
+  sell: ['bg-loss text-white', '#c01d37'],
+  ghost: ['text-ink', 'transparent'],
+} as const;
+
+/** Bouton « jeu » en relief : s'enfonce quand on appuie. */
+export function Button({ children, onClick, variant = 'primary', className, disabled, type = 'button' }: { children: ReactNode; onClick?: () => void; variant?: keyof typeof BTN; className?: string; disabled?: boolean; type?: 'button' | 'submit' }) {
+  const [style, lip] = BTN[variant];
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className={cx('press inline-flex h-[52px] items-center justify-center gap-2 rounded-[2px] px-5 text-[16px] font-bold disabled:opacity-35', styles, className)}>
+    <button type={type} onClick={onClick} disabled={disabled} style={{ ['--lip' as string]: lip }} className={cx('inline-flex h-[54px] items-center justify-center gap-2 rounded-[14px] px-5 text-[16px] font-extrabold disabled:opacity-40', variant !== 'ghost' && 'btn-3d', style, className)}>
       {children}
     </button>
   );
 }
 
-/** Étiquette d'habillage télé : bloc incliné, jamais arrondi. */
+/** Petite étiquette colorée. */
 export function Tag({ children, tone = 'neutral', className }: { children: ReactNode; tone?: 'neutral' | 'gold' | 'gain' | 'loss' | 'board'; className?: string }) {
-  const t = { neutral: 'bg-card-2 text-ink-2', gold: 'bg-gold text-gold-ink', gain: 'bg-gain text-white dark:text-[#03140b]', loss: 'bg-loss text-white dark:text-[#1f0705]', board: 'bg-ink text-bg' }[tone];
-  return (
-    <span className={cx('slant inline-block px-2 py-[3px]', t, className)}>
-      <span className="unslant inline-flex items-center gap-1 text-[11px] font-bold leading-4 whitespace-nowrap">{children}</span>
-    </span>
-  );
+  const t = { neutral: 'bg-card-2 text-ink-2', gold: 'bg-gold text-gold-ink', gain: 'bg-gain-soft text-gain', loss: 'bg-loss-soft text-loss', board: 'bg-violet text-white' }[tone];
+  return <span className={cx('inline-flex items-center gap-1 rounded-[7px] px-2 py-[3px] text-[11px] font-extrabold leading-4 whitespace-nowrap', t, className)}>{children}</span>;
 }
 
 /** Évolution du rang depuis la veille : ▲2 / ▼1 / —. */
@@ -169,8 +171,8 @@ export function RankMove({ delta }: { delta: number }) {
 
 export function EmptyState({ emoji, title, children, action }: { emoji: GlyphName; title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="border-t-2 border-gold bg-card px-6 py-10 text-center">
-      <Glyph name={emoji} size={44} className="mx-auto" />
+    <div className="rounded-[18px] bg-card px-6 py-10 text-center shadow-card">
+      <Glyph name={emoji} size={72} className="mx-auto" />
       <p className="display mt-4 text-[28px]">{title}</p>
       {children ? <p className="mx-auto mt-2 max-w-[30ch] text-sm text-muted">{children}</p> : null}
       {action ? <div className="mt-5">{action}</div> : null}
@@ -182,10 +184,11 @@ export function EmptyState({ emoji, title, children, action }: { emoji: GlyphNam
 export function LogoMark({ size = 32 }: { size?: number }) {
   return (
     <svg viewBox="0 0 32 32" width={size} height={size} aria-hidden className="shrink-0">
-      <rect width="32" height="32" rx="2" fill="#0A0D12" />
-      <rect x="6.5" y="14" width="5.5" height="11" fill="#F3F5F8" opacity="0.9" />
-      <rect x="13.25" y="7" width="5.5" height="18" fill="#F2B705" />
-      <rect x="20" y="18" width="5.5" height="7" fill="#F3F5F8" opacity="0.6" />
+      <defs><linearGradient id="lm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#5B2EFF" /><stop offset=".55" stopColor="#A43BFF" /><stop offset="1" stopColor="#FF3D8B" /></linearGradient></defs>
+      <rect width="32" height="32" rx="9" fill="url(#lm)" />
+      <rect x="6.5" y="14" width="5.5" height="11" rx="1.5" fill="#fff" opacity="0.9" />
+      <rect x="13.25" y="7" width="5.5" height="18" rx="1.5" fill="#FFC531" />
+      <rect x="20" y="18" width="5.5" height="7" rx="1.5" fill="#fff" opacity="0.7" />
     </svg>
   );
 }

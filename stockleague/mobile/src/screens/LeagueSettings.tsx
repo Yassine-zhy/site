@@ -13,13 +13,13 @@ export function InviteCard({ code, className }: { code: string; className?: stri
   const link = `stockleague.app/rejoindre/${code}`;
   const copy = () => { navigator.clipboard?.writeText(`https://${link}`).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1600); };
   return (
-    <div className={cx('rounded-[2px] bg-board p-4 text-board-ink', className)}>
+    <div className={cx('rounded-[14px] hero p-4 text-white', className)}>
       <p className="text-xs opacity-70">Code d’invitation</p>
       <p className="display mt-1 text-[48px] tracking-[0.12em] text-gold">{code}</p>
       <p className="mt-1 flex items-center gap-1.5 truncate text-xs opacity-70"><LinkSimple size={14} /> {link}</p>
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <button onClick={copy} className="press flex h-11 items-center justify-center gap-2 rounded-[2px] bg-white/10 text-sm font-bold"><Copy size={18} /> {copied ? 'Lien copié' : 'Copier le lien'}</button>
-        <button onClick={() => navigator.share?.({ title: 'Rejoins ma ligue StockLeague', text: `Code : ${code}`, url: `https://${link}` }).catch(() => {})} className="press flex h-11 items-center justify-center gap-2 rounded-[2px] bg-gold text-sm font-bold text-gold-ink"><ShareNetwork size={18} /> Partager</button>
+        <button onClick={copy} className="press flex h-11 items-center justify-center gap-2 rounded-[14px] bg-white/10 text-sm font-bold"><Copy size={18} /> {copied ? 'Lien copié' : 'Copier le lien'}</button>
+        <button onClick={() => navigator.share?.({ title: 'Rejoins ma ligue StockLeague', text: `Code : ${code}`, url: `https://${link}` }).catch(() => {})} className="press flex h-11 items-center justify-center gap-2 rounded-[14px] bg-gold text-sm font-bold text-gold-ink"><ShareNetwork size={18} /> Partager</button>
       </div>
     </div>
   );
@@ -34,7 +34,7 @@ export function LeagueSettingsScreen() {
     <div className="pb-10">
       <ScreenHeader title={l.name} right={<Tag className="mr-2">Admin</Tag>} />
       <div className="px-4 pt-4">
-        <div className="flex items-center gap-3 rounded-[2px] border border-line bg-card p-4">
+        <div className="flex items-center gap-3 rounded-[18px] bg-card shadow-card p-4">
           <Glyph name="hourglass-not-done" size={40} />
           <div>
             <p className="font-bold">La saison commence dans {formatCountdown(l.start.getTime() - Date.now())}</p>
@@ -45,20 +45,20 @@ export function LeagueSettingsScreen() {
         <InviteCard code={l.inviteCode} className="mt-3" />
 
         <h2 className="display mt-7 mb-2 px-1 text-[26px]">Joueurs <span className="text-muted nums">{members.length}/{l.maxPlayers}</span></h2>
-        <ul className="-mx-4 border-y border-line bg-card">
+        <ul className="overflow-hidden rounded-[20px] bg-card shadow-card">
           {members.map((m) => (
             <li key={m} className="flex items-center gap-3 border-b border-line px-3 py-2.5 last:border-b-0">
               <Avatar id={m} size={38} />
               <span className="flex-1 font-semibold">{PLAYER_MAP[m]?.pseudo ?? NAMES[m]}{m === 'alex' ? ' (toi)' : ''}</span>
               {m === 'alex' ? <Tag tone="board">Admin</Tag> : (
-                <button onClick={() => setMembers(members.filter((x) => x !== m))} className="press grid size-9 place-items-center rounded-[2px] text-loss" aria-label={`Retirer ${NAMES[m] ?? m}`}><UserMinus size={20} /></button>
+                <button onClick={() => setMembers(members.filter((x) => x !== m))} className="press grid size-9 place-items-center rounded-[14px] text-loss" aria-label={`Retirer ${NAMES[m] ?? m}`}><UserMinus size={20} /></button>
               )}
             </li>
           ))}
         </ul>
 
         <h2 className="display mt-7 mb-2 px-1 text-[26px]">Réglages</h2>
-        <dl className="-mx-4 border-y border-line bg-card text-sm">
+        <dl className="overflow-hidden rounded-[20px] bg-card shadow-card text-sm">
           {[['Capital de départ', formatUSD(l.startingCash)], ['Frais par ordre', formatUSD(l.fee)], ['Marchés', 'États-Unis'], ['Joueurs maximum', String(l.maxPlayers)]].map(([k, v]) => (
             <div key={k} className="flex justify-between border-b border-line px-4 py-3 last:border-b-0"><dt className="text-muted">{k}</dt><dd className="font-bold nums">{v}</dd></div>
           ))}

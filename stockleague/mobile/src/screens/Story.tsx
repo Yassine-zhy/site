@@ -55,7 +55,7 @@ export function StoryScreen() {
   useEffect(() => { s.patch({ storySeen: todayKey() }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#07090d] text-[#f3f5f8]" onPointerDown={() => setPaused(true)} onPointerUp={() => setPaused(false)}>
+    <div className="fixed inset-0 z-50 flex flex-col hero" onPointerDown={() => setPaused(true)} onPointerUp={() => setPaused(false)}>
       <div className="flex gap-1 px-3 pt-3" aria-hidden>
         {slides.map((_, k) => (
           <span key={k} className="h-[3px] flex-1 overflow-hidden bg-white/20">

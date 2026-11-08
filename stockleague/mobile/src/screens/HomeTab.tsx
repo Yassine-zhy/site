@@ -65,11 +65,11 @@ export function HomeTab() {
             <span className="nums">{lvl.toNext} XP</span>
           </div>
         </div>
-        <button onClick={() => setTab('profil')} className="press flex h-12 items-center gap-1 border border-line bg-card px-2" aria-label={`Série de ${s.visitStreak} jours`}>
+        <button onClick={() => setTab('profil')} className="press flex h-12 items-center gap-1 rounded-[18px] bg-card shadow-card px-2" aria-label={`Série de ${s.visitStreak} jours`}>
           <Glyph name="fire" size={24} className="anim-flame" />
           <span className="display text-xl leading-none nums">{s.visitStreak}</span>
         </button>
-        <button onClick={() => push({ name: 'inbox' })} className="press relative grid size-12 place-items-center border border-line bg-card" aria-label={`Notifications${unread ? `, ${unread} non lues` : ''}`}>
+        <button onClick={() => push({ name: 'inbox' })} className="press relative grid size-12 place-items-center rounded-[18px] bg-card shadow-card" aria-label={`Notifications${unread ? `, ${unread} non lues` : ''}`}>
           <Bell size={24} weight={unread ? 'fill' : 'regular'} />
           {unread ? <span className="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center bg-loss px-1 text-[11px] font-bold text-white nums">{unread}</span> : null}
         </button>
@@ -82,11 +82,11 @@ export function HomeTab() {
           <span className="text-[11px] font-semibold">Ta semaine</span>
         </button>
         <button onClick={() => push({ name: 'pass' })} className="flex w-[72px] shrink-0 flex-col items-center gap-1.5">
-          <span className="grid size-[66px] place-items-center bg-board p-[3px]" style={{ background: claimable >= 0 ? 'linear-gradient(135deg,#ffe08a,#f2b705,#ff8a3d)' : 'var(--line-2)' }}><span className="grid size-full place-items-center bg-board"><Glyph name="path" size={30} /></span></span>
+          <span className="grid size-[66px] place-items-center hero p-[3px]" style={{ background: claimable >= 0 ? 'linear-gradient(135deg,#ffe08a,#f2b705,#ff8a3d)' : 'var(--line-2)' }}><span className="grid size-full place-items-center hero"><Glyph name="path" size={30} /></span></span>
           <span className="text-[11px] font-semibold">Passe</span>
         </button>
         <button onClick={() => push({ name: 'swipe' })} className="flex w-[72px] shrink-0 flex-col items-center gap-1.5">
-          <span className="grid size-[66px] place-items-center p-[3px]" style={{ background: todo.length ? 'linear-gradient(135deg,#ffe08a,#f2b705,#ff8a3d)' : 'var(--line-2)' }}><span className="grid size-full place-items-center bg-board"><Glyph name="swipe" size={30} /></span></span>
+          <span className="grid size-[66px] place-items-center p-[3px]" style={{ background: todo.length ? 'linear-gradient(135deg,#ffe08a,#f2b705,#ff8a3d)' : 'var(--line-2)' }}><span className="grid size-full place-items-center hero"><Glyph name="swipe" size={30} /></span></span>
           <span className="text-[11px] font-semibold">Rafale</span>
         </button>
         {['lea', 'yanis', 'mehdi'].map((id) => (
@@ -111,34 +111,34 @@ export function HomeTab() {
 
       {/* ------------------------------------------------ à faire maintenant */}
       {urgent ? (
-        <button onClick={() => openSheet({ name: 'predict', eventId: urgent.id })} className="press mt-4 block w-full overflow-hidden rounded-[2px] bg-board text-left text-board-ink">
+        <button onClick={() => openSheet({ name: 'predict', eventId: urgent.id })} className="press mt-4 block w-full overflow-hidden rounded-[14px] hero text-left text-white">
           <div className="flex items-center gap-3 p-4">
             <CompanyLogo ticker={urgent.ticker} size={52} />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-gold">À faire maintenant</p>
               <p className="mt-0.5 text-[17px] font-bold leading-tight">{TICKER_MAP[urgent.ticker].name} va-t-il battre les attentes ?</p>
-              <p className="mt-1 text-xs opacity-75 nums">Verrouillage dans <b className="text-board-ink">{formatCountdown(urgent.lockAt.getTime() - now)}</b></p>
+              <p className="mt-1 text-xs opacity-75 nums">Verrouillage dans <b className="text-white">{formatCountdown(urgent.lockAt.getTime() - now)}</b></p>
             </div>
             <CaretRight size={20} weight="bold" className="opacity-70" />
           </div>
         </button>
       ) : null}
       {urgent && todo.length > 1 ? (
-        <button onClick={() => push({ name: 'swipe' })} className="press flex w-full items-center gap-2 border-t border-white/10 bg-board-2 px-4 py-3 text-left text-xs text-board-ink">
-          <HandSwipeRight size={18} weight="fill" className="text-gold" />
+        <button onClick={() => push({ name: 'swipe' })} className="press mt-2 flex w-full items-center gap-2 rounded-[16px] bg-card px-4 py-3 text-left text-xs text-ink shadow-card">
+          <HandSwipeRight size={20} weight="fill" className="text-violet" />
           <span className="flex-1"><b>{todo.length} pronostics à faire</b> : enchaîne-les en 30 secondes</span>
           <CaretRight size={14} weight="bold" />
         </button>
       ) : null}
       {!urgent ? (
-        <div className="mt-4 flex items-center gap-3 rounded-[2px] border border-line bg-card p-4">
+        <div className="mt-4 flex items-center gap-3 rounded-[18px] bg-card shadow-card p-4">
           <Glyph name="check-mark-button" size={36} />
           <p className="text-sm"><b>Tout est à jour.</b> Tes pronostics de la semaine sont faits.</p>
         </div>
       ) : null}
 
       {/* ------------------------------------------------ missions du jour */}
-      <section className="mt-3 rounded-[2px] border border-line bg-card">
+      <section className="mt-3 rounded-[18px] bg-card shadow-card">
         <div className="flex items-center justify-between px-4 pt-3.5">
           <h2 className="display text-[24px]">Missions du jour</h2>
           <span className="text-xs font-bold text-muted nums">{doneCount}/3</span>
@@ -147,21 +147,21 @@ export function HomeTab() {
           {missions.map((m) => (
             <li key={m.id}>
               <button disabled={done[m.id]} onClick={m.go} className="press flex w-full items-center gap-3 px-4 py-2.5 text-left disabled:active:scale-100">
-                <span className={cx('grid size-10 place-items-center rounded-[2px] border', done[m.id] ? 'border-gain bg-gain-soft' : 'border-line bg-card-2')}>
+                <span className={cx('grid size-10 place-items-center rounded-[14px] border', done[m.id] ? 'border-gain bg-gain-soft' : 'border-line bg-card-2')}>
                   {done[m.id] ? <Glyph name="check-mark-button" size={22} /> : <Glyph name={m.emoji} size={22} />}
                 </span>
                 <span className={cx('flex-1 text-sm font-semibold', done[m.id] && 'text-muted line-through')}>{m.label}</span>
-                <span className={cx('rounded-[2px] px-1.5 py-0.5 text-xs font-bold nums', done[m.id] ? 'text-muted' : 'bg-gold/20 text-ink')}>+{m.xp} XP</span>
+                <span className={cx('rounded-[14px] px-1.5 py-0.5 text-xs font-bold nums', done[m.id] ? 'text-muted' : 'bg-gold/20 text-ink')}>+{m.xp} XP</span>
               </button>
             </li>
           ))}
         </ul>
         <div className="flex items-center gap-3 border-t border-line px-4 py-3">
           <div className="flex-1">
-            <div className="h-2 overflow-hidden rounded-[2px] bg-card-2"><div className="h-full rounded-[2px] bg-gold transition-[width] duration-500" style={{ width: `${(doneCount / 3) * 100}%` }} /></div>
+            <div className="h-2 overflow-hidden rounded-[14px] bg-card-2"><div className="h-full rounded-[14px] bg-gold transition-[width] duration-500" style={{ width: `${(doneCount / 3) * 100}%` }} /></div>
             <p className="mt-1 text-[11px] text-muted">{chest ? `Coffre ouvert : +${chest} XP. Nouvelles missions demain.` : doneCount === 3 ? 'Le coffre du jour est prêt.' : 'Termine les 3 missions pour ouvrir le coffre du jour.'}</p>
           </div>
-          <button onClick={() => doneCount === 3 && !chest && s.openChest()} disabled={doneCount < 3 || !!chest} aria-label="Ouvrir le coffre du jour" className={cx('press grid size-12 place-items-center rounded-[2px] border', doneCount === 3 && !chest ? 'border-gold bg-gold/15' : 'border-line bg-card-2', doneCount < 3 && 'opacity-60')}>
+          <button onClick={() => doneCount === 3 && !chest && s.openChest()} disabled={doneCount < 3 || !!chest} aria-label="Ouvrir le coffre du jour" className={cx('press grid size-12 place-items-center rounded-[14px] border', doneCount === 3 && !chest ? 'border-gold bg-gold/15' : 'border-line bg-card-2', doneCount < 3 && 'opacity-60')}>
             <Glyph name="wrapped-gift" size={30} className={doneCount === 3 && !chest ? 'anim-shake' : chest ? 'grayscale' : ''} />
           </button>
         </div>
@@ -169,7 +169,7 @@ export function HomeTab() {
 
       {/* ------------------------------------------------ passe de saison */}
       {claimable >= 0 ? (
-        <button onClick={() => push({ name: 'pass' })} className="press mt-3 flex w-full items-center gap-3 border-l-[3px] border-gold bg-card p-4 text-left">
+        <button onClick={() => push({ name: 'pass' })} className="press mt-3 flex w-full items-center gap-3 rounded-[18px] bg-card shadow-card p-4 text-left">
           <Glyph name="path" size={30} />
           <span className="flex-1">
             <span className="block text-xs font-semibold text-muted">Passe de saison, palier {claimable + 1}</span>
@@ -183,7 +183,7 @@ export function HomeTab() {
       <FlashChallenge />
 
       {/* ------------------------------------------------ duel de la semaine */}
-      <button onClick={() => setTab('ligue')} className="press mt-3 block w-full rounded-[2px] border border-line bg-card p-4 text-left">
+      <button onClick={() => setTab('ligue')} className="press mt-3 block w-full rounded-[18px] bg-card shadow-card p-4 text-left">
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-2"><Glyph name="crossed-swords" size={24} /><span className="display text-[24px]">Duel de la semaine</span></span>
           <span className="text-xs text-muted">fin vendredi</span>
@@ -192,9 +192,9 @@ export function HomeTab() {
           <Avatar id={ME} size={44} />
           <div className="flex-1">
             <div className="flex justify-between text-sm font-bold nums"><span>{duelMine} pts</span><span>{DUEL.theirs} pts</span></div>
-            <div className="mt-1.5 flex h-2.5 overflow-hidden rounded-[2px]">
+            <div className="mt-1.5 flex h-2.5 overflow-hidden rounded-[14px]">
               <span className="bg-gold" style={{ width: `${(duelMine / (duelMine + DUEL.theirs)) * 100}%` }} />
-              <span className="flex-1 bg-board dark:bg-line-2" />
+              <span className="flex-1 hero" />
             </div>
           </div>
           <Avatar id={DUEL.opponent} size={44} />
@@ -204,12 +204,12 @@ export function HomeTab() {
 
       {/* ------------------------------------------------ classement et portefeuille */}
       <div className="mt-3 grid grid-cols-2 gap-3">
-        <button onClick={() => setTab('ligue')} className="press rounded-[2px] border border-line bg-card p-3 text-left">
+        <button onClick={() => setTab('ligue')} className="press rounded-[18px] bg-card shadow-card p-3 text-left">
           <p className="text-[11px] font-semibold text-muted">{ACTIVE_LEAGUE.name}</p>
           <p className="display mt-1 text-[40px] leading-none nums">{me.rank}<sup className="text-base">e</sup></p>
           <p className="mt-1 text-[11px] text-ink-2">{above ? <>à <b className="nums">{above.total - me.total + 1} pts</b> de {name(above.id)}</> : 'en tête'}</p>
         </button>
-        <button onClick={() => setTab('portefeuille')} className="press rounded-[2px] border border-line bg-card p-3 text-left">
+        <button onClick={() => setTab('portefeuille')} className="press rounded-[18px] bg-card shadow-card p-3 text-left">
           <p className="text-[11px] font-semibold text-muted">Portefeuille</p>
           <p className="mt-1 truncate text-[19px] font-bold nums">{formatUSD(value)}</p>
           <div className="mt-1 flex items-end justify-between">
@@ -224,7 +224,7 @@ export function HomeTab() {
         <h2 className="display text-[26px]">Dans la ligue</h2>
         <button onClick={() => push({ name: 'activity' })} className="text-sm font-semibold underline underline-offset-4">Tout voir</button>
       </div>
-      <ul className="-mx-4 border-y border-line bg-card">
+      <ul className="overflow-hidden rounded-[20px] bg-card shadow-card">
         {[...s.feed].sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, 3).map((f) => <FeedRow key={f.id} f={f} />)}
       </ul>
     </div>
@@ -238,22 +238,22 @@ function FlashChallenge() {
   const yesterday = flash[yesterdayKey()];
   const [justPicked, setJustPicked] = useState(false);
   return (
-    <section className="mt-3 rounded-[2px] border border-line bg-card p-4">
+    <section className="mt-3 rounded-[18px] bg-card shadow-card p-4">
       <div className="flex items-center gap-2">
         <Glyph name="high-voltage" size={24} />
         <h2 className="display text-[24px]">Défi éclair</h2>
-        <span className="ml-auto rounded-[2px] bg-gold/20 px-1.5 py-0.5 text-xs font-bold">+{XP.flash} XP</span>
+        <span className="ml-auto rounded-[14px] bg-gold/20 px-1.5 py-0.5 text-xs font-bold">+{XP.flash} XP</span>
       </div>
       <p className="mt-1.5 text-sm font-semibold">Le S&amp;P 500 finira-t-il la journée en hausse ?</p>
       {today ? (
-        <p className={cx('mt-3 flex items-center gap-2 rounded-[2px] bg-card-2 p-3 text-sm', justPicked && 'anim-pop')}>
+        <p className={cx('mt-3 flex items-center gap-2 rounded-[14px] bg-card-2 p-3 text-sm', justPicked && 'anim-pop')}>
           <Lightning size={18} weight="fill" className="text-gold" />
           Tu as répondu <b>{today === 'up' ? 'hausse' : 'baisse'}</b>. Résultat demain matin.
         </p>
       ) : (
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <button onClick={() => { flashPick('up'); setJustPicked(true); }} className="press flex h-12 items-center justify-center gap-2 rounded-[2px] border-2 border-gain/40 bg-gain-soft font-bold text-gain"><Glyph name="chart-increasing" size={22} /> Hausse</button>
-          <button onClick={() => { flashPick('down'); setJustPicked(true); }} className="press flex h-12 items-center justify-center gap-2 rounded-[2px] border-2 border-loss/40 bg-loss-soft font-bold text-loss"><Glyph name="chart-decreasing" size={22} /> Baisse</button>
+          <button onClick={() => { flashPick('up'); setJustPicked(true); }} className="press flex h-12 items-center justify-center gap-2 rounded-[14px] border-2 border-gain/40 bg-gain-soft font-bold text-gain"><Glyph name="chart-increasing" size={22} /> Hausse</button>
+          <button onClick={() => { flashPick('down'); setJustPicked(true); }} className="press flex h-12 items-center justify-center gap-2 rounded-[14px] border-2 border-loss/40 bg-loss-soft font-bold text-loss"><Glyph name="chart-decreasing" size={22} /> Baisse</button>
         </div>
       )}
       {yesterday ? <p className="mt-2.5 text-xs text-muted">Hier : tu avais dit {yesterday === 'up' ? 'hausse' : 'baisse'}, le S&amp;P 500 a fini à +0,62 %. {yesterday === 'up' ? `Bien vu, +${XP.flash} XP.` : 'Raté cette fois.'}</p> : null}

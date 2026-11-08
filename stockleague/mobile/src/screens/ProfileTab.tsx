@@ -26,12 +26,12 @@ export function ProfileTab() {
       <header className="flex items-center gap-4 pt-3">
         <PhotoPicker onDone={(photo) => store.patch({ photo })} className="press relative shrink-0">
           <Avatar id={ME} size={84} />
-          <span className="absolute -right-1.5 -bottom-1.5 grid size-8 place-items-center rounded-[2px] border-[3px] border-bg bg-gold text-gold-ink" aria-label="Changer la photo"><Camera size={15} weight="bold" /></span>
+          <span className="absolute -right-1.5 -bottom-1.5 grid size-8 place-items-center rounded-[14px] border-[3px] border-bg bg-gold text-gold-ink" aria-label="Changer la photo"><Camera size={15} weight="bold" /></span>
         </PhotoPicker>
         <div className="min-w-0 flex-1">
           {editing ? (
             <form onSubmit={(e) => { e.preventDefault(); if (name.trim().length >= 2) { store.patch({ pseudo: name.trim() }); setEditing(false); } }} className="flex gap-2">
-              <input autoFocus value={name} maxLength={24} onChange={(e) => setName(e.target.value)} className="h-11 min-w-0 flex-1 rounded-[2px] border border-line-2 bg-card px-3 text-[17px] font-bold outline-none focus:border-ink" aria-label="Pseudo" />
+              <input autoFocus value={name} maxLength={24} onChange={(e) => setName(e.target.value)} className="h-11 min-w-0 flex-1 rounded-[14px] border border-line-2 bg-card px-3 text-[17px] font-bold outline-none focus:border-ink" aria-label="Pseudo" />
               <Button type="submit" className="h-11 px-3 text-sm">OK</Button>
             </form>
           ) : (
@@ -46,7 +46,7 @@ export function ProfileTab() {
       </header>
 
       {/* ------------------------------------------------ niveau */}
-      <section className="mt-5 rounded-[2px] bg-board p-4 text-board-ink">
+      <section className="mt-5 rounded-[14px] hero p-4 text-white">
         <div className="flex items-center gap-4">
           <Ring value={lvl.progress} size={72} stroke={5}><span className="display text-[30px] nums">{lvl.level}</span></Ring>
           <div className="flex-1">
@@ -63,14 +63,14 @@ export function ProfileTab() {
           <div className="mt-2 grid grid-cols-14 gap-1" style={{ gridTemplateColumns: 'repeat(14, 1fr)' }} aria-label="Jours de connexion des deux dernières semaines">
             {days.map((d) => {
               const on = store.visitDays.includes(d) || (d === todayKey() && store.lastVisit === d);
-              return <span key={d} className={cx('aspect-square rounded-[2px]', on ? 'bg-gold' : 'bg-white/10', d === todayKey() && 'ring-2 ring-white/60')} />;
+              return <span key={d} className={cx('aspect-square rounded-[14px]', on ? 'bg-gold' : 'bg-white/10', d === todayKey() && 'ring-2 ring-white/60')} />;
             })}
           </div>
         </div>
       </section>
 
       {/* ------------------------------------------------ passe, cadres, gels */}
-      <button onClick={() => push({ name: 'pass' })} className="press mt-3 flex w-full items-center gap-3 border border-line bg-card p-4 text-left">
+      <button onClick={() => push({ name: 'pass' })} className="press mt-3 flex w-full items-center gap-3 rounded-[18px] bg-card shadow-card p-4 text-left">
         <Glyph name="path" size={30} />
         <span className="flex-1">
           <span className="block font-bold">Passe de saison</span>
@@ -78,7 +78,7 @@ export function ProfileTab() {
         </span>
         <span className="flex items-center gap-1 text-sm font-bold text-ink nums"><Glyph name="snowflake" size={20} /> {store.freezes}</span>
       </button>
-      <div className="mt-3 border border-line bg-card p-4">
+      <div className="mt-3 rounded-[18px] bg-card shadow-card p-4">
         <p className="text-sm font-bold">Cadre de ta photo</p>
         <div className="mt-3 flex gap-3">
           <button onClick={() => store.patch({ frame: null })} aria-pressed={!store.frame} className={cx('grid size-14 place-items-center border text-[11px] font-semibold', !store.frame ? 'border-gold' : 'border-line')}>Aucun</button>
@@ -95,7 +95,7 @@ export function ProfileTab() {
         <p className="mt-2 text-xs text-muted">Débloque les cadres dans le passe de saison.</p>
       </div>
 
-      <dl className="mt-3 grid grid-cols-3 divide-x divide-line -mx-4 border-y border-line bg-card text-center">
+      <dl className="mt-3 grid grid-cols-3 divide-x divide-line overflow-hidden rounded-[20px] bg-card shadow-card text-center">
         <div className="p-3"><dt className="text-[11px] font-semibold text-muted">Ligues</dt><dd className="display mt-1 text-[28px] nums">{LEAGUES.length}</dd></div>
         <div className="p-3"><dt className="text-[11px] font-semibold text-muted">Meilleur rang</dt><dd className="display mt-1 text-[28px] nums">2<sup className="text-sm">e</sup></dd></div>
         <div className="p-3"><dt className="text-[11px] font-semibold text-muted">Badges</dt><dd className="display mt-1 text-[28px] nums">{unlocked}/{badges.length}</dd></div>
@@ -115,7 +115,7 @@ export function ProfileTab() {
       </div>
 
       <h2 className="display mb-2 mt-7 px-1 text-[26px]">Réglages</h2>
-      <div className="-mx-4 border-y border-line bg-card">
+      <div className="overflow-hidden rounded-[20px] bg-card shadow-card">
         <div className="flex items-center gap-3 border-b border-line px-4 py-3">
           <Moon size={22} className="text-muted" />
           <span className="flex-1 text-sm font-semibold">Thème</span>
@@ -127,8 +127,8 @@ export function ProfileTab() {
             <span className="block text-sm font-semibold">Rappel avant verrouillage</span>
             <span className="block text-xs text-muted">1 h avant chaque publication</span>
           </span>
-          <button role="switch" aria-checked={store.notifications} aria-label="Rappel avant verrouillage" onClick={() => store.patch({ notifications: !store.notifications })} className={cx('relative h-7 w-12 rounded-[2px] transition-colors', store.notifications ? 'bg-gain' : 'bg-line-2')}>
-            <span className={cx('absolute top-1 size-5 rounded-[2px] bg-white shadow transition-all', store.notifications ? 'left-6' : 'left-1')} />
+          <button role="switch" aria-checked={store.notifications} aria-label="Rappel avant verrouillage" onClick={() => store.patch({ notifications: !store.notifications })} className={cx('relative h-7 w-12 rounded-[14px] transition-colors', store.notifications ? 'bg-gain' : 'bg-line-2')}>
+            <span className={cx('absolute top-1 size-5 rounded-[14px] bg-white shadow transition-all', store.notifications ? 'left-6' : 'left-1')} />
           </button>
         </div>
         <Row icon={Trophy} label="Mes ligues" onClick={() => push({ name: 'leagues' })} />
@@ -138,7 +138,7 @@ export function ProfileTab() {
       </div>
 
       <button onClick={() => store.reset()} className="mt-4 w-full text-center text-sm font-semibold text-muted underline underline-offset-4">Réinitialiser la démo</button>
-      <p className="mt-6 text-center text-[11px] leading-relaxed text-muted">{DISCLAIMER}<br />StockLeague, version démo 0.4</p>
+      <p className="mt-6 text-center text-[11px] leading-relaxed text-muted">{DISCLAIMER}<br />StockLeague, version démo 0.5</p>
     </div>
   );
 }

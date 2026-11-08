@@ -1,64 +1,72 @@
 @import "tailwindcss";
-@import "@fontsource/barlow/400.css";
-@import "@fontsource/barlow/500.css";
-@import "@fontsource/barlow/600.css";
-@import "@fontsource/barlow/700.css";
-@import "@fontsource/barlow-condensed/700-italic.css";
-@import "@fontsource/barlow-condensed/800-italic.css";
-@import "@fontsource/barlow-condensed/600.css";
+@import "@fontsource-variable/bricolage-grotesque/wdth.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ------------------------------------------------------------------ identité
-   « Retransmission de nuit » : quasi-noir, filets fins, angles nets (2 px), un seul accent or.
-   Chiffres et titres en Barlow Condensed italique, comme un habillage de match.
-   Vert / rouge uniquement pour gains / pertes, toujours avec signe et flèche. */
+   « Arcade financière » : fond clair lumineux, couleurs vives par rubrique
+   (violet ligue, bleu portefeuille, rose pronostics, orange accueil, menthe profil),
+   boutons en relief façon jeu, illustrations 3D. Vert / rouge réservés aux gains / pertes. */
 :root {
-  --bg: #f2f3f5;
+  --bg: #f4f2fb;
   --card: #ffffff;
-  --card-2: #eceef2;
-  --ink: #0a0d12;
-  --ink-2: #39424f;
-  --muted: #6b7584;
-  --line: #e1e4ea;
-  --line-2: #cdd2da;
-  --board: #0a0d12;
-  --board-2: #161b23;
-  --board-ink: #f3f5f8;
-  --gold: #f2b705;
-  --gold-ink: #0a0d12;
-  --gain: #0a8a52;
-  --loss: #d0362b;
-  --gain-soft: #e3f4ec;
-  --loss-soft: #fbe9e7;
-  --silver: #b7c2d0;
-  --bronze: #c98a5a;
-  --shadow: 0 1px 0 rgb(10 13 18 / 0.05);
+  --card-2: #f1eefa;
+  --ink: #17132b;
+  --ink-2: #4a4566;
+  --muted: #7c7799;
+  --line: #e9e5f5;
+  --line-2: #d8d2ec;
+  --board: #5b2eff;
+  --board-2: #7a52ff;
+  --board-ink: #ffffff;
+  --gold: #ffc531;
+  --gold-ink: #2a1c00;
+  --gain: #0fae63;
+  --loss: #f0344f;
+  --gain-soft: #dff7ea;
+  --loss-soft: #fde5e9;
+  --silver: #b9c1d6;
+  --bronze: #e58a4e;
+  --violet: #6c3bff;
+  --pink: #ff3d8b;
+  --orange: #ff8a1f;
+  --blue: #2e8bff;
+  --mint: #12c9a0;
+  --grad-hero: linear-gradient(135deg, #5b2eff 0%, #a43bff 52%, #ff3d8b 100%);
+  --grad-sun: linear-gradient(135deg, #ffd23f 0%, #ff8a1f 100%);
+  --grad-blue: linear-gradient(135deg, #2e8bff 0%, #5b2eff 100%);
+  --grad-pink: linear-gradient(135deg, #ff3d8b 0%, #ff8a1f 100%);
+  --grad-mint: linear-gradient(135deg, #12c9a0 0%, #2e8bff 100%);
+  --shadow: 0 1px 2px rgb(23 19 43 / 0.04), 0 8px 24px -12px rgb(76 45 180 / 0.22);
   color-scheme: light;
 }
 .dark {
-  --bg: #07090d;
-  --card: #0d1117;
-  --card-2: #141a22;
-  --ink: #f3f5f8;
-  --ink-2: #c3cbd6;
-  --muted: #8590a2;
-  --line: #1b222c;
-  --line-2: #2a3341;
-  --board: #0d1117;
-  --board-2: #151c26;
-  --board-ink: #f3f5f8;
-  --gain: #2fd27f;
-  --loss: #ff5a4e;
-  --gain-soft: #0c2a1c;
-  --loss-soft: #2e1412;
-  --shadow: 0 1px 0 rgb(255 255 255 / 0.03);
+  --bg: #0f0b1e;
+  --card: #1a1533;
+  --card-2: #241d45;
+  --ink: #f5f3ff;
+  --ink-2: #c9c3e6;
+  --muted: #958fb8;
+  --line: #2a2350;
+  --line-2: #3a3268;
+  --board: #5b2eff;
+  --board-2: #7a52ff;
+  --gain: #2fe08a;
+  --loss: #ff5470;
+  --gain-soft: #10301f;
+  --loss-soft: #3a1420;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px -14px rgb(0 0 0 / 0.7);
   color-scheme: dark;
 }
 
 @theme inline {
-  --font-sans: "Barlow", system-ui, sans-serif;
-  --font-display: "Barlow Condensed", "Barlow", sans-serif;
+  --font-sans: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --color-violet: var(--violet);
+  --color-pink: var(--pink);
+  --color-orange: var(--orange);
+  --color-blue: var(--blue);
+  --color-mint: var(--mint);
   --color-bg: var(--bg);
   --color-card: var(--card);
   --color-card-2: var(--card-2);
@@ -78,33 +86,32 @@
   --color-loss-soft: var(--loss-soft);
   --color-silver: var(--silver);
   --color-bronze: var(--bronze);
-  --radius-tile: 2px;
-  --radius-btn: 2px;
-  --radius-tag: 1px;
+  --radius-tile: 18px;
+  --radius-btn: 14px;
+  --radius-tag: 7px;
   --shadow-card: var(--shadow);
 }
 
-/* Titres et scores : Barlow Condensed italique très grasse. */
+/* Titres et scores : Bricolage Grotesque, étroite et très grasse. */
 @utility display {
   font-family: var(--font-display);
-  font-style: italic;
+  font-stretch: 80%;
   font-weight: 800;
-  letter-spacing: -0.01em;
-  line-height: 0.9;
+  letter-spacing: -0.025em;
+  line-height: 0.95;
 }
-/* Étiquette d'habillage télé : bloc incliné. */
-@utility slant {
-  transform: skewX(-12deg);
-}
-@utility unslant {
-  transform: skewX(12deg);
-}
-/* Petit titre de section condensé droit. */
-@utility kicker {
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  font-size: 13px;
+@utility slant { transform: skewX(-10deg); }
+@utility unslant { transform: skewX(10deg); }
+@utility hero { background: var(--grad-hero); color: #fff; }
+@utility grad-sun { background: var(--grad-sun); }
+@utility grad-blue { background: var(--grad-blue); }
+@utility grad-pink { background: var(--grad-pink); }
+@utility grad-mint { background: var(--grad-mint); }
+/* Bouton « jeu » : lèvre colorée dessous, s'enfonce quand on appuie. */
+@utility btn-3d {
+  box-shadow: 0 4px 0 var(--lip, rgb(0 0 0 / 0.18));
+  transition: transform 90ms ease-out, box-shadow 90ms ease-out, filter 90ms;
+  &:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--lip, rgb(0 0 0 / 0.18)); }
 }
 @utility nums {
   font-variant-numeric: tabular-nums;
@@ -113,6 +120,7 @@
 @layer base {
   html, body, #root { min-height: 100%; }
   body {
+    font-size: 15px;
     background: var(--bg);
     color: var(--ink);
     font-family: var(--font-sans);

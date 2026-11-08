@@ -37,7 +37,7 @@ export function CreateLeagueScreen() {
       <ScreenHeader title="Nouvelle ligue" />
       <div className="space-y-5 px-4 pt-4">
         <Field label="Nom de la ligue">
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="Ex. Les Loups de la L3" className="h-12 w-full rounded-[2px] border border-line-2 bg-card px-3 text-[15px] outline-none focus:border-ink" />
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="Ex. Les Loups de la L3" className="h-12 w-full rounded-[14px] border border-line-2 bg-card px-3 text-[15px] outline-none focus:border-ink" />
         </Field>
         <Field label="Capital de départ (fictif)">
           <Segmented value={cash} onChange={setCash} options={[{ value: '5000', label: '5 000 $' }, { value: '10000', label: '10 000 $' }, { value: '25000', label: '25 000 $' }, { value: '100000', label: '100 000 $' }]} />
@@ -49,19 +49,19 @@ export function CreateLeagueScreen() {
           <Segmented value={fee} onChange={setFee} options={[{ value: '0', label: 'Aucun' }, { value: '1', label: '1 $' }, { value: '5', label: '5 $' }]} />
         </Field>
         <Field label="Nombre maximum de joueurs">
-          <div className="flex items-center justify-between rounded-[2px] border border-line bg-card p-1.5">
-            <button onClick={() => setMax(Math.max(2, max - 1))} className="press grid size-10 place-items-center rounded-[2px] bg-card-2" aria-label="Moins"><Minus size={18} weight="bold" /></button>
+          <div className="flex items-center justify-between rounded-[18px] bg-card shadow-card p-1.5">
+            <button onClick={() => setMax(Math.max(2, max - 1))} className="press grid size-10 place-items-center rounded-[14px] bg-card-2" aria-label="Moins"><Minus size={18} weight="bold" /></button>
             <span className="display text-[28px] nums">{max}</span>
-            <button onClick={() => setMax(Math.min(50, max + 1))} className="press grid size-10 place-items-center rounded-[2px] bg-card-2" aria-label="Plus"><Plus size={18} weight="bold" /></button>
+            <button onClick={() => setMax(Math.min(50, max + 1))} className="press grid size-10 place-items-center rounded-[14px] bg-card-2" aria-label="Plus"><Plus size={18} weight="bold" /></button>
           </div>
         </Field>
         <Field label="Marchés autorisés">
           <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 rounded-[2px] border-2 border-ink bg-card p-3"><span className="text-xl">🇺🇸</span><span className="text-sm font-bold">États-Unis</span></div>
-            <div className={cx('flex items-center gap-2 rounded-[2px] border border-line bg-card p-3 opacity-50')}><span className="text-xl">🇨🇦</span><span className="text-sm font-bold">Toronto</span><Tag className="ml-auto">Bientôt</Tag></div>
+            <div className="flex items-center gap-2 rounded-[14px] border-2 border-ink bg-card p-3"><span className="text-xl">🇺🇸</span><span className="text-sm font-bold">États-Unis</span></div>
+            <div className={cx('flex items-center gap-2 rounded-[18px] bg-card shadow-card p-3 opacity-50')}><span className="text-xl">🇨🇦</span><span className="text-sm font-bold">Toronto</span><Tag className="ml-auto">Bientôt</Tag></div>
           </div>
         </Field>
-        <div className="rounded-[2px] border border-line bg-card-2 p-3 text-xs text-ink-2">
+        <div className="rounded-[16px] bg-card-2 p-3 text-xs text-ink-2">
           Chaque joueur reçoit <b>{formatUSD(Number(cash))}</b> fictifs. Tu seras admin : tu pourras modifier ces réglages jusqu’au début de la saison.
         </div>
         <Button className="w-full" disabled={!valid} onClick={() => setCreated(true)}>Créer la ligue</Button>

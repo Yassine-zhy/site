@@ -18,7 +18,7 @@ export function LeaguesScreen() {
       <ScreenHeader title="Mes ligues" />
       <div className="space-y-3 px-4 pt-4">
         {LEAGUES.map((l) => (
-          <button key={l.id} onClick={() => open(l)} className="press block w-full -mx-4 border-y border-line bg-card text-left">
+          <button key={l.id} onClick={() => open(l)} className="press block w-full overflow-hidden rounded-[20px] bg-card shadow-card text-left">
             <div className="flex items-start gap-3 p-4">
               <Glyph name={l.status === 'finished' ? 'chequered-flag' : l.status === 'draft' ? 'spiral-calendar' : 'trophy'} size={40} />
               <div className="min-w-0 flex-1">

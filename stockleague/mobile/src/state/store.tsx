@@ -31,11 +31,11 @@ type State = {
 
 export type Celebration = { id: number; xp: number; label: string; emoji: GlyphName; levelUp?: number; confetti?: boolean };
 
-const KEY = 'stockleague-demo-v2';
+const KEY = 'stockleague-demo-v3';
 const daysAgo = (n: number) => todayKey(new Date(Date.now() - n * 86400000));
 const initial: State = {
   onboarded: false, profileDone: false, tutorialDone: false,
-  pseudo: 'Alex', photo: null, theme: 'dark', notifications: true,
+  pseudo: 'Alex', photo: null, theme: 'light', notifications: true,
   cash: MY_START.cash, holdings: MY_START.holdings, transactions: MY_TRANSACTIONS, picks: MY_PICKS, feed: FEED,
   // Progression de départ : 80 % du niveau 3, série de 5 jours (la visite d'aujourd'hui la prolonge).
   xp: 540, visitStreak: 5, lastVisit: yesterdayKey(), visitDays: [5, 4, 3, 2, 1].map(daysAgo),

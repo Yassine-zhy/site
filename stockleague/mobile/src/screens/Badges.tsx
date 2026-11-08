@@ -14,7 +14,7 @@ export function BadgesScreen() {
           const def = BADGES[b.key];
           const pct = b.goal ? Math.min(100, ((b.progress ?? 0) / b.goal) * 100) : 0;
           return (
-            <div key={b.key} className={cx('rounded-[2px] border bg-card p-4', b.unlocked ? 'border-line' : 'border-dashed border-line-2')}>
+            <div key={b.key} className={cx('rounded-[14px] border bg-card p-4', b.unlocked ? 'border-line' : 'border-dashed border-line-2')}>
               <Medallion name={def.emoji} tier={b.unlocked ? 'gold' : 'locked'} size={46} />
               <p className="mt-2 font-bold">{def.label}</p>
               <p className="text-xs text-muted">{def.rule}</p>
@@ -22,7 +22,7 @@ export function BadgesScreen() {
                 <p className="mt-2 text-xs font-bold text-gain">Débloqué</p>
               ) : b.goal ? (
                 <div className="mt-2">
-                  <div className="h-1.5 overflow-hidden rounded-[2px] bg-card-2"><div className="h-full bg-gold" style={{ width: `${pct}%` }} /></div>
+                  <div className="h-1.5 overflow-hidden rounded-[14px] bg-card-2"><div className="h-full bg-gold" style={{ width: `${pct}%` }} /></div>
                   <p className="mt-1 text-[11px] text-muted nums">{(b.progress ?? 0).toLocaleString('fr-FR')} / {b.goal}</p>
                 </div>
               ) : <p className="mt-2 text-xs text-muted">À débloquer</p>}

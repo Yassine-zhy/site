@@ -17,14 +17,14 @@ const TIER = ['', 'var(--gold)', 'var(--silver)', 'var(--bronze)'];
 /** Écran d'accueil au premier lancement. */
 export function WelcomeScreen({ onDemo, onLogin }: { onDemo: () => void; onLogin: () => void }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-[#07090d] px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] text-[#f3f5f8]">
+    <div className="flex min-h-dvh flex-col hero px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] text-[#f3f5f8]">
       <div className="flex items-center gap-2 pt-2"><LogoMark size={30} /><span className="display text-[26px]">{APP_NAME}</span></div>
 
       {/* Le produit d'un coup d'œil : le podium d'une vraie ligue */}
       <div className="mt-7 grid grid-cols-[1fr_1.18fr_1fr] items-end gap-2" aria-hidden>
         {CARDS.map((c) => (
           <div key={c.id}>
-            <div className="relative overflow-hidden rounded-[2px]" style={{ aspectRatio: c.rank === 1 ? '3 / 4.1' : '3 / 3.6', boxShadow: `inset 0 0 0 1px ${TIER[c.rank]}` }}>
+            <div className="relative overflow-hidden rounded-[14px]" style={{ aspectRatio: c.rank === 1 ? '3 / 4.1' : '3 / 3.6', boxShadow: `inset 0 0 0 1px ${TIER[c.rank]}` }}>
               <Avatar id={c.id} size={300} className="!h-full !w-full" />
               <span className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 to-transparent" />
               <span className="display absolute top-1 left-2 text-[32px]" style={{ color: TIER[c.rank] }}>{c.rank}</span>

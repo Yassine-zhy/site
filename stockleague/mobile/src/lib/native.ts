@@ -8,6 +8,6 @@ export function setSystemBars(color: string, darkIcons: boolean) {
 }
 
 export const BAR_COLORS = {
-  light: { bg: '#eef1f5', board: '#0b1a30' },
-  dark: { bg: '#08121f', board: '#13233b' },
+  light: { bg: '#f4f2fb', board: '#5b2eff' },
+  dark: { bg: '#0f0b1e', board: '#5b2eff' },
 } as const;
