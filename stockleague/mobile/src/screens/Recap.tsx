@@ -1,5 +1,5 @@
 import { ArrowsClockwise, ShareNetwork } from '@phosphor-icons/react';
-import { Avatar, Button, CompanyLogo, Emoji, ScreenHeader, Trend } from '../components/ui';
+import { Avatar, Button, CompanyLogo, Glyph, ScreenHeader, Trend } from '../components/ui';
 import { LogoMark } from '../components/ui';
 import { LEAGUES, RECAP_S1, TITLES } from '../data/demo';
 import { TICKER_MAP } from '../data/tickers';
@@ -31,7 +31,7 @@ export function RecapCard({ wide }: { wide?: boolean }) {
             <Avatar id={p.id} size={rank === 1 ? 54 : 44} ring={rank === 1 ? 'gold' : rank === 2 ? 'silver' : 'bronze'} />
             <span className="mt-1.5 text-[12px] font-bold">{name(p.id)}</span>
             <span className="display text-[14px] nums opacity-80">{formatPoints(p.points)}</span>
-            <span className="mt-1 grid w-full place-items-center rounded-t-[6px] bg-board-2" style={{ height: rank === 1 ? 44 : rank === 2 ? 30 : 20 }}>
+            <span className="mt-1 grid w-full place-items-center rounded-t-[2px] bg-board-2" style={{ height: rank === 1 ? 44 : rank === 2 ? 30 : 20 }}>
               <span className="display text-xl opacity-40">{rank}</span>
             </span>
           </div>
@@ -41,12 +41,12 @@ export function RecapCard({ wide }: { wide?: boolean }) {
   );
   const highlights = (
     <div className={wide ? 'grid content-center gap-2 text-[11px]' : 'mt-3 grid grid-cols-2 gap-2 text-[11px]'}>
-      <div className="rounded-[8px] bg-board-2 p-2">
+      <div className="rounded-[2px] bg-board-2 p-2">
         <p className="opacity-60">Meilleur coup</p>
         <div className="mt-1 flex items-center gap-1.5"><CompanyLogo ticker={bt.ticker} size={20} /><b>{name(bt.player)}, {TICKER_MAP[bt.ticker].name}</b></div>
         <p className="mt-0.5 font-bold text-[#4ade9b] nums">+{bt.gainPct.toLocaleString('fr-FR')} %</p>
       </div>
-      <div className="rounded-[8px] bg-board-2 p-2">
+      <div className="rounded-[2px] bg-board-2 p-2">
         <p className="opacity-60">Meilleur pronostic</p>
         <div className="mt-1 flex items-center gap-1.5"><CompanyLogo ticker={bc.ticker} size={20} /><b>{name(bc.player)}, {TICKER_MAP[bc.ticker].name}</b></div>
         <p className="mt-0.5 font-bold text-gold">« Sûr de moi », +{bc.points} pts</p>
@@ -55,13 +55,13 @@ export function RecapCard({ wide }: { wide?: boolean }) {
   );
   if (wide) {
     return (
-      <div className="grid aspect-[1.91/1] w-full grid-cols-[1.25fr_1fr] gap-3 overflow-hidden rounded-tile bg-board p-3 text-board-ink">
+      <div className="grid aspect-[1.91/1] w-full grid-cols-[1.25fr_1fr] gap-3 overflow-hidden rounded-[2px] bg-board p-3 text-board-ink">
         <div>{header}{podium}</div>
         {highlights}
       </div>
     );
   }
-  return <div className="aspect-square w-full overflow-hidden rounded-tile bg-board p-4 text-board-ink">{header}{podium}{highlights}</div>;
+  return <div className="aspect-square w-full overflow-hidden rounded-[2px] bg-board p-4 text-board-ink">{header}{podium}{highlights}</div>;
 }
 
 export function RecapScreen() {
@@ -73,7 +73,7 @@ export function RecapScreen() {
       <ScreenHeader title="Fin de saison" />
       <div className="px-4 pt-4">
         <div className="flex items-center gap-3">
-          <Emoji name="trophy" size={52} />
+          <Glyph name="trophy" size={52} />
           <div>
             <p className="display text-[32px]">{name(RECAP_S1.podium[0].id)} remporte la saison</p>
             <p className="text-sm text-muted">Positions gelées au cours de clôture du dernier jour.</p>
@@ -82,18 +82,18 @@ export function RecapScreen() {
         <div className="mt-4"><RecapCard /></div>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Button variant="gold" onClick={() => openSheet({ name: 'share' })}><ShareNetwork size={18} weight="bold" /> Partager</Button>
-          <Button variant="secondary"><ArrowsClockwise size={18} weight="bold" /> Nouvelle saison</Button>
+          <Button variant="secondary"><ArrowsClockwise size={18} weight="bold" /> Rejouer</Button>
         </div>
 
         <h2 className="display mt-7 mb-2 px-1 text-[26px]">Classement final</h2>
-        <ol className="overflow-hidden rounded-tile border border-line bg-card">
+        <ol className="-mx-4 border-y border-line bg-card">
           {all.map((p, i) => (
             <li key={p.id} className="flex items-center gap-3 border-b border-line px-3 py-3 last:border-b-0">
               <span className="display w-6 text-center text-[24px] nums">{i + 1}</span>
               <Avatar id={p.id} size={40} />
               <span className="min-w-0 flex-1">
                 <span className="block font-bold">{name(p.id)}</span>
-                <span className="flex items-center gap-1 text-xs text-muted"><Emoji name={TITLES[p.title].emoji} size={14} />{TITLES[p.title].label}</span>
+                <span className="flex items-center gap-1 text-xs text-muted"><Glyph name={TITLES[p.title].emoji} size={14} />{TITLES[p.title].label}</span>
               </span>
               <span className="text-right">
                 <span className="display block text-xl nums">{formatPoints(p.points)}</span>

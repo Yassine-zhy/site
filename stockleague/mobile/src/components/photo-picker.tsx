@@ -78,7 +78,7 @@ function Cropper({ src, onCancel, onDone }: { src: string; onCancel: () => void;
       <p className="display text-[30px]">Recadre ta photo</p>
       <p className="mt-1 text-sm opacity-70">Fais glisser pour la placer.</p>
       <div
-        className="relative mt-5 touch-none overflow-hidden rounded-[30%]"
+        className="relative mt-5 touch-none overflow-hidden rounded-[2px]"
         style={{ width: FRAME, height: FRAME, boxShadow: '0 0 0 3px #F2B705' }}
         onPointerDown={down} onPointerMove={move} onPointerUp={() => (drag.current = null)}
       >

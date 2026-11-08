@@ -25,10 +25,10 @@ export function TabBar() {
           return (
             <li key={id}>
               <button onClick={() => setTab(id)} aria-current={active ? 'page' : undefined} className={cx('relative flex w-full flex-col items-center gap-0.5 pt-2.5 pb-2 text-[11px] font-semibold', active ? 'text-ink' : 'text-muted')}>
-                {active ? <span className="absolute top-0 h-[3px] w-8 rounded-b-sm bg-gold" aria-hidden /> : null}
+                {active ? <span className="absolute top-0 h-[3px] w-8  bg-gold" aria-hidden /> : null}
                 <span className="relative">
                   <I size={25} weight={active ? 'fill' : 'regular'} aria-hidden />
-                  {id === 'pronos' && todo ? <span className="absolute -top-1 -right-2.5 grid h-4 min-w-4 place-items-center rounded-[5px] bg-loss px-1 text-[10px] font-bold text-white nums" aria-label={`${todo} à faire`}>{todo}</span> : null}
+                  {id === 'pronos' && todo ? <span className="absolute -top-1 -right-2.5 grid h-4 min-w-4 place-items-center rounded-[2px] bg-loss px-1 text-[10px] font-bold text-white nums" aria-label={`${todo} à faire`}>{todo}</span> : null}
                 </span>
                 {label}
               </button>

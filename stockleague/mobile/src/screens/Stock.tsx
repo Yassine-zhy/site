@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ValueChart } from '../components/charts';
-import { Button, CompanyLogo, Emoji, ScreenHeader, Segmented, Tag, Trend, cx } from '../components/ui';
+import { Button, CompanyLogo, Glyph, ScreenHeader, Segmented, Tag, Trend, cx } from '../components/ui';
 import { EARNINGS, simulatedSeries } from '../data/demo';
 import { TICKER_MAP } from '../data/tickers';
 import { formatCountdown, formatDayLong, formatDayShort, formatQuantity, formatUSD } from '../lib/format';
@@ -49,13 +49,13 @@ export function StockScreen({ ticker }: { ticker: string }) {
           {open ? 'Marché ouvert, cours différé de 15 min' : 'Marché fermé : un ordre s’exécute au dernier cours de clôture'}
         </p>
 
-        <div className="mt-4 rounded-tile border border-line bg-card p-3">
+        <div className="mt-4 rounded-[2px] border border-line bg-card p-3">
           <ValueChart id={`stock-${ticker}`} data={data} label="Cours" />
           <Segmented className="mt-2" value={range} onChange={setRange} options={[{ value: '1M', label: '1 mois' }, { value: '3M', label: '3 mois' }, { value: '1A', label: '1 an' }]} />
         </div>
 
         {held ? (
-          <div className="mt-3 rounded-tile border border-line bg-card p-4">
+          <div className="mt-3 rounded-[2px] border border-line bg-card p-4">
             <p className="text-[13px] font-semibold text-muted">Ta position</p>
             <div className="mt-2 grid grid-cols-2 gap-y-3 text-sm">
               <div><p className="text-xs text-muted">Quantité</p><p className="font-bold nums">{formatQuantity(held.quantity)} action{held.quantity >= 2 ? 's' : ''}</p></div>
@@ -67,8 +67,8 @@ export function StockScreen({ ticker }: { ticker: string }) {
         ) : null}
 
         {next ? (
-          <button onClick={() => openSheet({ name: 'predict', eventId: next.id })} className="press mt-3 flex w-full items-center gap-3 rounded-tile border border-gold/60 bg-gold/10 p-4 text-left">
-            <Emoji name="crystal-ball" size={36} />
+          <button onClick={() => openSheet({ name: 'predict', eventId: next.id })} className="press mt-3 flex w-full items-center gap-3 rounded-[2px] border border-gold/60 bg-gold/10 p-4 text-left">
+            <Glyph name="crystal-ball" size={36} />
             <span className="flex-1">
               <span className="block text-sm font-bold">Résultats le {formatDayLong(new Date(`${next.date}T12:00:00Z`))}</span>
               <span className="block text-xs text-ink-2 nums">BPA attendu {formatUSD(next.estimate)}, verrouillage dans {formatCountdown(next.lockAt.getTime() - Date.now())}</span>
@@ -93,7 +93,7 @@ export function StockScreen({ ticker }: { ticker: string }) {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-tile border border-line bg-card p-3">
+    <div className="rounded-[2px] border border-line bg-card p-3">
       <p className="text-[11px] font-semibold text-muted">{label}</p>
       <p className="mt-1 font-bold nums">{value}</p>
     </div>

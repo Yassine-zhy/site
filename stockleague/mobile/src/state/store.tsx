@@ -4,7 +4,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
 import { ACTIVE_LEAGUE, FEED, ME, PLAYER_MAP, MY_PICKS, MY_START, MY_TRANSACTIONS, type FeedItem, type MyPick, type Transaction } from '../data/demo';
-import type { EmojiName } from '../data/emoji-list';
+import type { GlyphName } from '../data/glyphs';
 import { TICKER_MAP } from '../data/tickers';
 import { haptic } from '../lib/haptics';
 import { executeOrder, type Holding, type Order } from '../lib/trading';
@@ -27,13 +27,13 @@ type State = {
   flash: Record<string, 'up' | 'down'>;
 };
 
-export type Celebration = { id: number; xp: number; label: string; emoji: EmojiName; levelUp?: number; confetti?: boolean };
+export type Celebration = { id: number; xp: number; label: string; emoji: GlyphName; levelUp?: number; confetti?: boolean };
 
 const KEY = 'stockleague-demo-v2';
 const daysAgo = (n: number) => todayKey(new Date(Date.now() - n * 86400000));
 const initial: State = {
   onboarded: false, profileDone: false, tutorialDone: false,
-  pseudo: 'Alex', photo: null, theme: 'system', notifications: true,
+  pseudo: 'Alex', photo: null, theme: 'dark', notifications: true,
   cash: MY_START.cash, holdings: MY_START.holdings, transactions: MY_TRANSACTIONS, picks: MY_PICKS, feed: FEED,
   // Progression de départ : 80 % du niveau 3, série de 5 jours (la visite d'aujourd'hui la prolonge).
   xp: 540, visitStreak: 5, lastVisit: yesterdayKey(), visitDays: [5, 4, 3, 2, 1].map(daysAgo),
@@ -95,7 +95,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const patch = useCallback((p: Partial<State>) => dispatch({ type: 'patch', patch: p }), []);
 
   /** Ajoute de l'XP et déclenche la célébration (et le passage de niveau éventuel). */
-  const reward = useCallback((xp: number, label: string, emoji: EmojiName, extra: Partial<State> = {}, confetti = false) => {
+  const reward = useCallback((xp: number, label: string, emoji: GlyphName, extra: Partial<State> = {}, confetti = false) => {
     const s = ref.current;
     const before = levelOf(s.xp).level, after = levelOf(s.xp + xp).level;
     dispatch({ type: 'patch', patch: { ...extra, xp: s.xp + xp } });

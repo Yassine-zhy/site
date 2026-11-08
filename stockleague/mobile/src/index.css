@@ -1,59 +1,64 @@
 @import "tailwindcss";
-@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource/barlow/400.css";
+@import "@fontsource/barlow/500.css";
+@import "@fontsource/barlow/600.css";
+@import "@fontsource/barlow/700.css";
+@import "@fontsource/barlow-condensed/700-italic.css";
+@import "@fontsource/barlow-condensed/800-italic.css";
+@import "@fontsource/barlow-condensed/600.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ------------------------------------------------------------------ identité
-   Encre marine + gris craie froid, un seul accent : le jaune du tableau d'affichage.
-   Vert / rouge uniquement pour gains / pertes, toujours avec un signe et une flèche.
-   Rayons hiérarchisés (pas de pilules) : tuile 14 px, bouton 12 px, étiquette 5 px. */
+   « Retransmission de nuit » : quasi-noir, filets fins, angles nets (2 px), un seul accent or.
+   Chiffres et titres en Barlow Condensed italique, comme un habillage de match.
+   Vert / rouge uniquement pour gains / pertes, toujours avec signe et flèche. */
 :root {
-  --bg: #eef1f5;
+  --bg: #f2f3f5;
   --card: #ffffff;
-  --card-2: #f6f8fa;
-  --ink: #0b1a30;
-  --ink-2: #3d4c63;
-  --muted: #66758b;
-  --line: #dfe5ec;
-  --line-2: #cbd4df;
-  --board: #0b1a30;
-  --board-2: #15294a;
-  --board-ink: #ffffff;
+  --card-2: #eceef2;
+  --ink: #0a0d12;
+  --ink-2: #39424f;
+  --muted: #6b7584;
+  --line: #e1e4ea;
+  --line-2: #cdd2da;
+  --board: #0a0d12;
+  --board-2: #161b23;
+  --board-ink: #f3f5f8;
   --gold: #f2b705;
-  --gold-ink: #0b1a30;
-  --gain: #0b7a50;
-  --loss: #c0352b;
-  --gain-soft: #e2f3ea;
-  --loss-soft: #fbe8e6;
-  --silver: #aab6c5;
+  --gold-ink: #0a0d12;
+  --gain: #0a8a52;
+  --loss: #d0362b;
+  --gain-soft: #e3f4ec;
+  --loss-soft: #fbe9e7;
+  --silver: #b7c2d0;
   --bronze: #c98a5a;
-  --shadow: 0 1px 0 rgb(11 26 48 / 0.04), 0 8px 24px -12px rgb(11 26 48 / 0.18);
+  --shadow: 0 1px 0 rgb(10 13 18 / 0.05);
   color-scheme: light;
 }
 .dark {
-  --bg: #08121f;
-  --card: #0f1c2e;
-  --card-2: #13233a;
-  --ink: #e9eef5;
-  --ink-2: #b6c2d3;
-  --muted: #8494aa;
-  --line: #1c2c43;
-  --line-2: #2a3d59;
-  --board: #13233b;
-  --board-2: #1b3152;
-  --board-ink: #e9eef5;
-  --gain: #3ccf8e;
-  --loss: #ff6d5e;
-  --gain-soft: #0e2c25;
-  --loss-soft: #351a1d;
-  --silver: #8e9bae;
-  --bronze: #b97b4d;
-  --shadow: 0 1px 0 rgb(0 0 0 / 0.2), 0 10px 30px -14px rgb(0 0 0 / 0.6);
+  --bg: #07090d;
+  --card: #0d1117;
+  --card-2: #141a22;
+  --ink: #f3f5f8;
+  --ink-2: #c3cbd6;
+  --muted: #8590a2;
+  --line: #1b222c;
+  --line-2: #2a3341;
+  --board: #0d1117;
+  --board-2: #151c26;
+  --board-ink: #f3f5f8;
+  --gain: #2fd27f;
+  --loss: #ff5a4e;
+  --gain-soft: #0c2a1c;
+  --loss-soft: #2e1412;
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.03);
   color-scheme: dark;
 }
 
 @theme inline {
-  --font-sans: "Archivo Variable", system-ui, sans-serif;
+  --font-sans: "Barlow", system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Barlow", sans-serif;
   --color-bg: var(--bg);
   --color-card: var(--card);
   --color-card-2: var(--card-2);
@@ -73,21 +78,33 @@
   --color-loss-soft: var(--loss-soft);
   --color-silver: var(--silver);
   --color-bronze: var(--bronze);
-  --radius-tile: 14px;
-  --radius-btn: 12px;
-  --radius-tag: 5px;
+  --radius-tile: 2px;
+  --radius-btn: 2px;
+  --radius-tag: 1px;
   --shadow-card: var(--shadow);
 }
 
-/* Titres et scores : Archivo condensée (axe variable de largeur). */
+/* Titres et scores : Barlow Condensed italique très grasse. */
 @utility display {
-  font-variation-settings: "wdth" 64;
+  font-family: var(--font-display);
+  font-style: italic;
   font-weight: 800;
-  letter-spacing: -0.005em;
-  line-height: 0.95;
+  letter-spacing: -0.01em;
+  line-height: 0.9;
 }
-@utility semi-condensed {
-  font-variation-settings: "wdth" 82;
+/* Étiquette d'habillage télé : bloc incliné. */
+@utility slant {
+  transform: skewX(-12deg);
+}
+@utility unslant {
+  transform: skewX(12deg);
+}
+/* Petit titre de section condensé droit. */
+@utility kicker {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-size: 13px;
 }
 @utility nums {
   font-variant-numeric: tabular-nums;

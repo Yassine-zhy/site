@@ -1,7 +1,7 @@
 import { LockSimple } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { SheetFrame } from '../components/sheet';
-import { Button, CompanyLogo, Emoji, cx } from '../components/ui';
+import { Button, CompanyLogo, Glyph, cx } from '../components/ui';
 import { EARNINGS } from '../data/demo';
 import { TICKER_MAP } from '../data/tickers';
 import { formatCountdown, formatDayLong, formatUSD } from '../lib/format';
@@ -26,7 +26,7 @@ export function PredictSheet({ eventId }: { eventId: string }) {
     return (
       <SheetFrame title="Pronostic enregistré">
         <div className="px-5 pt-4 text-center">
-          <Emoji name="bullseye" size={72} className="anim-pop mx-auto" />
+          <Glyph name="bullseye" size={72} className="anim-pop mx-auto" />
           <p className="display mt-4 text-[32px]">Pronostic enregistré</p>
           <p className="mt-2 text-[15px] text-ink-2">
             {t.name} {choice === 'beat' ? 'bat' : 'manque'} les attentes{confidence === 'sure' ? ', et tu es sûr de toi' : ''}. Modifiable jusqu’au verrouillage, dans {formatCountdown(e.lockAt.getTime() - Date.now())}.
@@ -51,14 +51,14 @@ export function PredictSheet({ eventId }: { eventId: string }) {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between rounded-tile bg-board p-4 text-board-ink">
+        <div className="mt-4 flex items-center justify-between rounded-[2px] bg-board p-4 text-board-ink">
           <div>
             <p className="text-xs opacity-70">BPA attendu par les analystes</p>
             <p className="display mt-1 text-[40px] nums">{formatUSD(e.estimate)}</p>
           </div>
           <div className="text-right text-xs">
             {locked ? (
-              <span className="inline-flex items-center gap-1 rounded-[6px] bg-white/10 px-2 py-1 font-bold"><LockSimple size={12} weight="bold" /> Verrouillé</span>
+              <span className="inline-flex items-center gap-1 rounded-[2px] bg-white/10 px-2 py-1 font-bold"><LockSimple size={12} weight="bold" /> Verrouillé</span>
             ) : (
               <>
                 <p className="opacity-70">Verrouillage dans</p>
@@ -83,9 +83,9 @@ export function PredictSheet({ eventId }: { eventId: string }) {
                   key={v}
                   onClick={() => setChoice(v)}
                   aria-pressed={choice === v}
-                  className={cx('press flex flex-col items-center gap-2 rounded-tile border-2 p-4', choice === v ? (tone === 'gain' ? 'border-gain bg-gain-soft' : 'border-loss bg-loss-soft') : 'border-line bg-card')}
+                  className={cx('press flex flex-col items-center gap-2 rounded-[2px] border-2 p-4', choice === v ? (tone === 'gain' ? 'border-gain bg-gain-soft' : 'border-loss bg-loss-soft') : 'border-line bg-card')}
                 >
-                  <Emoji name={emoji} size={44} />
+                  <Glyph name={emoji} size={44} />
                   <span className="text-center text-sm font-bold leading-tight">{label}</span>
                 </button>
               ))}
@@ -94,8 +94,8 @@ export function PredictSheet({ eventId }: { eventId: string }) {
             <p className="mt-5 mb-2 text-sm font-bold">Ton niveau de confiance</p>
             <div className="grid grid-cols-2 gap-2">
               {([['normal', 'Normal', 'thinking-face', `+${p.correct} si juste, ${p.wrong} si faux`], ['sure', 'Sûr de moi', 'flexed-biceps', `+${p.sureCorrect} si juste, ${p.sureWrong} si faux`]] as const).map(([v, label, emoji, rule]) => (
-                <button key={v} onClick={() => setConfidence(v)} aria-pressed={confidence === v} className={cx('press flex items-center gap-2 rounded-tile border-2 p-3 text-left', confidence === v ? 'border-ink bg-card-2' : 'border-line bg-card')}>
-                  <Emoji name={emoji} size={28} />
+                <button key={v} onClick={() => setConfidence(v)} aria-pressed={confidence === v} className={cx('press flex items-center gap-2 rounded-[2px] border-2 p-3 text-left', confidence === v ? 'border-ink bg-card-2' : 'border-line bg-card')}>
+                  <Glyph name={emoji} size={28} />
                   <span>
                     <span className="block text-sm font-bold">{label}</span>
                     <span className="block text-[11px] text-muted">{rule}</span>

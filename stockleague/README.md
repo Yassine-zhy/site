@@ -6,7 +6,7 @@
 
 🚧 Projet en cours de construction, phase par phase (voir la [feuille de route](#feuille-de-route)).
 
-📱 **Application mobile** : voir [`mobile/`](mobile/README.md). La démo Android installable (v0.2) est dans `mobile/android/release/`.
+📱 **Application mobile** : voir [`mobile/`](mobile/README.md). La démo Android installable (v0.3) est dans `mobile/android/release/`.
 
 ## Stack
 

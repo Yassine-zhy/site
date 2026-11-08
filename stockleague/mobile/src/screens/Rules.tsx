@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { Emoji, ScreenHeader } from '../components/ui';
-import type { EmojiName } from '../data/emoji-list';
+import { Glyph, ScreenHeader } from '../components/ui';
+import type { GlyphName } from '../data/glyphs';
 import { DISCLAIMER } from '../lib/constants';
 import { SCORING } from '../lib/scoring';
 
@@ -38,10 +38,10 @@ export function RulesScreen() {
   );
 }
 
-function Rule({ emoji, title, children }: { emoji: EmojiName; title: string; children: ReactNode }) {
+function Rule({ emoji, title, children }: { emoji: GlyphName; title: string; children: ReactNode }) {
   return (
-    <section className="rounded-tile border border-line bg-card p-4">
-      <div className="flex items-center gap-3"><Emoji name={emoji} size={32} /><h2 className="display text-[24px]">{title}</h2></div>
+    <section className="rounded-[2px] border border-line bg-card p-4">
+      <div className="flex items-center gap-3"><Glyph name={emoji} size={32} /><h2 className="display text-[24px]">{title}</h2></div>
       <div className="mt-2 text-[14px] leading-relaxed text-ink-2">{children}</div>
     </section>
   );

@@ -1,5 +1,5 @@
 import { CaretRight, Key, Plus } from '@phosphor-icons/react';
-import { Avatar, Button, Emoji, ScreenHeader, Tag } from '../components/ui';
+import { Avatar, Button, Glyph, ScreenHeader, Tag } from '../components/ui';
 import { LEAGUES, PLAYER_MAP, type LeagueSummary } from '../data/demo';
 import { formatDate, formatUSD } from '../lib/format';
 import { useNav } from '../state/nav';
@@ -18,9 +18,9 @@ export function LeaguesScreen() {
       <ScreenHeader title="Mes ligues" />
       <div className="space-y-3 px-4 pt-4">
         {LEAGUES.map((l) => (
-          <button key={l.id} onClick={() => open(l)} className="press block w-full overflow-hidden rounded-tile border border-line bg-card text-left">
+          <button key={l.id} onClick={() => open(l)} className="press block w-full -mx-4 border-y border-line bg-card text-left">
             <div className="flex items-start gap-3 p-4">
-              <Emoji name={l.status === 'finished' ? 'chequered-flag' : l.status === 'draft' ? 'spiral-calendar' : 'trophy'} size={40} />
+              <Glyph name={l.status === 'finished' ? 'chequered-flag' : l.status === 'draft' ? 'spiral-calendar' : 'trophy'} size={40} />
               <div className="min-w-0 flex-1">
                 <p className="display truncate text-[26px]">{l.name}</p>
                 <p className="text-xs text-muted">Saison {l.season}, {formatDate(l.start)} au {formatDate(l.end)}</p>

@@ -2,7 +2,7 @@
  * Ligue de démonstration. Les dates sont calculées par rapport à aujourd'hui,
  * pour que la démo ait toujours l'air « en direct ».
  */
-import type { EmojiName } from './emoji-list';
+import type { GlyphName } from './glyphs';
 import type { AvatarSeed } from './avatar-list';
 import { TICKER_MAP } from './tickers';
 import { addBusinessDays, lockTime, type Timing } from '../lib/market-time';
@@ -28,7 +28,7 @@ export const PLAYER_MAP = Object.fromEntries(PLAYERS.map((p) => [p.id, p])) as R
 
 // --------------------------------------------------------------------------- titres et badges
 export type TitleKey = 'buffett' | 'oracle' | 'diamond' | 'kamikaze' | 'lanterne';
-export const TITLES: Record<TitleKey, { label: string; emoji: EmojiName; rule: string }> = {
+export const TITLES: Record<TitleKey, { label: string; emoji: GlyphName; rule: string }> = {
   buffett: { label: 'Le Warren Buffett de la bande', emoji: 'top-hat', rule: '1er au classement général' },
   oracle: { label: "L'Oracle", emoji: 'crystal-ball', rule: 'Meilleur taux de pronostics justes' },
   diamond: { label: 'Diamond hands', emoji: 'gem-stone', rule: 'Le moins de ventes de la saison' },
@@ -37,7 +37,7 @@ export const TITLES: Record<TitleKey, { label: string; emoji: EmojiName; rule: s
 };
 
 export type BadgeKey = 'first-order' | 'five-right' | 'streak-3' | 'podium' | 'leader' | 'plus-10' | 'diversified' | 'sure-3' | 'early' | 'champion';
-export const BADGES: Record<BadgeKey, { label: string; emoji: EmojiName; rule: string; goal?: number }> = {
+export const BADGES: Record<BadgeKey, { label: string; emoji: GlyphName; rule: string; goal?: number }> = {
   'first-order': { label: 'Premier ordre', emoji: 'handshake', rule: 'Passer ton premier ordre' },
   diversified: { label: 'Bien diversifié', emoji: 'shopping-bags', rule: 'Détenir 5 actions différentes', goal: 5 },
   'streak-3': { label: 'En feu', emoji: 'fire', rule: '3 pronostics justes d’affilée', goal: 3 },
@@ -150,7 +150,7 @@ export const MY_PICKS: Record<string, MyPick> = {
 };
 
 // --------------------------------------------------------------------------- fil d'activité
-export type FeedItem = { id: string; at: Date; actor?: string; kind: 'buy' | 'sell' | 'predict' | 'result' | 'title' | 'badge' | 'rank'; text: string; ticker?: string; emoji?: EmojiName };
+export type FeedItem = { id: string; at: Date; actor?: string; kind: 'buy' | 'sell' | 'predict' | 'result' | 'title' | 'badge' | 'rank'; text: string; ticker?: string; emoji?: GlyphName };
 const h = (n: number) => new Date(now.getTime() - n * 3600000);
 export const FEED: FeedItem[] = [
   { id: 'f1', at: h(1.2), actor: 'mehdi', kind: 'buy', ticker: 'TSLA', text: 'a acheté 4 actions Tesla' },

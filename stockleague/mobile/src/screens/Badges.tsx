@@ -1,4 +1,4 @@
-import { Emoji, ScreenHeader, cx } from '../components/ui';
+import { Medallion, ScreenHeader, cx } from '../components/ui';
 import { BADGES } from '../data/demo';
 import { badgeStates } from '../state/badges';
 import { useStore } from '../state/store';
@@ -14,8 +14,8 @@ export function BadgesScreen() {
           const def = BADGES[b.key];
           const pct = b.goal ? Math.min(100, ((b.progress ?? 0) / b.goal) * 100) : 0;
           return (
-            <div key={b.key} className={cx('rounded-tile border bg-card p-4', b.unlocked ? 'border-line' : 'border-dashed border-line-2')}>
-              <Emoji name={def.emoji} size={44} className={cx(!b.unlocked && 'opacity-40 grayscale')} />
+            <div key={b.key} className={cx('rounded-[2px] border bg-card p-4', b.unlocked ? 'border-line' : 'border-dashed border-line-2')}>
+              <Medallion name={def.emoji} tier={b.unlocked ? 'gold' : 'locked'} size={46} />
               <p className="mt-2 font-bold">{def.label}</p>
               <p className="text-xs text-muted">{def.rule}</p>
               {b.unlocked ? (

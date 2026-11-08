@@ -1,6 +1,6 @@
 import { CaretRight, LockSimple } from '@phosphor-icons/react';
 import { useMemo, useState } from 'react';
-import { Avatar, CompanyLogo, Emoji, EmptyState, Segmented, Tag, cx } from '../components/ui';
+import { Avatar, CompanyLogo, Glyph, EmptyState, Segmented, Tag, cx } from '../components/ui';
 import { EARNINGS, ME, PLAYERS, type EarningsEvent, type MyPick } from '../data/demo';
 import { TICKER_MAP } from '../data/tickers';
 import { formatCountdown, formatDayLong, formatPoints, formatUSD } from '../lib/format';
@@ -31,12 +31,12 @@ export function PronosTab() {
     <div className="px-4 pt-[max(env(safe-area-inset-top),16px)] pb-28">
       <h1 className="display pt-2 text-[40px]">Pronostics</h1>
       <p className="mt-1 text-[13px] text-muted">Le bénéfice publié battra-t-il ou manquera-t-il l’estimation des analystes ?</p>
-      <button onClick={() => openSheet({ name: 'glossary' })} className="press mt-2 inline-flex items-center gap-1.5 rounded-[8px] border border-line bg-card px-2.5 py-1.5 text-xs font-semibold"><Emoji name="light-bulb" size={16} /> C’est quoi le BPA ?</button>
+      <button onClick={() => openSheet({ name: 'glossary' })} className="press mt-2 inline-flex items-center gap-1.5 rounded-[2px] border border-line bg-card px-2.5 py-1.5 text-xs font-semibold"><Glyph name="light-bulb" size={16} /> C’est quoi le BPA ?</button>
 
       {/* ------------------------------------------------ série et stats */}
-      <div className="mt-4 overflow-hidden rounded-tile border border-line bg-card">
+      <div className="mt-4 -mx-4 border-y border-line bg-card">
         <div className="flex items-center gap-3 border-b border-line p-3">
-          <Emoji name="fire" size={40} />
+          <Glyph name="fire" size={40} />
           <div className="flex-1">
             <p className="font-bold">Série de {stats.streak} pronostic{stats.streak > 1 ? 's' : ''} juste{stats.streak > 1 ? 's' : ''}</p>
             <p className="text-xs text-muted">
@@ -74,7 +74,7 @@ export function PronosTab() {
 function TimingLabel({ e }: { e: EarningsEvent }) {
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted">
-      <Emoji name={e.timing === 'amc' ? 'crescent-moon' : 'sun'} size={14} />
+      <Glyph name={e.timing === 'amc' ? 'crescent-moon' : 'sun'} size={14} />
       {e.timing === 'amc' ? 'Après la clôture' : 'Avant l’ouverture'}
     </span>
   );
@@ -99,7 +99,7 @@ function OpenList({ events, picks }: { events: EarningsEvent[]; picks: Record<st
               const pick = picks[e.id];
               const left = e.lockAt.getTime() - Date.now();
               return (
-                <button key={e.id} onClick={() => openSheet({ name: 'predict', eventId: e.id })} className="press flex w-full items-center gap-3 rounded-tile border border-line bg-card p-3 text-left">
+                <button key={e.id} onClick={() => openSheet({ name: 'predict', eventId: e.id })} className="press flex w-full items-center gap-3 rounded-[2px] border border-line bg-card p-3 text-left">
                   <CompanyLogo ticker={e.ticker} size={46} />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline gap-2">
@@ -107,11 +107,9 @@ function OpenList({ events, picks }: { events: EarningsEvent[]; picks: Record<st
                       <span className="text-[11px] font-semibold text-muted">{e.quarter}</span>
                     </span>
                     <TimingLabel e={e} />
-                    <span className="mt-1 block text-xs nums">
-                      BPA attendu <b>{eps(e.estimate)}</b>
-                      <span className={cx('ml-2 whitespace-nowrap', left < 86400000 ? 'font-semibold text-loss' : 'text-muted')}>
-                        <Emoji name="stopwatch" size={12} className="mr-0.5 -mt-0.5" />{formatCountdown(left)}
-                      </span>
+                    <span className="mt-1 block text-xs nums">BPA attendu <b>{eps(e.estimate)}</b></span>
+                    <span className={cx('mt-0.5 flex items-center gap-1 text-xs nums', left < 86400000 ? 'font-semibold text-loss' : 'text-muted')}>
+                      <Glyph name="stopwatch" size={13} color="currentColor" /> Verrouillage dans {formatCountdown(left)}
                     </span>
                   </span>
                   {pick ? (
@@ -120,7 +118,7 @@ function OpenList({ events, picks }: { events: EarningsEvent[]; picks: Record<st
                       {pick.confidence === 'sure' ? <Tag tone="gold">Sûr de moi</Tag> : null}
                     </span>
                   ) : (
-                    <span className="flex shrink-0 items-center gap-0.5 rounded-[8px] bg-board px-2.5 py-2 text-xs font-bold text-board-ink dark:bg-ink dark:text-bg">
+                    <span className="flex shrink-0 items-center gap-0.5 rounded-[2px] bg-board px-2.5 py-2 text-xs font-bold text-board-ink dark:bg-ink dark:text-bg">
                       Pronostiquer <CaretRight size={12} weight="bold" />
                     </span>
                   )}
@@ -142,7 +140,7 @@ export function PicksSplit({ e, mine }: { e: EarningsEvent; mine?: MyPick }) {
   const total = beat.length + miss.length || 1;
   return (
     <div>
-      <div className="flex h-2.5 overflow-hidden rounded-[3px]" role="img" aria-label={`${beat.length} bat, ${miss.length} manque`}>
+      <div className="flex h-2.5 overflow-hidden rounded-[2px]" role="img" aria-label={`${beat.length} bat, ${miss.length} manque`}>
         <span className="bg-gain" style={{ width: `${(beat.length / total) * 100}%` }} />
         <span className="bg-loss" style={{ width: `${(miss.length / total) * 100}%` }} />
       </div>
@@ -161,7 +159,7 @@ export function PicksSplit({ e, mine }: { e: EarningsEvent; mine?: MyPick }) {
 function LockedCard({ e, pick }: { e: EarningsEvent; pick?: MyPick }) {
   const t = TICKER_MAP[e.ticker];
   return (
-    <div className="rounded-tile border border-line bg-card p-3">
+    <div className="rounded-[2px] border border-line bg-card p-3">
       <div className="flex items-center gap-3">
         <CompanyLogo ticker={e.ticker} size={46} />
         <div className="min-w-0 flex-1">
@@ -184,7 +182,7 @@ function ResultCard({ e, pick }: { e: EarningsEvent; pick?: MyPick }) {
   const outcome = pick ? outcomeOf(pick.choice, e.estimate, actual) : null;
   const pts = pick && outcome ? predictionPoints(outcome, pick.confidence) : 0;
   return (
-    <div className="rounded-tile border border-line bg-card p-3">
+    <div className="rounded-[2px] border border-line bg-card p-3">
       <div className="flex items-center gap-3">
         <CompanyLogo ticker={e.ticker} size={42} />
         <div className="min-w-0 flex-1">
@@ -197,7 +195,7 @@ function ResultCard({ e, pick }: { e: EarningsEvent; pick?: MyPick }) {
       </div>
       {pick ? (
         <div className="mt-3 flex items-center gap-2 border-t border-line pt-2.5 text-xs">
-          <Emoji name={outcome === 'correct' ? 'bullseye' : outcome === 'void' ? 'thinking-face' : 'snail'} size={20} />
+          <Glyph name={outcome === 'correct' ? 'bullseye' : outcome === 'void' ? 'thinking-face' : 'snail'} size={20} />
           <span className="flex-1 text-ink-2">
             Ton pronostic : <b className="text-ink">{pick.choice === 'beat' ? 'bat' : 'manque'}</b>{pick.confidence === 'sure' ? ', sûr de toi' : ''}
             {outcome === 'void' ? ' (annulé pour égalité)' : ''}

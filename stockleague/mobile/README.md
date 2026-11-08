@@ -4,7 +4,15 @@ L'application Android de StockLeague : ligue boursière entre amis, avec portefe
 
 > Argent fictif — à but ludique et éducatif — ceci n'est pas un conseil en investissement.
 
-**Installer la démo :** copie `android/release/StockLeague-0.2-demo.apk` sur un téléphone Android 7 ou plus récent, ouvre-le et autorise « Installer des applis inconnues » pour l'appli qui l'ouvre (Fichiers, Chrome…).
+**Installer la démo :** copie `android/release/StockLeague-0.3-demo.apk` sur un téléphone Android 7 ou plus récent, ouvre-le et autorise « Installer des applis inconnues » pour l'appli qui l'ouvre (Fichiers, Chrome…).
+
+## Nouveautés de la version 0.3 : refonte visuelle
+
+- **Direction « retransmission de nuit »** : thème sombre par défaut (clair disponible), angles nets à 2 px partout, filets fins, un seul accent or, étiquettes inclinées façon habillage télé, onglets soulignés au lieu de boutons arrondis, listes pleine largeur.
+- **Typographie de sport** : Barlow Condensed italique pour les titres et les scores, Barlow pour le texte.
+- **Vraies photos** : chaque joueur importe la sienne ; les joueurs de la démo ont des portraits.
+- **Une seule famille d'icônes vectorielles** (Phosphor), en deux tons, et des médaillons hexagonaux métalliques pour les titres et badges. Plus aucun émoji.
+- **Podium en cartes de joueurs** avec photo, rang et points.
 
 ## Nouveautés de la version 0.2
 
@@ -39,10 +47,9 @@ Toutes les données sont fictives et stockées sur le téléphone. Les achats et
 | Ressource | Source | Licence |
 | --- | --- | --- |
 | Logos des entreprises (démo) | financialmodelingprep.com | marques de leurs propriétaires, usage d'identification |
-| Icônes d'objets (trophée, boule de cristal…) | Microsoft Fluent Emoji Flat | MIT |
-| Avatars illustrés | DiceBear « Notionists » | CC0 |
-| Icônes d'interface | Phosphor Icons | MIT |
-| Police | Archivo (Omnibus-Type) | SIL OFL |
+| Portraits des joueurs de démo | Unsplash | licence Unsplash (usage libre) |
+| Icônes et pictogrammes | Phosphor Icons | MIT |
+| Polices | Barlow, Barlow Condensed (Jeremy Tribby) | SIL OFL |
 
 ## Commandes
 
@@ -51,6 +58,6 @@ Toutes les données sont fictives et stockées sur le téléphone. Les achats et
 | `npm run dev` | aperçu dans le navigateur (mode téléphone conseillé) |
 | `npm test` | tests unitaires des règles du jeu |
 | `npm run build:apk` | construit l'APK signé dans `android/release/` (Node + Java 11+, sans SDK Android) |
-| `npm run assets` / `npm run icons` | régénère logos, icônes, avatars / icônes du lanceur |
+| `npm run assets` / `npm run icons` | télécharge logos et portraits / régénère les icônes du lanceur |
 
 Pour publier une mise à jour, augmente `versionCode` dans `android/app.json` et garde la même clé (`android/keystore/`), sinon Android refuse la mise à jour.

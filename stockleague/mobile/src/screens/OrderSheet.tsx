@@ -1,7 +1,7 @@
 import { Backspace, Warning } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { SheetFrame } from '../components/sheet';
-import { Button, CompanyLogo, Emoji, Segmented, cx } from '../components/ui';
+import { Button, CompanyLogo, Glyph, Segmented, cx } from '../components/ui';
 import { ACTIVE_LEAGUE } from '../data/demo';
 import { TICKER_MAP } from '../data/tickers';
 import { formatQuantity, formatUSD } from '../lib/format';
@@ -59,12 +59,12 @@ export function OrderSheet({ ticker, side: initialSide }: { ticker: string; side
     return (
       <SheetFrame title="Ordre exécuté">
         <div className="px-5 pt-4 pb-2 text-center">
-          <Emoji name={side === 'buy' ? 'party-popper' : 'money-bag'} size={72} className="anim-pop mx-auto" />
+          <Glyph name={side === 'buy' ? 'party-popper' : 'money-bag'} size={72} className="anim-pop mx-auto" />
           <p className="display mt-4 text-[34px]">Ordre exécuté</p>
           <p className="mt-2 text-[15px] text-ink-2">
             {side === 'buy' ? 'Tu as acheté' : 'Tu as vendu'} <b className="text-ink nums">{formatQuantity(done.quantity)}</b> action{done.quantity >= 2 ? 's' : ''} {t.name} à <b className="text-ink nums">{formatUSD(done.price)}</b>.
           </p>
-          <div className="mx-auto mt-5 max-w-xs space-y-1.5 rounded-tile border border-line bg-card-2 p-3 text-left text-sm">
+          <div className="mx-auto mt-5 max-w-xs space-y-1.5 rounded-[2px] border border-line bg-card-2 p-3 text-left text-sm">
             <Line label={side === 'buy' ? 'Débité' : 'Crédité'} value={formatUSD(done.total)} />
             <Line label="Cash restant" value={formatUSD(store.cash)} />
           </div>
@@ -96,14 +96,14 @@ export function OrderSheet({ ticker, side: initialSide }: { ticker: string; side
           <p className={cx('display text-[56px] nums', !input && 'text-muted')}>
             {input || '0'}<span className="ml-1 text-[32px]">{mode === 'usd' ? '$' : 'act.'}</span>
           </p>
-          <button onClick={() => { setMode(mode === 'usd' ? 'qty' : 'usd'); setInput(''); }} className="mt-1 rounded-[8px] border border-line px-2.5 py-1 text-xs font-semibold text-ink-2">
+          <button onClick={() => { setMode(mode === 'usd' ? 'qty' : 'usd'); setInput(''); }} className="mt-1 rounded-[2px] border border-line px-2.5 py-1 text-xs font-semibold text-ink-2">
             {mode === 'usd' ? `≈ ${formatQuantity(quantity)} action${quantity >= 2 ? 's' : ''}` : `≈ ${formatUSD(gross)}`}, saisir en {mode === 'usd' ? 'actions' : 'dollars'}
           </button>
         </div>
 
         <div className="mt-3 grid grid-cols-4 gap-2">
           {[0.25, 0.5, 0.75, 1].map((r) => (
-            <button key={r} onClick={() => preset(r)} className="press h-9 rounded-[8px] border border-line bg-card-2 text-xs font-bold">{r === 1 ? 'Max' : `${r * 100} %`}</button>
+            <button key={r} onClick={() => preset(r)} className="press h-9 rounded-[2px] border border-line bg-card-2 text-xs font-bold">{r === 1 ? 'Max' : `${r * 100} %`}</button>
           ))}
         </div>
         <p className="mt-1.5 text-center text-[11px] text-muted nums">
@@ -112,13 +112,13 @@ export function OrderSheet({ ticker, side: initialSide }: { ticker: string; side
 
         <div className="mt-3 grid grid-cols-3 gap-1">
           {KEYS.map((k) => (
-            <button key={k} onClick={() => press(k)} className="press grid h-12 place-items-center rounded-[10px] text-[22px] font-semibold active:bg-card-2" aria-label={k === 'del' ? 'Effacer' : k}>
+            <button key={k} onClick={() => press(k)} className="press grid h-12 place-items-center rounded-[2px] text-[22px] font-semibold active:bg-card-2" aria-label={k === 'del' ? 'Effacer' : k}>
               {k === 'del' ? <Backspace size={24} /> : k}
             </button>
           ))}
         </div>
 
-        <div className="mt-2 space-y-1.5 rounded-tile border border-line bg-card-2 p-3 text-sm">
+        <div className="mt-2 space-y-1.5 rounded-[2px] border border-line bg-card-2 p-3 text-sm">
           <Line label="Quantité" value={`${formatQuantity(quantity)} action${quantity >= 2 ? 's' : ''}`} />
           <Line label="Frais fictifs" value={formatUSD(fee)} />
           <Line label={side === 'buy' ? 'Total débité' : 'Total crédité'} value={formatUSD(Math.max(0, total))} strong />
@@ -126,7 +126,7 @@ export function OrderSheet({ ticker, side: initialSide }: { ticker: string; side
         {!open ? (
           <p className="mt-2 flex items-start gap-1.5 text-xs text-ink-2"><Warning size={16} className="mt-px shrink-0 text-gold" weight="fill" /> Marché fermé : l’ordre s’exécute au dernier cours de clôture.</p>
         ) : null}
-        {error ? <p role="alert" className="mt-2 rounded-[8px] bg-loss-soft p-2.5 text-sm font-semibold text-loss">{error}</p> : null}
+        {error ? <p role="alert" className="mt-2 rounded-[2px] bg-loss-soft p-2.5 text-sm font-semibold text-loss">{error}</p> : null}
 
         <Button variant={side === 'buy' ? 'buy' : 'sell'} className="mt-3 w-full" disabled={quantity <= 0} onClick={submit}>
           {side === 'buy' ? 'Confirmer l’achat' : 'Confirmer la vente'}

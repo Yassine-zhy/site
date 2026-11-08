@@ -64,9 +64,9 @@ export function PortfolioTab() {
       </div>
 
       {/* ------------------------------------------------ répartition */}
-      <div className="mt-3 rounded-tile border border-line bg-card p-3">
+      <div className="mt-3 rounded-[2px] border border-line bg-card p-3">
         <p className="text-[13px] font-semibold text-muted">Répartition</p>
-        <div className="mt-2 flex h-3 overflow-hidden rounded-[4px]" role="img" aria-label="Répartition du portefeuille">
+        <div className="mt-2 flex h-3 overflow-hidden rounded-[2px]" role="img" aria-label="Répartition du portefeuille">
           {alloc.map((a) => <span key={a.key} style={{ width: `${(a.value / p.value) * 100}%`, background: a.color }} />)}
         </div>
         <ul className="mt-2.5 grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
@@ -94,7 +94,7 @@ export function PortfolioTab() {
           Tout ton capital est en cash. À toi de jouer.
         </EmptyState>
       ) : (
-        <ul className="overflow-hidden rounded-tile border border-line bg-card">
+        <ul className="-mx-4 border-y border-line bg-card">
           {sortedHoldings.map((h) => {
             const t = TICKER_MAP[h.ticker];
             const value = h.quantity * t.price;
@@ -134,7 +134,7 @@ export function PortfolioTab() {
 
 function Stat({ label, value, gold }: { label: string; value: string; gold?: boolean }) {
   return (
-    <div className={cx('rounded-tile border p-3', gold ? 'border-gold/50 bg-gold/10' : 'border-line bg-card')}>
+    <div className={cx('rounded-[2px] border p-3', gold ? 'border-gold/50 bg-gold/10' : 'border-line bg-card')}>
       <p className="text-[11px] font-semibold text-muted">{label}</p>
       <p className="mt-1 truncate text-[15px] font-bold nums">{value}</p>
     </div>
@@ -144,12 +144,12 @@ function Stat({ label, value, gold }: { label: string; value: string; gold?: boo
 export function TransactionList({ items }: { items: { id: string; side: 'buy' | 'sell'; ticker: string; quantity: number; price: number; at: Date }[] }) {
   if (!items.length) return <EmptyState emoji="receipt" title="Aucun ordre pour l’instant">À toi de jouer.</EmptyState>;
   return (
-    <ul className="overflow-hidden rounded-tile border border-line bg-card">
+    <ul className="-mx-4 border-y border-line bg-card">
       {items.map((t) => (
         <li key={t.id} className="flex items-center gap-3 border-b border-line px-3 py-3 last:border-b-0">
           <span className="relative">
             <CompanyLogo ticker={t.ticker} size={38} />
-            <span className={cx('absolute -right-1.5 -bottom-1.5 grid size-5 place-items-center rounded-[6px] border-2 border-card', t.side === 'buy' ? 'bg-gain' : 'bg-loss')}>
+            <span className={cx('absolute -right-1.5 -bottom-1.5 grid size-5 place-items-center rounded-[2px] border-2 border-card', t.side === 'buy' ? 'bg-gain' : 'bg-loss')}>
               <ArrowsLeftRight size={10} weight="bold" className="text-white" />
             </span>
           </span>

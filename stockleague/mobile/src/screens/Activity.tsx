@@ -1,11 +1,11 @@
-import { Avatar, CompanyLogo, Emoji, ScreenHeader, cx } from '../components/ui';
+import { Avatar, CompanyLogo, Glyph, ScreenHeader, cx } from '../components/ui';
 import { ME, REACTION_COUNTS, type FeedItem } from '../data/demo';
-import type { EmojiName } from '../data/emoji-list';
+import type { GlyphName } from '../data/glyphs';
 import { formatRelative } from '../lib/format';
 import { useNav } from '../state/nav';
 import { useName, useStore, type Reaction } from '../state/store';
 
-const REACTIONS: { key: Reaction; emoji: EmojiName; label: string }[] = [
+const REACTIONS: { key: Reaction; emoji: GlyphName; label: string }[] = [
   { key: 'fire', emoji: 'fire', label: 'En feu' },
   { key: 'clap', emoji: 'clapping-hands', label: 'Bravo' },
   { key: 'laugh', emoji: 'face-with-tears-of-joy', label: 'Mort de rire' },
@@ -29,7 +29,7 @@ export function ActivityScreen() {
         {[...groups.entries()].map(([label, items]) => (
           <section key={label} className="mt-5">
             <h2 className="mb-2 px-1 text-[13px] font-bold text-ink-2">{label}</h2>
-            <ul className="overflow-hidden rounded-tile border border-line bg-card">{items.map((f) => <FeedRow key={f.id} f={f} />)}</ul>
+            <ul className="-mx-4 border-y border-line bg-card">{items.map((f) => <FeedRow key={f.id} f={f} />)}</ul>
           </section>
         ))}
       </div>
@@ -50,9 +50,9 @@ export function FeedRow({ f }: { f: FeedItem }) {
     <li className="border-b border-line last:border-b-0">
       <button onClick={open} className="press flex w-full items-start gap-3 px-3 pt-3 pb-2 text-left">
         <span className="relative mt-0.5">
-          {f.actor ? <Avatar id={f.actor} size={40} /> : f.ticker ? <CompanyLogo ticker={f.ticker} size={40} /> : <Emoji name="bell" size={40} />}
+          {f.actor ? <Avatar id={f.actor} size={40} /> : f.ticker ? <CompanyLogo ticker={f.ticker} size={40} /> : <Glyph name="bell" size={40} />}
           {f.actor && f.ticker ? <CompanyLogo ticker={f.ticker} size={20} className="absolute -right-1.5 -bottom-1.5 shadow-card" /> : null}
-          {(!f.ticker || !f.actor) && f.emoji ? <Emoji name={f.emoji} size={20} className="absolute -right-1.5 -bottom-1.5" /> : null}
+          {(!f.ticker || !f.actor) && f.emoji ? <Glyph name={f.emoji} size={20} className="absolute -right-1.5 -bottom-1.5" /> : null}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[14px] leading-snug">
@@ -74,9 +74,9 @@ export function FeedRow({ f }: { f: FeedItem }) {
                 onClick={() => react(f.id, r.key)}
                 aria-pressed={active}
                 aria-label={`${r.label}${n ? ` (${n})` : ''}`}
-                className={cx('press flex h-7 items-center gap-1 rounded-[8px] border px-1.5 text-xs font-bold nums', active ? 'border-gold bg-gold/15' : 'border-line bg-card-2', !n && 'opacity-70')}
+                className={cx('press flex h-7 items-center gap-1 rounded-[2px] border px-1.5 text-xs font-bold nums', active ? 'border-gold bg-gold/15' : 'border-line bg-card-2', !n && 'opacity-70')}
               >
-                <Emoji name={r.emoji} size={15} className={active ? 'anim-pop' : ''} />
+                <Glyph name={r.emoji} size={15} className={active ? 'anim-pop' : ''} />
                 {n ? n : null}
               </button>
             );
