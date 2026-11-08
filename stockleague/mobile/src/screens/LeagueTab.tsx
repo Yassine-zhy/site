@@ -2,17 +2,18 @@ import { CaretDown, GearSix, Info } from '@phosphor-icons/react';
 import { useMemo, useState } from 'react';
 import { TickerTape } from '../components/ticker-tape';
 import { Avatar, Emoji, RankMove, Segmented, Tag, Trend, cx } from '../components/ui';
-import { ACTIVE_LEAGUE, ME, PLAYER_MAP, TITLES, type TitleKey } from '../data/demo';
+import { ACTIVE_LEAGUE, ME, TITLES, type TitleKey } from '../data/demo';
 import { formatDate, formatPoints } from '../lib/format';
 import { daysLeft, standings, type Standing } from '../state/derived';
 import { useNav } from '../state/nav';
-import { useStore } from '../state/store';
+import { useName, useStore } from '../state/store';
 
 type Board = 'general' | 'portfolio' | 'pred';
 
 export function LeagueTab() {
   const { cash, holdings, picks } = useStore();
   const { push } = useNav();
+  const name = useName();
   const [board, setBoard] = useState<Board>('general');
   const all = useMemo(() => standings(cash, holdings, picks), [cash, holdings, picks]);
 
@@ -60,7 +61,7 @@ export function LeagueTab() {
           <span className="display w-9 text-[34px] nums">{me.boardRank}<sup className="text-sm">e</sup></span>
           <p className="flex-1 text-[13px] leading-snug text-ink-2">
             {above
-              ? <>Il te manque <b className="text-ink nums">{above.score - me.score + 1} pts</b> pour doubler {PLAYER_MAP[above.id].pseudo}.</>
+              ? <>Il te manque <b className="text-ink nums">{above.score - me.score + 1} pts</b> pour doubler {name(above.id)}.</>
               : <>Tu mènes ce classement. Garde le cap jusqu’au {formatDate(ACTIVE_LEAGUE.end)}.</>}
           </p>
           <Emoji name={me.boardRank === 1 ? 'crown' : 'flexed-biceps'} size={30} />
@@ -76,7 +77,7 @@ export function LeagueTab() {
                 <Avatar id={s.id} size={42} />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5 font-bold">
-                    {PLAYER_MAP[s.id].pseudo}
+                    {name(s.id)}
                     {s.id === ME ? <Tag tone="board">toi</Tag> : null}
                   </span>
                   <SubLine s={s} board={board} />
@@ -108,7 +109,7 @@ export function LeagueTab() {
                 {holder ? (
                   <div className="mt-3 flex items-center gap-2 border-t border-line pt-2">
                     <Avatar id={holder.id} size={24} />
-                    <span className="text-xs font-semibold">{PLAYER_MAP[holder.id].pseudo}</span>
+                    <span className="text-xs font-semibold">{name(holder.id)}</span>
                   </div>
                 ) : null}
               </div>
@@ -116,7 +117,12 @@ export function LeagueTab() {
           })}
         </div>
 
-        <button onClick={() => push({ name: 'rules' })} className="press mt-6 flex w-full items-center gap-3 rounded-tile border border-line bg-card px-4 py-3 text-left">
+        <button onClick={() => push({ name: 'activity' })} className="press mt-6 flex w-full items-center gap-3 rounded-tile border border-line bg-card px-4 py-3 text-left">
+          <Emoji name="bell" size={24} />
+          <span className="flex-1 text-sm font-semibold">Activité de la ligue</span>
+          <span className="text-xs text-muted">achats, pronostics, réactions</span>
+        </button>
+        <button onClick={() => push({ name: 'rules' })} className="press mt-2 flex w-full items-center gap-3 rounded-tile border border-line bg-card px-4 py-3 text-left">
           <Info size={22} className="text-muted" />
           <span className="flex-1 text-sm font-semibold">Règles et barème des points</span>
           <span className="text-xs text-muted">+10, +20, série…</span>
@@ -141,6 +147,7 @@ function SubLine({ s, board }: { s: Standing; board: Board }) {
 /** Podium : 2e à gauche, 1er au centre, 3e à droite. */
 function Podium({ rows }: { rows: (Standing & { boardRank: number; score: number })[] }) {
   const { push } = useNav();
+  const name = useName();
   const order = [rows[1], rows[0], rows[2]].filter(Boolean);
   const style = {
     1: { h: 92, ring: 'gold' as const, size: 72, medal: '1st-place-medal' as const, edge: 'var(--gold)' },
@@ -152,12 +159,12 @@ function Podium({ rows }: { rows: (Standing & { boardRank: number; score: number
       {order.map((r) => {
         const st = style[r.boardRank as 1 | 2 | 3];
         return (
-          <button key={r.id} onClick={() => r.id !== ME && push({ name: 'player', id: r.id })} className="flex flex-col items-center" aria-label={`${r.boardRank}e : ${PLAYER_MAP[r.id].pseudo}, ${formatPoints(r.score)}`}>
+          <button key={r.id} onClick={() => r.id !== ME && push({ name: 'player', id: r.id })} className="flex flex-col items-center" aria-label={`${r.boardRank}e : ${name(r.id)}, ${formatPoints(r.score)}`}>
             <span className="relative">
               <Avatar id={r.id} size={st.size} ring={st.ring} />
               <Emoji name={st.medal} size={26} className="absolute -right-2.5 -bottom-2" />
             </span>
-            <span className="mt-2.5 max-w-full truncate text-[14px] font-bold">{PLAYER_MAP[r.id].pseudo}</span>
+            <span className="mt-2.5 max-w-full truncate text-[14px] font-bold">{name(r.id)}</span>
             <span className="display text-[19px] nums opacity-90">{formatPoints(r.score)}</span>
             <span className="mt-1.5 grid w-full place-items-center rounded-t-[8px] bg-board-2" style={{ height: st.h, boxShadow: `inset 0 3px 0 ${st.edge}` }}>
               <span className="display text-[40px] opacity-40 nums">{r.boardRank}</span>

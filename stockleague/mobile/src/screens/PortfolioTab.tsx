@@ -7,6 +7,7 @@ import { TICKER_MAP } from '../data/tickers';
 import { formatDayShort, formatPoints, formatQuantity, formatRelative, formatUSD } from '../lib/format';
 import { isMarketOpen } from '../lib/market-time';
 import { portfolioPoints } from '../lib/scoring';
+import { useCountUp } from '../lib/use-count-up';
 import { myPortfolio, priceOf } from '../state/derived';
 import { useNav } from '../state/nav';
 import { useStore } from '../state/store';
@@ -20,6 +21,7 @@ export function PortfolioTab() {
   const [period, setPeriod] = useState<Period>('saison');
   const p = myPortfolio(cash, holdings);
   const open = isMarketOpen();
+  const animatedValue = useCountUp(p.value);
 
   const series = useMemo(() => {
     const days = Math.round((Date.now() - ACTIVE_LEAGUE.start.getTime()) / 86400000);
@@ -43,7 +45,7 @@ export function PortfolioTab() {
 
       <section className="mt-4">
         <p className="text-[13px] font-semibold text-muted">Valeur totale</p>
-        <p className="display mt-1 text-[52px] nums">{formatUSD(p.value)}</p>
+        <p className="display mt-1 text-[52px] nums">{formatUSD(animatedValue)}</p>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
           <span className="flex items-center gap-1.5"><Trend value={p.dayChange} format="usd" /> <Trend value={p.dayChangePct} icon={false} className="font-medium" /> <span className="text-muted">aujourd’hui</span></span>
           <span className="flex items-center gap-1.5"><Trend value={p.returnPct} /> <span className="text-muted">depuis le début</span></span>

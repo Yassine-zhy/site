@@ -47,7 +47,9 @@ public class MainActivity extends Activity {
     MIME.put("woff", "font/woff");
   }
 
+  static final int PICK_IMAGE = 42;
   WebView web;
+  ValueCallback<Uri[]> pendingFile;
 
   @Override
   protected void onCreate(Bundle state) {
@@ -71,7 +73,24 @@ public class MainActivity extends Activity {
     s.setAllowFileAccess(false);
     s.setAllowContentAccess(false);
     web.addJavascriptInterface(new Bridge(), "StockLeagueApp");
-    web.setWebChromeClient(new WebChromeClient());
+    web.setWebChromeClient(new WebChromeClient() {
+      // <input type="file"> : ouvre la galerie pour choisir la photo de profil.
+      @Override
+      public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> callback, FileChooserParams params) {
+        if (pendingFile != null) pendingFile.onReceiveValue(null);
+        pendingFile = callback;
+        Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
+        pick.addCategory(Intent.CATEGORY_OPENABLE);
+        pick.setType("image/*");
+        try {
+          startActivityForResult(Intent.createChooser(pick, "Choisir une photo"), PICK_IMAGE);
+        } catch (Exception e) {
+          pendingFile = null;
+          return false;
+        }
+        return true;
+      }
+    });
     web.setWebViewClient(new WebViewClient() {
       @Override
       public WebResourceResponse shouldInterceptRequest(WebView v, String url) {
@@ -167,6 +186,15 @@ public class MainActivity extends Activity {
     } catch (Exception e) {
       return new WebResourceResponse("text/plain", "utf-8", empty);
     }
+  }
+
+  @Override
+  protected void onActivityResult(int request, int result, Intent data) {
+    super.onActivityResult(request, result, data);
+    if (request != PICK_IMAGE || pendingFile == null) return;
+    Uri uri = (result == RESULT_OK && data != null) ? data.getData() : null;
+    pendingFile.onReceiveValue(uri != null ? new Uri[] {uri} : null);
+    pendingFile = null;
   }
 
   @Override

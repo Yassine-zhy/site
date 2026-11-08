@@ -190,3 +190,12 @@ export function simulatedSeries(seed: string, points: number, start: number, end
   const drift = (end - raw[points - 1]) / (points - 1);
   return raw.map((v, i) => Math.round((v + drift * i) * 100) / 100);
 }
+
+// --------------------------------------------------------------------------- engagement (démo)
+/** Duel de la semaine : un adversaire tiré au sort chaque lundi, points gagnés depuis lundi. */
+export const DUEL = { opponent: 'lea', mine: 24, theirs: 31 };
+/** Réactions des amis sur le fil d'activité. */
+export const REACTION_COUNTS: Record<string, Partial<Record<'fire' | 'laugh' | 'clap' | 'shock', number>>> = {
+  f1: { fire: 2, shock: 1 }, f2: { clap: 1 }, f4: { fire: 2, clap: 2 }, f5: { laugh: 4 }, f6: { clap: 3 },
+  f7: { fire: 1, clap: 2 }, f8: { fire: 3, shock: 1 }, f10: { clap: 2 },
+};

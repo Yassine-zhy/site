@@ -1,6 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { TabBar } from './components/tab-bar';
-import { ActivityTab } from './screens/ActivityTab';
+import { Celebrations } from './components/celebrate';
+import { ActivityScreen } from './screens/Activity';
+import { GlossarySheet } from './screens/GlossarySheet';
+import { HomeTab } from './screens/HomeTab';
+import { ProfileSetup } from './screens/ProfileSetup';
+import { Tutorial } from './screens/Tutorial';
 import { BadgesScreen } from './screens/Badges';
 import { CreateLeagueScreen } from './screens/CreateLeague';
 import { HistoryScreen } from './screens/History';
@@ -56,6 +61,7 @@ function routeView(r: Route): ReactNode {
     case 'badges': return <BadgesScreen />;
     case 'history': return <HistoryScreen />;
     case 'rules': return <RulesScreen />;
+    case 'activity': return <ActivityScreen />;
     case 'login': return null;
   }
 }
@@ -70,7 +76,8 @@ function Shell({ dark }: { dark: boolean }) {
     const onBoard = tab === 'ligue' && !top;
     setSystemBars(onBoard ? c.board : c.bg, !dark && !onBoard);
   }, [dark, tab, top]);
-  const Tab = { ligue: LeagueTab, portefeuille: PortfolioTab, pronos: PronosTab, activite: ActivityTab, profil: ProfileTab }[tab];
+  const Tab = { accueil: HomeTab, ligue: LeagueTab, portefeuille: PortfolioTab, pronos: PronosTab, profil: ProfileTab }[tab];
+  const { tutorialDone } = useStore();
 
   // Empêche le défilement de l'écran du dessous quand un écran ou une feuille est ouvert.
   useEffect(() => {
@@ -91,28 +98,36 @@ function Shell({ dark }: { dark: boolean }) {
       {sheet?.name === 'order' ? <OrderSheet key={sheet.ticker + sheet.side} ticker={sheet.ticker} side={sheet.side} /> : null}
       {sheet?.name === 'predict' ? <PredictSheet key={sheet.eventId} eventId={sheet.eventId} /> : null}
       {sheet?.name === 'share' ? <ShareSheet /> : null}
+      {sheet?.name === 'glossary' ? <GlossarySheet /> : null}
+      {!tutorialDone ? <Tutorial /> : null}
     </>
   );
 }
 
 function Root() {
   const dark = useTheme();
-  const { onboarded, patch } = useStore();
+  const { onboarded, profileDone, patch } = useStore();
   const [login, setLogin] = useState(false);
   useEffect(() => {
-    if (onboarded) return;
+    if (onboarded && profileDone) return;
     const c = BAR_COLORS[dark ? 'dark' : 'light'];
-    if (login) setSystemBars(c.bg, !dark);
+    if (login || onboarded) setSystemBars(c.bg, !dark);
     else setSystemBars(c.board, false);
-  }, [onboarded, login, dark]);
+  }, [onboarded, profileDone, login, dark]);
+  let screen: ReactNode;
   if (!onboarded) {
     const enter = () => { setLogin(false); patch({ onboarded: true }); };
-    return login ? <LoginScreen onBack={() => setLogin(false)} onDone={enter} /> : <WelcomeScreen onDemo={enter} onLogin={() => setLogin(true)} />;
+    screen = login ? <LoginScreen onBack={() => setLogin(false)} onDone={enter} /> : <WelcomeScreen onDemo={enter} onLogin={() => setLogin(true)} />;
+  } else if (!profileDone) {
+    screen = <ProfileSetup />;
+  } else {
+    screen = <NavProvider><Shell dark={dark} /></NavProvider>;
   }
   return (
-    <NavProvider>
-      <Shell dark={dark} />
-    </NavProvider>
+    <>
+      {screen}
+      <Celebrations />
+    </>
   );
 }
 

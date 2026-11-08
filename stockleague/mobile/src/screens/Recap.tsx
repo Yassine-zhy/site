@@ -1,13 +1,15 @@
 import { ArrowsClockwise, ShareNetwork } from '@phosphor-icons/react';
 import { Avatar, Button, CompanyLogo, Emoji, ScreenHeader, Trend } from '../components/ui';
 import { LogoMark } from '../components/ui';
-import { LEAGUES, PLAYER_MAP, RECAP_S1, TITLES } from '../data/demo';
+import { LEAGUES, RECAP_S1, TITLES } from '../data/demo';
 import { TICKER_MAP } from '../data/tickers';
 import { formatDate, formatPoints } from '../lib/format';
 import { useNav } from '../state/nav';
+import { useName } from '../state/store';
 
 /** Carte récap de fin de saison (même rendu que l'image partageable). Carré ou format LinkedIn. */
 export function RecapCard({ wide }: { wide?: boolean }) {
+  const name = useName();
   const l = LEAGUES[2];
   const [first, second, third] = RECAP_S1.podium;
   const bt = RECAP_S1.bestTrade, bc = RECAP_S1.bestCall;
@@ -27,7 +29,7 @@ export function RecapCard({ wide }: { wide?: boolean }) {
         return (
           <div key={p.id} className="flex flex-col items-center">
             <Avatar id={p.id} size={rank === 1 ? 54 : 44} ring={rank === 1 ? 'gold' : rank === 2 ? 'silver' : 'bronze'} />
-            <span className="mt-1.5 text-[12px] font-bold">{PLAYER_MAP[p.id].pseudo}</span>
+            <span className="mt-1.5 text-[12px] font-bold">{name(p.id)}</span>
             <span className="display text-[14px] nums opacity-80">{formatPoints(p.points)}</span>
             <span className="mt-1 grid w-full place-items-center rounded-t-[6px] bg-board-2" style={{ height: rank === 1 ? 44 : rank === 2 ? 30 : 20 }}>
               <span className="display text-xl opacity-40">{rank}</span>
@@ -41,12 +43,12 @@ export function RecapCard({ wide }: { wide?: boolean }) {
     <div className={wide ? 'grid content-center gap-2 text-[11px]' : 'mt-3 grid grid-cols-2 gap-2 text-[11px]'}>
       <div className="rounded-[8px] bg-board-2 p-2">
         <p className="opacity-60">Meilleur coup</p>
-        <div className="mt-1 flex items-center gap-1.5"><CompanyLogo ticker={bt.ticker} size={20} /><b>{PLAYER_MAP[bt.player].pseudo}, {TICKER_MAP[bt.ticker].name}</b></div>
+        <div className="mt-1 flex items-center gap-1.5"><CompanyLogo ticker={bt.ticker} size={20} /><b>{name(bt.player)}, {TICKER_MAP[bt.ticker].name}</b></div>
         <p className="mt-0.5 font-bold text-[#4ade9b] nums">+{bt.gainPct.toLocaleString('fr-FR')} %</p>
       </div>
       <div className="rounded-[8px] bg-board-2 p-2">
         <p className="opacity-60">Meilleur pronostic</p>
-        <div className="mt-1 flex items-center gap-1.5"><CompanyLogo ticker={bc.ticker} size={20} /><b>{PLAYER_MAP[bc.player].pseudo}, {TICKER_MAP[bc.ticker].name}</b></div>
+        <div className="mt-1 flex items-center gap-1.5"><CompanyLogo ticker={bc.ticker} size={20} /><b>{name(bc.player)}, {TICKER_MAP[bc.ticker].name}</b></div>
         <p className="mt-0.5 font-bold text-gold">« Sûr de moi », +{bc.points} pts</p>
       </div>
     </div>
@@ -63,6 +65,7 @@ export function RecapCard({ wide }: { wide?: boolean }) {
 }
 
 export function RecapScreen() {
+  const name = useName();
   const { openSheet } = useNav();
   const all = [...RECAP_S1.podium, ...RECAP_S1.others];
   return (
@@ -72,7 +75,7 @@ export function RecapScreen() {
         <div className="flex items-center gap-3">
           <Emoji name="trophy" size={52} />
           <div>
-            <p className="display text-[32px]">{PLAYER_MAP[RECAP_S1.podium[0].id].pseudo} remporte la saison</p>
+            <p className="display text-[32px]">{name(RECAP_S1.podium[0].id)} remporte la saison</p>
             <p className="text-sm text-muted">Positions gelées au cours de clôture du dernier jour.</p>
           </div>
         </div>
@@ -89,7 +92,7 @@ export function RecapScreen() {
               <span className="display w-6 text-center text-[24px] nums">{i + 1}</span>
               <Avatar id={p.id} size={40} />
               <span className="min-w-0 flex-1">
-                <span className="block font-bold">{PLAYER_MAP[p.id].pseudo}</span>
+                <span className="block font-bold">{name(p.id)}</span>
                 <span className="flex items-center gap-1 text-xs text-muted"><Emoji name={TITLES[p.title].emoji} size={14} />{TITLES[p.title].label}</span>
               </span>
               <span className="text-right">

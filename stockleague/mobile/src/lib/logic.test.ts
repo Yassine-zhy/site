@@ -73,3 +73,17 @@ describe('heures de marché et verrouillage', () => {
     expect(addBusinessDays(new Date('2026-11-06T12:00:00Z'), 1)).toBe('2026-11-09');
   });
 });
+
+import { levelOf, nextVisitStreak, xpForLevel } from './xp';
+describe('progression', () => {
+  it('calcule les niveaux', () => {
+    expect(xpForLevel(2)).toBe(100);
+    expect(levelOf(0).level).toBe(1);
+    expect(levelOf(540)).toMatchObject({ level: 3, toNext: 60 });
+  });
+  it('fait vivre la série de jours', () => {
+    expect(nextVisitStreak('2026-11-07', 5, '2026-11-08', '2026-11-07')).toEqual({ streak: 6, isNewDay: true });
+    expect(nextVisitStreak('2026-11-08', 6, '2026-11-08', '2026-11-07')).toEqual({ streak: 6, isNewDay: false });
+    expect(nextVisitStreak('2026-11-01', 6, '2026-11-08', '2026-11-07')).toEqual({ streak: 1, isNewDay: true });
+  });
+});

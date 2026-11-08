@@ -60,7 +60,7 @@ const stubs = path.join(build, 'stubs'), classes = path.join(build, 'classes');
 const stub = path.join(tools, 'android-stub.jar');
 const javac = ['-nowarn', '-Xlint:-options', '-encoding', 'UTF-8', '--release', '8'];
 run('javac', [...javac, '-cp', stub, '-d', stubs, ...javaFiles(path.join(android, 'stubs'))]);
-run('javac', [...javac, '-cp', stub + path.delimiter + stubs, '-d', classes, ...javaFiles(path.join(android, 'src'))]);
+run('javac', [...javac, '-cp', stubs + path.delimiter + stub, '-d', classes, ...javaFiles(path.join(android, 'src'))]);
 const dex = path.join(build, 'classes.dex');
 run('java', ['-cp', path.join(tools, 'dx.jar'), 'com.android.dx.command.Main', '--dex', '--min-sdk-version=24', '--output=' + dex, classes]);
 

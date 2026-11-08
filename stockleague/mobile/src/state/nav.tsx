@@ -4,7 +4,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-export type Tab = 'ligue' | 'portefeuille' | 'pronos' | 'activite' | 'profil';
+export type Tab = 'accueil' | 'ligue' | 'portefeuille' | 'pronos' | 'profil';
 export type Route =
   | { name: 'stock'; ticker: string }
   | { name: 'player'; id: string }
@@ -17,11 +17,13 @@ export type Route =
   | { name: 'badges' }
   | { name: 'history' }
   | { name: 'rules' }
+  | { name: 'activity' }
   | { name: 'login' };
 export type Sheet =
   | { name: 'order'; ticker: string; side: 'buy' | 'sell' }
   | { name: 'predict'; eventId: string }
-  | { name: 'share' };
+  | { name: 'share' }
+  | { name: 'glossary' };
 
 type Nav = {
   tab: Tab; stack: Route[]; sheet: Sheet | null;
@@ -35,7 +37,7 @@ declare global {
 }
 
 export function NavProvider({ children }: { children: ReactNode }) {
-  const [tab, setTabState] = useState<Tab>('ligue');
+  const [tab, setTabState] = useState<Tab>('accueil');
   const [stack, setStack] = useState<Route[]>([]);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const ref = useRef({ tab, stack, sheet });
@@ -44,12 +46,12 @@ export function NavProvider({ children }: { children: ReactNode }) {
   const setTab = useCallback((t: Tab) => { setTabState(t); setStack([]); window.scrollTo(0, 0); }, []);
   const push = useCallback((r: Route) => setStack((s) => [...s, r]), []);
   const pop = useCallback(() => setStack((s) => s.slice(0, -1)), []);
-  const reset = useCallback((t: Tab = 'ligue') => { setStack([]); setSheet(null); setTabState(t); }, []);
+  const reset = useCallback((t: Tab = 'accueil') => { setStack([]); setSheet(null); setTabState(t); }, []);
   const back = useCallback(() => {
     const c = ref.current;
     if (c.sheet) { setSheet(null); return true; }
     if (c.stack.length) { setStack((s) => s.slice(0, -1)); return true; }
-    if (c.tab !== 'ligue') { setTabState('ligue'); return true; }
+    if (c.tab !== 'accueil') { setTabState('accueil'); return true; }
     return false;
   }, []);
 

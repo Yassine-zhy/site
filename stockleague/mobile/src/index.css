@@ -129,3 +129,21 @@
 @media (prefers-reduced-motion: reduce) {
   .anim-slide, .anim-sheet, .anim-fade, .anim-tape, .anim-pop { animation: none; }
 }
+
+/* Récompenses */
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, 0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate3d(var(--drift), 105vh, 0) rotate(var(--rot)); opacity: 0.9; }
+}
+.confetti { animation: confetti-fall 1.6s cubic-bezier(0.25, 0.6, 0.4, 1) forwards; }
+@keyframes toast-in { 0% { transform: translateY(-120%); } 12%, 85% { transform: translateY(0); } 100% { transform: translateY(-140%); } }
+.anim-toast { animation: toast-in 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+@keyframes ring-fill { from { stroke-dashoffset: var(--len); } }
+.anim-ring { animation: ring-fill 900ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes flame { 0%, 100% { transform: scale(1) rotate(-2deg); } 50% { transform: scale(1.08) rotate(2deg); } }
+.anim-flame { animation: flame 1.8s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes shake { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-10deg); } 40% { transform: rotate(9deg); } 60% { transform: rotate(-6deg); } 80% { transform: rotate(4deg); } }
+.anim-shake { animation: shake 0.9s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .anim-toast, .anim-ring, .anim-flame, .anim-shake { animation: none; }
+}

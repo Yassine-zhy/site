@@ -6,5 +6,8 @@ export const EMOJI = [
   'bell', 'sun', 'crescent-moon', 'sparkles', 'eyes', 'hourglass-not-done', 'spiral-calendar',
   'chequered-flag', 'seedling', 'brain', 'snail', 'scroll', 'envelope-with-arrow', 'stopwatch',
   'shopping-bags', 'receipt', 'thinking-face', 'flexed-biceps', 'ticket', 'telescope', 'bank',
+  'face-with-tears-of-joy', 'clapping-hands', 'face-screaming-in-fear', 'crossed-swords', 'high-voltage',
+  'glowing-star', 'check-mark-button', 'camera', 'waving-hand', 'light-bulb', 'wrapped-gift', 'star-struck',
+  'mobile-phone', 'books', 'red-heart', 'hundred-points', 'rocket',
 ] as const;
 export type EmojiName = (typeof EMOJI)[number];

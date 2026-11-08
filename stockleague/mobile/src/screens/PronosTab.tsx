@@ -14,6 +14,7 @@ const eps = (n: number) => formatUSD(n);
 
 export function PronosTab() {
   const { picks } = useStore();
+  const { openSheet } = useNav();
   const [view, setView] = useState<View>('open');
   const now = Date.now();
   const stats = myPredictionStats(picks);
@@ -29,7 +30,8 @@ export function PronosTab() {
   return (
     <div className="px-4 pt-[max(env(safe-area-inset-top),16px)] pb-28">
       <h1 className="display pt-2 text-[40px]">Pronostics</h1>
-      <p className="mt-1 text-[13px] text-muted">Le BPA publié battra-t-il ou manquera-t-il l’estimation des analystes ?</p>
+      <p className="mt-1 text-[13px] text-muted">Le bénéfice publié battra-t-il ou manquera-t-il l’estimation des analystes ?</p>
+      <button onClick={() => openSheet({ name: 'glossary' })} className="press mt-2 inline-flex items-center gap-1.5 rounded-[8px] border border-line bg-card px-2.5 py-1.5 text-xs font-semibold"><Emoji name="light-bulb" size={16} /> C’est quoi le BPA ?</button>
 
       {/* ------------------------------------------------ série et stats */}
       <div className="mt-4 overflow-hidden rounded-tile border border-line bg-card">

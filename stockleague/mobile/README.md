@@ -4,7 +4,17 @@ L'application Android de StockLeague : ligue boursière entre amis, avec portefe
 
 > Argent fictif — à but ludique et éducatif — ceci n'est pas un conseil en investissement.
 
-**Installer la démo :** copie `android/release/StockLeague-0.1-demo.apk` sur un téléphone Android 7 ou plus récent, ouvre-le et autorise « Installer des applis inconnues » pour l'appli qui l'ouvre (Fichiers, Chrome…).
+**Installer la démo :** copie `android/release/StockLeague-0.2-demo.apk` sur un téléphone Android 7 ou plus récent, ouvre-le et autorise « Installer des applis inconnues » pour l'appli qui l'ouvre (Fichiers, Chrome…).
+
+## Nouveautés de la version 0.2
+
+- **Photo de profil** importée depuis la galerie, recadrage par glisser + zoom, pseudo modifiable.
+- **Accueil quotidien** : « à faire maintenant » (prochain verrouillage), 3 missions du jour et coffre à récompense variable, défi éclair (S&P 500 en hausse ou en baisse), duel de la semaine contre un ami, rang et portefeuille en un coup d'œil.
+- **Progression** : XP et 7 niveaux (de Stagiaire à Légende de Wall Street), série de jours consécutifs avec calendrier, célébrations (confettis, vibration), écran de passage de niveau.
+- **Social** : réactions sur le fil d'activité.
+- **Prise en main** : profil en 1 étape, tutoriel en 4 cartes, explication du BPA, pastille des pronostics à faire.
+
+Ces mécaniques s'appuient sur les travaux sur la formation d'habitudes (déclencheur, action simple, récompense variable, investissement : modèle « Hooked » de Nir Eyal), l'effet de gradient d'objectif (on accélère près du but), l'aversion à la perte (série à ne pas casser) et la comparaison sociale. Elles ne distribuent que de l'XP : le classement de la ligue n'est jamais acheté ni faussé.
 
 ## Ce que contient la démo
 

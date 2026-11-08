@@ -2,7 +2,8 @@
 import { ArrowDownRight, ArrowUpRight, CaretLeft, Minus } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import type { EmojiName } from '../data/emoji-list';
-import { PLAYER_MAP } from '../data/demo';
+import { ME, PLAYER_MAP } from '../data/demo';
+import { useStore } from '../state/store';
 import logoDarkBg from '../data/logo-dark-bg.json';
 import { TICKER_MAP } from '../data/tickers';
 import { formatSignedPercent, formatSignedUSD, trendOf } from '../lib/format';
@@ -29,9 +30,11 @@ export function CompanyLogo({ ticker, size = 40, className }: { ticker: string; 
   );
 }
 
-/** Avatar illustré d'un joueur (DiceBear Notionists, CC0), cadre carré arrondi. */
+/** Avatar d'un joueur : sa photo importée, sinon une illustration (DiceBear Notionists, CC0). Cadre carré arrondi. */
 export function Avatar({ id, size = 40, ring, className }: { id: string; size?: number; ring?: 'gold' | 'silver' | 'bronze'; className?: string }) {
+  const { photo } = useStore();
   const p = PLAYER_MAP[id] ?? { avatar: id, tint: '#E1E7EF', pseudo: id };
+  const own = id === ME && photo;
   return (
     <span
       className={cx('relative block shrink-0 overflow-hidden', className)}
@@ -40,7 +43,23 @@ export function Avatar({ id, size = 40, ring, className }: { id: string; size?: 
         boxShadow: ring ? `0 0 0 2px var(--card), 0 0 0 4px var(--${ring === 'gold' ? 'gold' : ring})` : undefined,
       }}
     >
-      <img src={asset(`avatars/${p.avatar}.svg`)} alt="" className="absolute inset-x-0 bottom-0 h-[112%] w-full object-cover object-top" draggable={false} />
+      {own
+        ? <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+        : <img src={asset(`avatars/${p.avatar}.svg`)} alt="" className="absolute inset-x-0 bottom-0 h-[112%] w-full object-cover object-top" draggable={false} />}
+    </span>
+  );
+}
+
+/** Anneau de progression (niveau, objectifs). */
+export function Ring({ value, size = 48, stroke = 4, children, color = 'var(--gold)' }: { value: number; size?: number; stroke?: number; children?: ReactNode; color?: string }) {
+  const r = (size - stroke) / 2, len = 2 * Math.PI * r;
+  return (
+    <span className="relative grid shrink-0 place-items-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="absolute inset-0 -rotate-90" aria-hidden>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--line)" strokeWidth={stroke} />
+        <circle className="anim-ring" cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={len} strokeDashoffset={len * (1 - Math.max(0, Math.min(1, value)))} style={{ ['--len' as string]: len }} />
+      </svg>
+      {children}
     </span>
   );
 }
