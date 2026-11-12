@@ -21,7 +21,8 @@ import { isPhone } from "./phone.js";
 // Une maquette d'architecte : une tour de plâtre par valeur, haute comme son poids dans l'indice, coiffée d'un toit
 // peint à la couleur de sa séance. Les plus lourdes au centre, sur une planche où le plan des rues est tracé à l'encre.
 // Les fenêtres s'impriment une fois la tour montée.
-const WINDOWS = 0.4;   // la force de l'impression des fenêtres
+const WINDOWS = 0.5;
+const GLASS = [new THREE.Color(0x1f3b5e), new THREE.Color(0x2b4e7a)];   // le verre des tours : sombre, clair   // la force de l'impression des fenêtres
 
 function streetPlan(pal, W, D, xs, zs) {   // le plan gravé : avenues, lignes pointillées, passages piétons, lampadaires
   const px = 96, c = document.createElement("canvas");
@@ -49,8 +50,8 @@ function streetPlan(pal, W, D, xs, zs) {   // le plan gravé : avenues, lignes p
 }
 
 function skin(pal) {   // la façade : du plâtre ; ses fenêtres, imprimées à l'encre, apparaissent une fois la tour montée
-  const m = inked(new THREE.MeshStandardMaterial({ color: pal.porcelain.clone(), roughness: 0.86, metalness: 0 }),
-    facadeTexture(), pal.ink, 0);
+  const m = inked(new THREE.MeshPhysicalMaterial({ color: new THREE.Color(pal.dark ? 0x1f3b5e : 0x2b4e7a), roughness: 0.06,
+    metalness: 0.35, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.6 }), facadeTexture(), 0x9fc0e6, 0);
   m.userData.role = "body";
   return m;
 }
@@ -69,7 +70,7 @@ function city(data, pal, scene) {
   const xs = [...Array(cols - 1).keys()].map((i) => (colX(i) + colX(i + 1)) / 2);
   const zs = [...Array(rows - 1).keys()].map((j) => (rowZ(j) + rowZ(j + 1)) / 2);
   const plan = new THREE.Mesh(new THREE.PlaneGeometry(W, D).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({
-    color: pal.dark ? 0x9aa1ab : pal.ink, alphaMap: streetPlan(pal, W, D, xs, zs), transparent: true, opacity: 0.6,
+    color: 0xaab4c2, alphaMap: streetPlan(pal, W, D, xs, zs), transparent: true, opacity: 0.6,
     depthWrite: false }));
   plan.position.y = 0.003;
   plan.userData.noEdges = true;
@@ -82,7 +83,7 @@ function city(data, pal, scene) {
   const wmax = given[0]?.w || 1;
   const towers = given.map((t, k) => {
     const h = 0.7 + 4.4 * Math.sqrt(t.w / wmax), g = new THREE.Group(), body = new THREE.Group(), facade = skin(pal);
-    const podium = new THREE.Mesh(new RoundedBoxGeometry(fw + 0.18, 0.26, fw + 0.18, 2, 0.03).translate(0, 0.13, 0), mat(pal.relief));
+    const podium = new THREE.Mesh(new RoundedBoxGeometry(fw + 0.18, 0.26, fw + 0.18, 2, 0.03).translate(0, 0.13, 0), metal(pal, { rough: 0.3 }));
     body.add(podium);
     // le fût, et pour les grandes tours un retrait au sommet, séparé par une corniche
     const setback = h > 2.3, lower = setback ? h * 0.74 : h;
@@ -91,7 +92,7 @@ function city(data, pal, scene) {
     body.add(shaft);
     let top = lower, roofW = fw;
     if (setback) {
-      const ledge = new THREE.Mesh(new RoundedBoxGeometry(fw + 0.06, 0.06, fw + 0.06, 2, 0.02), mat(pal.relief));
+      const ledge = new THREE.Mesh(new RoundedBoxGeometry(fw + 0.06, 0.06, fw + 0.06, 2, 0.02), metal(pal, { rough: 0.3 }));
       ledge.position.y = lower;
       const upper = new THREE.Mesh(facadeBox(fw * 0.68, h - lower, fw * 0.68, 0.15, rnd()), facade);
       upper.position.y = lower + 0.03;
@@ -149,7 +150,7 @@ function city(data, pal, scene) {
         // séance, les autres restent en plâtre
         const m = tw.facade, ink = WINDOWS * phase(t, tw.delay + 0.55, 0.5), u = m.userData.ink;
         if (Math.abs(u.value - ink) > 0.003) { u.value += (ink - u.value) * (t < 99 ? 1 : k); moving = true; }
-        const tone = lit && tw === lit ? changeColor(pal, tw.c, 1) : pal.porcelain, c = m.color;
+        const tone = lit && tw === lit ? changeColor(pal, tw.c, 1) : GLASS[pal.dark ? 0 : 1], c = m.color;
         if (Math.abs(c.r - tone.r) + Math.abs(c.g - tone.g) + Math.abs(c.b - tone.b) > 0.004) { c.lerp(tone, k); moving = true; }
         const lift = tw === hover ? 0.12 : 0;
         if (Math.abs(tw.g.position.y - lift) > 0.002) { tw.g.position.y += (lift - tw.g.position.y) * k * 2; moving = true; }
@@ -214,7 +215,7 @@ function globe(data, pal, scene) {
   const earth = new THREE.Group();
   earth.rotation.y = -0.2;   // l'Europe face à nous, l'Amérique sur la gauche
   axis.add(earth);
-  const ball = new THREE.Mesh(new THREE.SphereGeometry(R, 96, 64), mat(pal.porcelain));
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(R, 96, 64), mat(pal.dark ? 0x2d5590 : 0x3a68a8));
   ball.castShadow = ball.receiveShadow = true;
   ball.userData.noEdges = true;
   earth.add(ball);
@@ -223,7 +224,7 @@ function globe(data, pal, scene) {
   for (let lat = -75; lat <= 75; lat += 15) for (let lon = 0; lon < 360; lon += 4) grid.push(onSphere(lat, lon, R * 1.002), onSphere(lat, lon + 4, R * 1.002));
   for (let lon = 0; lon < 360; lon += 15) for (let lat = -84; lat < 84; lat += 4) grid.push(onSphere(lat, lon, R * 1.002), onSphere(lat + 4, lon, R * 1.002));
   earth.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(grid),
-    new THREE.LineBasicMaterial({ color: pal.ink, transparent: true, opacity: pal.dark ? 0.3 : 0.18, depthWrite: false })));
+    new THREE.LineBasicMaterial({ color: pal.ink, transparent: true, opacity: 0.25, depthWrite: false })));
   // les terres : de petites colonnes hexagonales, comme des points de broderie, un ton plus soutenu que la mer
   const spots = [], golden = Math.PI * (3 - Math.sqrt(5)), M = 9000;
   for (let k = 0; k < M; k++) {
@@ -232,7 +233,7 @@ function globe(data, pal, scene) {
     if (isLand(lat, lon)) spots.push([lat, lon, 0.03 + rnd() * 0.05]);
   }
   const dot = new THREE.CylinderGeometry(0.026, 0.03, 1, 6).translate(0, 0.5, 0);
-  const land = new THREE.InstancedMesh(dot, mat(pal.shade), spots.length);
+  const land = new THREE.InstancedMesh(dot, metal(pal, { color: 0xd9dee6, rough: 0.35 }), spots.length);
   land.castShadow = land.receiveShadow = true;
   const up = new THREE.Vector3(0, 1, 0), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3();
   const place = (k, grow) => {
@@ -340,12 +341,13 @@ function coinFace(sym, name, relief) {   // la face frappée, dessinée en blanc
   return t;
 }
 
-function coin(pal, c, face, fine = true) {   // face(relief) : la gravure, partagée par les pièces d'un même nom
+const COIN_METALS = [0xe0b24f, 0xcfd4dc, 0xc98a55];   // or, argent, bronze : le rang de la pièce
+function coin(pal, c, face, fine = true, tint = 0xcfd4dc) {   // face(relief) : la gravure, partagée par les pièces d'un même nom
   const g = new THREE.Group(), n = fine ? 1 : 0.5;   // les petites pièces de la pile : deux fois moins de facettes
   // le corps : un bord relevé autour d'un champ en creux (profil tourné), puis la tranche cannelée
   const profile = [[0, 0.055], [0.84, 0.055], [0.87, 0.085], [0.95, 0.092], [0.985, 0.075], [0.985, -0.075], [0.95, -0.092],
     [0.87, -0.085], [0.84, -0.055], [0, -0.055]].map(([x, y]) => new THREE.Vector2(x, y));
-  const body = new THREE.Mesh(new THREE.LatheGeometry(profile, 160 * n), metal(pal, { rough: 0.32 }));
+  const body = new THREE.Mesh(new THREE.LatheGeometry(profile, 160 * n), metal(pal, { rough: 0.2, color: tint }));
   const sides = 240 * n, edge = new THREE.CylinderGeometry(1, 1, 0.15, sides, 1, true);
   const pos = edge.attributes.position;
   for (let i = 0; i < pos.count; i++) {   // les cannelures : un rayon sur deux est en retrait
@@ -353,10 +355,10 @@ function coin(pal, c, face, fine = true) {   // face(relief) : la gravure, parta
     pos.setXYZ(i, Math.cos(a) * r, pos.getY(i), Math.sin(a) * r);
   }
   edge.computeVertexNormals();
-  const reed = new THREE.Mesh(edge, metal(pal, { rough: 0.4 }));
+  const reed = new THREE.Mesh(edge, metal(pal, { rough: 0.3, color: tint }));
   reed.userData.noEdges = true;
   const glow = face(false), bump = face(true);
-  const faceMat = metal(pal, { rough: 0.46, emissiveMap: glow, glow: 0.8, bump, bumpScale: 4 });
+  const faceMat = metal(pal, { rough: 0.3, color: tint, emissiveMap: glow, glow: 0.75, bump, bumpScale: 4 });
   const front = new THREE.Mesh(new THREE.CircleGeometry(0.84, 128 * n).rotateX(-Math.PI / 2), faceMat);
   front.position.y = 0.056;
   const back = front.clone();
@@ -388,7 +390,7 @@ function coins(data, pal, scene) {
     return faces.get(key);
   };
   const add = (c, id, s, pos, rot, delay) => {
-    const g = coin(pal, c, face(c), s > 0.7);
+    const g = coin(pal, c, face(c), s > 0.7, COIN_METALS[id] ?? COIN_METALS[1]);
     g.scale.setScalar(s);
     tag(g, id);
     root.add(g);
