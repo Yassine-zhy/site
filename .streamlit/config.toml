@@ -122,24 +122,24 @@ showSidebarBorder = true
 # foncé pour que ce texte reste lisible (contraste supérieur à 4,5:1).
 [theme.light]
 primaryColor = "#1F4ED8"            # le bleu FinVeille
-backgroundColor = "#f6f7f8"         # fond de page gris très clair
+backgroundColor = "#f6f7f8"         # fond de page gris bleuté très clair
 secondaryBackgroundColor = "#FFFFFF" # champs de saisie
-textColor = "#111418"
-borderColor = "#e1e4e8"
+textColor = "#0B1220"
+borderColor = "#D6DDE8"
 linkColor = "#1F4ED8"
-codeBackgroundColor = "#eceef1"
+codeBackgroundColor = "#EDF0F5"
 
 [theme.light.sidebar]
 backgroundColor = "#FFFFFF"
 
 [theme.dark]
 primaryColor = "#3A69EA"            # un bleu plus lumineux, toujours lisible sous un texte blanc
-backgroundColor = "#0e1013"         # gris anthracite neutre
+backgroundColor = "#0e1013"         # bleu nuit profond, comme un terminal de salle de marché
 secondaryBackgroundColor = "#15181c"
-textColor = "#e9ebee"
-borderColor = "#252a31"
+textColor = "#E8EDF6"
+borderColor = "#24304A"
 linkColor = "#6F95FF"
 codeBackgroundColor = "#15181c"
 
 [theme.dark.sidebar]
-backgroundColor = "#15181c"
+backgroundColor = "#0A0F1A"
