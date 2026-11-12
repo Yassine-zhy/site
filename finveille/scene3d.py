@@ -1,13 +1,10 @@
-"""Les maquettes 3D de FinVeille (guides 30, 33 et 41) : des objets posés dans les pages.
+"""Les maquettes de FinVeille (guides 30, 33, 41 et 42) : des images de synthèse posées dans les pages.
 
-Le moteur (static/fv3d/, avec Three.js) tourne dans le navigateur du visiteur : le serveur n'envoie que des noms et
-quelques données. Trois pages ont une maquette, parce qu'elle y montre des données : la ville de l'indice sur
-l'accueil (une tour par valeur), le globe des places sur Marchés, les pièces sur Crypto (vitrines.js, models.js). Ce
-sont des objets de plâtre et d'acier, comme une maquette d'architecte : ni halo, ni particules. Les autres pages n'ont
-pas d'objet : un décor qui ne dit rien alourdit la page. Les fichiers du dossier static/ sont servis par Streamlit
-(server.enableStaticServing, .streamlit/config.toml).
-
-Sans WebGL (vieux navigateur, carte graphique désactivée), rien ne manque : la page s'affiche sans la maquette.
+Trois pages ont une maquette : la ville de l'indice sur l'accueil (une tour par valeur), le globe sur Marchés, les
+pièces sur Crypto. Ce sont des images photoréalistes rendues à l'avance dans Blender (tools/blender/, moteur Cycles)
+et rangées dans static/renders/ : verre qui reflète le ciel, acier poli, or. Le navigateur ne calcule plus de 3D : il
+affiche l'image et, pour la ville, peint chaque toit à la couleur de sa séance grâce à un masque rendu avec l'image
+(static/fv3d/renders.js). Les fichiers de static/ sont servis par Streamlit (server.enableStaticServing).
 """
 
 from __future__ import annotations
@@ -20,9 +17,10 @@ from pathlib import Path
 import streamlit as st
 from streamlit.errors import StreamlitAPIException
 
-STATIC = Path(__file__).parent / "static" / "fv3d"
+STATIC = Path(__file__).parent / "static"
 # La version du moteur : elle change avec ses fichiers et oblige le navigateur à recharger la nouvelle version
-VERSION = hashlib.sha256(b"".join(path.read_bytes() for path in sorted(STATIC.rglob("*.js")))).hexdigest()[:12]
+VERSION = hashlib.sha256(b"".join(path.read_bytes() for folder in ("fv3d", "renders")
+                                   for path in sorted((STATIC / folder).rglob("*")) if path.is_file())).hexdigest()[:12]
 
 # Le composant ne contient que ce petit chargeur : le moteur arrive par une adresse à part, mise en cache.
 LOADER = """
@@ -54,12 +52,10 @@ _component = _register()
 OBJECTS = {
     "markets": ("globe", {"act": {"type": "reveal", "in": ".fv-tile", "keyed": True, "hint": "Cliquer : sa tuile de cours",
                                   "hintAll": "Cliquer : les indices"}},
-                "Un globe de bureau : une épingle par grande place boursière.",
-                "Une épingle par place : verte si l'indice monte, rouge s'il baisse. Clique-la pour voir son cours."),
+                "Un globe de bureau : une mer de verre bleu, des continents dorés, un pied d'acier.", ""),
     "crypto": ("coins", {"act": {"type": "reveal", "in": ".fv-table tbody tr", "keyed": True,
                                  "hint": "Cliquer : sa ligne du classement", "hintAll": "Cliquer : le classement"}},
-               "Trois pièces gravées : les trois premières cryptomonnaies.",
-               "Le filet autour de chaque pièce : vert si elle monte sur 24 h, rouge si elle baisse."),
+               "Un bitcoin d'or, sa pile de pièces et deux ethers d'argent.", ""),
 }
 # La maquette du CAC 40 (le récit de l'accueil) : une tour cliquée cherche ses dépêches dans le fil
 CITY_ACT = {"type": "search", "input": "Rechercher", "keyed": True, "then": "#fv-fil", "hint": "Cliquer : ses dépêches",
@@ -97,7 +93,6 @@ USA_WEIGHTS = {
 # Par place : la table des poids et le poids d'une valeur qui n'y figure pas (une petite valeur)
 CITY_WEIGHTS = {"france": (WEIGHTS, 0.5), "canada": (TSX_WEIGHTS, 8), "usa": (USA_WEIGHTS, 60)}
 CITY_TOWERS = 40  # la maquette n'a que 8 × 5 cases (models.js::city)
-PLACES = ("^FCHI", "^GDAXI", "^FTSE", "^GSPC", "^N225", "^HSI", "000001.SS")  # les places du globe (models.js)
 
 
 def show(key: str = "fv3d") -> None:
@@ -113,8 +108,8 @@ def show(key: str = "fv3d") -> None:
 
 def city_data(quotes, place: str = "france") -> dict:
     """La maquette d'une place (le récit de l'accueil) : une tour par valeur, sa hauteur suit son poids dans l'indice,
-    son toit la séance si on la connaît. Elle n'a que 40 cases : on garde les plus lourdes, mais toujours les 3 plus
-    fortes hausses et les 3 plus fortes baisses de la séance, que la caméra du récit vise (parmi les tours)."""
+    son toit la séance si on la connaît. Elle n'a que 40 cases : toujours les 40 valeurs les plus lourdes, les mêmes
+    d'un jour à l'autre, car l'image de la ville est rendue à l'avance (tools/blender/city.py) avec ces tours-là."""
     from core import market
 
     place = place if place in market.PLACES else "france"
@@ -122,13 +117,8 @@ def city_data(quotes, place: str = "france") -> dict:
     change = {quote.symbol: round(quote.change, 2) for quote in quotes}
     towers = [{"n": name, "w": weights.get(symbol, default), "c": change.get(symbol)}
               for symbol, name, _ in market.PLACES[place][3]]
-    if len(towers) > CITY_TOWERS:
-        moved = sorted((tower for tower in towers if tower["c"] is not None), key=lambda tower: tower["c"])
-        must = {id(tower) for tower in moved[:3] + moved[-3:]}
-        heaviest = sorted((tower for tower in towers if id(tower) not in must), key=lambda tower: -tower["w"])
-        kept = {id(tower) for tower in heaviest[:CITY_TOWERS - len(must)]} | must
-        towers = [tower for tower in towers if id(tower) in kept]
-    return {"towers": towers, "act": CITY_ACT}
+    towers = sorted(towers, key=lambda tower: -tower["w"])[:CITY_TOWERS]
+    return {"towers": towers, "act": CITY_ACT, "place": place}
 
 
 def vitrine(kind: str, data: dict | None = None, label: str = "", caption: str = "", fallback: str | None = None,
@@ -150,16 +140,7 @@ def page_object(name: str | None, data: dict | None = None, fallback: str | None
         return ""
     kind, settings, label, caption = OBJECTS[name]
     payload = {**settings, **(data or {})}
-    if name == "markets" and "markers" not in payload:
-        payload["markers"] = markers()
     return vitrine(kind, payload, label, caption, fallback)
-
-
-def markers() -> list[dict]:
-    """Les places du globe : leur indice et sa séance."""
-    from ui import load_quotes
-
-    return [{"symbol": q.symbol, "name": q.name, "c": round(q.change, 2)} for q in load_quotes() if q.symbol in PLACES]
 
 
 def page(name: str | None) -> None:
