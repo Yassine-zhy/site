@@ -1,10 +1,12 @@
-"""Les maquettes de FinVeille (guides 30, 33, 41 et 42) : des images de synthèse posées dans les pages.
+"""Le monde 3D de FinVeille (guides 30 et 33) : une ambiance derrière les pages, et des maquettes dans les pages.
 
-Trois pages ont une maquette : la ville de l'indice sur l'accueil (une tour par valeur), le globe sur Marchés, les
-pièces sur Crypto. Ce sont des images photoréalistes rendues à l'avance dans Blender (tools/blender/, moteur Cycles)
-et rangées dans static/renders/ : verre qui reflète le ciel, acier poli, or. Le navigateur ne calcule plus de 3D : il
-affiche l'image et, pour la ville, peint chaque toit à la couleur de sa séance grâce à un masque rendu avec l'image
-(static/fv3d/renders.js). Les fichiers de static/ sont servis par Streamlit (server.enableStaticServing).
+Le moteur (static/fv3d/, avec Three.js) tourne dans le navigateur du visiteur : le serveur n'envoie que des noms et
+quelques données. Derrière la page, une étendue de particules (engine.js). Dans la page, depuis l'étape 33, un objet
+par page, posé dans son en-tête : la ville du CAC 40, le globe des places, les pièces des cryptomonnaies… (vitrines.js,
+models.js, atelier.js). Les fichiers du dossier static/ sont servis par Streamlit (server.enableStaticServing,
+.streamlit/config.toml) et gardés en cache par le navigateur : la page n'attend jamais la 3D.
+
+Sans WebGL (vieux navigateur, carte graphique désactivée), rien ne manque : les illustrations de l'étape 29 restent.
 """
 
 from __future__ import annotations
@@ -17,10 +19,9 @@ from pathlib import Path
 import streamlit as st
 from streamlit.errors import StreamlitAPIException
 
-STATIC = Path(__file__).parent / "static"
+STATIC = Path(__file__).parent / "static" / "fv3d"
 # La version du moteur : elle change avec ses fichiers et oblige le navigateur à recharger la nouvelle version
-VERSION = hashlib.sha256(b"".join(path.read_bytes() for folder in ("fv3d", "renders")
-                                   for path in sorted((STATIC / folder).rglob("*")) if path.is_file())).hexdigest()[:12]
+VERSION = hashlib.sha256(b"".join(path.read_bytes() for path in sorted(STATIC.rglob("*.js")))).hexdigest()[:12]
 
 # Le composant ne contient que ce petit chargeur : le moteur arrive par une adresse à part, mise en cache.
 LOADER = """
@@ -46,16 +47,54 @@ def _register():
 
 _component = _register()
 
-# La maquette d'une page : son modèle (static/fv3d/models.js), ses réglages, sa description pour les lecteurs d'écran
-# et une légende qui dit comment lire ses données. Chaque maquette sert à quelque chose : son action (« act », exécutée
-# par vitrines.js au clic) et le texte qui l'annonce au survol.
+# La maquette de chaque page (guide 33) : son modèle (static/fv3d/), ses réglages, sa description pour les lecteurs
+# d'écran et, si elle encode des données, une légende qui dit comment la lire. Chaque maquette sert à quelque chose :
+# son action (« act », exécutée par vitrines.js au clic) et le texte qui l'annonce au survol.
+def _next(label: str, hint: str) -> dict:
+    """Un clic sur l'objet mène au contenu qui suit l'en-tête (le formulaire, le tableau…)."""
+    return {"type": "next", "label": label, "hint": hint}
+
+
 OBJECTS = {
     "markets": ("globe", {"act": {"type": "reveal", "in": ".fv-tile", "keyed": True, "hint": "Cliquer : sa tuile de cours",
                                   "hintAll": "Cliquer : les indices"}},
-                "Un globe de bureau : une mer de verre bleu, des continents dorés, un pied d'acier.", ""),
+                "Un globe de bureau : une épingle par grande place boursière.",
+                "Une épingle par place : verte si l'indice monte, rouge s'il baisse. Clique-la pour voir son cours."),
+    "about": ("logo", {"act": _next("FinVeille", "Cliquer : le projet")}, "Le logo de FinVeille, en relief.", ""),
     "crypto": ("coins", {"act": {"type": "reveal", "in": ".fv-table tbody tr", "keyed": True,
                                  "hint": "Cliquer : sa ligne du classement", "hintAll": "Cliquer : le classement"}},
-               "Un bitcoin d'or, sa pile de pièces et deux ethers d'argent.", ""),
+               "Trois pièces gravées : les trois premières cryptomonnaies.",
+               "Le filet autour de chaque pièce : vert si elle monte sur 24 h, rouge si elle baisse."),
+    "assistant": ("orb", {"act": {"type": "ask", "keyed": True, "label": "L'assistant", "hint": "Cliquer : poser cette question",
+                                  "hintAll": "Cliquer : écrire ta question"}},
+                  "Une sphère dans un anneau bleu, entourée de fiches : l'assistant et ses sources.",
+                  "Chaque fiche en orbite porte une question : clique-la pour la poser."),
+    "quiz": ("orb", {"variant": "quiz", "act": _next("Le quiz", "Cliquer : aller aux questions")},
+             "Quatre cartes en éventail : la bonne réponse se lève.", ""),
+    "brief": ("paper", {"act": _next("Le brief du jour", "Cliquer : le lire")},
+              "Une pile de journaux du matin, devant le soleil qui se lève.", ""),
+    "stats": ("bars", {"act": _next("Le fil en chiffres", "Cliquer : les chiffres du fil")},
+              "Un histogramme en relief : les dépêches heure par heure.", ""),
+    "compare": ("duel", {"act": _next("Deux quartiers", "Cliquer : la comparaison")}, "Deux quartiers de tours face à face.", ""),
+    "portfolio": ("ring", {"act": _next("Ton portefeuille", "Cliquer : tes positions")},
+                  "Un anneau découpé en parts : la répartition d'un portefeuille.", ""),
+    "simulators": ("stairs", {"act": _next("Les intérêts composés", "Cliquer : le simulateur")},
+                   "Un escalier de colonnes : le capital versé et les intérêts qui s'y ajoutent.", ""),
+    "economy": ("ridges", {"act": _next("Les courbes des taux", "Cliquer : les indicateurs")},
+                "Des courbes des taux en relief, l'une derrière l'autre.", ""),
+    "alerts": ("bell", {"act": _next("Une alerte", "Cliquer : créer une alerte")},
+               "Une cloche et les ondes qu'elle fait naître : une alerte qui sonne.", ""),
+    "following": ("lens", {"act": _next("Tes suivis", "Cliquer : tes entreprises")},
+                  "Une loupe au-dessus d'un quartier de tours : les entreprises que tu suis.", ""),
+    "favorites": ("bookmark", {"act": _next("Tes favoris", "Cliquer : tes articles")},
+                  "Des articles et un marque-page : à lire plus tard.", ""),
+    "glossary": ("books", {"act": {"type": "search", "input": "PER, inflation", "keyed": True, "then": '[data-testid="stTextInput"]',
+                                   "hint": "Cliquer : chercher ce sujet", "hintAll": "Cliquer : le glossaire"}},
+                 "Une pile de livres : le vocabulaire de la finance.",
+                 "Clique un livre : le glossaire cherche son sujet."),
+    "settings": ("gear", {"act": _next("Les réglages", "Cliquer : tes préférences")}, "Des engrenages : les réglages.", ""),
+    "account": ("gear", {"act": _next("Ton compte", "Cliquer : ton profil")}, "Des engrenages : ton compte.", ""),
+    "setup": ("gear", {"act": _next("La configuration", "Cliquer : les services")}, "Des engrenages : la configuration du site.", ""),
 }
 # La maquette du CAC 40 (le récit de l'accueil) : une tour cliquée cherche ses dépêches dans le fil
 CITY_ACT = {"type": "search", "input": "Rechercher", "keyed": True, "then": "#fv-fil", "hint": "Cliquer : ses dépêches",
@@ -93,23 +132,25 @@ USA_WEIGHTS = {
 # Par place : la table des poids et le poids d'une valeur qui n'y figure pas (une petite valeur)
 CITY_WEIGHTS = {"france": (WEIGHTS, 0.5), "canada": (TSX_WEIGHTS, 8), "usa": (USA_WEIGHTS, 60)}
 CITY_TOWERS = 40  # la maquette n'a que 8 × 5 cases (models.js::city)
+PLACES = ("^FCHI", "^GDAXI", "^FTSE", "^GSPC", "^N225", "^HSI", "000001.SS")  # les places du globe (models.js)
 
 
-def show(key: str = "fv3d") -> None:
-    """Charge le moteur dans la page : les maquettes, et les petits comportements du site (liens, raccourci de
-    recherche, horloges des places…)."""
+def show(scene: str, key: str = "fv3d", **data) -> None:
+    """Installe le décor `scene` derrière la page (depuis l'étape 33, seulement « terrain », une ambiance).
+
+    `key` : une autre clé pour remplacer le décor plus loin dans la même page (Streamlit refuse deux fois la même)."""
     global _component
     try:
-        _component(key=key, data={"v": VERSION})
+        _component(key=key, data={"scene": scene, "v": VERSION, **data})
     except StreamlitAPIException:  # un nouvel environnement Streamlit (les tests) : on l'enregistre à nouveau
         _component = _register()
-        _component(key=key, data={"v": VERSION})
+        _component(key=key, data={"scene": scene, "v": VERSION, **data})
 
 
 def city_data(quotes, place: str = "france") -> dict:
     """La maquette d'une place (le récit de l'accueil) : une tour par valeur, sa hauteur suit son poids dans l'indice,
-    son toit la séance si on la connaît. Elle n'a que 40 cases : toujours les 40 valeurs les plus lourdes, les mêmes
-    d'un jour à l'autre, car l'image de la ville est rendue à l'avance (tools/blender/city.py) avec ces tours-là."""
+    son toit la séance si on la connaît. Elle n'a que 40 cases : on garde les plus lourdes, mais toujours les 3 plus
+    fortes hausses et les 3 plus fortes baisses de la séance, que la caméra du récit vise (parmi les tours)."""
     from core import market
 
     place = place if place in market.PLACES else "france"
@@ -117,8 +158,13 @@ def city_data(quotes, place: str = "france") -> dict:
     change = {quote.symbol: round(quote.change, 2) for quote in quotes}
     towers = [{"n": name, "w": weights.get(symbol, default), "c": change.get(symbol)}
               for symbol, name, _ in market.PLACES[place][3]]
-    towers = sorted(towers, key=lambda tower: -tower["w"])[:CITY_TOWERS]
-    return {"towers": towers, "act": CITY_ACT, "place": place}
+    if len(towers) > CITY_TOWERS:
+        moved = sorted((tower for tower in towers if tower["c"] is not None), key=lambda tower: tower["c"])
+        must = {id(tower) for tower in moved[:3] + moved[-3:]}
+        heaviest = sorted((tower for tower in towers if id(tower) not in must), key=lambda tower: -tower["w"])
+        kept = {id(tower) for tower in heaviest[:CITY_TOWERS - len(must)]} | must
+        towers = [tower for tower in towers if id(tower) in kept]
+    return {"towers": towers, "act": CITY_ACT}
 
 
 def vitrine(kind: str, data: dict | None = None, label: str = "", caption: str = "", fallback: str | None = None,
@@ -140,9 +186,18 @@ def page_object(name: str | None, data: dict | None = None, fallback: str | None
         return ""
     kind, settings, label, caption = OBJECTS[name]
     payload = {**settings, **(data or {})}
+    if name == "markets" and "markers" not in payload:
+        payload["markers"] = markers()
     return vitrine(kind, payload, label, caption, fallback)
 
 
+def markers() -> list[dict]:
+    """Les places du globe : leur indice et sa séance."""
+    from ui import load_quotes
+
+    return [{"symbol": q.symbol, "name": q.name, "c": round(q.change, 2)} for q in load_quotes() if q.symbol in PLACES]
+
+
 def page(name: str | None) -> None:
-    """Le moteur de la page `name` (le même partout)."""
-    show()
+    """L'ambiance derrière la page : la même partout, calme ; les données sont dans la maquette de l'en-tête."""
+    show("terrain", shape="calm")
