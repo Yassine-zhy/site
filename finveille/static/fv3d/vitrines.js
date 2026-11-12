@@ -43,7 +43,7 @@ class Lens {
     const r = (this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, premultipliedAlpha: true,
       powerPreference: "high-performance" }));
     r.outputColorSpace = THREE.SRGBColorSpace;
-    r.toneMapping = THREE.NeutralToneMapping;   // garde les teintes (vert, rouge, bleu) et retient les blancs
+    r.toneMapping = THREE.ACESFilmicToneMapping;   // retient les reflets vifs du verre et du métal
     r.shadowMap.enabled = true;
     r.shadowMap.type = isPhone() ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;   // l'ombre douce coûte cher en pixels
     const pmrem = new THREE.PMREMGenerator(r);
@@ -111,7 +111,7 @@ class Vitrine {
   build(dark) {   // la scène, aux couleurs du thème
     this.scene = new THREE.Scene();
     this.scene.environment = this.lens.env;
-    this.scene.environmentIntensity = dark ? 0.25 : 0.3;   // l'ambiance de la pièce débouche les ombres du plâtre
+    this.scene.environmentIntensity = dark ? 0.9 : 1.1;   // l'ambiance de la pièce débouche les ombres du plâtre
     this.pal = palette(dark);
     this.model = MODELS[this.kind](this.data, this.pal, this.scene);
     outline(this.model.root, this.pal);   // les arêtes de lumière, sur tous les volumes
