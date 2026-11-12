@@ -1,12 +1,13 @@
-"""Le monde 3D de FinVeille (guides 30 et 33) : une ambiance derrière les pages, et des maquettes dans les pages.
+"""Les maquettes 3D de FinVeille (guides 30, 33 et 41) : des objets posés dans les pages.
 
 Le moteur (static/fv3d/, avec Three.js) tourne dans le navigateur du visiteur : le serveur n'envoie que des noms et
-quelques données. Derrière la page, une étendue de particules (engine.js). Dans la page, depuis l'étape 33, un objet
-par page, posé dans son en-tête : la ville du CAC 40, le globe des places, les pièces des cryptomonnaies… (vitrines.js,
-models.js, atelier.js). Les fichiers du dossier static/ sont servis par Streamlit (server.enableStaticServing,
-.streamlit/config.toml) et gardés en cache par le navigateur : la page n'attend jamais la 3D.
+quelques données. Trois pages ont une maquette, parce qu'elle y montre des données : la ville de l'indice sur
+l'accueil (une tour par valeur), le globe des places sur Marchés, les pièces sur Crypto (vitrines.js, models.js). Ce
+sont des objets de plâtre et d'acier, comme une maquette d'architecte : ni halo, ni particules. Les autres pages n'ont
+pas d'objet : un décor qui ne dit rien alourdit la page. Les fichiers du dossier static/ sont servis par Streamlit
+(server.enableStaticServing, .streamlit/config.toml).
 
-Sans WebGL (vieux navigateur, carte graphique désactivée), rien ne manque : les illustrations de l'étape 29 restent.
+Sans WebGL (vieux navigateur, carte graphique désactivée), rien ne manque : la page s'affiche sans la maquette.
 """
 
 from __future__ import annotations
@@ -47,54 +48,18 @@ def _register():
 
 _component = _register()
 
-# La maquette de chaque page (guide 33) : son modèle (static/fv3d/), ses réglages, sa description pour les lecteurs
-# d'écran et, si elle encode des données, une légende qui dit comment la lire. Chaque maquette sert à quelque chose :
-# son action (« act », exécutée par vitrines.js au clic) et le texte qui l'annonce au survol.
-def _next(label: str, hint: str) -> dict:
-    """Un clic sur l'objet mène au contenu qui suit l'en-tête (le formulaire, le tableau…)."""
-    return {"type": "next", "label": label, "hint": hint}
-
-
+# La maquette d'une page : son modèle (static/fv3d/models.js), ses réglages, sa description pour les lecteurs d'écran
+# et une légende qui dit comment lire ses données. Chaque maquette sert à quelque chose : son action (« act », exécutée
+# par vitrines.js au clic) et le texte qui l'annonce au survol.
 OBJECTS = {
     "markets": ("globe", {"act": {"type": "reveal", "in": ".fv-tile", "keyed": True, "hint": "Cliquer : sa tuile de cours",
                                   "hintAll": "Cliquer : les indices"}},
                 "Un globe de bureau : une épingle par grande place boursière.",
                 "Une épingle par place : verte si l'indice monte, rouge s'il baisse. Clique-la pour voir son cours."),
-    "about": ("logo", {"act": _next("FinVeille", "Cliquer : le projet")}, "Le logo de FinVeille, en relief.", ""),
     "crypto": ("coins", {"act": {"type": "reveal", "in": ".fv-table tbody tr", "keyed": True,
                                  "hint": "Cliquer : sa ligne du classement", "hintAll": "Cliquer : le classement"}},
                "Trois pièces gravées : les trois premières cryptomonnaies.",
                "Le filet autour de chaque pièce : vert si elle monte sur 24 h, rouge si elle baisse."),
-    "assistant": ("orb", {"act": {"type": "ask", "keyed": True, "label": "L'assistant", "hint": "Cliquer : poser cette question",
-                                  "hintAll": "Cliquer : écrire ta question"}},
-                  "Une sphère dans un anneau bleu, entourée de fiches : l'assistant et ses sources.",
-                  "Chaque fiche en orbite porte une question : clique-la pour la poser."),
-    "quiz": ("orb", {"variant": "quiz", "act": _next("Le quiz", "Cliquer : aller aux questions")},
-             "Quatre cartes en éventail : la bonne réponse se lève.", ""),
-    "brief": ("paper", {"act": _next("Le brief du jour", "Cliquer : le lire")},
-              "Une pile de journaux du matin, devant le soleil qui se lève.", ""),
-    "stats": ("bars", {"act": _next("Le fil en chiffres", "Cliquer : les chiffres du fil")},
-              "Un histogramme en relief : les dépêches heure par heure.", ""),
-    "compare": ("duel", {"act": _next("Deux quartiers", "Cliquer : la comparaison")}, "Deux quartiers de tours face à face.", ""),
-    "portfolio": ("ring", {"act": _next("Ton portefeuille", "Cliquer : tes positions")},
-                  "Un anneau découpé en parts : la répartition d'un portefeuille.", ""),
-    "simulators": ("stairs", {"act": _next("Les intérêts composés", "Cliquer : le simulateur")},
-                   "Un escalier de colonnes : le capital versé et les intérêts qui s'y ajoutent.", ""),
-    "economy": ("ridges", {"act": _next("Les courbes des taux", "Cliquer : les indicateurs")},
-                "Des courbes des taux en relief, l'une derrière l'autre.", ""),
-    "alerts": ("bell", {"act": _next("Une alerte", "Cliquer : créer une alerte")},
-               "Une cloche et les ondes qu'elle fait naître : une alerte qui sonne.", ""),
-    "following": ("lens", {"act": _next("Tes suivis", "Cliquer : tes entreprises")},
-                  "Une loupe au-dessus d'un quartier de tours : les entreprises que tu suis.", ""),
-    "favorites": ("bookmark", {"act": _next("Tes favoris", "Cliquer : tes articles")},
-                  "Des articles et un marque-page : à lire plus tard.", ""),
-    "glossary": ("books", {"act": {"type": "search", "input": "PER, inflation", "keyed": True, "then": '[data-testid="stTextInput"]',
-                                   "hint": "Cliquer : chercher ce sujet", "hintAll": "Cliquer : le glossaire"}},
-                 "Une pile de livres : le vocabulaire de la finance.",
-                 "Clique un livre : le glossaire cherche son sujet."),
-    "settings": ("gear", {"act": _next("Les réglages", "Cliquer : tes préférences")}, "Des engrenages : les réglages.", ""),
-    "account": ("gear", {"act": _next("Ton compte", "Cliquer : ton profil")}, "Des engrenages : ton compte.", ""),
-    "setup": ("gear", {"act": _next("La configuration", "Cliquer : les services")}, "Des engrenages : la configuration du site.", ""),
 }
 # La maquette du CAC 40 (le récit de l'accueil) : une tour cliquée cherche ses dépêches dans le fil
 CITY_ACT = {"type": "search", "input": "Rechercher", "keyed": True, "then": "#fv-fil", "hint": "Cliquer : ses dépêches",
@@ -135,16 +100,15 @@ CITY_TOWERS = 40  # la maquette n'a que 8 × 5 cases (models.js::city)
 PLACES = ("^FCHI", "^GDAXI", "^FTSE", "^GSPC", "^N225", "^HSI", "000001.SS")  # les places du globe (models.js)
 
 
-def show(scene: str, key: str = "fv3d", **data) -> None:
-    """Installe le décor `scene` derrière la page (depuis l'étape 33, seulement « terrain », une ambiance).
-
-    `key` : une autre clé pour remplacer le décor plus loin dans la même page (Streamlit refuse deux fois la même)."""
+def show(key: str = "fv3d") -> None:
+    """Charge le moteur dans la page : les maquettes, et les petits comportements du site (liens, raccourci de
+    recherche, horloges des places…)."""
     global _component
     try:
-        _component(key=key, data={"scene": scene, "v": VERSION, **data})
+        _component(key=key, data={"v": VERSION})
     except StreamlitAPIException:  # un nouvel environnement Streamlit (les tests) : on l'enregistre à nouveau
         _component = _register()
-        _component(key=key, data={"scene": scene, "v": VERSION, **data})
+        _component(key=key, data={"v": VERSION})
 
 
 def city_data(quotes, place: str = "france") -> dict:
@@ -199,5 +163,5 @@ def markers() -> list[dict]:
 
 
 def page(name: str | None) -> None:
-    """L'ambiance derrière la page : la même partout, calme ; les données sont dans la maquette de l'en-tête."""
-    show("terrain", shape="calm")
+    """Le moteur de la page `name` (le même partout)."""
+    show()
