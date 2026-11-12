@@ -1,23 +1,19 @@
-// FinVeille — les maquettes (guide 33) : des objets 3D posés dans la page, et non plus seulement derrière elle.
+// FinVeille — les maquettes (guides 33 et 41) : des objets 3D posés dans la page.
 //
 // Chaque objet occupe un emplacement de la page, `<div class="fv-obj" data-obj="globe" data-obj-data="{…}">`, écrit
-// par Python (scene3d.vitrine). Il y est dessiné dans sa propre toile, transparente, avec un halo lumineux (bloom) sur
-// ce qui brille : fenêtres, arêtes, données. Les bords de la toile se fondent dans la page (CSS) : l'objet défile avec
-// elle, passe sous les menus, et semble posé dans l'interface.
+// par Python (scene3d.vitrine). Il y est dessiné dans sa propre toile, transparente : l'objet défile avec la page et
+// passe sous les menus. Le rendu est direct (ni halo, ni effet d'après-rendu) : une lumière d'atelier, des ombres
+// douces, l'anticrénelage du navigateur, et une courbe de tons neutre pour que le blanc du plâtre ne sature pas.
 //
-// Sur téléphone (phone.js), le rendu est allégé : pas de halo (donc pas de composeur ni de cible multi-échantillonnée,
-// l'objet est dessiné directement), une résolution plus basse, des ombres simples, 30 images par seconde au plus, et
-// une seule maquette animée à la fois (la plus visible) ; les autres ne se redessinent que si quelque chose change.
+// Sur téléphone (phone.js), le rendu est allégé : une résolution plus basse, des ombres simples, 30 images par
+// seconde au plus, et une seule maquette animée à la fois (la plus visible) ; les autres ne se redessinent que si
+// quelque chose change.
 //
 // Les objets répondent : au survol, leur nom et leur chiffre ; on les fait tourner du doigt ou à la souris ; ils se
 // tournent un peu vers le pointeur. Au repos, rien n'est redessiné. « Moins d'animations » : ni montage, ni parallaxe.
 
 import * as THREE from "./three.module.min.js";
 import { RoomEnvironment } from "./addons/RoomEnvironment.js";
-import { EffectComposer } from "./addons/postprocessing/EffectComposer.js";
-import { RenderPass } from "./addons/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "./addons/postprocessing/UnrealBloomPass.js";
-import { OutputPass } from "./addons/postprocessing/OutputPass.js";
 import { MODELS } from "./models.js";
 import { outline, palette } from "./kit.js";
 import { isPhone } from "./phone.js";
@@ -40,63 +36,28 @@ function pageColor() {   // la couleur du fond de la page : elle change avec le 
   return new THREE.Color(app ? getComputedStyle(app).backgroundColor : "rgb(6, 9, 18)");
 }
 
-// --- Le rendu d'une vitrine : sa toile, la lumière d'une pièce (reflets), le halo de ce qui brille --------------------
+// --- Le rendu d'une vitrine : sa toile et la lumière d'une pièce (l'ambiance qui éclaire le plâtre) -----------------
 class Lens {
-  constructor(canvas, dark) {
-    // une toile transparente : la page (ses dégradés, ses particules) se voit derrière l'objet ; le halo s'y ajoute
-    // comme une lumière (alpha nul, couleur prémultipliée)
-    this.phone = isPhone();   // décidé une fois : le rendu direct et le composeur ne se mélangent pas
-    const r = (this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true, premultipliedAlpha: true,
+  constructor(canvas) {
+    // une toile transparente : la page se voit autour de l'objet
+    const r = (this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, premultipliedAlpha: true,
       powerPreference: "high-performance" }));
     r.outputColorSpace = THREE.SRGBColorSpace;
-    r.toneMapping = THREE.NoToneMapping;   // les couleurs d'information restent exactes ; le halo adoucit les lumières
+    r.toneMapping = THREE.NeutralToneMapping;   // garde les teintes (vert, rouge, bleu) et retient les blancs
     r.shadowMap.enabled = true;
-    r.shadowMap.type = this.phone ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;   // l'ombre douce coûte cher en pixels
+    r.shadowMap.type = isPhone() ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;   // l'ombre douce coûte cher en pixels
     const pmrem = new THREE.PMREMGenerator(r);
-    this.env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;   // une pièce claire : des reflets doux dans le verre
+    this.env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;   // une pièce claire : l'ambiance et les reflets du métal
     pmrem.dispose();
     r.setClearColor(0x000000, 0);
-    this.dark = dark;
   }
   setup(scene, camera, w, h, dpr) {
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(w, h, false);
     this.scene = scene; this.camera = camera;
-    if (this.phone) return;   // téléphone : ni halo ni composeur, draw() rend la scène directement
-    if (!this.composer) {   // l'image passe par trois étapes : la scène, le halo, puis les couleurs de l'écran
-      const target = new THREE.WebGLRenderTarget(w * dpr, h * dpr, { type: THREE.HalfFloatType, samples: coarse() ? 2 : 4 });
-      this.composer = new EffectComposer(this.renderer, target);
-      this.pass = new RenderPass(scene, camera);
-      this.composer.addPass(this.pass);
-      const bloom = (this.bloom = new UnrealBloomPass(new THREE.Vector2(w, h), 0, 0.32, 0));
-      // le halo s'ajoute à la couleur sans toucher à la transparence : autour de l'objet, il éclaire la page
-      Object.assign(bloom.blendMaterial, { blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
-        blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor });
-      // un pixel invalide (NaN, infini) n'entre pas dans le halo : le flou l'étalerait en tache noire ou blanche
-      const pass = bloom.materialHighPassFilter, read = "vec4 texel = texture2D( tDiffuse, vUv );";
-      pass.fragmentShader = pass.fragmentShader.replace(read, `${read}
-        if (any(isnan(texel)) || any(isinf(texel))) texel = vec4(0.0);
-        texel = min(texel, vec4(64.0));`);
-      this.composer.addPass(bloom);
-      this.composer.addPass(new OutputPass());
-      this.retheme(this.dark);
-    }
-    this.pass.scene = scene;   // la scène a pu être refaite (changement de thème)
-    this.composer.setPixelRatio(dpr);
-    this.composer.setSize(w, h);
   }
-  retheme(dark) {   // le halo suit le thème ; le contexte WebGL, lui, reste le même
-    this.dark = dark;
-    if (!this.bloom) return;
-    Object.assign(this.bloom, { strength: dark ? 0.5 : 0.22, threshold: dark ? 0.72 : 0.9 });
-    this.bloom.enabled = dark;   // sur une page claire, un halo additif blanchirait le fond
-  }
-  draw() {
-    if (this.composer) this.composer.render();
-    else this.renderer.render(this.scene, this.camera);
-  }
+  draw() { this.renderer.render(this.scene, this.camera); }
   dispose() {
-    this.composer?.dispose();
     this.env.dispose();
     this.renderer.dispose();
     this.renderer.forceContextLoss();   // le navigateur limite le nombre de contextes WebGL : on rend le sien
@@ -112,6 +73,7 @@ class Vitrine {
     this.kind = el.dataset.obj;
     let data = {};
     try { data = JSON.parse(el.dataset.objData || "{}"); } catch { /* données illisibles : l'objet par défaut */ }
+    if (!MODELS[this.kind]) throw new Error(`maquette inconnue : ${this.kind}`);   // avant de prendre un contexte WebGL
     // toujours une toile neuve : une toile dont le contexte a été perdu le reste (Chrome y dessine une icône triste)
     el.querySelectorAll("canvas.fv-obj-canvas").forEach((old) => old.remove());
     this.canvas = el.insertBefore(Object.assign(document.createElement("canvas"), { className: "fv-obj-canvas" }), el.firstChild);
@@ -125,7 +87,7 @@ class Vitrine {
       this.canvas.style.visibility = "hidden";
       el.dispatchEvent(new CustomEvent("fv-obj-lost", { bubbles: true }));   // jusqu'au moteur (document)
     });
-    this.lens = new Lens(this.canvas, dark);
+    this.lens = new Lens(this.canvas);
     this.data = data;
     this.build(dark);
     const view = this.model.view;
@@ -149,9 +111,9 @@ class Vitrine {
   build(dark) {   // la scène, aux couleurs du thème
     this.scene = new THREE.Scene();
     this.scene.environment = this.lens.env;
-    this.scene.environmentIntensity = dark ? 0.9 : 0.8;
+    this.scene.environmentIntensity = dark ? 0.25 : 0.3;   // l'ambiance de la pièce débouche les ombres du plâtre
     this.pal = palette(dark);
-    this.model = (MODELS[this.kind] || MODELS.paper)(this.data, this.pal, this.scene);
+    this.model = MODELS[this.kind](this.data, this.pal, this.scene);
     outline(this.model.root, this.pal);   // les arêtes de lumière, sur tous les volumes
     this.pivot = new THREE.Group();   // l'objet tourne dans la lumière, qui reste fixe
     this.pivot.add(this.model.root);
@@ -163,7 +125,6 @@ class Vitrine {
   retheme(dark) {
     this.clearScene();
     this.build(dark);
-    this.lens.retheme(dark);
     this.hover = null;
     this.t = 99;   // pas de nouveau montage : seules les couleurs changent
     this.resize();

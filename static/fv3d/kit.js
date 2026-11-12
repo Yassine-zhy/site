@@ -1,12 +1,14 @@
-// FinVeille — la boîte à outils des maquettes (guide 33) : matières, lumière, sol, gravures.
+// FinVeille — la boîte à outils des maquettes (guides 33 et 41) : matières, lumière, sol, gravures.
 //
-// Les maquettes sont faites de la matière du site : du verre (bleu nuit en thème sombre, givré presque blanc en thème
-// clair), des arêtes de lumière bleue (la grille et la ligne de cours des en-têtes), des données en lumière (hausse en
-// vert, baisse en rouge) et une poussière de particules (le décor) : l'objet semble sortir de l'interface.
+// Les maquettes sont des objets que l'on pourrait poser sur un bureau : du carton plume et du plâtre blancs, mats,
+// comme une maquette d'architecte ; les données peintes dessus (hausse en vert, baisse en rouge, le bleu de la marque) ;
+// les détails imprimés à l'encre grise ; du métal brossé pour les pieds et les axes. Rien ne brille, rien n'émet de
+// lumière : le volume se lit par l'ombre. La matière est la même en thème clair et en thème sombre (un objet réel ne
+// change pas de matière quand on éteint la pièce) ; seuls le socle et la lumière suivent la page.
 //
 // Une maquette ne choisit pas ses matières : elle donne un rôle (une couleur de la palette) et mat() en fait du
-// verre (porcelain, relief, shade, plinth) ou de la lumière (up, down, brand, ink). Les arêtes sont ajoutées par la
-// vitrine (outline), le sol par plinth() ou disc().
+// plâtre (porcelain, relief, shade, plinth) ou de la peinture (up, down, brand, ink, violet). Les arêtes sont
+// soulignées par la vitrine (outline), l'ombre au sol vient de plinth() ou disc().
 
 import * as THREE from "./three.module.min.js";
 import { RoundedBoxGeometry } from "./addons/RoundedBoxGeometry.js";
@@ -18,112 +20,102 @@ export { THREE, RoundedBoxGeometry };
 let current = null;   // la palette de la maquette en cours de construction (une à la fois)
 
 export function palette(dark) {
-  current = dark ? {
+  current = {
     dark,
-    // le verre : la matière des volumes, du plus présent au plus effacé ; en thème sombre, un verre bleu nuit poli
-    porcelain: new THREE.Color(0x22346a),
-    relief: new THREE.Color(0x26386e),
-    shade: new THREE.Color(0x101830),
-    plinth: new THREE.Color(0x0c1326),
-    // la lumière : les données et la marque
-    ink: new THREE.Color(0x9db0ff),
-    up: new THREE.Color(0x2fbf71), down: new THREE.Color(0xef5361), brand: new THREE.Color(0x5b7cff),
-    violet: new THREE.Color(0x8b6cff),
-  } : {
-    dark,
-    // en thème clair, un verre givré bleuté, presque blanc : l'objet appartient à la page claire au lieu d'y faire une
-    // tache sombre ; le socle, un ton plus soutenu, l'ancre au sol
-    porcelain: new THREE.Color(0xe3e9f6),
-    relief: new THREE.Color(0xd2dbee),
-    shade: new THREE.Color(0xaab7d1),
-    plinth: new THREE.Color(0xc4cfe4),
-    // la lumière : des tons plus soutenus, pour rester lisibles sur le blanc
-    ink: new THREE.Color(0x3b63f0),
-    up: new THREE.Color(0x14a05a), down: new THREE.Color(0xe0414f), brand: new THREE.Color(0x2f5bea),
-    violet: new THREE.Color(0x7048e8),
+    // le plâtre, du plus clair au plus en retrait ; un ton plus bas en thème sombre, pour ne pas éblouir la page
+    porcelain: new THREE.Color(dark ? 0xd3d6da : 0xf2f3f4),
+    relief: new THREE.Color(dark ? 0xbcc0c6 : 0xe1e4e7),
+    shade: new THREE.Color(dark ? 0x8a9099 : 0xbfc4ca),
+    plinth: new THREE.Color(dark ? 0x2a2e34 : 0xd4d8dc),   // le socle : une planche qui suit la page
+    // la peinture : les données et la marque, aux couleurs du site
+    ink: new THREE.Color(dark ? 0x30353c : 0x3d4550),      // l'encre des gravures, des graduations, des tracés
+    up: new THREE.Color(dark ? 0x35b271 : 0x23935a), down: new THREE.Color(dark ? 0xe5606b : 0xd0434e),
+    brand: new THREE.Color(dark ? 0x5a80f0 : 0x2451de),
+    violet: new THREE.Color(dark ? 0x7d8794 : 0x6d7783),   // le second ton, un gris ardoise (plus de violet)
   };
   return current;
 }
 
-const GLASS = ["porcelain", "relief", "shade", "plinth"], LIGHT = ["ink", "up", "down", "brand", "violet"];
-function role(color) {   // le rôle le plus proche dans la palette : verre ou lumière
-  if (color?.isLight) return "up";   // une variation (changeColor) : toujours de la lumière
+const BODY = ["porcelain", "relief", "shade", "plinth"], PAINT = ["ink", "up", "down", "brand", "violet"];
+function role(color) {   // le rôle le plus proche dans la palette : plâtre ou peinture
+  if (color?.isLight) return "up";   // une variation (changeColor) : toujours de la peinture
   const c = new THREE.Color(color);
   let best = "porcelain", gap = Infinity;
-  for (const name of [...GLASS, ...LIGHT]) {
+  for (const name of [...BODY, ...PAINT]) {
     const r = current[name], d = (c.r - r.r) ** 2 + (c.g - r.g) ** 2 + (c.b - r.b) ** 2;
     if (d < gap) { gap = d; best = name; }
   }
   return best;
 }
 
-// Le contre-jour du verre : plus la surface fuit le regard, plus elle s'éclaire de bleu (effet de Fresnel).
-function fresnel(material, color, strength) {
-  material.userData.rim = { value: new THREE.Color(color).multiplyScalar(strength) };
+// Une impression à l'encre : là où le dessin (blanc sur noir) est clair, la matière prend la couleur de l'encre. Le
+// dessin passe par l'emplacement de la carte d'émission (ses coordonnées de texture sont déjà gérées), mais rien
+// n'émet de lumière. `material.userData.ink.value` : la force de l'impression, de 0 à 1 (animable).
+export function inked(material, map, color, strength = 1) {
+  material.emissiveMap = map;
+  material.emissive = new THREE.Color(0x000000);
+  material.userData.ink = { value: strength };
+  material.userData.inkColor = { value: new THREE.Color(color) };
   material.onBeforeCompile = (shader) => {
-    shader.uniforms.uRim = material.userData.rim;
+    shader.uniforms.uInk = material.userData.ink;
+    shader.uniforms.uInkColor = material.userData.inkColor;
     shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\nuniform vec3 uRim;")
-      .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>
-        float facing = clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);
-        totalEmissiveRadiance += uRim * pow(1.0 - facing, 2.4);`);
+      .replace("#include <common>", "#include <common>\nuniform float uInk;\nuniform vec3 uInkColor;")
+      .replace("#include <emissivemap_fragment>", `
+        #ifdef USE_EMISSIVEMAP
+          float inkAmount = dot(texture2D(emissiveMap, vEmissiveMapUv).rgb, vec3(0.299, 0.587, 0.114));
+          diffuseColor.rgb = mix(diffuseColor.rgb, uInkColor, clamp(inkAmount * uInk, 0.0, 1.0));
+        #endif`);
   };
-  material.customProgramCacheKey = () => "fv-glass";
+  material.customProgramCacheKey = () => "fv-ink";
   return material;
 }
 
 export function mat(color, o = {}) {
   const pal = current, name = role(color), c = new THREE.Color(color);
-  if (o.map) {   // une gravure : le verre, et le dessin en lumière
-    const m = fresnel(new THREE.MeshStandardMaterial({ color: pal.porcelain, roughness: 0.25, metalness: 0.2,
-      emissive: pal.ink, emissiveMap: o.map, emissiveIntensity: 1.5, bumpMap: o.bump ?? null,
-      bumpScale: o.bumpScale ?? 1 }), pal.brand, 0.9);
-    m.userData.role = "glass";
+  if (o.map) {   // une gravure : le plâtre, et le dessin imprimé à l'encre (avec son léger relief)
+    const m = inked(new THREE.MeshStandardMaterial({ color: pal.porcelain, roughness: 0.84, metalness: 0,
+      bumpMap: o.bump ?? null, bumpScale: o.bumpScale ?? 1 }), o.map, pal.ink, 0.9);
+    m.userData.role = "body";
     return m;
   }
-  if (LIGHT.includes(name) || o.glow > 0.5) {   // une donnée, un trait de la marque : de la lumière
-    // la couleur éclaire sans aplatir : une part de lumière propre, le reste vient de l'éclairage (le volume se lit)
-    const m = fresnel(new THREE.MeshStandardMaterial({ color: c.clone().multiplyScalar(0.7), roughness: 0.28, metalness: 0.15,
-      emissive: c, emissiveIntensity: pal.dark ? 0.5 : 0.4, transparent: o.opacity != null, opacity: o.opacity ?? 1 }),
-    c, 0.9);
-    m.userData.role = "light";
-    m.userData.tone = c;
+  if (PAINT.includes(name) || o.glow > 0.5) {   // une donnée, un trait de la marque : de la peinture satinée
+    const m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.5, metalness: 0, transparent: o.opacity != null,
+      opacity: o.opacity ?? 1 });
+    m.userData.role = "paint";
     return m;
   }
-  // le verre : sombre et poli en thème sombre, givré en thème clair ; plus effacé pour « shade »
-  const m = fresnel(new THREE.MeshStandardMaterial({ color: c, roughness: 0.14, metalness: 0.5,
-    transparent: true, opacity: o.opacity ?? (name === "shade" ? 0.6 : pal.dark ? 0.86 : 0.94) }),
-  pal.brand, name === "shade" ? 0.35 : 1.35);
-  m.userData.role = "glass";
+  // le plâtre : mat, opaque (une transparence ne vient que si la maquette la demande)
+  const m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.86, metalness: 0, transparent: o.opacity != null,
+    opacity: o.opacity ?? 1 });
+  m.userData.role = "body";
   return m;
 }
 
-// Les arêtes de lumière : un trait fin sur chaque arête vive, de la couleur du rôle (bleu pour le verre).
+// Les arêtes : un trait de crayon très léger sur les arêtes vives du plâtre, pour que deux volumes de la même teinte
+// se détachent l'un de l'autre même sans ombre portée (téléphone). La peinture n'en a pas besoin.
 export function outline(root, pal) {
   const meshes = [];
-  root.traverse((o) => { if (o.isMesh && !o.isInstancedMesh && !o.userData.noEdges && o.material?.userData?.role) meshes.push(o); });
+  root.traverse((o) => { if (o.isMesh && !o.isInstancedMesh && !o.userData.noEdges && o.material?.userData?.role === "body") meshes.push(o); });
+  const pencil = new THREE.LineBasicMaterial({ color: pal.ink, transparent: true, opacity: pal.dark ? 0.34 : 0.2, depthWrite: false });
   for (const mesh of meshes) {
     if (mesh.geometry.attributes.position.count > 30000) continue;
-    const light = mesh.material.userData.role === "light";
-    const lines = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 32), new THREE.LineBasicMaterial({
-      color: light ? mesh.material.userData.tone : pal.dark ? 0x8ea4ff : 0x2f5bea, transparent: true,
-      opacity: light ? 0.9 : pal.dark ? 0.62 : 0.32, depthWrite: false,
-    }));
+    const lines = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 32), pencil);
     lines.userData.noEdges = true;
     lines.raycast = () => {};   // le pointeur vise les volumes, pas les traits
     mesh.add(lines);
   }
 }
 
-// La lumière d'atelier : peu de lumière directe, de l'environnement (reflets dans le verre), deux contre-jours aux
-// couleurs de la marque (bleu à droite, violet à gauche) qui dessinent les silhouettes. `reach` : la zone des ombres ;
-// `shadow` : faux pour une maquette sans ombre portée. Sur téléphone, la carte d'ombres tient en 512 px (filtrée de
-// près : l'ombre reste douce) ; vitrines.js y règle aussi le type d'ombre, le plus simple.
+// La lumière d'un atelier : une grande fenêtre (lumière du jour, à peine chaude) qui porte les ombres, le ciel de la
+// pièce, et un rappel froid à l'opposé pour déboucher les faces à l'ombre. Aucune lumière colorée. `reach` : la zone
+// des ombres ; `shadow` : faux pour une maquette sans ombre portée. Sur téléphone, la carte d'ombres tient en 512 px
+// (filtrée de près : l'ombre reste douce) ; vitrines.js y règle aussi le type d'ombre, le plus simple.
 export function lights(scene, pal, { reach = 7, map = 1024, sun = [-6, 11, 7], shadow = true } = {}) {
   const phone = isPhone();
   if (phone) map = Math.min(map, 512);
-  const sky = new THREE.HemisphereLight(0xc8d4ff, pal.dark ? 0x060912 : 0xdfe5f2, pal.dark ? 0.35 : 1.0);
-  const key = new THREE.DirectionalLight(0xffffff, pal.dark ? 1.3 : 1.7);
+  const sky = new THREE.HemisphereLight(0xffffff, pal.dark ? 0x3a3f46 : 0xc9ced4, pal.dark ? 0.45 : 0.6);
+  const key = new THREE.DirectionalLight(0xfff6ea, pal.dark ? 2.3 : 2.1);
   key.position.set(...sun);
   key.castShadow = shadow;
   key.shadow.mapSize.set(map, map);
@@ -131,72 +123,24 @@ export function lights(scene, pal, { reach = 7, map = 1024, sun = [-6, 11, 7], s
   key.shadow.bias = -0.0004;
   key.shadow.normalBias = 0.025;
   key.shadow.radius = phone ? 2 : 6;   // une ombre douce (filtrage PCF élargi) ; plus serrée sur téléphone
-  const rim = new THREE.DirectionalLight(pal.brand, pal.dark ? 2.6 : 1.1);
-  rim.position.set(8, 4, -9);
-  const rim2 = new THREE.DirectionalLight(pal.violet, pal.dark ? 1.6 : 0.6);
-  rim2.position.set(-9, 3, -6);
-  scene.add(sky, key, rim, rim2);
+  const fill = new THREE.DirectionalLight(0xe4ecff, pal.dark ? 0.45 : 0.55);
+  fill.position.set(8, 5, -8);
+  scene.add(sky, key, fill);
 }
 
-// Le sol : pas de socle, la grille de points des en-têtes qui se prolonge sous l'objet, un halo bleu, l'ombre seule
-// (visible en thème clair) et une poussière de particules autour. `size` : l'empreinte de l'objet.
+// Le sol : rien que l'ombre de l'objet, posée sur la page. `size` : l'empreinte de l'objet.
 function floor(pal, size) {
-  const g = new THREE.Group();
   const catcher = new THREE.Mesh(new THREE.PlaneGeometry(size * 1.8, size * 1.8).rotateX(-Math.PI / 2),
-    new THREE.ShadowMaterial({ opacity: pal.dark ? 0.5 : 0.09 }));
+    new THREE.ShadowMaterial({ opacity: pal.dark ? 0.45 : 0.2 }));
   catcher.receiveShadow = true;
   catcher.userData.noEdges = true;
   catcher.raycast = () => {};
-  const halo = new THREE.Mesh(new THREE.PlaneGeometry(size * 1.7, size * 1.7).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ map: glowTexture(), color: pal.brand, transparent: true, depthWrite: false,
-      opacity: pal.dark ? 0.2 : 0.14, blending: pal.dark ? THREE.AdditiveBlending : THREE.NormalBlending }));
-  halo.position.y = -0.01;
-  halo.raycast = () => {};
-  // la grille : un point tous les 0,33, de plus en plus pâle en s'éloignant du centre
-  const step = 0.33, half = size * 0.85, pos = [], col = [];
-  const base = pal.dark ? new THREE.Color(0x8ea4ff) : new THREE.Color(0x5b7cff);
-  for (let x = -half; x <= half; x += step) for (let z = -half; z <= half; z += step) {
-    const k = Math.max(0, 1 - Math.hypot(x, z) / half);
-    if (k <= 0) continue;
-    pos.push(x, 0.002, z);
-    const c = base.clone().multiplyScalar(k * k * (pal.dark ? 0.9 : 1));
-    col.push(c.r, c.g, c.b);
-  }
-  // la poussière : quelques particules en suspension au-dessus du sol
-  const rnd = random(size * 100 | 0);
-  for (let i = 0; i < 160; i++) {
-    const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * half * 0.9;
-    pos.push(Math.cos(a) * r, 0.2 + rnd() * size * 0.55, Math.sin(a) * r);
-    const c = (rnd() < 0.7 ? pal.brand : pal.violet).clone().multiplyScalar(0.35 + rnd() * 0.5);
-    col.push(c.r, c.g, c.b);
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
-  const dots = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.045, vertexColors: true, transparent: true,
-    depthWrite: false, blending: pal.dark ? THREE.AdditiveBlending : THREE.NormalBlending, opacity: pal.dark ? 1 : 0.7 }));
-  dots.raycast = () => {};
-  g.add(halo, catcher, dots);
-  return g;
-}
-let glow = null;
-function glowTexture() {   // un dégradé radial, partagé
-  if (glow) return glow;
-  const c = document.createElement("canvas");
-  c.width = c.height = 128;
-  const x = c.getContext("2d"), grad = x.createRadialGradient(64, 64, 0, 64, 64, 64);
-  grad.addColorStop(0, "rgba(255,255,255,1)");
-  grad.addColorStop(0.35, "rgba(255,255,255,.35)");
-  grad.addColorStop(1, "rgba(255,255,255,0)");
-  x.fillStyle = grad;
-  x.fillRect(0, 0, 128, 128);
-  glow = new THREE.CanvasTexture(c);
-  return glow;
+  return catcher;
 }
 export const plinth = (pal, w, d) => floor(pal, Math.max(w, d) * 0.8);
 export const disc = (pal, r) => floor(pal, r * 1.9);
 
-// Une gravure : un dessin blanc sur noir, qui devient de la lumière sur le verre (mat), et son relief.
+// Une gravure : un dessin blanc sur noir, que mat() imprime à l'encre sur le plâtre, et son relief.
 export function engraving(text, pal, { size = 256, scale = 0.62, weight = 800 } = {}) {
   const make = (relief) => {
     const c = document.createElement("canvas");
@@ -217,11 +161,12 @@ export function engraving(text, pal, { size = 256, scale = 0.62, weight = 800 } 
   return { map: make(false), bump: make(true) };
 }
 
-// La couleur d'une variation : du vert ou du rouge, d'autant plus vif que le mouvement est fort.
+// La couleur d'une variation : du vert ou du rouge, d'autant plus soutenu que le mouvement est fort (un petit
+// mouvement : une teinte pâle, qui tire sur le plâtre).
 export function changeColor(pal, change, full = 2.5) {
   if (change == null || Number.isNaN(change)) return pal.relief.clone();
-  const k = 0.45 + 0.55 * Math.min(1, Math.abs(change) / full);
-  const c = (change >= 0 ? pal.up : pal.down).clone().multiplyScalar(k);
+  const k = 0.5 + 0.5 * Math.min(1, Math.abs(change) / full);
+  const c = pal.porcelain.clone().lerp(change >= 0 ? pal.up : pal.down, k);
   c.isLight = true;
   return c;
 }
@@ -279,8 +224,9 @@ export function pickFrom(ray, objects, describe, keyOf = null) {
 
 // --- Les outils du détail -----------------------------------------------------------------------------------------
 
-// Une façade de nuit : une grille de fenêtres, certaines allumées (chaud ou froid), d'autres éteintes. La texture se
-// répète ; facadeBox la cale pour qu'une fenêtre garde la même taille sur toutes les tours.
+// Une façade : une grille régulière de fenêtres, imprimée à l'encre sur les tours (inked). Quelques stores baissés
+// et des étages techniques sans fenêtres cassent la répétition. La texture se répète ; facadeBox la cale pour qu'une
+// fenêtre garde la même taille sur toutes les tours.
 let facade = null;
 export function facadeTexture() {
   if (facade) return facade;
@@ -290,14 +236,12 @@ export function facadeTexture() {
   x.fillStyle = "#000";
   x.fillRect(0, 0, c.width, c.height);
   for (let j = 0; j < rows; j++) {
-    const floorLit = rnd() < 0.85;   // des étages entiers éteints, comme la nuit
+    const technical = rnd() < 0.06;   // un étage technique : un bandeau plein, sans fenêtres
     for (let i = 0; i < cols; i++) {
-      const on = floorLit && rnd() < 0.42;
-      const warm = rnd() < 0.7;
-      const v = on ? 0.55 + rnd() * 0.45 : 0.04 + rnd() * 0.05;
-      const [r, g, b] = on ? (warm ? [255, 214, 160] : [180, 205, 255]) : [120, 140, 200];
-      x.fillStyle = `rgba(${r},${g},${b},${v})`;
-      x.fillRect(i * cw + 3, j * ch + 4, cw - 6, ch - 7);   // la fenêtre, et autour le meneau sombre
+      if (technical) continue;
+      const v = rnd() < 0.12 ? 0.3 + rnd() * 0.15 : 0.7 + rnd() * 0.3;   // un store baissé de temps en temps
+      x.fillStyle = `rgba(255,255,255,${v})`;
+      x.fillRect(i * cw + 3, j * ch + 4, cw - 6, ch - 7);   // la fenêtre, et autour le meneau
     }
   }
   facade = new THREE.CanvasTexture(c);
@@ -340,35 +284,22 @@ export function cardTexture(seed = 1) {
   return t;
 }
 
-// L'atmosphère : un halo qui s'éclaire sur le bord d'une sphère (vu de face, il disparaît).
-export function atmosphere(radius, color, strength = 1) {
-  return new THREE.Mesh(new THREE.SphereGeometry(radius, 64, 48), new THREE.ShaderMaterial({
-    uniforms: { uColor: { value: new THREE.Color(color) }, uStrength: { value: strength } },
-    vertexShader: `varying vec3 vN; varying vec3 vV;
-      void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = -mv.xyz;
-        gl_Position = projectionMatrix * mv; }`,
-    fragmentShader: `uniform vec3 uColor; uniform float uStrength; varying vec3 vN; varying vec3 vV;
-      void main() { float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 3.0);
-        gl_FragColor = vec4(uColor * f * uStrength, f); }`,
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.FrontSide,
-  }));
-}
-
-// Un trait de lumière le long d'une courbe (arcs du globe, orbites) : un tube très fin, qui brille.
+// Un fil tendu le long d'une courbe (orbites, liaisons) : un tube très fin, peint.
 export function lightTube(curve, color, radius = 0.01, segments = 96) {
   const m = new THREE.Mesh(new THREE.TubeGeometry(curve, segments, radius, 6, false),
-    new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(1.6), transparent: true, opacity: 0.9, depthWrite: false }));
+    new THREE.MeshStandardMaterial({ color: new THREE.Color(color), roughness: 0.5, transparent: true, opacity: 1 }));
   m.userData.noEdges = true;
   m.raycast = () => {};
   return m;
 }
 
-// Le métal vernis des pièces et des pièces de précision (pieds, anneaux, axes) : bleu nuit en thème sombre, argent
-// bleuté en thème clair (un métal sombre ferait une tache sur la page claire).
+// Le métal brossé des pièces de monnaie et des pièces de précision (pieds, anneaux, axes) : un acier clair, qui ne
+// reflète que la pièce autour de lui. `emissiveMap` : une gravure, noircie dans le creux du trait (inked).
 export function metal(pal, o = {}) {
-  const m = new THREE.MeshPhysicalMaterial({ color: o.color ?? (pal.dark ? 0x2a3a6e : 0xc3cee6), metalness: 0.9,
-    roughness: o.rough ?? 0.28, clearcoat: 1, clearcoatRoughness: 0.12, emissive: o.emissive ?? 0x000000,
-    emissiveMap: o.emissiveMap ?? null, emissiveIntensity: o.glow ?? 1, bumpMap: o.bump ?? null, bumpScale: o.bumpScale ?? 1 });
-  m.userData.role = "glass";
+  const color = new THREE.Color(o.color ?? (pal.dark ? 0xa9afb7 : 0xc2c7cd));
+  const m = new THREE.MeshStandardMaterial({ color, metalness: 1, roughness: o.rough ?? 0.38,
+    bumpMap: o.bump ?? null, bumpScale: o.bumpScale ?? 1 });
+  if (o.emissiveMap) inked(m, o.emissiveMap, color.clone().multiplyScalar(0.22), o.glow ?? 0.85);
+  m.userData.role = "metal";
   return m;
 }
