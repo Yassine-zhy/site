@@ -1,13 +1,117 @@
-// FinVeille — ce qui bouge dans les pages (guides 32 et 41) : le récit de l'accueil et les horloges des places.
+// FinVeille — le mouvement des pages (guide 32), avec GSAP et ScrollTrigger.
 //
-// Le récit suit le défilement (il répond à un geste du visiteur) ; les horloges donnent l'heure et l'état de chaque
-// place sans redessiner la page. Les chiffres en rouleaux et l'apparition « imprimée » des cartes ont été retirés
-// (guide 41), et GSAP avec eux : ces effets ne disaient rien, retardaient la lecture des chiffres, et leurs mesures
-// de la page gênaient le défilement et le clavier sur téléphone.
+// Peu d'effets, mais tirés du monde de la Bourse :
+// - l'accueil raconte la séance au défilement : un chapitre à la fois (la séance, la plus forte hausse, la plus forte
+//   baisse, l'actualité) ; le décor 3D lit le chapitre en cours (window.__fvStory) et y braque sa caméra ;
+// - les cours arrivent en rouleaux, comme sur un tableau de cotation ;
+// - les dépêches s'impriment de gauche à droite, comme sur un fil d'agence ;
+// - les horloges des places boursières tournent dans le navigateur (la page n'a pas à se redessiner).
+// Rien n'est caché en attendant une animation : sans JavaScript, tout reste lisible.
 
+import { isPhone } from "./phone.js";
+
+const BASE = new URL(".", import.meta.url).href;
 const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const scroller = () => document.querySelector('[data-testid="stMain"], [data-testid="stAppScrollToBottomContainer"]');
+
+let gsapReady = null;
+function loadGsap() {   // GSAP est distribué en script classique : on l'ajoute à la page, une seule fois
+  gsapReady ??= (async () => {
+    for (const name of ["gsap.min.js", "ScrollTrigger.min.js"]) {
+      await new Promise((resolve, reject) => {
+        const tag = document.createElement("script");
+        tag.src = BASE + name; tag.onload = resolve; tag.onerror = reject;
+        document.head.appendChild(tag);
+      });
+    }
+    window.gsap.registerPlugin(window.ScrollTrigger);
+    return window.gsap;
+  })();
+  return gsapReady;
+}
+
+// --- Les cours en rouleaux ----------------------------------------------------------------------------------------
+// Chaque chiffre devient une petite colonne 0-9 qui défile jusqu'à sa valeur. Le texte d'origine reste dans la page
+// pour les lecteurs d'écran ; la colonne est décorative (aria-hidden). Le chiffre final est en place dès le départ.
+const ODOMETERS = ".fv-odo, .fv-float-value, .fv-kpi-value, .fv-tile-value";
+
+function buildOdometer(el) {
+  const text = el.textContent;
+  if (!/\d/.test(text) || el.children.length) return null;
+  const visual = document.createElement("span");
+  visual.className = "fv-odo-run";
+  visual.setAttribute("aria-hidden", "true");
+  const strips = [];
+  for (const ch of text) {
+    if (/\d/.test(ch)) {
+      const box = document.createElement("span"), strip = document.createElement("span");
+      box.className = "fv-odo-d"; strip.className = "fv-odo-strip";
+      strip.innerHTML = "<span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>";
+      strip.dataset.digit = ch;
+      strip.style.transform = `translateY(${-Number(ch) * 10}%)`;
+      // le chiffre final, invisible, donne sa largeur à la colonne (et la suit quand la police se charge)
+      const ghost = document.createElement("span");
+      ghost.className = "fv-odo-ghost"; ghost.textContent = ch;
+      box.append(ghost, strip); visual.appendChild(box); strips.push(strip);
+    } else {
+      visual.appendChild(document.createTextNode(ch));
+    }
+  }
+  const sr = document.createElement("span");
+  sr.className = "fv-sr"; sr.textContent = text;
+  el.textContent = "";
+  el.append(sr, visual);
+  return strips;
+}
+
+function roll(gsap, strips) {
+  gsap.fromTo(strips, { yPercent: (i, t) => -10 * ((Number(t.dataset.digit) + 3 + i) % 10) },
+    { yPercent: (i, t) => -10 * Number(t.dataset.digit), duration: 1.15, ease: "power3.out",
+      stagger: { each: 0.045, from: "end" }, overwrite: true });
+}
+
+// Sur téléphone, motion.js arrive tard (une dizaine de secondes) : les cours sont alors lus depuis longtemps, et les voir
+// défiler en faux chiffres serait absurde. Les nombres déjà à l'écran quand le script s'installe restent à leur valeur ;
+// ceux qui entrent ensuite en défilant gardent leur rouleau.
+const LATE_MS = 2500;
+const onScreen = (el) => {
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.bottom > 0 && r.top < window.innerHeight;
+};
+
+function odometers(gsap, ST, settled = false) {
+  for (const el of document.querySelectorAll(ODOMETERS)) {
+    if (el.dataset.fvOdo) continue;
+    el.dataset.fvOdo = "1";
+    if (reduced()) continue;
+    const strips = buildOdometer(el);
+    if (!strips) continue;
+    for (const s of strips) s.style.transform = "";
+    gsap.set(strips, { yPercent: (i, t) => -10 * Number(t.dataset.digit) });
+    el.__fvRoll = () => roll(gsap, strips);
+    const chapter = el.closest(".fv-ch");
+    // un chapitre du récit n'est « à l'écran » que s'il est celui qu'on lit
+    const seen = settled && (chapter ? chapter.classList.contains("is-active") : true) && onScreen(el);
+    if (seen) { el.__fvStill = true; continue; }   // déjà à l'écran : pas de rouleau (et pas de déclencheur)
+    // dans le récit de l'accueil, c'est le changement de chapitre qui lance le rouleau
+    if (!chapter) ST.create({ trigger: el, start: "top 95%", once: true, onEnter: el.__fvRoll });
+  }
+}
+
+// --- Les dépêches qui s'impriment ----------------------------------------------------------------------------------
+const WIRES = '[class*="st-key-fvcard_"], [class*="st-key-fvcompact_"], [class*="st-key-fvtile_"], [class*="st-key-fvlead_"]';
+
+function wires(gsap, ST) {
+  const fresh = [...document.querySelectorAll(WIRES)].filter((el) => !el.dataset.fvWire);
+  fresh.forEach((el) => { el.dataset.fvWire = "1"; });
+  if (!fresh.length || reduced()) return;
+  ST.batch(fresh, {
+    start: "top 96%", once: true,
+    onEnter: (els) => gsap.fromTo(els, { clipPath: "inset(0 100% 0 0)" },
+      { clipPath: "inset(0 0% 0 0)", duration: 0.65, ease: "power2.out", stagger: 0.07, clearProps: "clipPath" }),
+  });
+}
 
 // --- Le récit de la séance (accueil) ---------------------------------------------------------------------------------
 // La section est haute de plusieurs écrans ; sa scène reste collée en haut (position: sticky). Le défilement à
@@ -53,6 +157,7 @@ function installStory() {
         c.setAttribute("aria-hidden", i === chapter ? "false" : "true");
       });
       state.rail.forEach((item, i) => item.classList.toggle("is-active", i === chapter));
+      for (const el of state.chapters[chapter].querySelectorAll(".fv-odo")) el.__fvRoll?.();
     }
   };
   document.addEventListener("scroll", update, { capture: true, passive: true });
@@ -85,9 +190,63 @@ function installClocks() {
   setInterval(tick, 20_000);
 }
 
-export function installMotion() {
+export async function installMotion() {
   if (window.__fvMotion) return;
   window.__fvMotion = true;
   installClocks();
   installStory();
+  let gsap;
+  try { gsap = await loadGsap(); } catch { return; }   // sans GSAP : pas de rouleaux ni d'impression, rien ne casse
+  const ST = window.ScrollTrigger;
+  let current = null, queued = false, refresh = 0;
+  // Pour mesurer, ScrollTrigger remet la page en haut un instant. Un menu déroulant se ferme dès que la page défile :
+  // sur téléphone, le clavier qui sort change la hauteur de la fenêtre, la mesure ferme le menu, qui se redessine, ce
+  // qui relançait une mesure… et on ne pouvait plus rien écrire. Donc : pas de mesure quand seule la hauteur change
+  // (le clavier), ni pendant un menu ouvert ou, sur écran tactile, une saisie (elle attend la fin).
+  ST.config({ ignoreMobileResize: true, autoRefreshEvents: "visibilitychange,DOMContentLoaded,load" });
+  const busy = () => !!document.querySelector('[role="listbox"], [role="dialog"], [data-testid="stPopoverBody"]')
+    || (matchMedia("(pointer: coarse)").matches
+      && !!document.activeElement?.matches("input, textarea, select, [contenteditable='true']"));
+  const measure = (delay = 250) => {
+    clearTimeout(refresh);
+    refresh = setTimeout(() => (busy() ? measure(500) : ST.refresh()), delay);
+  };
+  let width = innerWidth;
+  window.addEventListener("resize", () => { if (innerWidth !== width) { width = innerWidth; measure(); } });
+  // la première passe : sur téléphone et si l'on arrive tard, les nombres déjà visibles ne roulent pas
+  let firstPass = true;
+  const late = isPhone() && performance.now() > LATE_MS;
+  const scan = () => {
+    queued = false;
+    const sc = scroller();
+    if (!sc) return;
+    if (sc !== current) {   // nouvelle zone de défilement (autre page) : on repart de zéro
+      ST.getAll().forEach((t) => t.kill());
+      current = sc;
+      ST.defaults({ scroller: sc });
+    }
+    odometers(gsap, ST, late && firstPass);
+    firstPass = false;
+    wires(gsap, ST);
+    measure();
+  };
+  // seulement quand un élément arrive : un cours qui change n'échange qu'un texte, et chaque refresh remet la page
+  // en haut un instant (il mesure), ce qui coupe un défilement en cours (le clic sur une maquette) ; les listes des
+  // menus déroulants et les bulles d'aide ne comptent pas (elles n'ont rien à animer). Un élément déjà reparti non
+  // plus : pour mesurer, ScrollTrigger pose un instant un bloc de 100vh dans la page, et le compter relançait une mesure,
+  // qui en posait un autre… une boucle, deux à trois fois par seconde.
+  const POPUPS = '[data-rac], [role="listbox"], [role="tooltip"], [data-baseweb="popover"], [data-baseweb="layer"]';
+  const added = (records) => records.some((r) => [...r.addedNodes].some((n) => n.nodeType === 1 && n.isConnected
+    && !n.closest(POPUPS)));
+  new MutationObserver((records) => { if (!queued && added(records)) { queued = true; setTimeout(scan, 120); } })
+    .observe(document.body, { childList: true, subtree: true });
+  scan();
+  // le chapitre affiché au chargement fait rouler ses chiffres
+  setTimeout(() => {
+    const s = window.__fvStory;
+    if (s?.el && s.chapters[s.chapter]) for (const el of s.chapters[s.chapter].querySelectorAll(".fv-odo")) {
+      if (el.__fvStill) delete el.__fvStill;   // arrivé tard : il reste à sa valeur ; il roulera au prochain chapitre
+      else el.__fvRoll?.();
+    }
+  }, 400);
 }
