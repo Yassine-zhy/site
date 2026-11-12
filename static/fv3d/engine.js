@@ -1,32 +1,18 @@
 // FinVeille — le moteur du site dans le navigateur (guides 30, 33 et 41).
 //
 // Chargé par scene3d.py (un composant Streamlit) à chaque affichage d'une page : show() installe, une seule fois par
-// page ouverte, les maquettes 3D (vitrines.js) et les petits comportements du site : liens qui restent dans l'onglet,
+// page ouverte, les maquettes (renders.js) et les petits comportements du site : liens qui restent dans l'onglet,
 // défilement de la conversation avec l'assistant, raccourci de recherche, thème des dialogues, horloges et récit de
 // l'accueil (motion.js). Le fond de particules qui occupait ce fichier a été retiré (guide 41) : il ne montrait
 // aucune donnée et prenait un contexte WebGL de plus, de trop sur un téléphone.
 
-import { installVitrines } from "./vitrines.js";
+import { installRenders } from "./renders.js";
 
 // motion.js arrive avec la version de ce fichier (?v=…, scene3d.py) : un correctif y est pris tout de suite, au lieu
 // d'attendre que le navigateur oublie l'ancienne copie (le serveur ne dit pas combien de temps la garder)
 const VERSION = new URL(import.meta.url).search;
 const installMotion = () => import(`./motion.js${VERSION}`).then((m) => m.installMotion())
   .catch((error) => console.warn("FinVeille : animations indisponibles", error));
-
-// WebGL est-il là ? Testé une seule fois, et le contexte du test est rendu aussitôt. Avant, chaque affichage (un
-// changement de thème, une mise à jour de la page) créait un contexte de test jamais rendu : un téléphone n'en garde
-// que quelques-uns d'actifs et coupe alors le plus ancien, celui des immeubles, remplacé par l'icône d'image cassée.
-let hasWebGL = null;
-function webgl() {
-  if (hasWebGL !== null) return hasWebGL;
-  try {
-    const gl = window.WebGL2RenderingContext && document.createElement("canvas").getContext("webgl2");
-    hasWebGL = !!gl;
-    gl?.getExtension("WEBGL_lose_context")?.loseContext();
-  } catch { hasWebGL = false; }
-  return hasWebGL;
-}
 
 // navigateur : on y inscrit la nouvelle adresse et on le prévient, comme le ferait le bouton « Précédent ».
 function installLinks() {
@@ -136,8 +122,6 @@ export function show() {
   installChat();
   installShortcut();
   installDialogTheme();
-  if (!webgl()) return () => {};   // pas de WebGL : la page s'affiche sans les maquettes
-  document.documentElement.classList.add("fv-3d");   // la mise en page fait de la place aux maquettes (theme.py)
-  installVitrines();
+  installRenders();
   return () => {};
 }
