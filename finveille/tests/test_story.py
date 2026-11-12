@@ -112,16 +112,20 @@ def test_chaque_valeur_a_son_poids():
         assert {symbol for symbol, *_ in PLACES[place][3]} == set(weights), place
 
 
-def test_la_maquette_du_canada_garde_toujours_les_memes_tours():
-    """L'image de la ville est rendue à l'avance : les 40 tours ne dépendent pas de la séance."""
+def test_la_maquette_du_canada_garde_les_extremes_de_la_seance():
+    smallest = ["SAP.TO", "TFII.TO", "CAE.TO"]  # des petites valeurs qui ne passeraient pas dans les 40 plus lourdes
     changes = {symbol: 0.3 for symbol, *_ in PLACES["canada"][3]}
-    changes.update({"SAP.TO": 9.0, "CTC-A.TO": -8.0})  # deux petites valeurs qui bougent beaucoup
+    changes.update({"SAP.TO": 9.0, "TFII.TO": 7.5, "CAE.TO": 6.0, "CTC-A.TO": -8.0, "MG.TO": -7.0, "X.TO": -6.5})
     data = scene3d.city_data(members_of("canada", changes), "canada")
     towers = data["towers"]
-    assert len(towers) == 40 and data["place"] == "canada"
-    assert [t["n"] for t in towers] == [t["n"] for t in scene3d.city_data([], "canada")["towers"]]
+    names = {tower["n"] for tower in towers}
+    assert len(towers) == 40
     by_symbol = {symbol: name for symbol, name, _ in PLACES["canada"][3]}
-    assert towers[0]["n"] == by_symbol["SHOP.TO"]  # la plus lourde d'abord
+    for symbol in [*smallest, "CTC-A.TO", "MG.TO", "X.TO"]:
+        assert by_symbol[symbol] in names, symbol
+    # le reste, ce sont les plus lourdes : Shopify et la Banque Royale sont là
+    assert by_symbol["SHOP.TO"] in names and by_symbol["RY.TO"] in names
+    assert max(tower["c"] for tower in towers) == 9.0 and min(tower["c"] for tower in towers) == -8.0
     assert data["act"] == scene3d.CITY_ACT
 
 
