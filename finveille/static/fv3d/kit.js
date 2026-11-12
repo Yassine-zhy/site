@@ -1,12 +1,14 @@
 // FinVeille — la boîte à outils des maquettes (guides 33 et 41) : matières, lumière, sol, gravures.
 //
-// Les maquettes sont rendues comme des objets de vitrine : du verre teinté (les tours, la mer du globe), de l'acier
-// poli (pieds, axes, corniches), une laque brillante pour les données (hausse en vert, baisse en rouge, le bleu de la
-// marque) et une pierre sombre pour les socles. Rien n'émet de lumière : tout vient des reflets de la pièce et des
-// ombres. La matière est la même en thème clair et en thème sombre ; seule la lumière suit la page.
+// Les maquettes sont des objets que l'on pourrait poser sur un bureau : du carton plume et du plâtre blancs, mats,
+// comme une maquette d'architecte ; les données peintes dessus (hausse en vert, baisse en rouge, le bleu de la marque) ;
+// les détails imprimés à l'encre grise ; du métal brossé pour les pieds et les axes. Rien ne brille, rien n'émet de
+// lumière : le volume se lit par l'ombre. La matière est la même en thème clair et en thème sombre (un objet réel ne
+// change pas de matière quand on éteint la pièce) ; seuls le socle et la lumière suivent la page.
 //
-// Une maquette ne choisit pas ses matières : elle donne un rôle (une couleur de la palette) et mat() en fait du verre
-// (porcelain, relief), de la pierre (shade, plinth) ou de la laque (up, down, brand, ink, violet).
+// Une maquette ne choisit pas ses matières : elle donne un rôle (une couleur de la palette) et mat() en fait du
+// plâtre (porcelain, relief, shade, plinth) ou de la peinture (up, down, brand, ink, violet). Les arêtes sont
+// soulignées par la vitrine (outline), l'ombre au sol vient de plinth() ou disc().
 
 import * as THREE from "./three.module.min.js";
 import { RoundedBoxGeometry } from "./addons/RoundedBoxGeometry.js";
@@ -20,14 +22,16 @@ let current = null;   // la palette de la maquette en cours de construction (une
 export function palette(dark) {
   current = {
     dark,
-    porcelain: new THREE.Color(dark ? 0x4d74a6 : 0x6f95c4),   // le verre teinté, bleu acier
-    relief: new THREE.Color(dark ? 0x7f95b0 : 0x9db1c9),      // le verre clair
-    shade: new THREE.Color(dark ? 0x3a4350 : 0x56606d),       // la pierre des équipements
-    plinth: new THREE.Color(dark ? 0x1a1d22 : 0x2a2f36),      // le socle : une pierre sombre polie
-    ink: new THREE.Color(dark ? 0x10151c : 0x18202b),         // les meneaux, les gravures, les tracés
-    up: new THREE.Color(dark ? 0x2fb872 : 0x1f9a5c), down: new THREE.Color(dark ? 0xe85563 : 0xd43d4b),
-    brand: new THREE.Color(dark ? 0x4f7cf5 : 0x2451de),
-    violet: new THREE.Color(dark ? 0x8e99a8 : 0x77828f),
+    // le plâtre, du plus clair au plus en retrait ; un ton plus bas en thème sombre, pour ne pas éblouir la page
+    porcelain: new THREE.Color(dark ? 0xd3d6da : 0xf2f3f4),
+    relief: new THREE.Color(dark ? 0xbcc0c6 : 0xe1e4e7),
+    shade: new THREE.Color(dark ? 0x8a9099 : 0xbfc4ca),
+    plinth: new THREE.Color(dark ? 0x2a2e34 : 0xd4d8dc),   // le socle : une planche qui suit la page
+    // la peinture : les données et la marque, aux couleurs du site
+    ink: new THREE.Color(dark ? 0x30353c : 0x3d4550),      // l'encre des gravures, des graduations, des tracés
+    up: new THREE.Color(dark ? 0x35b271 : 0x23935a), down: new THREE.Color(dark ? 0xe5606b : 0xd0434e),
+    brand: new THREE.Color(dark ? 0x5a80f0 : 0x2451de),
+    violet: new THREE.Color(dark ? 0x7d8794 : 0x6d7783),   // le second ton, un gris ardoise (plus de violet)
   };
   return current;
 }
@@ -69,34 +73,39 @@ export function inked(material, map, color, strength = 1) {
 
 export function mat(color, o = {}) {
   const pal = current, name = role(color), c = new THREE.Color(color);
-  const opacity = { transparent: o.opacity != null, opacity: o.opacity ?? 1 };
-  if (o.map) {   // une gravure sur le verre (avec son léger relief)
-    const m = inked(new THREE.MeshPhysicalMaterial({ color: pal.porcelain, roughness: 0.16, metalness: 0.7, clearcoat: 1,
-      clearcoatRoughness: 0.08, bumpMap: o.bump ?? null, bumpScale: o.bumpScale ?? 1 }), o.map, pal.ink, 0.9);
+  if (o.map) {   // une gravure : le plâtre, et le dessin imprimé à l'encre (avec son léger relief)
+    const m = inked(new THREE.MeshStandardMaterial({ color: pal.porcelain, roughness: 0.84, metalness: 0,
+      bumpMap: o.bump ?? null, bumpScale: o.bumpScale ?? 1 }), o.map, pal.ink, 0.9);
     m.userData.role = "body";
     return m;
   }
-  if (PAINT.includes(name) || o.glow > 0.5) {   // une donnée, un trait de la marque : une laque brillante
-    const m = new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.3, metalness: 0, clearcoat: 1,
-      clearcoatRoughness: 0.12, ...opacity });
+  if (PAINT.includes(name) || o.glow > 0.5) {   // une donnée, un trait de la marque : de la peinture satinée
+    const m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.5, metalness: 0, transparent: o.opacity != null,
+      opacity: o.opacity ?? 1 });
     m.userData.role = "paint";
     return m;
   }
-  if (name === "shade" || name === "plinth") {   // la pierre polie
-    const m = new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.32, metalness: 0.15, clearcoat: 0.6,
-      clearcoatRoughness: 0.2, ...opacity });
-    m.userData.role = "stone";
-    return m;
-  }
-  // le verre teinté : il reflète la pièce
-  const m = new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.12, metalness: 0.75, clearcoat: 1,
-    clearcoatRoughness: 0.06, ...opacity });
+  // le plâtre : mat, opaque (une transparence ne vient que si la maquette la demande)
+  const m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.86, metalness: 0, transparent: o.opacity != null,
+    opacity: o.opacity ?? 1 });
   m.userData.role = "body";
   return m;
 }
 
-// Les arêtes : plus de trait ajouté, les reflets dessinent les volumes (la vitrine appelle toujours outline).
-export function outline() {}
+// Les arêtes : un trait de crayon très léger sur les arêtes vives du plâtre, pour que deux volumes de la même teinte
+// se détachent l'un de l'autre même sans ombre portée (téléphone). La peinture n'en a pas besoin.
+export function outline(root, pal) {
+  const meshes = [];
+  root.traverse((o) => { if (o.isMesh && !o.isInstancedMesh && !o.userData.noEdges && o.material?.userData?.role === "body") meshes.push(o); });
+  const pencil = new THREE.LineBasicMaterial({ color: pal.ink, transparent: true, opacity: pal.dark ? 0.34 : 0.2, depthWrite: false });
+  for (const mesh of meshes) {
+    if (mesh.geometry.attributes.position.count > 30000) continue;
+    const lines = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 32), pencil);
+    lines.userData.noEdges = true;
+    lines.raycast = () => {};   // le pointeur vise les volumes, pas les traits
+    mesh.add(lines);
+  }
+}
 
 // La lumière d'un atelier : une grande fenêtre (lumière du jour, à peine chaude) qui porte les ombres, le ciel de la
 // pièce, et un rappel froid à l'opposé pour déboucher les faces à l'ombre. Aucune lumière colorée. `reach` : la zone
@@ -105,7 +114,7 @@ export function outline() {}
 export function lights(scene, pal, { reach = 7, map = 1024, sun = [-6, 11, 7], shadow = true } = {}) {
   const phone = isPhone();
   if (phone) map = Math.min(map, 512);
-  const sky = new THREE.HemisphereLight(0xffffff, pal.dark ? 0x3a3f46 : 0xc9ced4, pal.dark ? 0.35 : 0.5);
+  const sky = new THREE.HemisphereLight(0xffffff, pal.dark ? 0x3a3f46 : 0xc9ced4, pal.dark ? 0.45 : 0.6);
   const key = new THREE.DirectionalLight(0xfff6ea, pal.dark ? 2.3 : 2.1);
   key.position.set(...sun);
   key.castShadow = shadow;
@@ -122,7 +131,7 @@ export function lights(scene, pal, { reach = 7, map = 1024, sun = [-6, 11, 7], s
 // Le sol : rien que l'ombre de l'objet, posée sur la page. `size` : l'empreinte de l'objet.
 function floor(pal, size) {
   const catcher = new THREE.Mesh(new THREE.PlaneGeometry(size * 1.8, size * 1.8).rotateX(-Math.PI / 2),
-    new THREE.ShadowMaterial({ opacity: pal.dark ? 0.5 : 0.26 }));
+    new THREE.ShadowMaterial({ opacity: pal.dark ? 0.45 : 0.2 }));
   catcher.receiveShadow = true;
   catcher.userData.noEdges = true;
   catcher.raycast = () => {};
@@ -156,8 +165,8 @@ export function engraving(text, pal, { size = 256, scale = 0.62, weight = 800 } 
 // mouvement : une teinte pâle, qui tire sur le plâtre).
 export function changeColor(pal, change, full = 2.5) {
   if (change == null || Number.isNaN(change)) return pal.relief.clone();
-  const k = 0.6 + 0.4 * Math.min(1, Math.abs(change) / full);
-  const c = (change >= 0 ? pal.up : pal.down).clone().multiplyScalar(k);
+  const k = 0.5 + 0.5 * Math.min(1, Math.abs(change) / full);
+  const c = pal.porcelain.clone().lerp(change >= 0 ? pal.up : pal.down, k);
   c.isLight = true;
   return c;
 }
@@ -284,13 +293,13 @@ export function lightTube(curve, color, radius = 0.01, segments = 96) {
   return m;
 }
 
-// Le métal poli des pièces de monnaie et des pièces de précision (pieds, anneaux, axes) : de l'acier par défaut, ou la
-// teinte donnée (or, argent, bronze). `emissiveMap` : une gravure, noircie dans le creux du trait (inked).
+// Le métal brossé des pièces de monnaie et des pièces de précision (pieds, anneaux, axes) : un acier clair, qui ne
+// reflète que la pièce autour de lui. `emissiveMap` : une gravure, noircie dans le creux du trait (inked).
 export function metal(pal, o = {}) {
-  const color = new THREE.Color(o.color ?? 0xc9ced6);
-  const m = new THREE.MeshPhysicalMaterial({ color, metalness: 1, roughness: o.rough ?? 0.22, clearcoat: 0.4,
-    clearcoatRoughness: 0.1, bumpMap: o.bump ?? null, bumpScale: o.bumpScale ?? 1 });
-  if (o.emissiveMap) inked(m, o.emissiveMap, color.clone().multiplyScalar(0.18), o.glow ?? 0.85);
+  const color = new THREE.Color(o.color ?? (pal.dark ? 0xa9afb7 : 0xc2c7cd));
+  const m = new THREE.MeshStandardMaterial({ color, metalness: 1, roughness: o.rough ?? 0.38,
+    bumpMap: o.bump ?? null, bumpScale: o.bumpScale ?? 1 });
+  if (o.emissiveMap) inked(m, o.emissiveMap, color.clone().multiplyScalar(0.22), o.glow ?? 0.85);
   m.userData.role = "metal";
   return m;
 }
