@@ -132,11 +132,20 @@ def test_chaque_maquette_a_une_action():
 
 
 def test_le_plein_ecran_libere_ses_ancetres():
-    """Pendant le plein écran, les ancêtres du cadre perdent leurs effets (verre dépoli, transformation…), sinon le
+    """Pendant le plein écran, les ancêtres du cadre perdent leurs effets (transformation, filtre, animation), sinon le
     cadre « fixé à l'écran » se cale sur eux. Le bouton s'appelle « Close fullscreen », suivi de la description de
     l'élément s'il en a une (« Close fullscreen: Cours et variations… ») : la règle vise le début de l'étiquette."""
     assert 'button[aria-label^="Close fullscreen"]' in theme.CSS
+    assert "backdrop-filter" not in theme.CSS  # plus de verre dépoli : la règle n'a plus à le neutraliser
     rule = theme.CSS.split('button[aria-label^="Close fullscreen"]', 1)[1].split("}", 1)[0]
     assert ':not([data-testid="stFullScreenFrame"])' in rule  # le cadre garde son propre z-index
-    for effect in ("backdrop-filter: none", "transform: none", "filter: none", "animation: none"):
+    for effect in ("transform: none", "filter: none", "animation: none"):
         assert effect in rule
+
+
+def test_la_feuille_de_style_est_sobre():
+    """Direction « sobre » : plus de violet, de verre, de lueur, d'intro, de barre de lecture ni de décor 3D de fond."""
+    for banned in ("brand-2", "violet", "backdrop-filter", "blur(", "drop-shadow", "fv-intro", "fv-progress",
+                   "fv-aurora", "fv-hero-art", "#fv3d", "background-clip", "text-transform: uppercase"):
+        assert banned not in theme.CSS, banned
+    assert "Un projet étudiant" not in theme.CSS

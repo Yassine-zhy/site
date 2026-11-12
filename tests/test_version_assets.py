@@ -29,4 +29,4 @@ def test_les_vrais_modules_sont_tous_versionnes(tmp_path):
     texts = {p.relative_to(copy).as_posix(): p.read_text(encoding="utf-8") for p in copy.rglob("*.js")}
     assert f'from "./vitrines.js?v={version}"' in texts["engine.js"]
     assert all(not version_assets.IMPORT.search(text) for text in texts.values())  # plus aucun import sans version
-    assert f"three.module.min.js?v={version}" in texts["addons/postprocessing/EffectComposer.js"]
+    assert f"three.module.min.js?v={version}" in texts["addons/RoundedBoxGeometry.js"]

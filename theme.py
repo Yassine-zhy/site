@@ -1,15 +1,16 @@
 """L'identité visuelle de FinVeille : une plateforme d'information financière, sobre et lisible.
 
 Principes :
-- deux palettes complètes, claire (blanc et gris bleuté) et sombre (bleu nuit), définies en CSS avec
+- deux palettes complètes, claire (blanc et gris neutre) et sombre (anthracite), définies en CSS avec
   `light-dark(couleur claire, couleur sombre)` : Streamlit indique le thème actif au navigateur
   (propriété CSS `color-scheme`, recopiée sur la page entière pour les dialogues : voir `THEME_SYNC_JS`), donc les
   couleurs suivent le thème choisi, sans relancer le script ;
-- une seule couleur de marque, le bleu FinVeille, pour les actions et les liens ;
+- une seule couleur de marque, le bleu FinVeille, pour les actions et les liens ; des aplats, un filet d'1 px,
+  ni dégradé, ni verre, ni lueur, ni ombre (sauf sous ce qui flotte : menus, bulles, dialogues) ;
 - la couleur des données est réservée aux rubriques, à la hausse (▲ vert) et à la baisse (▼ rouge),
   toujours accompagnée d'un signe ou d'un nom : l'information ne repose jamais sur la couleur seule ;
-- interface et titres en IBM Plex Sans, titres d'articles en Newsreader (police de presse),
-  chiffres alignés en IBM Plex Mono.
+- interface et titres en IBM Plex Sans, titres d'articles en Newsreader (police de presse), chiffres en chiffres
+  tabulaires (alignés sans changer de police) ; IBM Plex Mono ne sert qu'au code.
 """
 
 from __future__ import annotations
@@ -32,7 +33,7 @@ CATEGORY_COLORS = {"marches": "#3987e5", "crypto": "#d95926", "entreprises": "#1
 # pas y utiliser light-dark(), donc ces teintes moyennes sont lisibles sur les deux fonds.
 UP = "#1e9e4f"  # hausse : toujours avec ▲ et le signe +
 DOWN = "#e5484d"  # baisse : toujours avec ▼ et le signe −
-NEUTRAL = "#8c96a5"  # gris neutre des graphiques (repères, courbes de comparaison)
+NEUTRAL = "#8a929d"  # gris neutre des graphiques (repères, courbes de comparaison)
 BRAND = "#2451de"  # le bleu FinVeille (logo)
 DISPLAY_TZ = ZoneInfo("Europe/Paris")  # fuseau d'affichage des heures
 
@@ -60,28 +61,29 @@ CSS = """
    1. Jetons de design, en trois couches (guide 26) :
       primitifs (valeurs brutes) → sémantiques (le rôle : fond, texte, hausse…) → composants (bouton, carte…).
       Un composant n'utilise jamais une couleur brute : changer de thème, c'est changer la couche sémantique.
-      light-dark(clair, sombre) suit le thème choisi dans Streamlit.
+      light-dark(clair, sombre) suit le thème choisi dans Streamlit. Gris neutres, un seul bleu, aucune ombre
+      sous les cartes : un filet d'1 px suffit.
    ============================================================================================= */
 .stApp, [data-testid="stDialog"] {  /* les dialogues (« Rechercher ») sont hors de .stApp : mêmes jetons */
   /* --- Primitifs : couleurs ----------------------------------------------------------------- */
-  --ink-0: #ffffff;   --ink-50: #f6f8fc;  --ink-100: #eef2f9; --ink-150: #e2e7f0; --ink-200: #c9d2e0;
-  --ink-400: #8791a5; --ink-500: #566176; --ink-900: #0b1220;
-  --night-950: #060912; --night-900: #0a0e18; --night-850: #0c111d; --night-800: #141c2c; --night-700: #1a2335;
-  --night-600: #2a3550; --night-400: #5d6a83; --night-300: #96a2b9; --night-100: #e8edf6;
+  --ink-0: #ffffff;   --ink-50: #f1f3f5;  --ink-100: #eceef1; --ink-150: #e1e4e8; --ink-200: #c9ced6;
+  --ink-400: #8a929d; --ink-500: #56606c; --ink-900: #111418;
+  --night-950: #0e1013; --night-900: #0b0d10; --night-850: #15181c; --night-800: #1d2126; --night-700: #252a31;
+  --night-600: #363d47; --night-400: #5f6873; --night-300: #a0a8b3; --night-100: #e9ebee;
   --blue-900: #0d1f6b; --blue-700: #1536b4; --blue-600: #2451de; --blue-400: #6d93ff; --blue-200: #a9c1ff;
   --blue-150: #c9d4f5; --blue-100: #dfe7ff; --blue-50: #ecf1ff; --blue-950: #141f3d; --mint-300: #6ee7a8;
-  --violet-600: #5b3fd9; --violet-500: #7c3aed; --violet-300: #a78bfa;
   --green-700: #047a3c; --green-400: #34d17f; --green-50: #e3f5ea; --green-950: #0f2a1d;
   --red-700: #c8263a; --red-400: #ff6375; --red-50: #fdeaec; --red-950: #2e1419;
   --amber-700: #9a5b00; --amber-400: #f5b54e; --amber-50: #fff4e0; --amber-950: #2a2111;
   /* --- Primitifs : espacements (base 4 px), rayons, durées ------------------------------------ */
   --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem;
   --space-8: 2rem; --space-10: 2.5rem;
-  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 20px; --radius-full: 999px;
-  --duration-fast: .15s; --duration-base: .2s; --duration-slow: .45s;
+  --radius-sm: 4px; --radius-md: 6px; --radius-lg: 8px; --radius-xl: 10px; --radius-full: 999px;
+  /* « full » : points, avatars, interrupteurs */
+  --duration-fast: .15s; --duration-base: .2s;
 
   /* --- Sémantiques : le rôle de chaque couleur, en clair et en sombre --------------------------- */
-  --fv-bg: light-dark(#f4f6fb, var(--night-950));
+  --fv-bg: light-dark(#f6f7f8, var(--night-950));
   --fv-surface: light-dark(var(--ink-0), var(--night-850));
   --fv-sunken: light-dark(var(--ink-50), var(--night-900));
   --fv-hover: light-dark(var(--ink-100), var(--night-800));
@@ -91,7 +93,6 @@ CSS = """
   --fv-muted: light-dark(var(--ink-500), var(--night-300));
   --fv-faint: light-dark(var(--ink-400), var(--night-400));  /* décor seulement (points, filets) : 3,2 à 3,5:1, trop pâle pour du texte */
   --fv-brand: light-dark(var(--blue-600), var(--blue-400));
-  --fv-brand-2: light-dark(var(--violet-500), var(--violet-300));  /* le second ton des dégradés */
   --fv-brand-soft: light-dark(var(--blue-50), var(--blue-950));
   --fv-up: light-dark(var(--green-700), var(--green-400));
   --fv-down: light-dark(var(--red-700), var(--red-400));
@@ -100,44 +101,32 @@ CSS = """
   --fv-down-on-soft: light-dark(var(--red-700), #ff8a96);  /* la baisse écrite sur une pastille rouge : 5:1 au moins */
   --fv-warn: light-dark(var(--amber-700), var(--amber-400));
   --fv-warn-soft: light-dark(var(--amber-50), var(--amber-950));
-  --fv-shadow: light-dark(rgba(15, 23, 42, .07), rgba(0, 0, 0, .5));
-  --fv-hi: light-dark(rgba(255, 255, 255, 0), rgba(255, 255, 255, .05));  /* reflet du bord supérieur, en sombre */
-  --fv-glow: light-dark(rgba(36, 81, 222, .10), rgba(109, 147, 255, .14));
-  --fv-glow-2: light-dark(rgba(124, 58, 237, .07), rgba(167, 139, 250, .10));
-  --fv-shadow-deep: light-dark(rgba(15, 23, 42, .22), rgba(0, 0, 0, .8));  /* ombre portée des éléments qui flottent */
-  --fv-elev: inset 0 1px 0 var(--fv-hi), 0 1px 2px var(--fv-shadow), 0 14px 32px -20px var(--fv-shadow);
-  --fv-elev-hover: inset 0 1px 0 var(--fv-hi), 0 2px 4px var(--fv-shadow), 0 22px 44px -22px var(--fv-shadow);
+  --fv-pop: 0 8px 24px -12px rgba(0, 0, 0, .28);
+  /* la seule ombre : ce qui flotte (menus, bulles, dialogues, toasts) */
+  --fv-elev: none; --fv-elev-hover: none;  /* gardés pour les vues qui s'en servent encore : rien sous les cartes */
   --fv-radius: var(--radius-lg);
   --fv-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --fv-serif: "Newsreader", Georgia, "Times New Roman", serif;
   --fv-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  /* le code seulement : symboles saisis, syntaxe de recherche */
 
   /* --- Composants ------------------------------------------------------------------------------ */
-  --btn-primary-bg: linear-gradient(135deg, var(--blue-600), var(--violet-600));  /* texte blanc : contraste > 6 */
-  --btn-primary-glow: 0 8px 20px -8px rgba(36, 81, 222, .55);
+  --btn-primary-bg: var(--blue-600);  /* texte blanc : contraste > 6 */
   --card-bg: var(--fv-surface); --card-border: var(--fv-line); --card-radius: var(--radius-lg);
-  --card-shadow: var(--fv-elev); --card-shadow-hover: var(--fv-elev-hover);
-  --chip-radius: var(--radius-full);
+  --chip-radius: var(--radius-sm);
   --control-bg: var(--fv-surface); --control-border: var(--fv-line-strong); --control-radius: var(--radius-md);
-  --ring: 0 0 0 3px color-mix(in srgb, var(--fv-brand) 26%, transparent);
-  --accent-bar: linear-gradient(180deg, var(--fv-brand), var(--fv-brand-2));
-  --fv-glare: light-dark(rgba(36, 81, 222, .07), rgba(255, 255, 255, .07));  /* le reflet qui suit la souris */
+  --ring: 0 0 0 2px color-mix(in srgb, var(--fv-brand) 35%, transparent);  /* l'anneau de focus des champs */
 }
-.stApp {
-  /* Le fond : deux halos très doux (bleu, violet) en haut de page, qui donnent de la profondeur */
-  background: radial-gradient(1100px 520px at 8% -8%, var(--fv-glow), transparent 60%),
-    radial-gradient(900px 480px at 100% -4%, var(--fv-glow-2), transparent 62%), var(--fv-bg);
-  background-attachment: fixed;
-}
+.stApp { background: var(--fv-bg); }
 [data-testid="stMainBlockContainer"] { max-width: 1240px; padding-top: 4.4rem; padding-bottom: 4rem; }
-/* Le plein écran de Streamlit (graphiques, tableaux) : son cadre est fixé à l'écran, mais un ancêtre qui porte un effet
-   (verre dépoli, transformation, filtre, animation) devient son repère : le graphique sortait décalé, coupé, sous le
+/* Le plein écran de Streamlit (graphiques, tableaux) : son cadre est fixé à l'écran, mais un ancêtre qui porte une
+   transformation, un filtre ou une animation devient son repère : le graphique sortait décalé, coupé, sous le
    reste de la page. Pendant le plein écran (le bouton devient « Close fullscreen », suivi de la description de
    l'élément s'il en a une), ses ancêtres perdent ces effets. */
 :has([data-testid="stElementToolbar"] button[aria-label^="Close fullscreen"]):not([data-testid="stFullScreenFrame"]) {
-  backdrop-filter: none !important; -webkit-backdrop-filter: none !important; filter: none !important;
-  transform: none !important; translate: none !important; scale: none !important; rotate: none !important;
-  animation: none !important; contain: none !important; will-change: auto !important; z-index: auto !important;
+  filter: none !important; transform: none !important; translate: none !important; scale: none !important;
+  rotate: none !important; animation: none !important; contain: none !important; will-change: auto !important;
+  z-index: auto !important;
 }
 
 /* Streamlit décale les listes de st.html (padding-left: 2rem) : on annule pour nos listes « fv-… » */
@@ -150,35 +139,34 @@ ul[class^="fv-"] > li, ol[class^="fv-"] > li { margin-left: 0; padding-left: 0; 
 /* Streamlit Community Cloud ajoute ses propres boutons dans la barre du haut (« Fork », lien vers le dépôt GitHub) :
    on les cache, la barre reste celle du site. Le menu ⋮ (choix du thème) reste visible. */
 [data-testid="stToolbarActions"] { display: none !important; }
-header[data-testid="stHeader"] { background: color-mix(in srgb, var(--fv-surface) 78%, transparent);
-  backdrop-filter: saturate(160%) blur(14px); -webkit-backdrop-filter: saturate(160%) blur(14px);
-  border-bottom: 1px solid var(--fv-line); }
+header[data-testid="stHeader"] { background: var(--fv-surface); border-bottom: 1px solid var(--fv-line); }
 /* Le nom à côté du symbole : « Fin » à l'encre, « Veille » en bleu (deux pseudo-éléments rangés après l'image) */
 [data-testid="stLogoLink"], div:has(> img.stLogo) { display: inline-flex; align-items: center;
   color: var(--fv-text) !important; text-decoration: none !important; }
 [data-testid="stLogoLink"]::before, div:has(> img.stLogo)::before { content: "Fin"; order: 1; margin-left: .6rem;
   font: 700 1.16rem/1 var(--fv-sans); letter-spacing: -.02em; color: var(--fv-text); }
 [data-testid="stLogoLink"]::after, div:has(> img.stLogo)::after { content: "Veille"; order: 2;
-  font: 700 1.16rem/1 var(--fv-sans); letter-spacing: -.02em; color: var(--fv-brand); white-space: nowrap;
-  background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2)); -webkit-background-clip: text;
-  background-clip: text; -webkit-text-fill-color: transparent; }
+  font: 700 1.16rem/1 var(--fv-sans); letter-spacing: -.02em; color: var(--fv-brand); white-space: nowrap; }
 img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
-[data-testid="stTopNavSection"], [data-testid="stTopNavLink"] { border-radius: 999px; transition: background .15s; }
+[data-testid="stTopNavSection"], [data-testid="stTopNavLink"] { border-radius: var(--radius-md);
+  transition: background .15s; }
 [data-testid="stTopNavSection"]:hover, [data-testid="stTopNavLink"]:hover { background: var(--fv-hover); }
 [data-testid="stTopNavSection"] p, [data-testid="stTopNavLink"] p { font-weight: 500; font-size: .92rem; }
 
 /* Le bloc « compte » est placé dans la barre du haut, à gauche du menu ⋮ */
 .st-key-fvaccount { position: fixed; top: .62rem; right: 3.3rem; z-index: 999991; width: auto !important; }
-.st-key-fvaccount a { padding: .3rem .7rem; border: 1px solid var(--fv-line-strong); border-radius: 999px;
+.st-key-fvaccount a { padding: .3rem .7rem; border: 1px solid var(--fv-line-strong); border-radius: var(--radius-md);
   background: var(--fv-surface); }
 .st-key-fvaccount a:hover { border-color: var(--fv-brand); }
 .st-key-fvaccount a p { font-size: .85rem; font-weight: 500; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; }
 .st-key-fvaccount button { min-height: 2.2rem; padding: .2rem .9rem; }
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :has(.st-key-fvaccount) { animation: none; }
+/* « Rechercher » (search.py le fait en pilule) : un rectangle, comme « Se connecter » */
+.stApp .st-key-fvaccount .st-key-fvsearch_open button { border-radius: var(--radius-md); }
 @media (max-width: 640px) {  /* téléphone : une icône (le texte reste lu par les lecteurs d'écran), loin du menu ⋮ */
   .st-key-fvaccount { right: 3.9rem; }
   .st-key-fvaccount a, .st-key-fvaccount .st-key-fvsearch_open button { width: 44px; height: 44px; min-height: 0;
-    padding: 0; justify-content: center; border-radius: 50%; }  /* deux ronds de même taille (search.py : la loupe) */
+    padding: 0; justify-content: center; border-radius: var(--radius-md);
+  }  /* deux carrés de même taille (search.py : la loupe) */
   .st-key-fvaccount a p { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   [data-testid="stStatusWidget"] button { display: none; }  /* « Stop » : inutile au visiteur, il chevauchait le compte */
 }
@@ -194,49 +182,50 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-ai-hero { margin-top: .4rem; padding: 1.4rem 1.6rem 1.5rem; }
 .fv-ai-hero .fv-show-list { margin-top: 1.1rem; }
 .fv-ai-hero .fv-show-list { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-.fv-ai-status { display: inline-flex; align-items: center; gap: .45rem; padding: .25rem .7rem; border-radius: 99px;
+.fv-ai-status { display: inline-flex; align-items: center; gap: .45rem; padding: .25rem .7rem;
+  border-radius: var(--radius-sm);
   font-size: .74rem; font-weight: 600; background: rgba(255, 255, 255, .14); color: var(--ink-0); }
 .fv-ai-status::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--blue-150); }
-.fv-ai-status.is-on::before { background: var(--mint-300); box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint-300) 25%, transparent); }
+.fv-ai-status.is-on::before { background: var(--mint-300); }
 .fv-cites { margin-top: .6rem; }
-.fv-cites-title { margin: 0 0 .4rem !important; font-size: .7rem; font-weight: 700; letter-spacing: 0;
-  text-transform: none; color: var(--fv-muted); }
+.fv-cites-title { margin: 0 0 .4rem !important; font-size: .76rem; font-weight: 600; color: var(--fv-muted); }
 .fv-cites-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .5rem; }
-.fv-cite { display: flex; align-items: flex-start; gap: .55rem; padding: .55rem .7rem; border-radius: 10px;
+.fv-cite { display: flex; align-items: flex-start; gap: .55rem; padding: .55rem .7rem; border-radius: var(--radius-md);
   background: var(--fv-surface); border: 1px solid var(--fv-line); color: var(--fv-text) !important;
-  text-decoration: none !important; transition: border-color .15s, box-shadow .15s; }
-.fv-cite:hover { border-color: var(--fv-brand); box-shadow: 0 2px 10px var(--fv-shadow); }
-.fv-cite-n { flex: none; display: grid; place-items: center; min-width: 1.35rem; height: 1.35rem; border-radius: 6px;
-  font: 600 .72rem/1 var(--fv-mono); background: var(--fv-brand-soft); color: var(--fv-brand); }
+  text-decoration: none !important; transition: border-color .15s; }
+.fv-cite:hover { border-color: var(--fv-line-strong); }
+.fv-cite-n { flex: none; display: grid; place-items: center; min-width: 1.35rem; height: 1.35rem;
+  border-radius: var(--radius-md);
+  font: 600 .72rem/1 var(--fv-sans); font-variant-numeric: tabular-nums; background: var(--fv-brand-soft);
+  color: var(--fv-brand); }
 .fv-cite img { flex: none; width: 16px; height: 16px; margin-top: .15rem; border-radius: 3px; }
 .fv-cite-text { min-width: 0; font-size: .8rem; line-height: 1.35; }
 .fv-cite-text b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   font-weight: 600; }
 .fv-cite-text small { display: block; margin-top: .15rem; color: var(--fv-muted); font-size: .72rem; }
-[data-testid="stChatMessage"] { padding: .9rem 1rem; border-radius: 14px; background: var(--fv-surface);
+[data-testid="stChatMessage"] { padding: .9rem 1rem; border-radius: var(--radius-lg); background: var(--fv-surface);
   border: 1px solid var(--fv-line); }
 [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { background: var(--fv-hover); }
 [data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] a { font-weight: 600; text-decoration: none; }
-[class*="st-key-fvanalysis_"], .st-key-fvdigest { padding: 1.1rem 1.25rem; border-radius: 12px;
+[class*="st-key-fvanalysis_"], .st-key-fvdigest { padding: 1.1rem 1.25rem; border-radius: var(--radius-lg);
   border: 1px solid var(--fv-line); border-left: 4px solid var(--fv-brand); background: var(--fv-surface); }
 .st-key-fvdigest p { font-family: var(--fv-serif); font-size: 1.08rem; line-height: 1.65; }
 
 /* L'illustration de la page de connexion (theme.showcase_html) */
-.fv-showcase { position: relative; overflow: hidden; margin-top: 1rem; padding: 2rem 2rem 2.2rem; border-radius: 16px;
-  color: var(--ink-0); background: var(--curve) center bottom / 100% 45% no-repeat,
-    radial-gradient(circle at 85% 0%, color-mix(in srgb, var(--mint-300) 28%, transparent), transparent 45%),
-    linear-gradient(150deg, var(--blue-600) 0%, var(--blue-700) 55%, var(--blue-900) 100%); box-shadow: 0 12px 40px color-mix(in srgb, var(--blue-700) 25%, transparent); }
-.fv-show-eyebrow { margin: 0 0 .4rem; font-size: .72rem; font-weight: 700; letter-spacing: 0;
-  text-transform: none; color: var(--blue-200); }
+.fv-showcase { position: relative; overflow: hidden; margin-top: 1rem; padding: 2rem 2rem 2.2rem;
+  border-radius: var(--radius-lg); color: var(--ink-0);
+  background: var(--curve) center bottom / 100% 45% no-repeat, var(--blue-700); }
+.fv-show-eyebrow { margin: 0 0 .4rem; font-size: .76rem; font-weight: 600; color: var(--blue-200); }
 .fv-show-title { margin: 0 0 1.4rem !important; padding: 0 !important; color: var(--ink-0) !important; max-width: 22ch;
   font: 600 1.7rem/1.2 var(--fv-serif) !important; letter-spacing: -.01em; }
 .stApp ul.fv-show-list { position: relative; display: grid; gap: .8rem; margin: 0 !important; padding: 0 !important;
   list-style: none; }
 .fv-show-list li { display: flex; gap: .85rem; align-items: center; margin: 0 !important; padding: .7rem .85rem;
-  border-radius: 12px; background: rgba(255, 255, 255, .09); border: 1px solid rgba(255, 255, 255, .14);
-  backdrop-filter: blur(4px); font-size: .86rem; line-height: 1.35; color: var(--blue-100); }
+  border-radius: var(--radius-md); background: rgba(255, 255, 255, .09); border: 1px solid rgba(255, 255, 255, .14);
+  font-size: .86rem; line-height: 1.35; color: var(--blue-100); }
 .fv-show-list b { display: block; color: var(--ink-0); font-size: .93rem; }
-.fv-show-icon { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 10px;
+.fv-show-icon { display: grid; place-items: center; flex: none; width: 38px; height: 38px;
+  border-radius: var(--radius-md);
   background: var(--ink-0); color: var(--blue-700); }
 .fv-show-icon img { width: 21px; height: 21px; }
 .fv-show-foot { position: relative; display: flex; align-items: center; gap: .5rem; margin: 1.4rem 0 0;
@@ -247,8 +236,8 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-or { display: flex; align-items: center; gap: .8rem; margin: .6rem 0 .2rem; font-size: .76rem; color: var(--fv-muted); }
 .fv-or::before, .fv-or::after { content: ""; flex: 1; border-top: 1px solid var(--fv-line); }
 .fv-avatar { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; flex: none;
-  background: var(--fv-brand); color: var(--ink-0); font-weight: 700; font-size: 1.05rem; }
-.fv-service { display: inline-block; margin: .45rem 0 .15rem; padding: .12rem .55rem; border-radius: 999px;
+  background: var(--blue-600); color: var(--ink-0); font-weight: 700; font-size: 1.05rem; }
+.fv-service { display: inline-block; margin: .45rem 0 .15rem; padding: .12rem .55rem; border-radius: var(--radius-sm);
   font-size: .75rem; font-weight: 600; background: var(--fv-hover); color: var(--fv-muted); }
 .fv-service.is-on { background: var(--fv-up-soft); color: var(--fv-up); }
 .fv-service.is-on::before { content: "● "; }
@@ -262,21 +251,17 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 [data-testid="stBaseButton-secondary"], [data-testid="stBaseButton-secondaryFormSubmit"],
 [data-testid="stPopoverButton"], [data-testid="stBaseLinkButton-secondary"] {
   background: var(--control-bg); border-color: var(--control-border); border-radius: var(--control-radius);
-  font-weight: 500; box-shadow: inset 0 1px 0 var(--fv-hi), 0 1px 2px var(--fv-shadow);
-  transition: border-color var(--duration-fast), background var(--duration-fast), color var(--duration-fast),
-    transform var(--duration-fast); }
+  font-weight: 500;
+  transition: border-color var(--duration-fast), background var(--duration-fast), color var(--duration-fast); }
 [data-testid="stBaseButton-secondary"]:hover, [data-testid="stBaseButton-secondaryFormSubmit"]:hover,
 [data-testid="stPopoverButton"]:hover, [data-testid="stBaseLinkButton-secondary"]:hover {
   border-color: var(--fv-brand); color: var(--fv-brand); background: color-mix(in srgb, var(--fv-brand-soft) 60%, var(--control-bg)); }
-/* Bouton principal : dégradé bleu → violet (texte blanc lisible sur les deux teintes : contraste > 6) */
+/* Bouton principal : bleu uni, texte blanc (contraste > 6), sans halo */
 [data-testid^="stBaseButton-primary"], [data-testid="stBaseLinkButton-primary"] { color: var(--ink-0) !important;
   border: 0 !important; border-radius: var(--control-radius); font-weight: 600;
-  background: var(--btn-primary-bg) !important;
-  box-shadow: 0 1px 2px var(--fv-shadow), var(--btn-primary-glow);
-  transition: filter var(--duration-fast), transform var(--duration-fast); }
-[data-testid^="stBaseButton-primary"]:hover, [data-testid="stBaseLinkButton-primary"]:hover { filter: brightness(1.08); }
+  background: var(--btn-primary-bg) !important; transition: filter var(--duration-fast); }
+[data-testid^="stBaseButton-primary"]:hover, [data-testid="stBaseLinkButton-primary"]:hover { filter: brightness(1.1); }
 [data-testid^="stBaseButton-primary"] p, [data-testid="stBaseLinkButton-primary"] p { color: var(--ink-0) !important; }
-.stApp button:active:not(:disabled), .stApp a[data-testid^="stBaseLinkButton"]:active { transform: scale(.98); }
 [data-testid="stBaseButton-tertiary"], [data-testid="stBaseLinkButton-tertiary"] { color: var(--fv-muted); }
 [data-testid="stBaseButton-tertiary"]:hover, [data-testid="stBaseLinkButton-tertiary"]:hover { color: var(--fv-brand); }
 .stApp button:disabled { opacity: .5; cursor: not-allowed; }
@@ -293,19 +278,20 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   border-color: var(--fv-brand) !important; box-shadow: var(--ring); }
 [data-baseweb="input"], [data-baseweb="base-input"], [data-testid="stNumberInputContainer"] input { background: transparent !important; }
 [data-testid="stChatInput"] > div { background: var(--control-bg); border: 1px solid var(--control-border);
-  border-radius: var(--radius-lg); box-shadow: 0 18px 40px -24px var(--fv-shadow-deep); }
+  border-radius: var(--radius-lg); }
 [data-testid="stChatInput"] > div:focus-within { border-color: var(--fv-brand); box-shadow: var(--ring); }
 [data-testid="stWidgetLabel"] p { font-weight: 500; color: var(--fv-text); }
 
 /* --- Sélecteur segmenté (Monde / CAC 40 / Devises…) : un rail en creux, le choix actif en relief --- */
 .stApp [role="radiogroup"]:has(> [data-variant="segmented_control"]) { display: inline-flex; flex-wrap: wrap; gap: 3px;
-  padding: 3px; border: 1px solid var(--fv-line); border-radius: calc(var(--control-radius) + 3px); background: var(--fv-sunken); }
-.stApp [data-variant="segmented_control"] { margin: 0 !important; border: 0 !important; border-radius: var(--control-radius) !important;
+  padding: 3px; border: 1px solid var(--fv-line); border-radius: var(--radius-md); background: var(--fv-sunken); }
+.stApp [data-variant="segmented_control"] { margin: 0 !important; border: 0 !important;
+  border-radius: var(--radius-sm) !important;
   background: transparent !important; color: var(--fv-muted) !important; box-shadow: none !important;
   transition: background var(--duration-fast), color var(--duration-fast); }
 .stApp [data-variant="segmented_control"]:hover { color: var(--fv-text) !important; }
 .stApp [data-variant="segmented_control"][aria-checked="true"] { background: var(--fv-surface) !important;
-  color: var(--fv-text) !important; box-shadow: 0 1px 3px var(--fv-shadow), inset 0 1px 0 var(--fv-hi), 0 0 0 1px var(--fv-line) !important; }
+  color: var(--fv-text) !important; outline: 1px solid var(--fv-line-strong); outline-offset: -1px; }
 .stApp [data-variant="segmented_control"][aria-checked="true"] p { font-weight: 600; }
 
 /* --- Pastilles (rubriques, filtres) : le choix actif se teinte de la couleur de marque --- */
@@ -319,16 +305,15 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 
 /* --- Panneaux : menus déroulants, sections repliables, formulaires, alertes, bulles --- */
 [data-testid="stPopoverBody"] { border-radius: var(--radius-lg); border-color: var(--fv-line);
-  background: var(--fv-surface); box-shadow: 0 24px 48px -20px var(--fv-shadow-deep); }
-[data-testid="stExpander"] details { background: var(--fv-surface); border-color: var(--fv-line); border-radius: var(--fv-radius);
-  box-shadow: var(--fv-elev); }
+  background: var(--fv-surface); box-shadow: var(--fv-pop); }
+[data-testid="stExpander"] details { background: var(--fv-surface); border-color: var(--fv-line);
+  border-radius: var(--fv-radius); }
 [data-testid="stExpander"] summary p { font-weight: 600; }
 [data-testid="stExpander"] summary:hover { color: var(--fv-brand); }
-[data-testid="stForm"] { background: var(--fv-surface); border-color: var(--fv-line); border-radius: var(--fv-radius);
-  box-shadow: var(--fv-elev); }
+[data-testid="stForm"] { background: var(--fv-surface); border-color: var(--fv-line); border-radius: var(--fv-radius); }
 [data-testid="stAlertContainer"] { border-radius: var(--fv-radius); border: 1px solid color-mix(in srgb, currentColor 22%, transparent); }
 [data-testid="stToast"] { background: var(--fv-surface); border: 1px solid var(--fv-line); border-radius: var(--radius-lg);
-  box-shadow: 0 24px 48px -20px var(--fv-shadow-deep); }
+  box-shadow: var(--fv-pop); }
 [data-testid="stSidebar"] { border-right: 1px solid var(--fv-line); }
 [data-testid="stDataFrame"] { border-radius: var(--fv-radius); }
 /* Streamlit pâlit les légendes (opacité 60 %) : 2,5:1 seulement. La couleur secondaire suffit (5,7 à 7,3:1). */
@@ -345,89 +330,59 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 /* =============================================================================================
    4. Structure des pages : en-tête, sections, cartes
    ============================================================================================= */
-/* L'en-tête de page « héros », dans le style des visuels de la marque (docs/branding) : pas de boîte, un grand
-   titre dont la fin passe en dégradé, le quadrillage de salle de marché qui s'efface, et sur les pages principales
-   des tuiles de cours qui flottent en perspective. */
-.fv-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); align-items: center;
-  gap: 1.75rem 3rem; margin: 0 0 .5rem; padding: 1.4rem 0 1.8rem; isolation: isolate; }
-.fv-hero.has-aside { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
-.fv-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .7;
-  background-image: linear-gradient(var(--fv-line) 1px, transparent 1px), linear-gradient(90deg, var(--fv-line) 1px, transparent 1px);
-  background-size: 32px 32px;
-  -webkit-mask-image: radial-gradient(42% 80% at 70% 45%, #000, transparent 88%);
-  mask-image: radial-gradient(42% 80% at 70% 45%, #000, transparent 88%); }
-.fv-hero.has-aside::after { content: ""; position: absolute; z-index: -1; right: 0; top: 10%; width: 45%; height: 80%;
-  pointer-events: none; background: radial-gradient(closest-side, var(--fv-glow), transparent); }
-.fv-hero-title { margin: .95rem 0 0 !important; padding: 0 !important; max-width: 20ch; text-wrap: balance;
-  font: 700 clamp(2.1rem, 4vw, 3.15rem)/1.05 var(--fv-sans) !important; letter-spacing: -.038em; color: var(--fv-text); }
-.fv-hero.is-home .fv-hero-title { font-size: clamp(2.35rem, 4.8vw, 3.75rem) !important; }
-.fv-hero-title em { display: inline-block; font-style: normal;  /* la fin du titre reste d'un seul tenant */
-  background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2));
-  -webkit-background-clip: text; background-clip: text; color: transparent; }
-.fv-hero-dek { margin: 1rem 0 0; max-width: 62ch; color: var(--fv-muted); font-size: 1.1rem; line-height: 1.6; }
-.fv-hero .fv-sessions { margin-top: 1.35rem; }
-.fv-hero-copy > * { animation: fv-rise var(--duration-slow) cubic-bezier(.2, .7, .2, 1) backwards; }
-.fv-hero-copy > :nth-child(2) { animation-delay: 60ms; }
-.fv-hero-copy > :nth-child(3) { animation-delay: 120ms; }
-.fv-hero.is-live .fv-hero-copy > * { animation: none; }  /* le fil se redessine chaque minute : pas d'entrée animée */
-@keyframes fv-rise { from { opacity: 0; transform: translateY(10px); } }
+/* L'en-tête de page : un titre sobre, une phrase d'introduction, au besoin trois cours sous le texte et, à droite, la
+   maquette 3D de la page (section 14). Ni boîte ni décor : le contenu commence tout de suite. */
+.fv-hero { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 1rem 2.5rem;
+  margin: 0 0 .25rem; padding: .4rem 0 1rem; }
+.fv-hero-title { margin: 0 !important; padding: 0 !important; max-width: 36ch; text-wrap: balance;
+  font: 700 2rem/1.15 var(--fv-sans) !important; letter-spacing: -.02em; color: var(--fv-text); }
+.fv-hero-title em { display: inline-block; font-style: normal; }  /* la fin du titre reste d'un seul tenant */
+.fv-hero-dek { margin: .6rem 0 0; max-width: 62ch; color: var(--fv-muted); font-size: 1rem; line-height: 1.55; }
+.fv-hero .fv-sessions { margin-top: 1rem; }
 
-/* Les tuiles flottantes : une composition décalée, inclinée comme dans la bannière */
-.fv-hero-aside { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem;
-  padding: .5rem 0 2rem; transform: perspective(1400px) rotateY(-11deg) rotateX(4deg); transform-origin: 70% 50%; }
-.fv-float { --c: var(--fv-faint); position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr);
-  align-items: end; gap: .2rem .75rem; padding: 1rem 1.1rem .95rem;
-  overflow: hidden; border: 1px solid var(--fv-line-strong); border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 13%, transparent), transparent 70%),
-    color-mix(in srgb, var(--fv-surface) 90%, transparent);
-  box-shadow: inset 0 1px 0 var(--fv-hi), 0 28px 56px -26px var(--fv-shadow-deep); backdrop-filter: blur(10px); }
-.fv-float::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: var(--c); }
+/* Les trois cours de l'en-tête : des tuiles plates, comme celles de la page Marchés */
+.fv-hero-aside { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; max-width: 40rem; }
+.fv-float { --c: var(--fv-faint); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: end;
+  gap: .2rem .75rem; padding: .8rem .85rem .75rem; border: 1px solid var(--fv-line); border-radius: var(--fv-radius);
+  background: var(--fv-surface); transition: border-color var(--duration-fast); }
 .fv-float.is-up { --c: var(--fv-up); }
 .fv-float.is-down { --c: var(--fv-down); }
-.fv-float:nth-child(2) { translate: 0 1.75rem; }
-.fv-float:nth-child(3) { grid-column: 1 / span 1; translate: 32% -.25rem; }
 .fv-float-name, .fv-float-value { grid-column: 1 / -1; }
 .fv-float-name { font-size: .8rem; font-weight: 600; color: var(--fv-muted); }
-.fv-float-value { font: 600 1.5rem/1.15 var(--fv-mono); letter-spacing: -.01em; color: var(--fv-text);
-  font-variant-numeric: tabular-nums; }
+.fv-float-value { font: 600 1.15rem/1.15 var(--fv-sans); font-variant-numeric: tabular-nums; letter-spacing: -.01em;
+  color: var(--fv-text); }
 .fv-float-delta { justify-self: start; margin-top: .25rem; padding: .1rem .5rem; border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--c) 14%, transparent); font: 600 .8rem/1.4 var(--fv-mono); }
+  background: color-mix(in srgb, var(--c) 14%, transparent); font: 600 .8rem/1.4 var(--fv-sans);
+  font-variant-numeric: tabular-nums; }
 .fv-float-delta span { color: inherit; }
 .fv-float.is-up .fv-float-delta { color: var(--fv-up); }
 .fv-float.is-down .fv-float-delta { color: var(--fv-down-on-soft); }
-.fv-float > img { justify-self: end; width: 100%; max-width: 104px; height: 34px; }
+.fv-float > img { justify-self: end; width: 100%; max-width: 76px; height: 28px; }
 @media (max-width: 900px) {
-  .fv-hero.has-aside { grid-template-columns: minmax(0, 1fr); }
-  .fv-hero-aside { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; padding: 0; transform: none; }
-  .fv-float, .fv-float:nth-child(2), .fv-float:nth-child(3) { translate: none; grid-column: auto; padding: .75rem .8rem .7rem; }
+  .fv-hero-aside { gap: .6rem; }
+  .fv-float { padding: .75rem .8rem .7rem; }
   .fv-float > img { display: none; }
   .fv-float-value { font-size: 1.05rem; }
 }
 @media (max-width: 640px) {
-  .fv-hero { padding: .5rem 0 1.1rem; }
-  .fv-hero-dek { font-size: 1rem; }
+  .fv-hero { padding: .2rem 0 .8rem; }
+  .fv-hero-title { font-size: 1.6rem !important; }
   .fv-float-name { font-size: .72rem; }
   .fv-float-value { font-size: .95rem; }
   .fv-float-delta { font-size: .7rem; padding: .05rem .35rem; }
 }
-.fv-eyebrow { display: inline-flex; align-items: center; gap: .45rem; padding: .22rem .7rem .22rem .55rem;
-  border: 1px solid color-mix(in srgb, var(--fv-brand) 28%, transparent); border-radius: 999px;
-  background: var(--fv-brand-soft); font-size: .68rem; font-weight: 700; letter-spacing: 0;
-  text-transform: none; color: var(--fv-brand); }
-.fv-eyebrow::before { content: ""; width: .45rem; height: .45rem; border-radius: 50%;
-  background: linear-gradient(135deg, var(--fv-brand), var(--fv-brand-2)); }
 
-.fv-section { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .8rem; margin: 2.4rem 0 .5rem; }
+.fv-section { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .8rem; margin: 2.4rem 0 .6rem; }
 /* Plan de la page : titre h1 (l'en-tête), sections h2, articles et titres de cartes h3 (aucun niveau sauté) */
-.fv-section h2 { display: inline-flex; align-items: center; gap: .55rem; margin: 0 !important; padding: 0 !important;
-  font: 700 1.3rem/1.3 var(--fv-sans) !important; letter-spacing: -.02em; color: var(--fv-text); }
-.fv-section h2::before { content: ""; width: 4px; height: 1.05em; border-radius: 2px; background: var(--accent-bar); }
-.fv-section small { font-size: .86rem; color: var(--fv-muted); }
+.fv-section h2 { margin: 0 !important; padding: 0 !important; font: 700 1.3rem/1.3 var(--fv-sans) !important;
+  letter-spacing: -.01em; color: var(--fv-text); }
+.fv-section::after { content: ""; order: 3; flex: 1 1 4rem; height: 1px; min-width: 2rem; background: var(--fv-line); }
+.fv-section small { order: 2; font-size: .86rem; color: var(--fv-muted); }
 
 /* Une carte : en HTML (.fv-card) ou un st.container(key="fvpanel_…") (Streamlit ajoute la classe st-key-…) */
 .fv-card, [class*="st-key-fvpanel_"], [class*="st-key-fvlead_"], [class*="st-key-fvbox_"], [class*="st-key-fvchart_"] {
   background: var(--card-bg);
-  border: 1px solid var(--card-border); border-radius: var(--card-radius); box-shadow: var(--card-shadow); }
+  border: 1px solid var(--card-border); border-radius: var(--card-radius); }
 .fv-card { padding: 1.15rem 1.25rem; }
 .fv-card + .fv-card { margin-top: .9rem; }
 .fv-card-title { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
@@ -438,7 +393,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 [class*="st-key-fvbox_"] { padding: 1.3rem 1.4rem 1rem; margin-top: 1rem; }
 [class*="st-key-fvchart_"] { padding: .9rem 1rem .5rem; gap: .4rem !important; }
 [class*="st-key-fvset_"] { padding: 1.1rem 1.3rem 1.2rem; gap: .9rem !important; background: var(--fv-surface);
-  border: 1px solid var(--fv-line); border-radius: var(--fv-radius); box-shadow: var(--fv-elev); }
+  border: 1px solid var(--fv-line); border-radius: var(--fv-radius); }
 [class*="st-key-fvset_"] .fv-section { margin-top: 0; }
 .fv-box-title { margin: 0 !important; padding: 0 !important; font: 600 1.15rem/1.3 var(--fv-sans) !important; }
 .fv-box-text { margin: .35rem 0 0; color: var(--fv-muted); font-size: .9rem; line-height: 1.5; }
@@ -449,26 +404,29 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 /* =============================================================================================
    5. Le fil : en-tête, rubriques, articles
    ============================================================================================= */
-.fv-sessions { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; padding: 0; list-style: none; }
-.stApp .fv-sessions li { display: inline-flex; align-items: center; gap: .45rem; margin: 0; padding: .3rem .7rem;
-  border: 1px solid var(--fv-line); border-radius: 999px; background: color-mix(in srgb, var(--fv-surface) 80%, transparent); font-size: .76rem;
+.fv-sessions { display: flex; flex-wrap: wrap; gap: .25rem 1.1rem; margin: 0; padding: 0; list-style: none; }
+.stApp .fv-sessions li { display: inline-flex; align-items: center; gap: .45rem; margin: 0; padding: 0;
+  font-size: .78rem;
   color: var(--fv-muted); white-space: nowrap; }
 .fv-sessions li::before { content: ""; width: .45rem; height: .45rem; border-radius: 50%; background: var(--fv-faint); }
 .fv-sessions li.is-open { color: var(--fv-text); }
-.fv-sessions li.is-open::before { background: var(--fv-up); box-shadow: 0 0 0 3px var(--fv-up-soft); }
+.fv-sessions li.is-open::before { background: var(--fv-up); }
 .fv-sessions b { font-weight: 600; color: var(--fv-text); }
-.fv-sessions time { font-family: var(--fv-mono); font-size: .72rem; }
+.fv-sessions time { font-size: .72rem; font-variant-numeric: tabular-nums; }
 
-.fv-cat { display: inline-flex; align-items: center; gap: .35rem; padding: .08rem .45rem; border-radius: 5px;
+.fv-cat { display: inline-flex; align-items: center; gap: .35rem; padding: .08rem .45rem;
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--c) 13%, transparent); color: color-mix(in srgb, var(--c) 55%, var(--fv-text));
-  font-size: .68rem; font-weight: 600; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+  font-size: .68rem; font-weight: 600; letter-spacing: 0; white-space: nowrap; }
 .fv-cat::before { content: ""; width: .42rem; height: .42rem; border-radius: 50%; background: var(--c); }
 .fv-kicker { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; font-size: .78rem; color: var(--fv-muted); }
 .fv-src { display: inline-flex; align-items: center; gap: .4rem; color: var(--fv-text); font-weight: 500; }
 .fv-src img { width: 16px; height: 16px; border-radius: 4px; }
-.fv-time { font-family: var(--fv-mono); font-size: .74rem; }
-.fv-flag { padding: .05rem .4rem; border-radius: 5px; background: var(--fv-hover); font-size: .68rem; font-weight: 600; }
-.fv-echo { padding: .05rem .45rem; border-radius: 5px; background: var(--fv-brand-soft); color: var(--fv-brand);
+.fv-time { font-size: .74rem; font-variant-numeric: tabular-nums; }
+.fv-flag { padding: .05rem .4rem; border-radius: var(--radius-sm); background: var(--fv-hover); font-size: .68rem;
+  font-weight: 600; }
+.fv-echo { padding: .05rem .45rem; border-radius: var(--radius-sm); background: var(--fv-brand-soft);
+  color: var(--fv-brand);
   font-size: .7rem; font-weight: 600; }
 .fv-headline { margin: .45rem 0 .3rem !important; padding: 0 !important; font-family: var(--fv-serif) !important;
   font-weight: 600 !important; font-size: 1.22rem !important; line-height: 1.28 !important; letter-spacing: -.006em; }
@@ -478,31 +436,22 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .fv-item.is-read .fv-headline a { color: var(--fv-muted) !important; font-weight: 500; }
 
-/* Le squelette de chargement : des formes grises qui ondulent doucement, à la place des articles à venir */
+/* Le squelette de chargement : des formes grises fixes, à la place des articles à venir */
 .fv-skeleton { display: grid; gap: 1rem; }
-.fv-sk { display: block; height: .8rem; border-radius: 6px; animation: fv-shimmer 1.4s ease-in-out infinite;
-  background: linear-gradient(90deg, var(--fv-hover) 0%, var(--fv-line) 45%, var(--fv-hover) 90%); background-size: 300% 100%; }
-.fv-sk-title { height: 1.45rem; border-radius: 8px; }
-.fv-sk-media { height: auto; min-height: 15rem; border-radius: 12px; }
-.fv-sk-lead, .fv-sk-tile { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow); }
+.fv-sk { display: block; height: .8rem; border-radius: var(--radius-sm); background: var(--fv-hover); }
+.fv-sk-title { height: 1.45rem; }
+.fv-sk-media { height: auto; min-height: 15rem; border-radius: var(--radius-md); }
+.fv-sk-lead, .fv-sk-tile { background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--card-radius); }
 .fv-sk-lead { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.5rem; padding: 1.2rem; }
 .fv-sk-stack { display: grid; align-content: start; gap: .75rem; padding-top: .3rem; }
 .fv-sk-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .fv-sk-tile { display: grid; gap: .65rem; padding-bottom: 1.1rem; overflow: hidden; }
 .fv-sk-tile .fv-sk-media { min-height: 8.5rem; border-radius: 0; }
 .fv-sk-tile > .fv-sk:not(.fv-sk-media) { margin-left: 1rem; max-width: calc(100% - 2rem); }
-@keyframes fv-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
 @media (max-width: 760px) { .fv-sk-lead, .fv-sk-tiles { grid-template-columns: minmax(0, 1fr); }
   .fv-sk-tile:nth-child(n+2) { display: none; } .fv-sk-lead .fv-sk-media { min-height: 11rem; } }
 .fv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-
-/* Les dépêches arrivent en cascade (300 à 450 ms), une seule fois : Streamlit garde les éléments déjà affichés */
-[class*="st-key-fvlead_"], [class*="st-key-fvtile_"], [class*="st-key-fvcard_"] {
-  animation: fv-rise var(--duration-slow) cubic-bezier(.2, .7, .2, 1) backwards; }
-[class*="st-key-fvtile_"] { animation-delay: 80ms; }
-[data-testid="stColumn"]:nth-child(2) > div > [class*="st-key-fvtile_"] { animation-delay: 140ms; }
-[data-testid="stColumn"]:nth-child(3) > div > [class*="st-key-fvtile_"] { animation-delay: 200ms; }
 
 
 /* Barre d'outils du fil : la recherche passe sur sa propre ligne sur un petit écran */
@@ -513,22 +462,18 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 }
 
 /* Tendances : des « puces » cliquables qui lancent la recherche */
-.fv-trends-label { display: inline-flex; align-items: center; gap: .35rem; font-size: .7rem; font-weight: 700;
-  letter-spacing: 0; text-transform: none; color: var(--fv-brand); white-space: nowrap; }
+.fv-trends-label { display: inline-flex; align-items: center; gap: .35rem; font-size: .76rem; font-weight: 600;
+  color: var(--fv-brand); white-space: nowrap; }
 .fv-trends-label::before { content: "↗"; font-size: .9rem; }
 .st-key-fvtrends { flex-wrap: wrap; row-gap: .4rem; margin-top: -.2rem; }
 .st-key-fvtrends button { min-height: 1.75rem; padding: .1rem .7rem; border: 1px solid var(--fv-line) !important;
-  border-radius: 999px; background: var(--fv-surface); color: var(--fv-text); }
+  border-radius: var(--chip-radius); background: var(--fv-surface); color: var(--fv-text); }
 .st-key-fvtrends button:hover { border-color: var(--fv-brand) !important; color: var(--fv-brand); }
 .st-key-fvtrends button p { font-size: .8rem; }
 
 /* Chaque article est un st.container(key="fvcard_…") à l'intérieur d'une carte « fvpanel_ » */
 [class*="st-key-fvcard_"], [class*="st-key-fvcompact_"] { position: relative; padding: .95rem 1.25rem .4rem;
   border-bottom: 1px solid var(--fv-line); transition: background .15s; }
-[class*="st-key-fvcard_"]::before { content: ""; position: absolute; left: 0; top: .9rem; bottom: .9rem; width: 3px;
-  border-radius: 0 3px 3px 0; background: var(--accent-bar); opacity: 0;
-  transition: opacity .15s; }
-[class*="st-key-fvcard_"]:hover::before { opacity: 1; }
 [class*="st-key-fvcard_"]:last-child, [class*="st-key-fvcompact_"]:last-child { border-bottom: 0; }
 [class*="st-key-fvcard_"]:hover, [class*="st-key-fvcompact_"]:hover { background: var(--fv-sunken); }
 [class*="st-key-fvcompact_"] { padding: .5rem 1.15rem .15rem; }
@@ -537,7 +482,7 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 [class*="st-key-fvcompact_"] button, [class*="st-key-fvcompact_"] a[data-testid="stBaseLinkButton-tertiary"],
 [class*="st-key-fvlead_"] button, [class*="st-key-fvlead_"] a[data-testid="stBaseLinkButton-tertiary"],
 [class*="st-key-fvtile_"] button, [class*="st-key-fvtile_"] a[data-testid="stBaseLinkButton-tertiary"] {
-  min-height: 1.8rem; padding: .1rem .45rem; border-radius: 6px; }
+  min-height: 1.8rem; padding: .1rem .45rem; border-radius: var(--radius-md); }
 [class*="st-key-fvcard_"] button:hover, [class*="st-key-fvcompact_"] button:hover, [class*="st-key-fvlead_"] button:hover,
 [class*="st-key-fvtile_"] button:hover, [class*="st-key-fvtile_"] a[data-testid="stBaseLinkButton-tertiary"]:hover,
 [class*="st-key-fvcard_"] a[data-testid="stBaseLinkButton-tertiary"]:hover,
@@ -546,12 +491,11 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 [class*="st-key-fvcard_"] a p, [class*="st-key-fvcompact_"] a p, [class*="st-key-fvlead_"] a p { font-size: .8rem; }
 
 /* Les images : la photo de l'article (sans photo, rien : l'article passe en version texte) */
-.fv-media { display: block; overflow: hidden; border-radius: 12px; background: var(--fv-hover); }
-.fv-media > img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; transition: transform .45s ease; }
-.fv-media:hover > img { transform: scale(1.035); }
+.fv-media { display: block; overflow: hidden; border-radius: var(--radius-md); background: var(--fv-hover); }
+.fv-media > img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
 
 /* La une : grande image à gauche, texte à droite */
-[class*="st-key-fvlead_"] { padding: 1.2rem 1.3rem .65rem; border-radius: 18px; }
+[class*="st-key-fvlead_"] { padding: 1.2rem 1.3rem .65rem; }
 .fv-item.layout-lead { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1.4rem; align-items: center; }
 .layout-lead .fv-media > img { aspect-ratio: 4 / 3; }
 .fv-lead .fv-headline { font-size: clamp(1.4rem, 2.4vw, 1.85rem) !important; line-height: 1.18 !important;
@@ -566,13 +510,12 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 /* Les autres titres : vignettes avec image en haut */
 [class*="st-key-fvtile_"] { height: 100%; padding: 0 0 .35rem; gap: .25rem !important; overflow: hidden;
   background: var(--fv-surface); border: 1px solid var(--fv-line); border-radius: var(--fv-radius);
-  box-shadow: var(--fv-elev); transition: transform .2s ease, box-shadow .2s, border-color .2s; }
-[class*="st-key-fvtile_"]:hover { transform: translateY(-2px); border-color: var(--fv-line-strong); box-shadow: var(--fv-elev-hover); }
+  transition: border-color var(--duration-fast); }
+[class*="st-key-fvtile_"]:hover { border-color: var(--fv-line-strong); }
 /* Vignette sans photo : un liseré de la couleur de la rubrique, et le chapeau en plus du titre */
 .layout-tile.no-media { border-top: 3px solid var(--c); }
 .layout-tile.no-media .fv-item-text { padding-top: .9rem; }
 .layout-tile.no-media .fv-dek { margin-top: .2rem; -webkit-line-clamp: 3; font-size: .85rem; }
-@media (prefers-reduced-motion: reduce) { [class*="st-key-fvtile_"] { transition: none; } [class*="st-key-fvtile_"]:hover { transform: none; } }
 .layout-tile .fv-media { border-radius: 0; }
 .layout-tile .fv-item-text { padding: .7rem .9rem 0; }
 .layout-tile .fv-ago { display: none; }  /* colonne étroite : l'heure suffit… */
@@ -585,12 +528,10 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 
 /* Une ligne du fil, avec une petite image à droite */
 .fv-item.has-thumb { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 1.1rem; align-items: start; }
-.fv-thumb { display: block; overflow: hidden; border-radius: 10px; margin-top: .25rem; box-shadow: 0 1px 2px var(--fv-shadow); }
-.fv-thumb > img { display: block; width: 140px; aspect-ratio: 3 / 2; object-fit: cover; transition: transform .35s ease; }
-.fv-thumb:hover > img { transform: scale(1.04); }
+.fv-thumb { display: block; overflow: hidden; border-radius: var(--radius-md); margin-top: .25rem; }
+.fv-thumb > img { display: block; width: 140px; aspect-ratio: 3 / 2; object-fit: cover; }
 @media (max-width: 640px) { .fv-item.has-thumb { grid-template-columns: minmax(0, 1fr) 96px; }
   .fv-thumb > img { width: 96px; } }
-@media (prefers-reduced-motion: reduce) { .fv-media > img, .fv-thumb > img { transition: none; } }
 
 /* Colonne de droite */
 .fv-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
@@ -609,22 +550,18 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 /* =============================================================================================
    6. Données de marché : bandeau, hausse/baisse, tuiles, carte de chaleur
    ============================================================================================= */
-.fv-tape { display: flex; align-items: stretch; margin: -.6rem 0 1.2rem; overflow: hidden; border-radius: 12px;
-  background: color-mix(in srgb, var(--fv-surface) 85%, transparent); border: 1px solid var(--fv-line);
-  box-shadow: inset 0 1px 0 var(--fv-hi), 0 1px 2px var(--fv-shadow); font-size: .78rem; }
+.fv-tape { display: flex; align-items: stretch; margin: -1rem 0 1.4rem; overflow: hidden; background: var(--fv-surface);
+  border-block: 1px solid var(--fv-line); font-size: .78rem; }
 .fv-tape-label { display: flex; align-items: center; gap: .5rem; padding: 0 .95rem; border-right: 1px solid var(--fv-line);
-  font-size: .66rem; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--fv-text); white-space: nowrap;
-  background: linear-gradient(90deg, var(--fv-brand-soft), transparent); }
-.fv-tape-label::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--fv-up);
-  box-shadow: 0 0 0 3px var(--fv-up-soft); animation: fv-pulse 2.4s ease-in-out infinite; }
-@keyframes fv-pulse { 50% { box-shadow: 0 0 0 6px transparent; } }
+  font-size: .74rem; font-weight: 600; color: var(--fv-text); white-space: nowrap; }
+.fv-tape-label::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--fv-up); }
 .fv-tape-window { flex: 1; overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); }
 .fv-tape-track { display: inline-flex; white-space: nowrap; padding: .55rem 0; animation: fv-tape 110s linear infinite; }
 /* Un contenu qui bouge doit pouvoir s'arrêter : survol, focus clavier ou doigt posé (et « moins d'animations ») */
 .fv-tape:hover .fv-tape-track, .fv-tape:focus-within .fv-tape-track, .fv-tape:active .fv-tape-track { animation-play-state: paused; }
-.fv-tick { display: inline-flex; align-items: baseline; gap: .45rem; padding: 0 1.15rem; font-family: var(--fv-mono);
-  font-size: .76rem; border-right: 1px solid var(--fv-line); }
-.fv-tick b { font-family: var(--fv-sans); font-weight: 600; font-size: .78rem; color: var(--fv-text); }
+.fv-tick { display: inline-flex; align-items: baseline; gap: .45rem; padding: 0 1.15rem; font-size: .76rem;
+  font-variant-numeric: tabular-nums; border-right: 1px solid var(--fv-line); }
+.fv-tick b { font-weight: 600; font-size: .78rem; color: var(--fv-text); }
 @keyframes fv-tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
 /* Hausse / baisse : le chiffre et la flèche prennent la couleur (contraste vérifié sur les deux thèmes) */
@@ -636,42 +573,37 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-up::before { content: "▲"; }
 .fv-down::before { content: "▼"; }
 .fv-flat::before { content: "■"; font-size: .6em; vertical-align: .12em; }
-.fv-pill-up, .fv-pill-down { padding: .08rem .45rem; border-radius: 5px; }
+.fv-pill-up, .fv-pill-down { padding: .08rem .45rem; border-radius: var(--radius-sm); }
 .fv-pill-up { background: var(--fv-up-soft); }
 .fv-pill-down { background: var(--fv-down-soft); }
 
-.fv-group { margin: 1rem 0 .45rem; font-size: .74rem; font-weight: 600; letter-spacing: 0; text-transform: none;
+.fv-group { margin: 1rem 0 .45rem; font-size: .74rem; font-weight: 600; letter-spacing: 0;
   color: var(--fv-muted); }
 .fv-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: .8rem; }
-.fv-tile { position: relative; display: grid; grid-template-columns: 1fr 96px; align-items: end; gap: .2rem .7rem;
+.fv-tile { display: grid; grid-template-columns: 1fr 96px; align-items: end; gap: .2rem .7rem;
   grid-template-areas: "label label" "value spark" "delta spark" "sub sub"; overflow: hidden;
   padding: .95rem 1rem .85rem; background: var(--fv-surface); border: 1px solid var(--fv-line);
-  border-radius: var(--fv-radius); box-shadow: var(--fv-elev); transition: transform .2s ease, box-shadow .2s, border-color .2s; }
-.fv-tile::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: var(--fv-faint); opacity: .7; }
-.fv-tile.is-up::before { background: linear-gradient(90deg, var(--fv-up), transparent); }
-.fv-tile.is-down::before { background: linear-gradient(90deg, var(--fv-down), transparent); }
-.fv-tile.is-up { background: linear-gradient(180deg, color-mix(in srgb, var(--fv-up-soft) 70%, transparent), var(--fv-surface) 55%); }
-.fv-tile.is-down { background: linear-gradient(180deg, color-mix(in srgb, var(--fv-down-soft) 70%, transparent), var(--fv-surface) 55%); }
-.fv-tile:hover { transform: translateY(-2px); border-color: var(--fv-line-strong); box-shadow: var(--fv-elev-hover); }
+  border-radius: var(--fv-radius); transition: border-color var(--duration-fast); }
+.fv-tile:hover { border-color: var(--fv-line-strong); }
 .fv-tile-label { grid-area: label; font-size: .8rem; font-weight: 600; color: var(--fv-muted); letter-spacing: .01em; }
-.fv-tile-value { grid-area: value; margin-top: .15rem; font-family: var(--fv-mono); font-size: 1.45rem; font-weight: 500;
-  letter-spacing: -.03em; line-height: 1.15; color: var(--fv-text); }
+.fv-tile-value { grid-area: value; margin-top: .15rem; font-family: var(--fv-sans); font-variant-numeric: tabular-nums;
+  font-size: 1.45rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; color: var(--fv-text); }
 .fv-tile-delta { grid-area: delta; font-size: .8rem; font-weight: 600; }
-.fv-tile-delta .fv-up, .fv-tile-delta .fv-down { display: inline-block; padding: .08rem .45rem; border-radius: 6px; }
+.fv-tile-delta .fv-up, .fv-tile-delta .fv-down { display: inline-block; padding: .08rem .45rem;
+  border-radius: var(--radius-md); }
 .fv-tile-delta .fv-up { background: var(--fv-up-soft); }
 .fv-tile-delta .fv-down { background: var(--fv-down-soft); color: var(--fv-down-on-soft); }
 .fv-tile img { grid-area: spark; width: 96px; height: 34px; }
 .fv-tile-sub { grid-area: sub; margin-top: .45rem; padding-top: .45rem; border-top: 1px dashed var(--fv-line);
   font-size: .72rem; color: var(--fv-muted); }
-@media (prefers-reduced-motion: reduce) { .fv-tile { transition: none; } .fv-tile:hover { transform: none; } }
 
 .fv-heat { display: grid; grid-template-columns: 9.5rem 1fr; gap: 4px 1rem; align-items: stretch; }
 .fv-heat-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 4px; }
 .fv-heat-label { font-size: .78rem; font-weight: 600; padding-top: .55rem; color: var(--fv-muted); }
-.fv-cell { padding: .5rem .6rem; border-radius: 6px; font-size: .78rem; line-height: 1.3;
+.fv-cell { padding: .5rem .6rem; border-radius: var(--radius-md); font-size: .78rem; line-height: 1.3;
   background: color-mix(in srgb, var(--c) var(--a), var(--fv-surface)); border: 1px solid var(--fv-line); }
 .fv-cell b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fv-cell span { font-family: var(--fv-mono); font-size: .76rem; color: var(--fv-text); }
+.fv-cell span { font-variant-numeric: tabular-nums; font-size: .76rem; color: var(--fv-text); }
 .fv-cell span::before { color: inherit; }
 .fv-heat-legend { display: flex; align-items: center; gap: .6rem; margin-top: .8rem; font-size: .74rem; color: var(--fv-muted); }
 .fv-heat-legend i { width: 140px; height: 8px; border-radius: 4px;
@@ -682,13 +614,10 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 /* =============================================================================================
    7. Chiffres clés, listes, tonalité, tableaux
    ============================================================================================= */
-/* Les chiffres clés, dans le style des tuiles de la marque : léger voile de couleur, liseré dégradé en haut */
+/* Les chiffres clés : une carte plate, le libellé, le chiffre en tabulaires */
 .fv-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .9rem; margin-top: .4rem; }
-.fv-kpi { position: relative; padding: 1.15rem 1.2rem 1.05rem; border: 1px solid var(--fv-line); border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--fv-brand) 7%, transparent), transparent 60%), var(--fv-surface);
-  box-shadow: inset 0 1px 0 var(--fv-hi), 0 18px 40px -26px var(--fv-shadow-deep); min-width: 0; overflow: hidden; }
-.fv-kpi::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px;
-  background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2)); }
+.fv-kpi { padding: 1.15rem 1.2rem 1.05rem; border: 1px solid var(--fv-line); border-radius: var(--radius-lg);
+  background: var(--fv-surface); min-width: 0; overflow: hidden; }
 .fv-kpi-label { font-size: .8rem; font-weight: 600; color: var(--fv-muted); }
 .fv-kpi-value { margin-top: .4rem; font-size: 1.85rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.12;
   font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -717,11 +646,11 @@ img.stLogo { height: 28px !important; width: 28px !important; max-width: none; }
 .fv-tone small { display: block; margin-top: .2rem; color: var(--fv-muted); font-size: .7rem; }
 
 .fv-table-wrap { overflow-x: auto; background: var(--fv-surface); border: 1px solid var(--fv-line);
-  border-radius: var(--fv-radius); box-shadow: var(--fv-elev); }
+  border-radius: var(--fv-radius); }
 .fv-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
 .fv-table th { padding: .55rem .8rem; background: var(--fv-sunken); border-bottom: 1px solid var(--fv-line);
-  text-align: right; font-size: .7rem; font-weight: 600; letter-spacing: 0; text-transform: none;
-  color: var(--fv-muted); white-space: nowrap; }
+  text-align: right; font-size: .76rem; font-weight: 600; color: var(--fv-muted);
+  white-space: nowrap; }
 .fv-table td { padding: .55rem .8rem; border-bottom: 1px solid var(--fv-line); text-align: right;
   font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fv-table th:first-child, .fv-table td:first-child { text-align: left; }
@@ -744,18 +673,19 @@ a.fv-tile, a.fv-float, a.fv-cell, a.fv-tick, a.fv-rank-link { color: inherit; te
 a.fv-tile:hover, a.fv-float:hover, a.fv-cell:hover, a.fv-tick:hover, a.fv-rank-link:hover { color: inherit; text-decoration: none; }
 a.fv-tile:focus-visible, a.fv-float:focus-visible, a.fv-cell:focus-visible, a.fv-tick:focus-visible {
   outline: 2px solid var(--fv-brand); outline-offset: 2px; }
-a.fv-cell { display: block; transition: border-color .15s, box-shadow .15s, filter .15s; }
-a.fv-cell:hover, a.fv-cell:focus-visible { border-color: var(--fv-brand); box-shadow: 0 0 0 1px var(--fv-brand);
-  filter: brightness(1.06); position: relative; z-index: 1; }
-a.fv-float { transition: border-color .15s, box-shadow .2s; }
-a.fv-float:hover, a.fv-float:focus-visible { border-color: var(--fv-brand); }
-a.fv-tick { padding-block: .3rem; margin-block: -.3rem; border-radius: 6px; transition: background-color .15s; }
+a.fv-cell { display: block; transition: border-color var(--duration-fast); }
+a.fv-cell:hover, a.fv-cell:focus-visible { border-color: var(--fv-line-strong); position: relative; z-index: 1; }
+a.fv-float { transition: border-color var(--duration-fast); }
+a.fv-float:hover, a.fv-float:focus-visible { border-color: var(--fv-line-strong); }
+a.fv-tick { padding-block: .3rem; margin-block: -.3rem; border-radius: var(--radius-md);
+  transition: background-color .15s; }
 a.fv-tick:focus-visible { outline-offset: -2px; }
 a.fv-tick:hover, a.fv-tick:focus-visible { background: var(--fv-sunken); }
 a.fv-tick:hover b, a.fv-tick:focus-visible b { color: var(--fv-brand); }
 .fv-ranking li:has(.fv-rank-link) { position: relative; transition: background-color .15s; }
 .fv-ranking li:has(.fv-rank-link):hover { background: var(--fv-sunken); }
-.fv-rank-link::after { content: ""; position: absolute; inset: 0; border-radius: 6px; }  /* toute la ligne est cliquable */
+.fv-rank-link::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius-md);
+  }  /* toute la ligne est cliquable */
 .fv-rank-link:hover b, .fv-rank-link:focus-visible b { color: var(--fv-brand); }
 .fv-rank-link:focus-visible { outline: none; }
 .fv-rank-link:focus-visible::after { outline: 2px solid var(--fv-brand); outline-offset: -2px; }
@@ -779,7 +709,8 @@ a.fv-tick:hover b, a.fv-tick:focus-visible b { color: var(--fv-brand); }
 .fv-mcell small { font-size: .72rem; color: var(--fv-muted); }
 .fv-macro td:first-child small { display: block; margin-top: .15rem; font-weight: 400; font-size: .74rem; color: var(--fv-muted);
   white-space: normal; max-width: 22rem; }
-.fv-verdict { display: inline-block; margin-top: .45rem; padding: .1rem .5rem; border-radius: 5px; font-size: .74rem; font-weight: 600;
+.fv-verdict { display: inline-block; margin-top: .45rem; padding: .1rem .5rem; border-radius: var(--radius-sm);
+  font-size: .74rem; font-weight: 600;
   background: var(--fv-brand-soft); color: var(--fv-brand); }
 
 /* Cryptomonnaies : nom avec logo, jauge de l'indice peur et avidité */
@@ -788,24 +719,27 @@ a.fv-tick:hover b, a.fv-tick:focus-visible b { color: var(--fv-brand); }
 .fv-coin small { font-family: var(--fv-mono); }
 .fv-table td img.fv-spark { display: block; width: 96px; height: 28px; margin-left: auto; }
 .fv-gauge-value { display: flex; align-items: baseline; gap: .6rem; margin: .2rem 0 .8rem; }
-.fv-gauge-value b { font-family: var(--fv-mono); font-size: 2.4rem; font-weight: 500; letter-spacing: -.03em; line-height: 1; }
+.fv-gauge-value b { font-variant-numeric: tabular-nums; font-size: 2.4rem; font-weight: 600; letter-spacing: -.02em;
+  line-height: 1; }
 .fv-gauge-value span { font-size: 1rem; font-weight: 600; }
-.fv-gauge-bar { position: relative; height: 10px; border-radius: 5px;
+.fv-gauge-bar { position: relative; height: 10px; border-radius: var(--radius-sm);
   background: linear-gradient(90deg, var(--fv-down), var(--fv-warn) 30%, var(--fv-faint) 50%,
     color-mix(in srgb, var(--fv-up) 60%, var(--fv-faint)) 70%, var(--fv-up)); }
 .fv-gauge-bar i { position: absolute; top: -5px; width: 6px; height: 20px; margin-left: -3px; border-radius: 3px;
-  background: var(--fv-text); box-shadow: 0 0 0 2px var(--fv-surface); }
+  background: var(--fv-text); outline: 2px solid var(--fv-surface); }
 .fv-gauge-scale { display: flex; justify-content: space-between; margin-top: .4rem; font-size: .72rem; color: var(--fv-muted); }
 .fv-gauge-history { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-top: 1rem; }
-.fv-gauge-history div { padding: .5rem .6rem; border: 1px solid var(--fv-line); border-radius: 8px; font-size: .74rem;
+.fv-gauge-history div { padding: .5rem .6rem; border: 1px solid var(--fv-line); border-radius: var(--radius-lg);
+  font-size: .74rem;
   color: var(--fv-muted); }
 .fv-gauge-history b { display: block; font-size: .95rem; color: var(--fv-text); }
 
 /* Quiz */
-.fv-quiz-question small { font-size: .74rem; font-weight: 600; letter-spacing: 0; text-transform: none;
+.fv-quiz-question small { font-size: .74rem; font-weight: 600; letter-spacing: 0;
   color: var(--fv-brand); }
 .fv-quiz-question p { margin: .5rem 0 .1rem; font-family: var(--fv-serif); font-size: 1.25rem; line-height: 1.5; }
-.fv-quiz-choice { padding: .55rem 1rem; border: 1px solid var(--fv-line-strong); border-radius: 8px; text-align: center;
+.fv-quiz-choice { padding: .55rem 1rem; border: 1px solid var(--fv-line-strong); border-radius: var(--radius-lg);
+  text-align: center;
   background: var(--fv-surface); font-size: .95rem; color: var(--fv-muted); }
 .fv-quiz-choice.is-right { border-color: var(--fv-up); background: var(--fv-up-soft); color: var(--fv-up); font-weight: 600; }
 .fv-quiz-choice.is-wrong { border-color: var(--fv-down); background: var(--fv-down-soft); color: var(--fv-down); font-weight: 600; }
@@ -818,13 +752,13 @@ a.fv-tick:hover b, a.fv-tick:focus-visible b { color: var(--fv-brand); }
    8. Fiche entreprise
    ============================================================================================= */
 .fv-firm { display: flex; align-items: center; gap: .9rem; margin: .8rem 0 .3rem; }
-.fv-firm img { width: 48px; height: 48px; border-radius: 12px; background: var(--ink-0); padding: 6px;
+.fv-firm img { width: 48px; height: 48px; border-radius: var(--radius-lg); background: var(--ink-0); padding: 6px;
   border: 1px solid var(--fv-line); }
 .fv-firm h2 { margin: 0 !important; padding: 0 !important; font: 700 clamp(1.4rem, 2.6vw, 1.8rem)/1.15 var(--fv-sans) !important;
   letter-spacing: -.02em; }
 .fv-firm p { margin: .2rem 0 0; font-size: .8rem; color: var(--fv-muted); }
 .fv-quote-big { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem 1rem; margin: .6rem 0 .2rem; }
-.fv-quote-big b { font-family: var(--fv-mono); font-size: 1.9rem; font-weight: 500; letter-spacing: -.03em; }
+.fv-quote-big b { font-variant-numeric: tabular-nums; font-size: 1.9rem; font-weight: 600; letter-spacing: -.02em; }
 .fv-quote-big span { font-size: .95rem; font-weight: 500; }
 .fv-quote-big small { font-size: .78rem; color: var(--fv-muted); }
 .fv-ratios { margin: 0; display: grid; grid-template-columns: 1fr auto; }
@@ -836,29 +770,28 @@ a.fv-tick:hover b, a.fv-tick:focus-visible b { color: var(--fv-brand); }
   background: linear-gradient(90deg, color-mix(in srgb, var(--fv-down) 45%, var(--fv-surface)), var(--fv-hover),
   color-mix(in srgb, var(--fv-up) 45%, var(--fv-surface))); }
 .fv-range-bar i { position: absolute; top: -5px; width: 4px; height: 16px; margin-left: -2px; border-radius: 2px;
-  background: var(--fv-text); box-shadow: 0 0 0 2px var(--fv-surface); }
+  background: var(--fv-text); outline: 2px solid var(--fv-surface); }
 .fv-range-ends { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
 
 /* =============================================================================================
    9. Résumé, notes, glossaire, brief
    ============================================================================================= */
 .fv-brief { margin: .6rem 0 .3rem; padding: .8rem 1rem .7rem; border: 1px solid color-mix(in srgb, var(--fv-brand) 25%, transparent);
-  background: var(--fv-brand-soft); border-radius: 8px; }
+  background: var(--fv-brand-soft); border-radius: var(--radius-lg); }
 .fv-brief-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .2rem 1rem; margin-bottom: .4rem;
-  font-size: .7rem; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--fv-brand); }
-.fv-brief-head small { font-size: .72rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--fv-muted); }
+  font-size: .76rem; font-weight: 600; color: var(--fv-brand); }
+.fv-brief-head small { font-size: .72rem; font-weight: 400; letter-spacing: 0; color: var(--fv-muted); }
 .fv-brief ul { margin: 0; padding-left: 1.1rem; }
 .fv-brief li { margin: .25rem 0; font-size: .92rem; line-height: 1.5; }
 .fv-brief-why { margin: .45rem 0 0; font-size: .9rem; line-height: 1.5; }
 .fv-brief-note { margin: .45rem 0 0; font-size: .72rem; color: var(--fv-muted); }
 .fv-note-block { margin: .5rem 0 .1rem; padding: .5rem .85rem; border-left: 3px solid var(--fv-warn);
   background: var(--fv-warn-soft); border-radius: 0 6px 6px 0; font-size: .92rem; }
-.fv-note-block b { display: block; margin-bottom: .15rem; font-size: .66rem; font-weight: 700; letter-spacing: 0;
-  text-transform: none; color: var(--fv-warn); }
+.fv-note-block b { display: block; margin-bottom: .15rem; font-size: .76rem; font-weight: 600; color: var(--fv-warn); }
 
 .fv-word { margin: .5rem 0 .4rem; padding: 1.1rem 1.25rem; background: var(--fv-surface); border: 1px solid var(--fv-line);
-  border-left: 4px solid var(--fv-brand); border-radius: var(--fv-radius); box-shadow: var(--fv-elev); }
-.fv-word small { font-size: .7rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--fv-brand); }
+  border-left: 4px solid var(--fv-brand); border-radius: var(--fv-radius); }
+.fv-word small { font-size: .76rem; font-weight: 600; color: var(--fv-brand); }
 .fv-word h3 { margin: .3rem 0 .35rem !important; padding: 0 !important; font: 700 1.5rem/1.2 var(--fv-sans) !important;
   letter-spacing: -.02em; }
 .fv-word p { margin: 0; font-size: .97rem; line-height: 1.55; color: var(--fv-muted); }
@@ -866,7 +799,8 @@ a.fv-tick:hover b, a.fv-tick:focus-visible b { color: var(--fv-brand); }
   font-size: 1.15rem; font-weight: 700; color: var(--fv-brand); }
 .fv-gloss { margin: 0; }
 .fv-gloss dt { margin-top: .8rem; font-weight: 600; font-size: .95rem; }
-.fv-gloss dt small { margin-left: .5rem; padding: .05rem .4rem; border-radius: 5px; background: var(--fv-hover);
+.fv-gloss dt small { margin-left: .5rem; padding: .05rem .4rem; border-radius: var(--radius-sm);
+  background: var(--fv-hover);
   font-weight: 500; font-size: .7rem; color: var(--fv-muted); }
 .fv-gloss dd { margin: .2rem 0 0; color: var(--fv-muted); font-size: .92rem; line-height: 1.55; }
 
@@ -883,7 +817,7 @@ a.fv-tick:hover b, a.fv-tick:focus-visible b { color: var(--fv-brand); }
 .fv-topics li { display: grid; grid-template-columns: 1.7rem 1fr auto; gap: .5rem; align-items: baseline; margin: 0;
   padding: .5rem 0; border-bottom: 1px solid var(--fv-line); counter-increment: topic; font-size: .92rem; }
 .fv-topics li:last-child { border-bottom: 0; }
-.fv-topics li::before { content: counter(topic); font-family: var(--fv-mono); font-size: .8rem; font-weight: 500;
+.fv-topics li::before { content: counter(topic); font-variant-numeric: tabular-nums; font-size: .8rem; font-weight: 600;
   color: var(--fv-brand); }
 .fv-topics li span:first-child { font-weight: 600; }
 .fv-topics small { color: var(--fv-muted); font-size: .76rem; font-variant-numeric: tabular-nums; }
@@ -894,8 +828,8 @@ a.fv-tick:hover b, a.fv-tick:focus-visible b { color: var(--fv-brand); }
 .fv-alert-banner { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem 1rem; margin: -.3rem 0 1.1rem;
   padding: .6rem .9rem; background: var(--fv-warn-soft); border: 1px solid color-mix(in srgb, var(--fv-warn) 35%, transparent);
   border-radius: var(--fv-radius); font-size: .86rem; }
-.fv-alert-banner b { display: inline-flex; align-items: center; gap: .4rem; font-size: .7rem; font-weight: 700;
-  letter-spacing: 0; text-transform: none; color: var(--fv-warn); }
+.fv-alert-banner b { display: inline-flex; align-items: center; gap: .4rem; font-size: .78rem; font-weight: 600;
+  color: var(--fv-warn); }
 .fv-alert-banner b::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: var(--fv-warn); }
 .fv-alert-banner a { margin-left: auto; color: var(--fv-warn) !important; font-size: .8rem; font-weight: 600; }
 .fv-status { display: inline-flex; align-items: center; gap: .4rem; font-size: .78rem; font-weight: 600; color: var(--fv-warn); }
@@ -911,322 +845,77 @@ a.fv-tick:hover b, a.fv-tick:focus-visible b { color: var(--fv-brand); }
 /* =============================================================================================
    11. Pied de page
    ============================================================================================= */
-.fv-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem 2.5rem; margin: 3.5rem 0 0;
-  padding: 1.6rem 0 0; border-top: 1px solid var(--fv-line); }
+.fv-footer { display: block; margin: 4rem 0 0; padding: 2rem 0 0; border-top: 1px solid var(--fv-line); }
+.fv-footer-top { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 2rem 3rem; align-items: start; }
 .fv-wordmark { font: 700 1.2rem/1 var(--fv-sans); letter-spacing: -.02em; color: var(--fv-text); }
-.fv-wordmark em { font-style: normal; background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2));
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.fv-wordmark em { font-style: normal; color: var(--fv-brand); }
 .fv-footer-brand p { margin: .45rem 0 0; font-size: .85rem; color: var(--fv-muted); }
-.fv-footer-links { display: flex; flex-wrap: wrap; gap: .35rem 1.2rem; align-content: start; justify-content: flex-end; }
+.fv-footer-links { display: grid; grid-template-columns: repeat(2, minmax(0, max-content)); gap: .5rem 2.5rem;
+  justify-content: end; }
 .fv-footer-links a { font-size: .85rem; font-weight: 500; color: var(--fv-muted) !important; text-decoration: none !important; }
 .fv-footer-links a:hover { color: var(--fv-brand) !important; }
 .fv-footer-mark { display: inline-flex; align-items: center; gap: .55rem; }
-.fv-footer-mark img { border-radius: 8px; box-shadow: 0 6px 16px -6px rgba(36, 81, 222, .6); }
-.fv-footer-note { grid-column: 1 / -1; margin: .4rem 0 0; font-size: .74rem; line-height: 1.6; color: var(--fv-muted); }
-@media (max-width: 640px) { .fv-footer { grid-template-columns: 1fr; } .fv-footer-links { justify-content: flex-start; } }
-
-/* =============================================================================================
-   12. Direction artistique « terminal de nuit » et transitions (guide 29, art.py)
-   ============================================================================================= */
-/* Le décor de l'en-tête : deux halos qui dérivent lentement, la ligne de cours signature qui se dessine */
-.fv-hero-art { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
-  /* bords fondus : le décor se perd dans le fond de la page, sans rectangle visible */
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%), linear-gradient(180deg, transparent, #000 12%, #000 84%, transparent);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(90deg, transparent, #000 7%), linear-gradient(180deg, transparent, #000 12%, #000 84%, transparent);
-  mask-composite: intersect; }
-.fv-aurora { position: absolute; width: 50%; aspect-ratio: 1; border-radius: 50%; filter: blur(46px);
-  animation: fv-drift 24s ease-in-out infinite alternate; }
-.fv-aurora.a1 { left: 0; top: -22%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--fv-brand) 26%, transparent), transparent 68%); }
-.fv-aurora.a2 { right: 2%; top: -18%; animation-duration: 31s; animation-direction: alternate-reverse;
-  background: radial-gradient(circle, color-mix(in srgb, var(--fv-brand-2) 22%, transparent), transparent 68%); }
-@keyframes fv-drift { to { transform: translate3d(9%, 16%, 0) scale(1.12); } }
-.fv-hero-line { position: absolute; left: 0; bottom: 0; width: 100%; height: 74%; object-fit: cover;
-  object-position: right bottom; opacity: .6;
-  -webkit-mask-image: linear-gradient(90deg, transparent 8%, #000 52%); mask-image: linear-gradient(90deg, transparent 8%, #000 52%); }
-.fv-hero.is-live .fv-aurora { animation: none; }
-
-/* L'illustration de la page : un panneau de verre incliné qui flotte doucement */
-.fv-hero-spot { display: grid; place-items: center; transform: perspective(1400px) rotateY(-12deg) rotateX(5deg);
-  transform-origin: 70% 50%; }
-.fv-hero-spot img { width: min(100%, 360px); height: auto; filter: drop-shadow(0 30px 34px var(--fv-shadow-deep));
-  animation: fv-float 7s ease-in-out 1.8s infinite alternate; }
-@keyframes fv-float { to { transform: translateY(-10px); } }
-@media (max-width: 900px) { .fv-hero-spot { transform: none; } .fv-hero-spot img { width: 230px; } }
-@media (max-width: 640px) { .fv-hero-spot { display: none; } }
-
-/* Le titre : le dégradé de la formule balaie le texte une fois, à l'ouverture */
-.fv-hero-title em { background-image: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2) 50%, var(--fv-brand));
-  background-size: 200% 100%; animation: fv-sheen 2s cubic-bezier(.2, .7, .2, 1) .25s both; }
-@keyframes fv-sheen { from { background-position: 100% 0; } to { background-position: 0 0; } }
-.fv-hero.is-live .fv-hero-title em { animation: none; }
-
-/* « En direct » : le point du sur-titre du fil pulse en vert */
-.fv-eyebrow.is-live::before { background: var(--fv-up); animation: fv-live 2.4s ease-out infinite; }
-@keyframes fv-live { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--fv-up) 55%, transparent); }
-  70%, 100% { box-shadow: 0 0 0 7px transparent; } }
-
-/* Changer de page : le contenu arrive en cascade (400 à 600 ms, huit éléments au plus). Une seule fois : Streamlit
-   garde les éléments déjà affichés quand on clique sur un bouton de la même page. */
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > * {
-  animation: fv-enter .5s cubic-bezier(.2, .7, .2, 1) backwards; }
-/* « backwards » et non « both » : une fois finie, l'animation ne laisse aucun transform. Sinon, tout élément fixé à
-   l'écran à l'intérieur (le bouton « Se connecter ») se cale sur le bloc animé et glisse sous le bandeau (étape 31). */
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(2) { animation-delay: 40ms; }
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(3) { animation-delay: 80ms; }
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(4) { animation-delay: 120ms; }
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(5) { animation-delay: 160ms; }
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(6) { animation-delay: 200ms; }
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(7) { animation-delay: 240ms; }
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > :nth-child(n+8) { animation-delay: 280ms; }
-@keyframes fv-enter { from { opacity: 0; transform: translateY(14px); } }
-
-/* En faisant défiler : les cartes, tableaux et graphiques apparaissent quand ils entrent à l'écran. Seulement là
-   où le navigateur sait le faire (sinon, tout reste simplement visible). */
-@supports (animation-timeline: view()) {
-  .fv-card, .fv-kpis, .fv-tiles, .fv-table-wrap, [class*="st-key-fvchart_"], [class*="st-key-fvbox_"] {
-    animation: fv-reveal backwards cubic-bezier(.2, .7, .2, 1); animation-timeline: view();
-    animation-range: entry 0% entry 55%; }
-}
-@keyframes fv-reveal { from { opacity: 0; transform: translateY(22px); } }
-
-/* =============================================================================================
-   13. Le monde 3D (guide 30, scene3d.py et static/fv3d/engine.js)
-   ============================================================================================= */
-/* Le composant qui charge le moteur n'occupe aucune place ; « fvquiet » cache un indicateur de chargement inutile */
-.stApp [class*="st-key-fv3d"] { position: absolute !important; width: 1px; height: 1px; overflow: hidden; pointer-events: none; }
-.stApp .st-key-fvquiet { display: none; }
-/* La toile 3D : fixée derrière tout le contenu, elle apparaît en fondu */
-#fv3d { --fv-scene-left: light-dark(rgb(0 0 0 / .06), rgb(0 0 0 / .26));   /* le décor sous le titre */
-  --fv-scene-small: light-dark(rgb(0 0 0 / .2), rgb(0 0 0 / .3));
-  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity 1.1s ease; }
-#fv3d.is-on { opacity: 1; }
-/* La lisibilité d'abord : le décor est entier dans l'en-tête (--hb : le bas de l'en-tête, mesuré par le moteur),
-   discret derrière le contenu (--amb), et il s'efface à gauche, sous le titre. */
-#fv3d canvas { display: block; width: 100%; height: 100%;
-  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(var(--hb, 60vh) - 6rem), rgb(0 0 0 / var(--amb, .2)) calc(var(--hb, 60vh) + 3rem)),
-    linear-gradient(90deg, var(--fv-scene-left) 0, var(--fv-scene-left) 34%, #000 62%);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(180deg, #000 0, #000 calc(var(--hb, 60vh) - 6rem), rgb(0 0 0 / var(--amb, .2)) calc(var(--hb, 60vh) + 3rem)),
-    linear-gradient(90deg, var(--fv-scene-left) 0, var(--fv-scene-left) 34%, #000 62%);
-  mask-composite: intersect; }
-@media (max-width: 899px) {  /* une seule colonne : le texte passe devant le décor, plus discret */
-  #fv3d canvas { -webkit-mask-image: linear-gradient(180deg, var(--fv-scene-small) 0, var(--fv-scene-small) calc(var(--hb, 60vh) - 4rem), rgb(0 0 0 / var(--amb, .2)) calc(var(--hb, 60vh) + 2rem));
-    mask-image: linear-gradient(180deg, var(--fv-scene-small) 0, var(--fv-scene-small) calc(var(--hb, 60vh) - 4rem), rgb(0 0 0 / var(--amb, .2)) calc(var(--hb, 60vh) + 2rem)); }
-}
-/* Le décor 3D prend la place des illustrations de l'étape 29, gardées pour les navigateurs sans WebGL */
-html.fv-3d .fv-hero-art, html.fv-3d .fv-hero-spot, html.fv-3d .fv-hero::before,
-html.fv-3d .fv-hero.has-aside::after { display: none; }
-html.fv-3d .fv-hero.is-home { min-height: min(64vh, 40rem); }   /* la ville a besoin de place */
-html.fv-3d .fv-hero.is-home .fv-hero-dek { max-width: 46ch; }   /* la phrase s'arrête avant la ville */
-.fv-3d-caption { display: none; }
-html.fv-3d .fv-3d-caption { display: block; max-width: 54ch; margin: 1.1rem 0 0; font-size: .82rem; line-height: 1.55;
-  color: var(--fv-muted); }
-html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .5rem; height: .5rem; margin-right: .55rem;
-  border-radius: 2px; transform: rotate(45deg) translateY(-1px); background: linear-gradient(135deg, var(--fv-up), var(--fv-brand)); }
-@media (hover: none) { .fv-3d-hint { display: none; } }
-/* sur le fil, les trois cours se rangent en ligne sous la ville, au lieu de la cacher */
-@media (min-width: 900px) {
-  html.fv-3d .fv-hero.is-home .fv-hero-aside { align-self: end; grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: .7rem; padding: 0 0 .4rem; transform: perspective(1400px) rotateX(8deg); transform-origin: 50% 100%; }
-  html.fv-3d .fv-hero.is-home .fv-float { translate: none; grid-column: auto; padding: .8rem .85rem .75rem; }
-  html.fv-3d .fv-hero.is-home .fv-float-value { font-size: 1.15rem; }
-  html.fv-3d .fv-hero.is-home .fv-float > img { max-width: 76px; height: 28px; }
-}
-/* sur les autres pages, les cours passent sous le titre : la droite de l'en-tête est au décor */
-@media (min-width: 900px) {
-  html.fv-3d .fv-hero.has-aside:not(.is-home) .fv-hero-aside { grid-column: 1; grid-row: 2; max-width: 40rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; padding: 0; transform: none; }
-  html.fv-3d .fv-hero.has-aside:not(.is-home) .fv-float { translate: none; grid-column: auto; padding: .8rem .85rem .75rem; }
-  html.fv-3d .fv-hero.has-aside:not(.is-home) .fv-float-value { font-size: 1.15rem; }
-  html.fv-3d .fv-hero.has-aside:not(.is-home) .fv-float > img { max-width: 76px; height: 28px; }
-}
-@media (max-width: 899px) { html.fv-3d .fv-hero.is-home { min-height: 0; } }
-
-/* Les cartes d'actualité en relief : la une et les vignettes s'inclinent vers la souris, un reflet suit le
-   pointeur (engine.js pose --rx, --ry, --gx, --gy). Souris seulement, et jamais si l'on a demandé moins d'animations. */
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  [class*="st-key-fvlead_"], [class*="st-key-fvtile_"] { position: relative;
-    transform: perspective(1100px) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg));
-    transition: transform .7s cubic-bezier(.2, .7, .2, 1), box-shadow .2s, border-color .2s; }
-  [class*="st-key-fvlead_"].is-tilting, [class*="st-key-fvtile_"].is-tilting { transition-duration: .15s, .2s, .2s;
-    transform: perspective(1100px) translateY(-3px) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg));
-    box-shadow: var(--fv-elev-hover), 0 30px 60px -30px var(--fv-shadow-deep); }
-  [class*="st-key-fvlead_"]::after, [class*="st-key-fvtile_"]::after { content: ""; position: absolute; inset: 0;
-    z-index: 2; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .35s;
-    background: radial-gradient(520px circle at var(--gx, 50%) var(--gy, 50%), var(--fv-glare), transparent 42%); }
-  .is-tilting::after { opacity: 1; }
-}
-/* Les photos se « développent » sous le passage du scanner (le motif du décor 3D), une seule fois */
-.fv-media { position: relative; }
-.fv-media::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, transparent 44%, color-mix(in srgb, var(--fv-brand) 45%, transparent) 49.4%,
-    rgba(255, 255, 255, .75) 50%, transparent 50.6%) 0 100% / 100% 240% no-repeat;
-  animation: fv-scanline 1.3s cubic-bezier(.45, 0, .2, 1) .1s both; }
-.fv-media > img { animation: fv-develop 1.3s cubic-bezier(.45, 0, .2, 1) .1s backwards; }
-@keyframes fv-scanline { from { background-position: 0 100%; } 88% { opacity: 1; } to { background-position: 0 0; opacity: 0; } }
-@keyframes fv-develop { from { clip-path: inset(0 0 100% 0); filter: saturate(0) brightness(1.3); } 70% { filter: saturate(.6); } }
-/* La une : les mots du titre arrivent l'un après l'autre */
-.fv-lead .fv-w { display: inline-block; animation: fv-word .7s cubic-bezier(.2, .7, .2, 1) backwards;
-  animation-delay: calc(140ms + var(--i) * 30ms); }
-@keyframes fv-word { from { opacity: 0; transform: translateY(.45em); filter: blur(5px); } }
-/* Le fil en continu : chaque dépêche se redresse en entrant à l'écran (là où le navigateur sait le faire) */
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    [class*="st-key-fvcard_"] { transform-origin: 50% 0; animation: fv-tilt-in backwards cubic-bezier(.2, .7, .2, 1);
-      animation-timeline: view(); animation-range: entry 0% entry 75%; }
-  }
-}
-@keyframes fv-tilt-in { from { opacity: 0; transform: perspective(900px) rotateX(-24deg) translateY(28px) scale(.97); } }
-
-/* =============================================================================================
-   14. Finitions « site de studio » (guide 31) : plus épuré, plus de relief, toujours lisible
-   ============================================================================================= */
-/* La barre du haut flotte : une pilule de verre détachée des bords, comme sur les sites primés */
-@media (min-width: 900px) {
-  header[data-testid="stHeader"] { top: .6rem; left: max(.75rem, calc((100% - 1290px) / 2));
-    right: max(.75rem, calc((100% - 1290px) / 2)); width: auto; border: 1px solid var(--fv-line); border-radius: 18px;
-    background: color-mix(in srgb, var(--fv-surface) 68%, transparent);
-    box-shadow: inset 0 1px 0 var(--fv-hi), 0 18px 40px -26px var(--fv-shadow-deep); }
-  .st-key-fvaccount { top: 1.22rem; right: calc(max(.75rem, (100% - 1290px) / 2) + 3.3rem); }
-  [data-testid="stMainBlockContainer"] { padding-top: 5.6rem; }
-}
-/* La barre de lecture : un trait de couleur en haut de l'écran, qui avance avec le défilement */
-.stApp { timeline-scope: --fv-page; }
-[data-testid="stMain"], [data-testid="stAppScrollToBottomContainer"] { scroll-timeline: --fv-page block; }
-.fv-progress { display: none; }
-@supports (animation-timeline: scroll()) {
-  .fv-progress { display: block; position: fixed; top: 0; left: 0; right: 0; z-index: 1000000; height: 2px;
-    pointer-events: none; transform-origin: 0 50%; background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2), var(--fv-up));
-    animation: fv-progress linear both; animation-timeline: --fv-page; }
-}
-@keyframes fv-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-
-/* Le bandeau des cours : un simple filet, sans boîte ; un voile de verre garde ses chiffres lisibles devant le décor 3D */
-.fv-tape { margin: -1rem 0 1.4rem; border: 0; border-block: 1px solid var(--fv-line); border-radius: 0;
-  background: color-mix(in srgb, var(--fv-bg) 86%, transparent); box-shadow: none;
-  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
-.fv-tape-label { border-right: 0; padding-left: 0; }
-
-/* Les places boursières : une ligne de texte discrète, plus de pastilles */
-.stApp .fv-sessions { gap: .25rem 1.1rem; }
-.stApp .fv-sessions li { padding: 0; border: 0; background: none; font-size: .78rem; }
-
-/* L'en-tête : les mots du titre montent l'un après l'autre derrière un cache (pas sur le fil, redessiné chaque
-   minute) ; la fin du titre arrive en dernier, d'un bloc */
-.fv-hero-title .fv-hw { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .08em; margin-bottom: -.08em; }
-.fv-hero-title .fv-hw > span { display: inline-block; animation: fv-word-up .8s cubic-bezier(.2, .8, .2, 1) backwards;
-  animation-delay: calc(80ms + var(--i) * 55ms); }
-.fv-hero-title em.fv-hw-em { animation: fv-word-up .9s cubic-bezier(.2, .8, .2, 1) backwards, fv-sheen 2s cubic-bezier(.2, .7, .2, 1) .5s backwards;
-  animation-delay: calc(140ms + var(--n) * 55ms), .5s; }
-@keyframes fv-word-up { from { transform: translateY(105%); opacity: 0; } }
-
-/* Les titres de section, façon magazine : un filet qui file jusqu'au bord */
-.fv-section { align-items: center; margin-top: 2.8rem; }
-.fv-section h2 { font-size: 1.42rem !important; letter-spacing: -.025em; }
-.fv-section h2::before { width: 6px; height: 6px; border-radius: 50%; }
-.fv-section::after { content: ""; order: 3; flex: 1 1 4rem; height: 1px; min-width: 2rem;
-  background: linear-gradient(90deg, var(--fv-line-strong), transparent); }
-.fv-section small { order: 2; }
-
-/* Les cartes : des angles plus doux et, devant le décor 3D, du verre dépoli (ordinateur seulement : le flou coûte cher
-   sur un téléphone) */
-.stApp { --card-radius: 18px; }
-@media (min-width: 900px) {
-  html.fv-3d .fv-card, html.fv-3d [class*="st-key-fvpanel_"], html.fv-3d [class*="st-key-fvlead_"],
-  html.fv-3d [class*="st-key-fvtile_"], html.fv-3d [class*="st-key-fvbox_"], html.fv-3d [class*="st-key-fvchart_"],
-  html.fv-3d [class*="st-key-fvset_"], html.fv-3d .fv-kpi, html.fv-3d .fv-table-wrap {
-    background: color-mix(in srgb, var(--card-bg) 88%, transparent);
-    -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%); }
-}
-
-/* Les onglets (« Se connecter », « Créer un compte »…) : l'onglet ouvert au bleu lisible de la marque (le bleu de
-   Streamlit n'atteint que 4,2:1 sur le fond sombre) */
-.stApp [role="tab"][aria-selected="true"] p { color: var(--fv-brand); }
-
-/* L'assistant : un panneau de conversation, la saisie juste en dessous */
-.st-key-fvchat { gap: .9rem !important; padding: 1.1rem; border: 1px solid var(--fv-line); border-radius: 22px;
-  background: color-mix(in srgb, var(--fv-surface) 80%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
-.st-key-fvchatlog { gap: .8rem !important; }
-.st-key-fvchatlog [data-testid="stChatMessage"] { scroll-margin-top: 6.5rem; }   /* sous la barre du haut */
-.st-key-fvchatlog [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarCustom"]) { margin-left: auto; max-width: 85%;
-  flex-direction: row-reverse; text-align: right; }
-.st-key-fvchat [data-testid="stChatInput"] { margin-top: .2rem; }
-.st-key-fvchatbar { margin-top: .4rem; }
-@media (max-width: 640px) { .st-key-fvchat { padding: .7rem; border-radius: 18px; }
-  .st-key-fvchatlog [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarCustom"]) { max-width: 100%; } }
-
-/* Le bouton principal : un reflet passe au survol */
-.stApp button[kind="primary"], .stApp [data-testid="stBaseButton-primary"] { position: relative; overflow: hidden; }
-.stApp [data-testid="stBaseButton-primary"]::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .28) 50%, transparent 70%);
-  transform: translateX(-120%); transition: transform .7s cubic-bezier(.2, .7, .2, 1); }
-.stApp [data-testid="stBaseButton-primary"]:hover::after { transform: translateX(120%); }
-
-/* L'arrivée sur le site : le logo, le nom, un trait qui se remplit, puis le rideau se lève (1,6 s, une fois par
-   visite : l'élément reste en place quand on change de page). Jamais si l'on a demandé moins d'animations. */
-.fv-intro { position: fixed; inset: 0; z-index: 1000001; display: grid; place-items: center; pointer-events: none;
-  background: var(--fv-bg); animation: fv-curtain .6s cubic-bezier(.75, 0, .2, 1) 1.05s forwards; }
-.fv-intro-inner { display: grid; justify-items: center; gap: 1rem; animation: fv-intro-in .5s cubic-bezier(.2, .8, .2, 1) backwards; }
-.fv-intro img { width: 64px; height: 64px; border-radius: 18px; box-shadow: 0 20px 50px -14px rgba(36, 81, 222, .7); }
-.fv-intro-word { font: 700 1.6rem/1 var(--fv-sans); letter-spacing: -.03em; color: var(--fv-text); }
-.fv-intro-word em { font-style: normal; color: var(--fv-brand); }
-.fv-intro-by { font-size: .85rem; letter-spacing: .02em; color: var(--fv-muted); animation: fv-intro-in .5s cubic-bezier(.2, .8, .2, 1) .25s backwards; }
-/* Le badge « Créé par un étudiant » de l'accueil */
-.fv-credit { display: inline-flex; align-items: center; gap: .55rem; margin-top: 1.1rem; padding: .3rem .85rem .3rem .3rem;
-  border: 1px solid var(--fv-line-strong); border-radius: 999px; font-size: .84rem; color: var(--fv-muted) !important;
-  text-decoration: none !important; background: color-mix(in srgb, var(--fv-surface) 82%, transparent);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); transition: border-color .2s, transform .2s; }
-.fv-credit b { font-weight: 600; color: var(--fv-text); }
-.fv-credit:hover { border-color: var(--fv-brand); transform: translateY(-1px); }
-.fv-credit-avatar { display: grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%;
-  font-size: .68rem; font-weight: 700; color: #fff; background: linear-gradient(135deg, var(--blue-600), var(--violet-600)); }
-@media (pointer: coarse) { .fv-credit { min-height: 44px; } }
-.fv-intro-line { display: block; width: 9rem; height: 2px; border-radius: 2px; background: var(--fv-line); overflow: hidden; }
-.fv-intro-line::after { content: ""; display: block; height: 100%; transform-origin: 0 50%;
-  background: linear-gradient(90deg, var(--fv-brand), var(--fv-up)); animation: fv-load .95s cubic-bezier(.6, 0, .2, 1) forwards; }
-@keyframes fv-curtain { to { transform: translateY(-100%); visibility: hidden; } }
-@keyframes fv-intro-in { from { opacity: 0; transform: translateY(12px) scale(.96); } }
-@keyframes fv-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-
-/* Le pied de page : la signature, la marque en très grand, les rubriques en colonnes */
-.fv-footer { display: block; margin: 5rem 0 0; padding: 2.4rem 0 0; border-top: 1px solid var(--fv-line); }
-.fv-footer-top { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 2rem 3rem; align-items: start; }
-.fv-footer-links { display: grid; grid-template-columns: repeat(2, minmax(0, max-content)); gap: .5rem 2.5rem;
-  justify-content: end; }
+.fv-footer-mark img { border-radius: var(--radius-md); }
 .fv-footer-author { margin: 1.1rem 0 0; font-size: .92rem; color: var(--fv-muted); }
 .fv-footer-author strong { color: var(--fv-text); font-weight: 600; }
-.fv-footer-giant { margin: 2.2rem 0 0; font: 800 clamp(4.2rem, 15.5vw, 13.5rem)/.8 var(--fv-sans); letter-spacing: -.065em;
-  text-align: center; white-space: nowrap; user-select: none;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--fv-text) 16%, transparent), transparent 85%);
-  -webkit-background-clip: text; background-clip: text; color: transparent; }
-.fv-footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem 2rem; margin-top: 1rem;
+.fv-footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem 2rem; margin-top: 1.6rem;
   padding-top: 1rem; border-top: 1px solid var(--fv-line); }
-.fv-footer-note { margin: 0; max-width: 80ch; }
+.fv-footer-note { margin: 0; max-width: 80ch; font-size: .74rem; line-height: 1.6; color: var(--fv-muted); }
 .fv-footer-top-link { font-size: .8rem; font-weight: 600; color: var(--fv-brand) !important; text-decoration: none !important; white-space: nowrap; }
 .fv-footer-legal { display: flex; flex-wrap: wrap; gap: .2rem 1.4rem; margin-top: .7rem; }
 .fv-footer-legal a { font-size: .76rem; color: var(--fv-muted) !important; text-decoration: none !important; }
 .fv-footer-legal a:hover { color: var(--fv-brand) !important; text-decoration: underline !important; }
 @media (max-width: 640px) { .fv-footer-top { grid-template-columns: 1fr; } .fv-footer-links { justify-content: start; } }
 
+/* =============================================================================================
+   12. Onglets, assistant, badge du créateur, page « À propos »
+   ============================================================================================= */
+/* Le composant qui charge le moteur n'occupe aucune place ; « fvquiet » cache un indicateur de chargement inutile */
+.stApp [class*="st-key-fv3d"] { position: absolute !important; width: 1px; height: 1px; overflow: hidden; pointer-events: none; }
+.stApp .st-key-fvquiet { display: none; }
+/* Les onglets (« Se connecter », « Créer un compte »…) : l'onglet ouvert au bleu lisible de la marque (le bleu de
+   Streamlit n'atteint que 4,2:1 sur le fond sombre) */
+.stApp [role="tab"][aria-selected="true"] p { color: var(--fv-brand); }
+
+/* L'assistant : un panneau de conversation, la saisie juste en dessous */
+.st-key-fvchat { gap: .9rem !important; padding: 1.1rem; border: 1px solid var(--fv-line);
+  border-radius: var(--radius-lg);
+  background: var(--fv-surface); }
+.st-key-fvchatlog { gap: .8rem !important; }
+.st-key-fvchatlog [data-testid="stChatMessage"] { scroll-margin-top: 6.5rem; }   /* sous la barre du haut */
+.st-key-fvchatlog [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarCustom"]) { margin-left: auto; max-width: 85%;
+  flex-direction: row-reverse; text-align: right; }
+.st-key-fvchat [data-testid="stChatInput"] { margin-top: .2rem; }
+.st-key-fvchatbar { margin-top: .4rem; }
+@media (max-width: 640px) { .st-key-fvchat { padding: .7rem; }
+  .st-key-fvchatlog [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarCustom"]) { max-width: 100%; } }
+
+/* Le badge « Créé par un étudiant » de l'accueil */
+.fv-credit { display: inline-flex; align-items: center; gap: .55rem; margin-top: 1.1rem; padding: .3rem .85rem .3rem .3rem;
+  border: 1px solid var(--fv-line-strong); border-radius: var(--radius-md); font-size: .84rem;
+  color: var(--fv-muted) !important;
+  text-decoration: none !important; background: var(--fv-surface); transition: border-color var(--duration-fast); }
+.fv-credit b { font-weight: 600; color: var(--fv-text); }
+.fv-credit:hover { border-color: var(--fv-brand); }
+.fv-credit-avatar { display: grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%;
+  font-size: .68rem; font-weight: 700; color: #fff; background: var(--blue-600); }
+@media (pointer: coarse) { .fv-credit { min-height: 44px; } }
 /* La page « À propos » */
 .fv-about-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1.2rem 1.4rem; align-items: center; }
-.fv-about-avatar { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 22px;
-  font: 700 1.5rem/1 var(--fv-sans); color: #fff; background: linear-gradient(135deg, var(--blue-600), var(--violet-600));
-  box-shadow: 0 18px 40px -16px rgba(36, 81, 222, .7); }
+.fv-about-avatar { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%;
+  font: 700 1.5rem/1 var(--fv-sans); color: #fff; background: var(--blue-600); }
 .fv-about-card h3 { margin: 0 !important; padding: 0 !important; font: 700 1.35rem/1.2 var(--fv-sans) !important; }
 .fv-about-card p { margin: .3rem 0 0; color: var(--fv-muted); }
 .fv-bento { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .9rem; margin-top: 1rem; }
 .fv-bento > div { padding: 1.2rem 1.25rem; border: 1px solid var(--card-border); border-radius: var(--card-radius);
-  background: var(--card-bg); box-shadow: var(--card-shadow); }
+  background: var(--card-bg); }
 .fv-bento > .is-wide { grid-column: span 2; }
 .fv-bento b { display: block; font: 700 2rem/1.05 var(--fv-sans); letter-spacing: -.03em; color: var(--fv-text); }
-.fv-bento b em { font-style: normal; background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2));
-  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fv-bento b em { font-style: normal; color: var(--fv-brand); }
 .fv-bento span { display: block; margin-top: .35rem; font-size: .88rem; line-height: 1.5; color: var(--fv-muted); }
 .fv-stack { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0 0; padding: 0; list-style: none; }
-.stApp .fv-stack li { margin: 0; padding: .35rem .8rem; border: 1px solid var(--fv-line-strong); border-radius: 999px;
+.stApp .fv-stack li { margin: 0; padding: .35rem .8rem; border: 1px solid var(--fv-line-strong);
+  border-radius: var(--radius-sm);
   font-size: .82rem; font-weight: 500; color: var(--fv-text); background: var(--fv-surface); }
 @media (max-width: 900px) { .fv-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .fv-bento { grid-template-columns: 1fr; } .fv-bento > .is-wide { grid-column: auto; } }
@@ -1234,25 +923,12 @@ html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .
 /* =============================================================================================
    15. Étape 32 : le récit de la séance (accueil), les cours en rouleaux, une typographie de presse
    ============================================================================================= */
-/* Les titres en Schibsted Grotesk, une linéale dessinée pour un groupe de presse : serrée, nette, faite pour l'info */
+/* Les titres en Schibsted Grotesk, une linéale dessinée pour un groupe de presse ; les chiffres clés restent en
+   Plex Sans */
 .stApp { --fv-display: "Schibsted Grotesk", "IBM Plex Sans", system-ui, sans-serif; }
-.fv-hero-title, .fv-story-title, .fv-section h2, .fv-box-title, .fv-about-card h3, .fv-bento b, .fv-footer-giant,
-.fv-intro-word, .fv-kpi-value { font-family: var(--fv-display) !important; }
-.fv-hero-title { letter-spacing: -.035em; }
+.fv-hero-title, .fv-story-title, .fv-section h2, .fv-box-title, .fv-about-card h3, .fv-bento b {
+  font-family: var(--fv-display) !important; }
 
-/* Moins de tics « gabarit » : la rubrique est déjà soulignée dans le menu (plus de sur-titre en capitales), la fin du
-   titre n'est plus en dégradé, les cartes ne surgissent plus une à une, les sections n'ont plus de puce */
-.fv-hero .fv-eyebrow { display: none; }
-.fv-hero-title em { background: none !important; color: inherit !important; -webkit-text-fill-color: currentColor; }
-.fv-hero-title em:not(.fv-hw-em) { animation: none; }
-.fv-hero-title em.fv-hw-em { animation: fv-word-up .9s cubic-bezier(.2, .8, .2, 1) backwards;
-  animation-delay: calc(140ms + var(--n) * 55ms); }
-.fv-section h2::before { display: none; }
-[data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > * { animation: none; }
-@supports (animation-timeline: view()) {
-  .fv-card, .fv-kpis, .fv-tiles, .fv-table-wrap, [class*="st-key-fvchart_"], [class*="st-key-fvbox_"],
-  [class*="st-key-fvcard_"] { animation: none; }
-}
 
 /* Le récit de la séance : une section haute de plusieurs écrans, sa scène reste collée en haut (position: sticky) ;
    le défilement choisit le chapitre (motion.js), le décor 3D le suit (engine.js) */
@@ -1274,7 +950,7 @@ html.fv-3d .fv-3d-caption::before { content: ""; display: inline-block; width: .
 .fv-ch-text { margin: 1.1rem 0 0; max-width: 32rem; font-size: 1.12rem; line-height: 1.6; color: var(--fv-muted); }
 .fv-story .fv-sessions { margin-top: 1.3rem; }
 .fv-story-cta { display: inline-flex; align-items: center; min-height: 2.9rem; margin-top: 1.5rem; padding: 0 1.3rem;
-  border-radius: 12px; background: var(--btn-primary-bg); box-shadow: var(--btn-primary-glow); font-weight: 600;
+  border-radius: var(--radius-md); background: var(--btn-primary-bg); font-weight: 600;
   color: #fff !important; text-decoration: none !important; }
 .fv-story-rail { display: flex; gap: .75rem; width: min(100%, 36rem); margin: 0 0 1.4rem; padding: 0; list-style: none; }
 .stApp .fv-story-rail li { flex: 1; display: grid; gap: .35rem; margin: 0; }
@@ -1313,15 +989,12 @@ html:not(.fv-story-on) .fv-story-rail { display: none; }
 .stApp .st-key-fvplace [data-variant="segmented_control"] p { font-size: .84rem; white-space: nowrap; }
 /* En attendant les cours d'une place jamais ouverte : le récit garde sa hauteur */
 .fv-story-wait { height: calc(4 * 80vh + 30vh); margin-top: -1rem; }
-.fv-story-wait p { position: sticky; top: 40vh; margin: 0; padding-top: 4rem; font-size: 1rem; color: var(--fv-muted);
-  animation: fv-wait 1.6s ease-in-out infinite alternate; }
-@keyframes fv-wait { from { opacity: .45; } }
+.fv-story-wait p { position: sticky; top: 40vh; margin: 0; padding-top: 4rem; font-size: 1rem; color: var(--fv-muted); }
 @media (max-width: 760px) {
   .fv-story-wait { height: calc(4 * 70vh + 30vh); }
   .stApp .st-key-fvplace { gap: .45rem; margin-bottom: .6rem; }
   .stApp .st-key-fvplace [data-variant="segmented_control"] { padding: 0 .5rem; }
 }
-@media (prefers-reduced-motion: reduce) { .fv-story-wait p { animation: none; } }
 /* Dans les horloges du récit, la place racontée ressort */
 .fv-sessions li.is-current b { font-weight: 800; text-decoration: underline; text-decoration-color: var(--fv-brand);
   text-decoration-thickness: 2px; text-underline-offset: 4px; }
@@ -1360,15 +1033,13 @@ html:not(.fv-story-on) .fv-story-rail { display: none; }
    (le masque du dégradé coupe le dessin, jamais le toucher ; vers les côtés, le bandeau coupe toujours). */
 @media (pointer: coarse) {
   .fv-tape, .fv-tape-window { overflow-x: clip; overflow-y: visible; }
-  .fv-tape-label { border-radius: 12px 0 0 12px; }   /* le bandeau ne coupe plus les coins : le libellé les arrondit */
   a.fv-tick { box-sizing: border-box; min-height: 44px; padding-block: 14px; margin-block: -14px; }
 }
 .stApp button, .stApp a[href], .stApp [role="tab"], .stApp summary { cursor: pointer; touch-action: manipulation; }
 
-/* ==== 16. Les maquettes (guide 33) ===============================================================================
-   Un objet 3D par page, posé dans l'en-tête (et la ville du CAC 40 dans le récit de l'accueil), fait de la matière du
-   site : verre sombre, arêtes de lumière, données en lumière. Le moteur (static/fv3d/vitrines.js) dessine dans la toile
-   de chaque emplacement ; le décor plein écran recule au rang d'ambiance. */
+/* ==== 14. Les maquettes (guide 33) ===============================================================================
+   Un objet 3D par page, posé dans l'en-tête (et la ville du CAC 40 dans le récit de l'accueil). Le moteur
+   (static/fv3d/vitrines.js) dessine dans la toile de chaque emplacement ; rien d'autre autour : ni halo ni ombre. */
 .fv-obj-wrap { margin: 0; }
 .fv-obj { position: relative; width: 100%; aspect-ratio: 5 / 4; touch-action: pan-y; user-select: none;
   -webkit-user-select: none; }
@@ -1382,48 +1053,38 @@ html.fv-obj-on .fv-obj.is-grabbing { cursor: grabbing; }
   mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent),
     linear-gradient(180deg, transparent, #000 7%, #000 93%, transparent);
   mask-composite: intersect; }
-.fv-obj-fallback { position: absolute; inset: 8% 10%; width: 80%; height: 84%; object-fit: contain;
-  filter: drop-shadow(0 30px 34px var(--fv-shadow-deep)); }
+.fv-obj-fallback { position: absolute; inset: 8% 10%; width: 80%; height: 84%; object-fit: contain; }
 html.fv-obj-on .fv-obj-fallback { display: none; }
 html.fv-obj-on .fv-obj.is-fallback .fv-obj-fallback { display: block; }   /* plus de contexte WebGL : l'illustration */
 html.fv-obj-on .fv-obj.is-fallback { cursor: auto; }
 .fv-obj-wrap figcaption { max-width: 34rem; margin: .2rem auto 0; font-size: .86rem; line-height: 1.5; text-align: center;
-  color: light-dark(#475165, var(--night-300)); }  /* posée sur le décor 3D : un cran plus foncée en clair (ink-500 et 20 % d'ink-900) */
+  color: var(--fv-muted); }
 /* le nom et le chiffre de ce que l'on survole, et les étiquettes posées sur la maquette */
 .fv-obj-tip, .fv-obj-label { position: absolute; z-index: 2; pointer-events: none; white-space: nowrap;
-  padding: .3rem .65rem; border: 1px solid var(--fv-line-strong); border-radius: 999px;
-  background: color-mix(in srgb, var(--fv-surface) 88%, transparent); backdrop-filter: blur(8px);
-  box-shadow: 0 10px 24px -12px var(--fv-shadow-deep); font: 600 .82rem/1.3 var(--fv-sans); color: var(--fv-text); }
+  padding: .3rem .65rem; border: 1px solid var(--fv-line-strong); border-radius: var(--radius-md);
+  background: var(--fv-surface); font: 600 .82rem/1.3 var(--fv-sans); color: var(--fv-text); }
 .fv-obj-tip { transform: translate(-50%, calc(-100% - 14px)); opacity: 0; transition: opacity .15s ease;
-  border-radius: 12px; text-align: center; }
+  box-shadow: var(--fv-pop); text-align: center; }
 .fv-obj-tip b { display: block; font-weight: 600; }
 .fv-obj-tip small { display: block; margin-top: .1rem; font-size: .74rem; font-weight: 500; color: var(--fv-brand); }
 html.fv-obj-on .fv-obj.is-pointing { cursor: pointer; }   /* ce que vise le pointeur fait quelque chose au clic */
-/* l'élément de la page qu'une maquette vient de montrer (une tuile de cours, une ligne du classement) brille un instant */
-.fv-flash { animation: fv-flash 1.8s cubic-bezier(.2, .8, .2, 1); }
-@keyframes fv-flash {
-  0%, 35% { box-shadow: 0 0 0 2px var(--fv-brand), 0 0 34px color-mix(in srgb, var(--fv-brand) 45%, transparent);
-    background-color: color-mix(in srgb, var(--fv-brand) 14%, transparent); }
-  100% { box-shadow: none; }
-}
+/* l'élément de la page qu'une maquette vient de montrer (une tuile de cours, une ligne du classement) est cerclé un
+   instant (le script retire la classe au bout de deux secondes) */
+.fv-flash { outline: 2px solid var(--fv-brand); outline-offset: -2px;
+  background-color: color-mix(in srgb, var(--fv-brand) 10%, transparent); }
 .fv-obj-tip.is-on { opacity: 1; }
 .fv-obj-label { transform: translate(-50%, -100%); transition: opacity .3s ease; }
 .fv-obj-label[data-tone="up"] { border-color: color-mix(in srgb, var(--fv-up) 60%, transparent); }
 .fv-obj-label[data-tone="down"] { border-color: color-mix(in srgb, var(--fv-down) 60%, transparent); }
 /* l'en-tête : le texte à gauche, la maquette à droite ; les tuiles de cours passent sous le titre */
-.fv-hero.has-obj { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "copy obj" "tiles obj";
-  align-items: center; padding-bottom: .6rem; }
+.fv-hero.has-obj { grid-template-columns: minmax(0, 1fr) minmax(0, 22rem); grid-template-areas: "copy obj" "tiles obj";
+  padding-bottom: .4rem; }
 .fv-hero.has-obj .fv-hero-copy { grid-area: copy; align-self: end; }
-.fv-hero.has-obj .fv-hero-obj { grid-area: obj; align-self: center; margin: -1.5rem -1rem -1rem 0; }
-.fv-hero.has-obj .fv-hero-aside { grid-area: tiles; align-self: start; grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: .7rem; padding: 0; transform: none; max-width: 40rem; }
-.fv-hero.has-obj .fv-float { translate: none; grid-column: auto; padding: .8rem .85rem .75rem; }
-.fv-hero.has-obj .fv-float-value { font-size: 1.15rem; }
-.fv-hero.has-obj .fv-float > img { max-width: 76px; height: 28px; }
-.fv-hero.has-obj::after { display: none; }
+.fv-hero.has-obj .fv-hero-obj { grid-area: obj; align-self: center; margin: -1rem -.5rem -1rem 0; }
+.fv-hero.has-obj .fv-hero-aside { grid-area: tiles; align-self: start; }
 @media (max-width: 900px) {
   .fv-hero.has-obj { grid-template-columns: minmax(0, 1fr); grid-template-areas: "copy" "obj" "tiles"; }
-  .fv-hero.has-obj .fv-hero-obj { margin: 0 auto; width: min(100%, 26rem); }
+  .fv-hero.has-obj .fv-hero-obj { margin: 0 auto; width: min(100%, 22rem); }
 }
 /* le récit de l'accueil : les chapitres à gauche, la maquette du CAC 40 à droite, sa caméra suit le chapitre */
 .fv-story.has-obj .fv-story-stage { grid-template-columns: minmax(0, 34rem) minmax(0, 1fr); column-gap: 1.5rem;
@@ -1440,21 +1101,14 @@ html.fv-obj-on .fv-obj.is-pointing { cursor: pointer; }   /* ce que vise le poin
   .fv-story.has-obj .fv-sessions { display: none; }
 }
 html:not(.fv-story-on) .fv-story-obj { display: none; }
-/* le décor plein écran n'est plus qu'une ambiance : les objets sont dans la page */
-#fv3d.is-on { opacity: .55; }
 
+/* « Moins d'animations » : le bandeau des cours s'arrête (et se fait défiler à la main), le récit change sans
+   transition */
 @media (prefers-reduced-motion: reduce) {
   .fv-tape-window { overflow-x: auto; mask-image: none; }
-  .fv-tape-track, .fv-tape-label::before, .fv-sk, .fv-hero-copy > *, [class*="st-key-fvlead_"],
-  [class*="st-key-fvtile_"], [class*="st-key-fvcard_"], .fv-aurora, .fv-hero-spot img, .fv-hero-title em,
-  .fv-eyebrow.is-live::before, [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] > *,
-  .fv-card, .fv-kpis, .fv-tiles, .fv-table-wrap, [class*="st-key-fvchart_"], [class*="st-key-fvbox_"],
-  .fv-media::after, .fv-media > img, .fv-lead .fv-w, .fv-hero-title .fv-hw > span, .fv-hero-title em.fv-hw-em { animation: none; }
-  .fv-intro { display: none; }
-  .fv-media::after { display: none; }
+  .fv-tape-track { animation: none; }
   .fv-ch { transition: none; }
   .fv-obj-tip, .fv-obj-label { transition: none; }
-  .fv-flash { animation: none; outline: 2px solid var(--fv-brand); }
 }
 </style>
 """
@@ -1492,13 +1146,9 @@ CHART_TIP_JS = """<script>(() => {
 
 
 def inject_css() -> None:
-    """Ajoute la feuille de style à la page (à appeler une fois par exécution, dans app.py), avec la barre de lecture et
-    l'intro de la visite (guide 31). Cet élément reste en place d'une page à l'autre : l'intro ne se rejoue pas."""
-    st.html(CSS + THEME_SYNC_JS + CHART_TIP_JS + '<span id="fv-top"></span><div class="fv-progress" aria-hidden="true"></div>'
-            f'<div class="fv-intro" aria-hidden="true"><div class="fv-intro-inner"><img src="{LOGO_URI}" alt="">'
-            '<span class="fv-intro-word">Fin<em>Veille</em></span><i class="fv-intro-line"></i>'
-            f'<span class="fv-intro-by">Un projet étudiant de {esc(AUTHOR)}</span></div></div>',
-            unsafe_allow_javascript=True)
+    """Ajoute la feuille de style à la page (à appeler une fois par exécution, dans app.py). L'élément reste en place
+    d'une page à l'autre ; `#fv-top` est l'ancre du lien « Haut de page »."""
+    st.html(CSS + THEME_SYNC_JS + CHART_TIP_JS + '<span id="fv-top"></span>', unsafe_allow_javascript=True)
 
 
 # --- Petites fonctions de mise en forme --------------------------------------------------------
@@ -1530,9 +1180,9 @@ def fallback_icon(domain: str) -> str:
     """Petite icône neutre (la première lettre du domaine sur un fond gris doux), en `data:` : jamais d'adresse
     externe, donc aucune requête du navigateur quand le vrai logo n'a pas pu être récupéré."""
     letter = domain[:1].upper() if domain[:1].isalnum() else "?"
-    svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" '
-           'fill="#e2e7f0"/><text x="32" y="44" font-family="Arial,sans-serif" font-size="34" font-weight="600" '
-           f'text-anchor="middle" fill="#566176">{letter}</text></svg>')
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">'
+           '<rect width="64" height="64" rx="8" fill="#e1e4e8"/><text x="32" y="44" font-family="Arial,sans-serif" font-size="34" font-weight="600" '
+           f'text-anchor="middle" fill="#56606c">{letter}</text></svg>')
     return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
 
 
@@ -1614,8 +1264,8 @@ def sessions_html(now: datetime, current: str | None = None) -> str:
     return f'<ul class="fv-sessions" aria-label="Places boursières">{items}</ul>'
 
 
-def float_tile(quote, animate: bool = True) -> str:
-    """Une tuile de cours « flottante » de l'en-tête : nom, cours, variation de la séance, courbe sur un mois."""
+def float_tile(quote) -> str:
+    """Une tuile de cours de l'en-tête : nom, cours, variation de la séance, courbe sur un mois."""
     month_change = quote.change_over(21)
     trend = direction(quote.change).removeprefix("fv-")
     summary = f"{quote.name} : {price(quote.last)}, {signed(quote.change, quote.unit)} sur la séance"
@@ -1624,45 +1274,30 @@ def float_tile(quote, animate: bool = True) -> str:
         f'<span class="fv-float-name">{esc(quote.name)}</span>'
         f'<span class="fv-float-value">{price(quote.last)}</span>'
         f'<span class="fv-float-delta">{change(quote.change, quote.unit)}</span>'
-        f'<img src="{sparkline_uri(quote.history.tail(22).tolist(), direction(month_change), 104, 36, animate)}" '
+        f'<img src="{sparkline_uri(quote.history.tail(22).tolist(), direction(month_change), 104, 36)}" '
         f'alt="Un mois : {esc(signed(month_change, quote.unit))}"></a>'
     )
 
 
-def title_html(title: str, accent: str = "", animate: bool = True) -> str:
-    """Le grand titre d'un en-tête. Animé : chaque mot dans un cache (il monte à son tour), la fin d'un bloc.
-    Les espaces restent du texte entre les mots : un lecteur d'écran lit la phrase normalement."""
-    if not animate:
-        return f'{esc(title)}{f" <em>{esc(accent)}</em>" if accent else ""}'
-    words = esc(title).split()
-    head = " ".join(f'<span class="fv-hw"><span style="--i:{i}">{word}</span></span>' for i, word in enumerate(words))
-    return head + (f' <em class="fv-hw-em" style="--n:{len(words)}">{esc(accent)}</em>' if accent else "")
+def title_html(title: str, accent: str = "") -> str:
+    """Le titre d'un en-tête, en texte simple ; la fin (`accent`) reste d'un seul tenant (la balise <em> n'a pas de
+    style propre : elle sert à ne pas couper la fin du titre en deux lignes)."""
+    return f'{esc(title)}{f" <em>{esc(accent)}</em>" if accent else ""}'
 
 
-def hero_html(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=(), extra: str = "",
-              classes: str = "", art_name: str | None = None, obj: str = "") -> str:
-    """L'en-tête « héros » d'une page (guide 29) : le décor (deux halos qui dérivent, la ligne de cours signature),
-    le sur-titre, le grand titre (la fin `accent` en dégradé de marque), la phrase d'introduction et, à droite, des
-    tuiles de cours flottantes (`quotes`) ou l'illustration de la page (`art_name`, voir art.py). Depuis l'étape 33,
-    la droite revient à la maquette 3D de la page (`obj`, scene3d.page_object) et les tuiles passent sous le titre."""
-    import art
-
-    live = "is-live" in classes  # en-tête redessiné chaque minute : décor immobile
-    aside = "".join(float_tile(quote, animate=not live) for quote in quotes)
-    spot = "" if aside or not art_name else (f'<div class="fv-hero-spot" aria-hidden="true">'
-                                              f'<img src="{art.spot(art_name)}" alt=""></div>')
-    if obj:
-        spot = ""
-    classes = " ".join(filter(None, ["fv-hero", "has-aside" if aside or spot else "", "has-obj" if obj else "", classes]))
-    scenery = ('<div class="fv-hero-art" aria-hidden="true"><i class="fv-aurora a1"></i><i class="fv-aurora a2"></i>'
-               f'<img class="fv-hero-line" src="{art.signature_line(not live)}" alt=""></div>')
+def hero_html(title: str, dek: str, accent: str = "", quotes=(), extra: str = "", classes: str = "",
+              obj: str = "") -> str:
+    """L'en-tête d'une page : le titre (sa fin `accent` d'un seul tenant), la phrase d'introduction et, sous le texte,
+    trois tuiles de cours (`quotes`). À droite, la maquette 3D de la page (`obj`, scene3d.page_object). Aucun décor :
+    la rubrique est déjà dans le menu, le contenu commence tout de suite."""
+    aside = "".join(float_tile(quote) for quote in quotes)
+    classes = " ".join(filter(None, ["fv-hero", "has-aside" if aside else "", "has-obj" if obj else "", classes]))
     return (
-        f'<header class="{classes}">{scenery}<div class="fv-hero-copy">'
-        + (f'<div class="fv-eyebrow{" is-live" if live else ""}">{esc(eyebrow)}</div>' if eyebrow else "")
-        + f'<h1 class="fv-hero-title">{title_html(title, accent, animate=not live)}</h1>'
+        f'<header class="{classes}"><div class="fv-hero-copy">'
+        f'<h1 class="fv-hero-title">{title_html(title, accent)}</h1>'
         + f'<p class="fv-hero-dek">{dek}</p>{extra}</div>'
         + (f'<div class="fv-hero-aside" role="group" aria-label="Les marchés en un coup d\'œil">{aside}</div>'
-           if aside else spot)
+           if aside else "")
         + (f'<div class="fv-hero-obj">{obj}</div>' if obj else "")
         + "</header>"
     )
@@ -1818,15 +1453,16 @@ def section(title: str, note: str = "") -> None:
 
 def page_header(title: str, dek: str, eyebrow: str = "", accent: str = "", quotes=(), art: str | None = None,
                 scene: str | None = None, obj_data: dict | None = None) -> None:
-    """En-tête de page : rubrique du menu, grand titre (sa fin d'un seul tenant), phrase d'introduction, quelques
-    cours en tuiles et, à droite, la maquette 3D de la page (scene3d.OBJECTS, d'après `scene`, sinon d'après le nom de
-    l'illustration ; `obj_data` : ses données). Sans WebGL, l'illustration de l'étape 29 la remplace."""
+    """En-tête de page : titre (sa fin d'un seul tenant), phrase d'introduction, quelques cours en tuiles et, à droite,
+    la maquette 3D de la page (scene3d.OBJECTS, d'après `scene`, sinon d'après le nom de l'illustration ; `obj_data` :
+    ses données). Sans WebGL, une illustration au trait (art.spot) la remplace. `eyebrow` n'est plus affiché (la
+    rubrique est dans le menu) ; il reste dans la signature pour les pages qui le donnent encore."""
     import art as artwork
     import scene3d
 
     name = scene or art
     obj = scene3d.page_object(name, obj_data, fallback=artwork.spot(art) if art else None)
-    st.html(hero_html(title, esc(dek), eyebrow, accent, quotes, art_name=art, obj=obj))
+    st.html(hero_html(title, esc(dek), accent, quotes, obj=obj))
     scene3d.page(name)
 
 
@@ -2001,13 +1637,13 @@ def chart_ink(strong: bool = False) -> str:
     """Couleur du texte dans un graphique : un jeton de texte, jamais la couleur d'une série."""
     dark = chart_mode() == "dark"
     if strong:
-        return "#e8edf6" if dark else "#0b1220"
-    return "#96a2b9" if dark else "#566176"
+        return "#e9ebee" if dark else "#111418"
+    return "#a0a8b3" if dark else "#56606c"
 
 
 def chart_surface() -> str:
     """Le fond des cartes qui contiennent les graphiques : pour les anneaux et les espaces de 2 px entre les formes."""
-    return "#0c111d" if chart_mode() == "dark" else "#ffffff"
+    return "#15181c" if chart_mode() == "dark" else "#ffffff"
 
 
 def _rgba(color: str, alpha: float) -> str:
@@ -2066,12 +1702,10 @@ def french(chart):
     )
 
 
-def sparkline_uri(values: list[float], end_class: str, width: int = 84, height: int = 30,
-                  animate: bool = False) -> str:
+def sparkline_uri(values: list[float], end_class: str, width: int = 84, height: int = 30) -> str:
     """Mini-courbe en SVG, encodée comme une image (st.html n'accepte pas le SVG intégré).
 
-    Courbe colorée selon la direction de la période, avec une aire très légère pour la lisibilité. Avec `animate`,
-    la courbe se dessine de gauche à droite à l'ouverture (sauf si le visiteur préfère moins de mouvement).
+    Courbe colorée selon la direction de la période, avec une aire très légère pour la lisibilité.
     """
     values = [float(v) for v in values]
     low, high = min(values), max(values)
@@ -2084,20 +1718,12 @@ def sparkline_uri(values: list[float], end_class: str, width: int = 84, height: 
     area = f"4,{height} {path} {end_x:.1f},{height}"
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
-        + (_SPARK_MOTION if animate else "")
-        + f'<polygon class="a" points="{area}" fill="{color}" fill-opacity=".1"/>'
-        f'<polyline class="l" pathLength="1" points="{path}" fill="none" stroke="{color}" stroke-width="1.6" '
+        f'<polygon points="{area}" fill="{color}" fill-opacity=".1"/>'
+        f'<polyline points="{path}" fill="none" stroke="{color}" stroke-width="1.6" '
         f'stroke-linejoin="round" stroke-linecap="round"/>'
-        f'<circle class="a" cx="{end_x:.1f}" cy="{end_y:.1f}" r="2.6" fill="{color}"/></svg>'
+        f'<circle cx="{end_x:.1f}" cy="{end_y:.1f}" r="2.6" fill="{color}"/></svg>'
     )
     return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
-
-
-_SPARK_MOTION = (  # la mini-courbe se dessine, puis son aire et son point apparaissent
-    "<style>.l{stroke-dasharray:1;stroke-dashoffset:1;animation:d 1.1s cubic-bezier(.2,.7,.2,1) .2s forwards}"
-    ".a{opacity:0;animation:f .5s ease 1.1s forwards}@keyframes d{to{stroke-dashoffset:0}}@keyframes f{to{opacity:1}}"
-    "@media (prefers-reduced-motion:reduce){.l{animation:none;stroke-dashoffset:0}.a{animation:none;opacity:1}}</style>"
-)
 
 
 # --- Les fiches : chaque valeur (action, indice, devise, matière première) et chaque cryptomonnaie a sa page ------------
@@ -2130,7 +1756,7 @@ def quote_tile(quote) -> str:
         f'<a class="fv-tile is-{trend}" href="{fiche_url(quote.symbol)}" target="_self" title="{esc(summary)}">'
         f'<div class="fv-tile-label">{esc(quote.name)}</div>'
         f'<div class="fv-tile-value">{price(quote.last)}</div>'
-        f'<img src="{sparkline_uri(month.tolist(), direction(month_change), 96, 34, animate=True)}" '
+        f'<img src="{sparkline_uri(month.tolist(), direction(month_change), 96, 34)}" '
         f'alt="Un mois : {esc(signed(month_change, quote.unit))}">'
         f'<div class="fv-tile-delta">{change(quote.change, quote.unit)}</div>'
         f'<div class="fv-tile-sub">1 mois : {change(month_change, quote.unit)}</div>'
@@ -2170,18 +1796,17 @@ AUTHOR = "Yassine Zouhair"  # l'auteur du site : pied de page et page « À prop
 
 
 def nav_active(index: int) -> None:
-    """Souligne, dans le menu du haut, la rubrique de la page ouverte (Streamlit ne le signale pas lui-même).
-    Les rubriques du menu sont rangées dans l'ordre de leur déclaration (style « order: N »)."""
+    """Signale, dans le menu du haut, la rubrique de la page ouverte (Streamlit ne le signale pas lui-même) : texte
+    bleu sur fond bleu pâle. Les rubriques du menu sont rangées dans l'ordre de leur déclaration (propriété CSS
+    `order`)."""
     target = f'[data-testid="stToolbar"] div[style*="order: {int(index)};"] > [data-testid="stTopNavSection"]'
-    st.html(f"<style>{target} {{ position: relative; background: var(--fv-brand-soft); }}"
-            f"{target} p {{ color: var(--fv-brand); font-weight: 600; }}"
-            f"{target}::after {{ content: ''; position: absolute; left: 22%; right: 22%; bottom: -9px; height: 2px;"
-            "border-radius: 2px; background: linear-gradient(90deg, var(--fv-brand), var(--fv-brand-2)); }</style>")
+    st.html(f"<style>{target} {{ background: var(--fv-brand-soft); }}"
+            f"{target} p {{ color: var(--fv-brand); font-weight: 600; }}</style>")
 
 
 def footer() -> None:
-    """Le pied de page, sur toutes les pages : la marque et la signature de l'auteur, les rubriques, le nom du site en
-    très grand (décoratif), les sources et l'avertissement."""
+    """Le pied de page, sur toutes les pages : la marque et la signature de l'auteur, les rubriques, les sources et
+    l'avertissement."""
     links = "".join(f'<a href="./{path}" target="_self">{esc(label)}</a>' for label, path in FOOTER_LINKS)
     legal = "".join(f'<a href="./{path}" target="_self">{esc(label)}</a>' for label, path in LEGAL_LINKS)
     st.html(
@@ -2191,7 +1816,6 @@ def footer() -> None:
         "<p>La veille financière et économique mondiale, mise à jour en continu.</p>"
         f'<p class="fv-footer-author">Un projet étudiant, conçu et développé par <strong>{esc(AUTHOR)}</strong></p></div>'
         f'<nav class="fv-footer-links" aria-label="Rubriques">{links}</nav></div>'
-        '<p class="fv-footer-giant" aria-hidden="true">FinVeille</p>'
         '<div class="fv-footer-bottom"><p class="fv-footer-note">Sources : flux RSS des médias cités, Yahoo Finance '
         "(cours différés), BCE, Réserve fédérale, CoinGecko. Résumés et réponses de l'IA à vérifier dans les articles. "
         f"Informations pédagogiques : pas un conseil en investissement. © {datetime.now().year} {esc(AUTHOR)}.</p>"
