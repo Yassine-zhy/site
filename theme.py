@@ -1037,13 +1037,22 @@ html:not(.fv-story-on) .fv-story-rail { display: none; }
 }
 .stApp button, .stApp a[href], .stApp [role="tab"], .stApp summary { cursor: pointer; touch-action: manipulation; }
 
-/* ==== 14. Les maquettes (guides 33 et 42) =========================================================================
-   Une image de synthèse (rendue dans Blender, static/renders/) dessinée dans la toile de son emplacement par
-   static/fv3d/renders.js ; rien d'autre autour. */
+/* ==== 14. Les maquettes (guide 33) ===============================================================================
+   Un objet 3D par page, posé dans l'en-tête (et la ville du CAC 40 dans le récit de l'accueil). Le moteur
+   (static/fv3d/vitrines.js) dessine dans la toile de chaque emplacement ; rien d'autre autour : ni halo ni ombre. */
 .fv-obj-wrap { margin: 0; }
 .fv-obj { position: relative; width: 100%; aspect-ratio: 5 / 4; touch-action: pan-y; user-select: none;
   -webkit-user-select: none; }
-.fv-obj-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; }
+html.fv-obj-on .fv-obj { cursor: grab; }
+html.fv-obj-on .fv-obj.is-grabbing { cursor: grabbing; }
+.fv-obj-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%;
+  /* la toile a le fond de la page ; ses bords s'y fondent */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(180deg, transparent, #000 7%, #000 93%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(180deg, transparent, #000 7%, #000 93%, transparent);
+  mask-composite: intersect; }
 .fv-obj-fallback { position: absolute; inset: 8% 10%; width: 80%; height: 84%; object-fit: contain; }
 html.fv-obj-on .fv-obj-fallback { display: none; }
 html.fv-obj-on .fv-obj.is-fallback .fv-obj-fallback { display: block; }   /* plus de contexte WebGL : l'illustration */

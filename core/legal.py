@@ -233,7 +233,7 @@ concernée : l'éditeur y répond dès que possible.
 
 - Polices IBM Plex, Newsreader et Schibsted Grotesk, sous licence SIL Open Font License, servies par le site
   lui-même.
-- Images de synthèse réalisées avec Blender.
+- Three.js, sous licence MIT.
 - Icônes Material Symbols, sous licence Apache 2.0.
 
 {_see_also("mentions")}"""
