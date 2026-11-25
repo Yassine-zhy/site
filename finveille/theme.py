@@ -1560,6 +1560,30 @@ a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255
 .stApp [data-testid="stBaseButton-primary"]:hover { background: #0f27c7 !important; }
 /* Le fond : net, sans halo violet */
 .stApp { background: var(--fv-bg) !important; }
+/* ==== Du mouvement partout (guide 42) : chaque section se révèle au défilement ==================================== */
+.fv-section h2 { font-size: clamp(1.8rem, 3.2vw, 2.6rem) !important; font-weight: 900 !important; letter-spacing: -.035em; }
+.fv-hero-title em { position: relative; }
+.fv-hero-title em::after { content: ""; position: absolute; left: 0; right: 0; bottom: .02em; height: .09em; border-radius: 2px;
+  background: var(--fv-brand); transform-origin: left; animation: fv-underline 1s .5s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes fv-underline { from { transform: scaleX(0); } }
+.fv-tile, .fv-float, .fv-kpi, .fv-card, [class*="st-key-fvtile_"], [class*="st-key-fvcard_"] {
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), border-color .2s !important; }
+.fv-tile:hover, .fv-float:hover, .fv-card:hover, [class*="st-key-fvtile_"]:hover, [class*="st-key-fvcard_"]:hover {
+  transform: translateY(-4px) !important; border-color: var(--fv-brand) !important;
+  box-shadow: 0 0 0 1.5px var(--fv-brand), 0 18px 40px -22px color-mix(in srgb, var(--fv-brand) 55%, transparent) !important; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .fv-section h2, .fv-tile, .fv-kpi, .fv-card, .fv-table-wrap, [class*="st-key-fvbox_"], [class*="st-key-fvchart_"],
+    [class*="st-key-fvcard_"], [class*="st-key-fvpanel_"] {
+      animation: fv-reveal linear both; animation-timeline: view(); animation-range: entry 0% entry 55%; }
+    .fv-section h2 { animation-name: fv-reveal-title; }
+    .fv-tile:nth-child(2), .fv-card:nth-child(2) { animation-range: entry 6% entry 62%; }
+    .fv-tile:nth-child(3), .fv-card:nth-child(3) { animation-range: entry 12% entry 68%; }
+    .fv-tile:nth-child(4), .fv-card:nth-child(4) { animation-range: entry 18% entry 74%; }
+  }
+}
+@keyframes fv-reveal { from { opacity: 0; transform: translateY(36px) scale(.97); } }
+@keyframes fv-reveal-title { from { opacity: 0; transform: translateX(-28px); letter-spacing: .02em; } }
 </style>
 
 """
