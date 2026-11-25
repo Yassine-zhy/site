@@ -1460,8 +1460,10 @@ html:not(.fv-story-on) .fv-story-obj { display: none; }
    Un aplat bleu sur toute la largeur de l'écran, le nom en Archivo très large qui monte une fois, la séance dessous. */
 @font-face { font-family: "Archivo"; src: url("app/static/fonts/archivo-latin-variable.woff2") format("woff2");
   font-weight: 500 900; font-stretch: 62% 125%; font-display: swap; }
-.fv-poster { --poster: #1534ff; position: relative; width: 100vw; margin: .8rem calc(50% - 50vw) 1.6rem;
-  padding: 1.2rem 0 2.4rem; background: var(--poster); color: #fff; overflow: hidden; font-family: "Archivo", var(--fv-sans); }
+.fv-poster { --poster: #1534ff; position: relative; width: 100vw; margin: -45px calc(50% - 50vw) -2rem;   /* jusqu'en haut de l'écran, sous la barre flottante */
+  padding: 5.6rem 0 9rem; color: #fff; overflow: hidden; font-family: "Archivo", var(--fv-sans);
+  /* le bleu se fond dans la page sur ses derniers 9 rem : pas de bord net, en clair comme en sombre */
+  background: linear-gradient(180deg, var(--poster) 0, var(--poster) calc(100% - 11rem), var(--fv-bg) 100%); }
 [data-testid="stMain"] { overflow-x: clip; }   /* l'affiche déborde exprès du conteneur : pas de défilement latéral */
 .fv-poster-mast { margin: 0; padding: 0 2vw; font-family: "Archivo", sans-serif !important; font-weight: 900 !important;
   font-stretch: 125%; font-size: 19.2vw !important; line-height: .8 !important; letter-spacing: -.06em; color: #fff !important;
@@ -1495,46 +1497,9 @@ a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255
   .fv-poster-value { font-size: 2.4rem; }
 }
 @media (prefers-reduced-motion: reduce) { .fv-poster-mast span { animation: none; transform: none; } }
-/* ==== L'identité de l'affiche, sur tout le site (guide 42) ===========================================================
-   Le langage de l'affiche de l'accueil partout : un fond net (blanc, ou encre bleu nuit), le bleu FinVeille franc, sans
-   violet ni halo, les titres en Archivo, une barre du haut pleine largeur. */
-.stApp, [data-testid="stDialog"] {
-  --fv-bg: light-dark(#ffffff, #080a14);
-  --fv-brand: light-dark(#1534ff, #6b84ff);
-  --fv-brand-2: var(--fv-brand);
-  --fv-glow: transparent; --fv-glow-2: transparent;
-  --btn-primary-bg: #1534ff; --btn-primary-glow: none;
-  --fv-display: "Archivo", "IBM Plex Sans", system-ui, sans-serif;
-}
-.stApp { background: var(--fv-bg); }
-.fv-hero-title, .fv-story-title, .fv-section h2, .fv-box-title { font-weight: 800 !important; font-stretch: 90%;
-  letter-spacing: -.03em; }
-@media (min-width: 900px) {
-  header[data-testid="stHeader"] { top: 0; left: 0; right: 0; width: auto; border: 0; border-bottom: 1px solid var(--fv-line);
-    border-radius: 0; background: var(--fv-surface); box-shadow: none; backdrop-filter: none; }
-  .st-key-fvaccount { top: .62rem; right: 3.3rem; }
-}
-/* L'accueil : l'affiche commence sous la barre du haut ; le bandeau des cours, redondant avec elle, s'efface */
+/* L'accueil : l'affiche passe sous la barre du haut, et le bandeau des cours, redondant avec elle, s'efface */
 .stApp:has(.fv-poster) [data-testid="stElementContainer"]:has(.fv-tape) { display: none; }
 .stApp:has(.fv-poster) [data-testid="stMainBlockContainer"] { padding-top: 0 !important; }
-.fv-poster { margin-top: 0 !important; padding-top: 5.2rem !important; }
-/* Les autres pages : leur en-tête est un aplat bleu sur toute la largeur, qui remonte jusqu'à la barre du haut et
-   porte le bandeau des cours (box-shadow + clip-path : le bleu déborde du conteneur sans élément de plus). */
-.stApp:has(.fv-hero) [data-testid="stMainBlockContainer"] { padding-top: 0 !important; }
-.fv-hero { --band: #1534ff; isolation: isolate; color: #fff; padding-bottom: 2.6rem; margin-bottom: 1.4rem;
-  background: var(--band); box-shadow: 0 0 0 100vmax var(--band); clip-path: inset(-30rem -100vmax 0 -100vmax); }
-.fv-hero .fv-hero-title, .fv-hero .fv-hero-title em { color: #fff !important; -webkit-text-fill-color: #fff; background: none !important; }
-.fv-hero .fv-hero-dek, .fv-hero .fv-3d-caption, .fv-hero figcaption { color: rgb(255 255 255 / .86) !important; }
-.fv-hero .fv-crumbs a, .fv-hero a:not(.fv-float) { color: #fff; }
-.stApp:has(.fv-hero) [data-testid="stElementContainer"]:has(.fv-tape) { position: relative; z-index: 2;
-  padding-top: 4.6rem; }
-.stApp:has(.fv-hero) .fv-tape { margin: 0 0 .4rem; background: transparent; border-color: rgb(255 255 255 / .28); box-shadow: none; }
-.stApp:has(.fv-hero) .fv-tape-label { background: rgb(255 255 255 / .12); color: #fff; border-color: rgb(255 255 255 / .28); }
-.stApp:has(.fv-hero) .fv-tick { border-color: rgb(255 255 255 / .2); color: #fff; }
-.stApp:has(.fv-hero) .fv-tick b { color: #fff; }
-.stApp:has(.fv-hero) .fv-tick .fv-up { color: #9dffcb; }
-.stApp:has(.fv-hero) .fv-tick .fv-down { color: #ffc2c8; }
-.stApp:has(.fv-hero) .fv-tape-window { mask-image: none; }
 </style>
 
 """
