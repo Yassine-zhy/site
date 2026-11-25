@@ -220,7 +220,7 @@ def test_l_adresse_ouvre_l_accueil_sur_la_france(app):
     app.run()
     assert not app.exception
     assert app.segmented_control(key="story_place").value == "france"
-    assert "CAC 40 a progressé" in story_of(app) or "CAC 40 progresse" in story_of(app)
+    assert re.search(r'class="fv-film-index"[^>]*>CAC 40 <b>', story_of(app))  # l'indice, en pastille
     assert app.asked == []  # la France ne passe pas par load_place
 
 
@@ -230,7 +230,7 @@ def test_l_adresse_ouvre_l_accueil_sur_le_canada(app):
     assert not app.exception
     assert app.segmented_control(key="story_place").value == "canada"
     story = story_of(app)
-    assert re.search(r"S&amp;P/TSX (progresse|a progressé)", story) and 'data-place="canada"' in story
+    assert re.search(r'class="fv-film-index"[^>]*>S&amp;P/TSX <b>', story) and 'data-place="canada"' in story
     assert app.asked == ["canada"]
 
 
@@ -241,7 +241,7 @@ def test_changer_de_place_met_a_jour_l_adresse_et_le_recit(app):
     assert app.query_params["place"] in ("canada", ["canada"])
     assert 'data-place="canada"' in story_of(app)
     app.segmented_control(key="story_place").set_value("usa").run()
-    assert not app.exception and re.search(r"Dow Jones (progresse|a progressé)", story_of(app))
+    assert not app.exception and re.search(r'class="fv-film-index"[^>]*>Dow Jones <b>', story_of(app))
     app.segmented_control(key="story_place").set_value("monde").run()
     assert not app.exception and "place" not in app.query_params  # le monde est la zone par défaut
     assert "Le film du jour · Monde" in story_of(app)
