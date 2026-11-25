@@ -197,6 +197,17 @@ function city(data, pal, scene) {
 // Les seules entreprises du jour, en rang et bien espacées, comme une ligne d'horizon : la hauteur suit la taille de
 // l'entreprise, le toit sa séance, son nom flotte au-dessus. La caméra glisse de l'une à l'autre (« n:<nom> »), celle
 // qu'on montre s'allume, les autres s'effacent un peu ; « film » montre toute la rangée.
+// Le verre des immeubles du film. En thème clair, des tours blanches disparaissaient sur la page blanche : elles sont
+// bleu nuit, fenêtres chaudes allumées, comme une maquette sombre posée sur la page (les tours du fond, un ton plus clair)
+function skyGlass(pal, back = false) {
+  if (pal.dark) return skin(pal);
+  const m = new THREE.MeshStandardMaterial({ color: back ? 0x56668f : 0x1f2d58, metalness: 0.45, roughness: 0.28,
+    emissive: 0xffe2a8, emissiveMap: facadeTexture(), emissiveIntensity: 0, transparent: true });
+  m.userData.role = "glass";
+  m.userData.lit = back ? 0.9 : 1.15;
+  return m;
+}
+
 function skyline(data, pal, scene) {
   lights(scene, pal, { reach: 9, map: 2048, sun: [-6, 12, 8], shadow: !isPhone() });
   const root = new THREE.Group(), rnd = random(7), given = (data.towers || []).slice(0, 8);
@@ -222,7 +233,7 @@ function skyline(data, pal, scene) {
   const wmax = Math.max(...given.map((t) => t.w || 1), ...(data.crowd || []).map((t) => t.w || 1), 1);
   const towers = given.map((t, k) => {
     const h = 1.6 + 4.4 * Math.sqrt((t.w || 1) / wmax), x = (k - (n - 1) / 2) * step;
-    const g = new THREE.Group(), body = new THREE.Group(), facade = skin(pal);
+    const g = new THREE.Group(), body = new THREE.Group(), facade = skyGlass(pal);
     const podium = new THREE.Mesh(new RoundedBoxGeometry(fw + 0.24, 0.3, fw + 0.24, 2, 0.04).translate(0, 0.15, 0), mat(pal.relief));
     const shaft = new THREE.Mesh(facadeBox(fw, h - 0.3, fw, 0.17, rnd()), facade);
     shaft.position.y = 0.3;
@@ -245,8 +256,8 @@ function skyline(data, pal, scene) {
     const col = k % n, side = k < n ? -1 : 1, cw = 0.72;
     const x = (col - (n - 1) / 2) * step + side * 0.62, z = -2.55 - (k < n ? 0 : 0.35);
     const h = 0.7 + 2.4 * Math.sqrt((t.w || 1) / wmax);
-    const g = new THREE.Group(), body = new THREE.Group(), facade = skin(pal);
-    facade.userData.lit *= 0.45;
+    const g = new THREE.Group(), body = new THREE.Group(), facade = skyGlass(pal, true);
+    facade.userData.lit *= pal.dark ? 0.45 : 0.6;
     const shaft = new THREE.Mesh(facadeBox(cw, h, cw, 0.15, rnd()), facade);
     const roof = new THREE.Mesh(new RoundedBoxGeometry(cw + 0.04, 0.07, cw + 0.04, 2, 0.02).translate(0, 0.035, 0),
       mat(changeColor(pal, t.c)));
@@ -328,7 +339,7 @@ function skyline(data, pal, scene) {
         const m = tw.facade, base = m.userData.lit * phase(t, tw.delay + 0.6, 0.5);
         const goal = lit && tw !== lit ? base * 0.3 : base * (tw === lit || tw === hover ? 1.7 : 1);
         if (Math.abs(m.emissiveIntensity - goal) > 0.003) { m.emissiveIntensity += (goal - m.emissiveIntensity) * (t < 99 ? 1 : k); moving = true; }
-        const fade = lit && tw !== lit ? (pal.dark ? 0.45 : 0.6) : 1;
+        const fade = lit && tw !== lit ? (pal.dark ? 0.45 : 0.72) : 1;
         if (Math.abs(m.opacity - fade) > 0.004) { m.opacity += (fade - m.opacity) * k; moving = true; }
         const lift = tw === lit ? 0.15 : 0;
         if (Math.abs(tw.g.position.y - lift) > 0.002) { tw.g.position.y += (lift - tw.g.position.y) * k; moving = true; }
