@@ -204,7 +204,7 @@ function skyline(data, pal, scene) {
   const W = n * step + 1.4;
   // le quartier : le rang des entreprises du jour devant, deux rangs d'autres valeurs de la zone derrière, des rues
   // entre les rangs ; le sol est plus large que le rang (cz : son centre, en profondeur)
-  const GW = W + 3.2, GD = 9.2, cz = -2.6, ROADS = [1.55, -1.5, -5.85];
+  const GW = W + 0.6, GD = 5.9, cz = -0.95, ROADS = [1.5, -1.25];
   const ground = new THREE.Group();
   ground.position.z = cz;
   ground.add(plinth(pal, GW, GD));
@@ -238,16 +238,17 @@ function skyline(data, pal, scene) {
     root.add(g);
     return { ...t, h: h + 0.12, x, g, body, facade, delay: 0.2 + k * 0.12 };
   });
-  // les autres valeurs de la zone, sur deux rangs : plus fines, leur toit dit aussi la séance (survol : leur nom)
-  const crowdData = (data.crowd || []).slice(0, 22), cols = Math.ceil(crowdData.length / 2) || 1;
+  // les autres valeurs de la zone, sur un rang derrière, deux de part et d'autre de chaque entreprise du jour : plus
+  // basses et plus discrètes, leur toit dit aussi la séance (survol : leur nom)
+  const crowdData = (data.crowd || []).slice(0, n * 2);
   const crowd = crowdData.map((t, k) => {
-    const row = k % 2, col = Math.floor(k / 2), cw = 0.78 - row * 0.06;
-    const x = (col - (cols - 1) / 2) * ((GW - 1.4) / Math.max(cols, 1)) + (row ? 0.45 : 0);
-    const z = row ? -4.35 : -2.85, h = 0.9 + 3.6 * Math.sqrt((t.w || 1) / wmax);
+    const col = k % n, side = k < n ? -1 : 1, cw = 0.72;
+    const x = (col - (n - 1) / 2) * step + side * 0.62, z = -2.55 - (k < n ? 0 : 0.35);
+    const h = 0.7 + 2.4 * Math.sqrt((t.w || 1) / wmax);
     const g = new THREE.Group(), body = new THREE.Group(), facade = skin(pal);
-    facade.userData.lit *= 0.55;
+    facade.userData.lit *= 0.45;
     const shaft = new THREE.Mesh(facadeBox(cw, h, cw, 0.15, rnd()), facade);
-    const roof = new THREE.Mesh(new RoundedBoxGeometry(cw + 0.04, 0.08, cw + 0.04, 2, 0.02).translate(0, 0.04, 0),
+    const roof = new THREE.Mesh(new RoundedBoxGeometry(cw + 0.04, 0.07, cw + 0.04, 2, 0.02).translate(0, 0.035, 0),
       mat(changeColor(pal, t.c)));
     roof.position.y = h;
     body.add(shaft, roof);
@@ -257,10 +258,10 @@ function skyline(data, pal, scene) {
     g.position.set(x, 0, z);
     tag(g, given.length + k);
     root.add(g);
-    return { ...t, h, x, z, g, body, facade, delay: 0.5 + (row * cols + col) * 0.03 };
+    return { ...t, h, x, z, g, body, facade, delay: 0.55 + k * 0.03 };
   });
   // les voitures : des phares (blancs) et des feux (rouges) qui suivent les rues, dans les deux sens
-  const CARS = isPhone() ? 18 : 34, carGeo = new THREE.BoxGeometry(0.2, 0.05, 0.07);
+  const CARS = isPhone() ? 12 : 22, carGeo = new THREE.BoxGeometry(0.2, 0.05, 0.07);
   const heads = new THREE.InstancedMesh(carGeo, new THREE.MeshBasicMaterial({ color: pal.dark ? 0xfff1d0 : 0xf4b740 }), CARS);
   const tails = new THREE.InstancedMesh(carGeo, new THREE.MeshBasicMaterial({ color: pal.dark ? 0xff5a5a : 0xe0303f }), CARS);
   heads.userData.noEdges = tails.userData.noEdges = true;
@@ -283,18 +284,6 @@ function skyline(data, pal, scene) {
     heads.instanceMatrix.needsUpdate = tails.instanceMatrix.needsUpdate = true;
   };
   moveCars(0);
-  // l'horizon : des silhouettes lointaines, sans arêtes, qui se fondent dans le fond
-  const far = new THREE.Group(), farMat = new THREE.MeshBasicMaterial({ color: pal.dark ? 0x1a2550 : 0xc9d3ec, transparent: true,
-    opacity: pal.dark ? 0.55 : 0.6, depthWrite: false });
-  for (let i = 0; i < 46; i++) {
-    const h = 0.8 + rnd() * rnd() * 5.5, w = 0.5 + rnd() * 0.9;
-    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.4).translate(0, h / 2, 0), farMat);
-    b.position.set(-GW * 0.9 + (i / 45) * GW * 1.8 + (rnd() - 0.5) * 0.4, -0.02, -9.5 - rnd() * 3);
-    b.userData.noEdges = true;
-    b.raycast = () => {};
-    far.add(b);
-  }
-  root.add(far);
   const everyone = [...towers, ...crowd];
   let chapter = "film", hover = null;
   const view = { pos: [4, 6, 19], look: [0, 2, 0], fov: 28, aspect: 1.6 };
@@ -312,7 +301,7 @@ function skyline(data, pal, scene) {
     const d = fit * (close ? 0.94 : 1);
     const a = (still() ? 0 : Math.sin(performance.now() / 1000 * 0.22) * 0.07) + 0.18;
     const lx = focusX * (close ? 0.12 : 0), y = top * 0.5;
-    return { pos: [lx + Math.sin(a) * d, y + d * 0.2, Math.cos(a) * d + 0.6], look: [lx, y - 0.4, -1.2] };
+    return { pos: [lx + Math.sin(a) * d, y + d * 0.2, Math.cos(a) * d + 0.3], look: [lx, y - 0.45, -0.7] };
   };
   return {
     root, view, intro: 0.2 + n * 0.12 + 1.2,

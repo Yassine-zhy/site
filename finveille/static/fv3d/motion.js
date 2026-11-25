@@ -168,6 +168,37 @@ function installFilm() {
   requestAnimationFrame(tick);
 }
 
+// --- La lumière du pointeur (guide 41) : sur les cartes, une lueur suit la souris ; les tuiles de cours s'inclinent
+// un peu vers elle. Souris seulement (pas au doigt), rien avec les mouvements réduits.
+function installSpotlight() {
+  if (!matchMedia("(pointer: fine)").matches || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const LIT = ".fv-tile, .fv-float, .fv-kpi, .fv-card, .fv-film, .fv-home-news, .fv-film-strip button, .fv-table-wrap, "
+    + '[class*="st-key-fvcard_"], [class*="st-key-fvtile_"], [class*="st-key-fvbox_"], [class*="st-key-fvpanel_"], [class*="st-key-fvlead_"]';
+  const TILT = ".fv-tile, .fv-float, .fv-film-strip button";
+  let current = null, frame = 0, last = null;
+  const clear = (el) => { el.classList.remove("fv-lit"); el.style.removeProperty("--fv-rx"); el.style.removeProperty("--fv-ry"); };
+  document.addEventListener("pointermove", (e) => {
+    last = e;
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      const el = last.target.closest?.(LIT) || null;
+      if (current && current !== el) clear(current);
+      current = el;
+      if (!el) return;
+      const r = el.getBoundingClientRect(), x = (last.clientX - r.left) / r.width, y = (last.clientY - r.top) / r.height;
+      el.classList.add("fv-lit");
+      el.style.setProperty("--fv-mx", `${(x * 100).toFixed(1)}%`);
+      el.style.setProperty("--fv-my", `${(y * 100).toFixed(1)}%`);
+      if (el.matches(TILT)) {
+        el.style.setProperty("--fv-rx", `${((0.5 - y) * 6).toFixed(2)}deg`);
+        el.style.setProperty("--fv-ry", `${((x - 0.5) * 8).toFixed(2)}deg`);
+      }
+    });
+  }, { passive: true });
+  document.addEventListener("pointerleave", () => { if (current) clear(current); current = null; });
+}
+
 function installStory() {
   const state = (window.__fvStory = { el: null, chapter: 0, progress: 0, kinds: [] });
   const setup = (story) => {
@@ -248,6 +279,7 @@ export async function installMotion() {
   installClocks();
   installStory();
   installFilm();
+  installSpotlight();
   let gsap;
   try { gsap = await loadGsap(); } catch { return; }   // sans GSAP : pas de rouleaux ni d'impression, rien ne casse
   const ST = window.ScrollTrigger;

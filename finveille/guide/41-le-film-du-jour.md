@@ -17,8 +17,16 @@ pleines).
 
 Chaque jour a donc son film : rien n'est enregistré, tout vient des cours de la séance (gardés 10 minutes).
 
-Autour d'elles, un quartier : deux rangs d'autres grandes valeurs de la zone (toit vert ou rouge selon leur séance,
-leur nom au survol), des rues gravées où circulent des phares, et une ligne d'horizon au fond.
+Autour d'elles, un quartier compact posé sur son socle : un rang d'autres grandes valeurs de la zone, deux de part et
+d'autre de chaque entreprise du jour, plus basses (toit vert ou rouge selon leur séance, leur nom au survol), et des
+rues gravées où circulent des phares.
+
+## Le mouvement dans tout le site
+
+- à l'accueil, une seule entrée orchestrée : le film, puis les titres et les marchés, un reflet qui balaie la carte ;
+- partout, le mouvement répond au visiteur : une lueur suit la souris sur les cartes et les tableaux, les tuiles de
+  cours s'inclinent vers elle, les boutons s'enfoncent au clic (`motion.js::installSpotlight`) ;
+- rien de tout cela au doigt ni avec les mouvements réduits.
 
 ## Comment il marche
 
