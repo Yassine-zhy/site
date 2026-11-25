@@ -109,6 +109,20 @@ USA = [
 
 # Les places suivies sur la page Marchés, chacune avec son indice et ses valeurs. Le CAC 40 n'y est qu'une place parmi
 # d'autres. (clé → nom affiché, indice Yahoo, nom de l'indice, valeurs)
+# Les géants mondiaux du film du jour (accueil, guide 41) : symbole Yahoo, nom, pays
+WORLD = [
+    ("NVDA", "Nvidia", "États-Unis"), ("MSFT", "Microsoft", "États-Unis"), ("AAPL", "Apple", "États-Unis"),
+    ("GOOGL", "Alphabet", "États-Unis"), ("AMZN", "Amazon", "États-Unis"), ("META", "Meta", "États-Unis"),
+    ("AVGO", "Broadcom", "États-Unis"), ("TSM", "TSMC", "Taïwan"), ("2222.SR", "Saudi Aramco", "Arabie saoudite"),
+    ("BRK-B", "Berkshire Hathaway", "États-Unis"), ("TSLA", "Tesla", "États-Unis"), ("JPM", "JPMorgan", "États-Unis"),
+    ("LLY", "Eli Lilly", "États-Unis"), ("WMT", "Walmart", "États-Unis"), ("V", "Visa", "États-Unis"),
+    ("ORCL", "Oracle", "États-Unis"), ("XOM", "ExxonMobil", "États-Unis"), ("0700.HK", "Tencent", "Chine"),
+    ("005930.KS", "Samsung", "Corée du Sud"), ("ASML.AS", "ASML", "Pays-Bas"), ("SAP.DE", "SAP", "Allemagne"),
+    ("MC.PA", "LVMH", "France"), ("RMS.PA", "Hermès", "France"), ("NOVO-B.CO", "Novo Nordisk", "Danemark"),
+    ("NESN.SW", "Nestlé", "Suisse"), ("7203.T", "Toyota", "Japon"), ("RY.TO", "RBC", "Canada"),
+    ("SHOP.TO", "Shopify", "Canada"),
+]
+
 PLACES = {
     "france": ("France", "^FCHI", "CAC 40", CAC40),
     "canada": ("Canada", "^GSPTSX", "S&P/TSX", TSX60),

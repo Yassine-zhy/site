@@ -129,8 +129,14 @@ USA_WEIGHTS = {
     "NFLX": 520, "DIS": 210, "VZ": 180, "JPM": 830, "GS": 220, "V": 680, "AXP": 220, "TRV": 60, "UNH": 300, "JNJ": 420,
     "MRK": 210, "AMGN": 160, "CAT": 200, "BA": 170, "HON": 140, "MMM": 85, "SHW": 90, "CVX": 300,
 }
+WORLD_WEIGHTS = {
+    "NVDA": 4400, "MSFT": 3800, "AAPL": 3500, "GOOGL": 2800, "AMZN": 2400, "META": 1900, "AVGO": 1500, "TSM": 1200,
+    "2222.SR": 1500, "BRK-B": 1050, "TSLA": 1300, "JPM": 800, "LLY": 750, "WMT": 820, "V": 650, "ORCL": 650,
+    "XOM": 480, "0700.HK": 650, "005930.KS": 450, "ASML.AS": 300, "SAP.DE": 300, "MC.PA": 300, "RMS.PA": 260,
+    "NOVO-B.CO": 220, "NESN.SW": 250, "7203.T": 260, "RY.TO": 190, "SHOP.TO": 200,
+}
 # Par place : la table des poids et le poids d'une valeur qui n'y figure pas (une petite valeur)
-CITY_WEIGHTS = {"france": (WEIGHTS, 0.5), "canada": (TSX_WEIGHTS, 8), "usa": (USA_WEIGHTS, 60)}
+CITY_WEIGHTS = {"monde": (WORLD_WEIGHTS, 100), "france": (WEIGHTS, 0.5), "canada": (TSX_WEIGHTS, 8), "usa": (USA_WEIGHTS, 60)}
 CITY_TOWERS = 40  # la maquette n'a que 8 × 5 cases (models.js::city)
 PLACES = ("^FCHI", "^GDAXI", "^FTSE", "^GSPC", "^N225", "^HSI", "000001.SS")  # les places du globe (models.js)
 
