@@ -136,6 +136,20 @@ function city(data, pal, scene) {
     root, view, intro: 0.15 + towers.length * 0.035 + 1.4,
     pose(kind) {
       chapter = kind;
+      // le film du jour (accueil) : « n:<nom> » vise cette tour ; la caméra tourne lentement autour, comme un plan
+      // de drone ; « overview » survole toute la ville
+      const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const a = still ? 0.6 : performance.now() / 1000 * 0.11;
+      // sur grand écran, le sujet se tient à droite (le titre et le bandeau sont à gauche) : la caméra glisse de côté
+      const orbit = (x, y, z, r, up, angle, side) => {
+        const pan = innerWidth > 760 ? r * side : 0, rx = Math.cos(angle) * pan, rz = -Math.sin(angle) * pan;
+        return { pos: [x + Math.sin(angle) * r - rx, y + up, z + Math.cos(angle) * r - rz], look: [x - rx, y, z - rz] };
+      };
+      if (kind.startsWith("n:")) {
+        const t = towers.find((x) => x.n === kind.slice(2));
+        if (t) return orbit(t.x, t.h * 0.5, t.z, 8.5 + t.h * 0.8, 6.5 + t.h * 0.35, a, 0.3);
+      }
+      if (kind === "film") return orbit(0, 0.6, 0, 23, 11, 0.55 + Math.sin(a * 0.5) * 0.35, 0.22);
       if (kind === "up" && ups[0]) return focus(ups[0]);
       if (kind === "down" && downs[0]) return focus(downs[0]);
       if (kind === "news") return { pos: [-10.5, 6.4, 12], look: [0, 1.3, 0] };
@@ -143,7 +157,8 @@ function city(data, pal, scene) {
     },
     update(t, dt) {
       let moving = false;
-      const lit = chapter === "up" ? ups[0] : chapter === "down" ? downs[0] : null;
+      const lit = chapter === "up" ? ups[0] : chapter === "down" ? downs[0]
+        : chapter.startsWith("n:") ? towers.find((x) => x.n === chapter.slice(2)) || null : null;
       const k = 1 - Math.exp(-dt * 4);
       for (const tw of towers) {
         const s = Math.max(0.001, overshoot(t, tw.delay, 0.75));
@@ -166,12 +181,102 @@ function city(data, pal, scene) {
       (id) => towers[id].n),
     setHover(id) { hover = id == null ? null : towers[id]; },
     labels() {
+      if (chapter.startsWith("n:")) {
+        const t = towers.find((x) => x.n === chapter.slice(2));
+        return t ? [{ id: t.n, text: `${t.n}${t.c != null ? ` ${signed(t.c)}` : ""}`, tone: (t.c ?? 0) >= 0 ? "up" : "down",
+          pos: new THREE.Vector3(t.x, t.h + 0.4, t.z), opacity: 1 }] : [];
+      }
       const lit = chapter === "up" ? ups : chapter === "down" ? downs : [];
       return lit.map((t, i) => ({ id: t.n, text: `${t.n} ${signed(t.c)}`, tone: t.c >= 0 ? "up" : "down",
         pos: new THREE.Vector3(t.x, t.h + 0.4, t.z), opacity: i === 0 ? 1 : 0.75 }));
     },
   };
 }
+
+// --- Le film du jour (accueil, guide 41) ----------------------------------------------------------------------------
+// Les seules entreprises du jour, en rang et bien espacées, comme une ligne d'horizon : la hauteur suit la taille de
+// l'entreprise, le toit sa séance, son nom flotte au-dessus. La caméra glisse de l'une à l'autre (« n:<nom> »), celle
+// qu'on montre s'allume, les autres s'effacent un peu ; « film » montre toute la rangée.
+function skyline(data, pal, scene) {
+  lights(scene, pal, { reach: 9, map: 2048, sun: [-6, 12, 8], shadow: !isPhone() });
+  const root = new THREE.Group(), rnd = random(7), given = (data.towers || []).slice(0, 8);
+  const n = Math.max(1, given.length), step = 2.6, fw = 1.15;
+  const W = n * step + 1.4, D = 3.6;
+  root.add(plinth(pal, W, D));
+  const slab = new THREE.Mesh(new RoundedBoxGeometry(W, 0.16, D, 3, 0.06).translate(0, -0.08, 0), mat(pal.plinth));
+  slab.receiveShadow = true;
+  root.add(slab);
+  const wmax = Math.max(...given.map((t) => t.w || 1), 1);
+  const towers = given.map((t, k) => {
+    const h = 1.6 + 4.4 * Math.sqrt((t.w || 1) / wmax), x = (k - (n - 1) / 2) * step;
+    const g = new THREE.Group(), body = new THREE.Group(), facade = skin(pal);
+    const podium = new THREE.Mesh(new RoundedBoxGeometry(fw + 0.24, 0.3, fw + 0.24, 2, 0.04).translate(0, 0.15, 0), mat(pal.relief));
+    const shaft = new THREE.Mesh(facadeBox(fw, h - 0.3, fw, 0.17, rnd()), facade);
+    shaft.position.y = 0.3;
+    const roof = new THREE.Mesh(new RoundedBoxGeometry(fw + 0.06, 0.12, fw + 0.06, 2, 0.03).translate(0, 0.06, 0),
+      mat(changeColor(pal, t.c)));
+    roof.position.y = h;
+    body.add(podium, shaft, roof);
+    body.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+    body.scale.y = 0.001;
+    g.add(body);
+    g.position.set(x, 0, 0);
+    tag(g, k);
+    root.add(g);
+    return { ...t, h: h + 0.12, x, g, body, facade, delay: 0.2 + k * 0.12 };
+  });
+  let chapter = "film", hover = null;
+  const view = { pos: [4, 6, 19], look: [0, 2, 0], fov: 28, aspect: 1.6 };
+  const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const current = () => chapter.startsWith("n:") ? towers.find((x) => x.n === chapter.slice(2)) || null : null;
+  // Toute la rangée reste à l'écran : sur grand écran, dans les 60 % de droite (le texte est à gauche) ; la caméra
+  // se rapproche un peu de l'entreprise montrée et se balance doucement, comme un travelling
+  const shot = (focusX, close) => {
+    const wide = innerWidth > 760, fov = (view.fov * Math.PI) / 180;
+    const asp = Math.max(0.45, innerWidth / Math.max(320, Math.min(innerHeight * (wide ? 0.9 : 0.86), 896)));
+    const span = wide ? W / 0.46 : Math.min(W / 0.92, 9.5);
+    const d = (span / (2 * Math.tan(fov / 2) * asp)) * (close ? 0.86 : 1);
+    const seen = 2 * d * Math.tan(fov / 2) * asp;
+    const lx = (wide ? focusX * 0.35 : focusX) - (wide ? seen * 0.23 : 0);
+    const a = (still() ? 0 : Math.sin(performance.now() / 1000 * 0.22) * 0.08) + 0.22;
+    const y = wide ? 2.4 : 2.9;
+    return { pos: [lx + Math.sin(a) * d, y + d * 0.2, Math.cos(a) * d], look: [lx, y, 0] };
+  };
+  return {
+    root, view, intro: 0.2 + n * 0.12 + 1.2,
+    pose(kind) {
+      chapter = kind;
+      const t = current();
+      return t ? shot(t.x, true) : shot(0, false);
+    },
+    update(t, dt) {
+      let moving = false;
+      const lit = current(), k = 1 - Math.exp(-dt * 4);
+      for (const tw of towers) {
+        const s = Math.max(0.001, overshoot(t, tw.delay, 0.8));
+        if (tw.body.scale.y !== s) { tw.body.scale.y = s; moving = true; }
+        const m = tw.facade, base = m.userData.lit * phase(t, tw.delay + 0.6, 0.5);
+        const goal = lit && tw !== lit ? base * 0.3 : base * (tw === lit || tw === hover ? 1.7 : 1);
+        if (Math.abs(m.emissiveIntensity - goal) > 0.003) { m.emissiveIntensity += (goal - m.emissiveIntensity) * (t < 99 ? 1 : k); moving = true; }
+        const fade = lit && tw !== lit ? (pal.dark ? 0.45 : 0.6) : 1;
+        if (Math.abs(m.opacity - fade) > 0.004) { m.opacity += (fade - m.opacity) * k; moving = true; }
+        const lift = tw === lit ? 0.15 : 0;
+        if (Math.abs(tw.g.position.y - lift) > 0.002) { tw.g.position.y += (lift - tw.g.position.y) * k; moving = true; }
+      }
+      return moving;
+    },
+    pick: (ray) => pickFrom(ray, towers.map((t) => t.g), (id) => `${towers[id].n}${towers[id].c != null ? `, ${signed(towers[id].c)}` : ""}`,
+      (id) => towers[id].n),
+    setHover(id) { hover = id == null ? null : towers[id]; },
+    labels() {
+      const lit = current(), narrow = innerWidth <= 760;
+      return towers.filter((t) => !narrow || !lit || t === lit).map((t) => ({
+        id: t.n, text: `${t.n}${t.c != null ? `  ${signed(t.c)}` : ""}`, tone: (t.c ?? 0) >= 0 ? "up" : "down",
+        pos: new THREE.Vector3(t.x, t.h + 0.45 + (t === lit ? 0.15 : 0), 0), opacity: !lit || t === lit ? 1 : 0.5 }));
+    },
+  };
+}
+
 const WHITE = new THREE.Color(1, 1, 1);
 
 // --- Le globe de bureau (Marchés) --------------------------------------------------------------------------------
@@ -567,4 +672,4 @@ function hand(root, pal) {   // quatre réponses en éventail ; la bonne se lèv
   };
 }
 
-export const MODELS = { city, globe, coins, orb, ...ATELIER };
+export const MODELS = { city, skyline, globe, coins, orb, ...ATELIER };

@@ -116,6 +116,51 @@ function wires(gsap, ST) {
 // --- Le récit de la séance (accueil) ---------------------------------------------------------------------------------
 // La section est haute de plusieurs écrans ; sa scène reste collée en haut (position: sticky). Le défilement à
 // travers la section choisit le chapitre affiché.
+// --- Le film du jour (accueil, guide 41) ------------------------------------------------------------------------------
+// Les scènes défilent seules (6 s chacune) : la caméra de la maquette vise l'entreprise (window.__fvFilm, lu par
+// vitrines.js), son bandeau apparaît, la barre de la scène se remplit. Pause au bouton, au survol du bandeau, hors de
+// l'écran ou onglet caché ; un clic sur une barre saute à la scène. Mouvements réduits : pas de défilement automatique.
+function installFilm() {
+  const SCENE = 6, state = (window.__fvFilm = { el: null, kinds: ["film"], chapter: 0 });
+  let cards = [], bars = [], started = 0, held = false, paused = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let shown = 0, elapsed = 0, last = performance.now();
+  const go = (i) => {
+    shown = (i + cards.length) % cards.length; elapsed = 0;
+    state.chapter = shown;
+    cards.forEach((c, k) => { c.classList.toggle("is-active", k === shown); c.setAttribute("aria-hidden", k === shown ? "false" : "true"); });
+    bars.forEach((b, k) => { b.classList.toggle("is-active", k === shown); b.classList.toggle("is-done", k < shown);
+      b.style.setProperty("--fill", k < shown ? "1" : "0"); });
+    for (const el of cards[shown].querySelectorAll(".fv-odo")) el.__fvRoll?.();
+  };
+  const setup = (el) => {
+    state.el = el; held = false;
+    cards = [...el.querySelectorAll(".fv-film-scene")];
+    bars = [...el.querySelectorAll(".fv-film-bars li")];
+    state.kinds = cards.map((c) => c.dataset.pose === "overview" ? "film" : c.dataset.pose);
+    bars.forEach((b, i) => b.querySelector("button").addEventListener("click", () => go(i)));
+    const play = el.querySelector(".fv-film-play");
+    const label = () => { play.textContent = paused ? "▶" : "❚❚"; play.setAttribute("aria-label", paused ? "Lire" : "Mettre en pause");
+      el.classList.toggle("is-paused", paused); };
+    play.addEventListener("click", () => { paused = !paused; label(); });
+    el.querySelector(".fv-film-cards").addEventListener("pointerenter", () => { held = true; });
+    el.querySelector(".fv-film-cards").addEventListener("pointerleave", () => { held = false; });
+    label(); go(0);
+  };
+  const tick = (now) => {
+    requestAnimationFrame(tick);
+    const dt = Math.min(1, (now - last) / 1000); last = now;
+    const el = document.querySelector(".fv-film");
+    if (!el) { state.el = null; return; }
+    if (el !== state.el) setup(el);
+    const box = el.getBoundingClientRect();
+    if (paused || held || document.hidden || box.bottom < 80 || box.top > innerHeight || cards.length < 2) return;
+    elapsed += dt;
+    bars[shown]?.style.setProperty("--fill", Math.min(1, elapsed / SCENE).toFixed(3));
+    if (elapsed >= SCENE) go(shown + 1);
+  };
+  requestAnimationFrame(tick);
+}
+
 function installStory() {
   const state = (window.__fvStory = { el: null, chapter: 0, progress: 0, kinds: [] });
   const setup = (story) => {
@@ -195,6 +240,7 @@ export async function installMotion() {
   window.__fvMotion = true;
   installClocks();
   installStory();
+  installFilm();
   let gsap;
   try { gsap = await loadGsap(); } catch { return; }   // sans GSAP : pas de rouleaux ni d'impression, rien ne casse
   const ST = window.ScrollTrigger;

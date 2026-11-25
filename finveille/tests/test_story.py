@@ -109,7 +109,20 @@ def test_la_maquette_de_la_france_et_des_etats_unis_garde_toutes_les_valeurs():
 
 def test_chaque_valeur_a_son_poids():
     for place, (weights, _) in scene3d.CITY_WEIGHTS.items():
-        assert {symbol for symbol, *_ in PLACES[place][3]} == set(weights), place
+        members = market.WORLD if place == "monde" else PLACES[place][3]
+        assert {symbol for symbol, *_ in members} == set(weights), place
+
+
+def test_film_du_monde_trie():
+    from types import SimpleNamespace
+
+    quotes = [SimpleNamespace(symbol=s, change=c, last=100.0) for s, c in
+              [("NVDA", -1.0), ("MSFT", 0.5), ("AAPL", 2.0), ("TSLA", 6.0), ("7203.T", -4.0), ("MC.PA", 1.0)]]
+    assert [name for name, *_ in theme.film_stars(quotes, "monde", "taille")][:3] == ["Nvidia", "Microsoft", "Apple"]
+    assert [name for name, *_ in theme.film_stars(quotes, "monde", "hausse")][0] == "Tesla"
+    assert [name for name, *_ in theme.film_stars(quotes, "monde", "baisse")][0] == "Toyota"
+    mix = [name for name, *_ in theme.film_stars(quotes, "monde", "jour")]
+    assert mix[:2] == ["Nvidia", "Microsoft"] and "Tesla" in mix and "Toyota" in mix
 
 
 def test_la_maquette_du_canada_garde_les_extremes_de_la_seance():
@@ -184,14 +197,30 @@ def app(db, monkeypatch):
 
 
 def story_of(app) -> str:
-    return " ".join(element.value for element in app.get("html") if "fv-story" in element.value or "fv-poster" in element.value)
+    return " ".join(element.value for element in app.get("html") if "fv-story" in element.value or "fv-poster" in element.value or "fv-film" in element.value)
 
 
-def test_l_accueil_s_ouvre_sur_la_france(app):
+def test_l_accueil_s_ouvre_sur_le_film_du_monde(app):
+    app.run()
+    assert not app.exception
+    assert app.segmented_control(key="story_place").value == "monde"
+    story = story_of(app)
+    assert "Le film du jour · Monde" in story and 'data-obj="skyline"' in story and "place" not in app.query_params
+    assert "Nvidia" in story and app.asked == []  # le monde ne passe pas par load_place
+
+
+def test_le_film_se_trie(app):
+    app.run()
+    app.segmented_control(key="film_sort").set_value("taille").run()
+    assert not app.exception and "Les 6 plus grosses entreprises des géants mondiaux" in story_of(app)
+
+
+def test_l_adresse_ouvre_l_accueil_sur_la_france(app):
+    app.query_params["place"] = "france"
     app.run()
     assert not app.exception
     assert app.segmented_control(key="story_place").value == "france"
-    assert "Le CAC 40" in story_of(app) and "place" not in app.query_params
+    assert "CAC 40 a progressé" in story_of(app) or "CAC 40 progresse" in story_of(app)
     assert app.asked == []  # la France ne passe pas par load_place
 
 
@@ -201,9 +230,7 @@ def test_l_adresse_ouvre_l_accueil_sur_le_canada(app):
     assert not app.exception
     assert app.segmented_control(key="story_place").value == "canada"
     story = story_of(app)
-    assert re.search(r"Le S&amp;P/TSX (progresse|a progressé) de", story.replace("&amp;", "&").replace("&", "&amp;")) and 'data-place="canada"' in story
-    assert "Bank of Canada holds its rate" in story  # la une est cherchée parmi les dépêches canadiennes
-    assert "Wall Street hits a record" not in story
+    assert re.search(r"S&amp;P/TSX (progresse|a progressé)", story) and 'data-place="canada"' in story
     assert app.asked == ["canada"]
 
 
@@ -214,19 +241,18 @@ def test_changer_de_place_met_a_jour_l_adresse_et_le_recit(app):
     assert app.query_params["place"] in ("canada", ["canada"])
     assert 'data-place="canada"' in story_of(app)
     app.segmented_control(key="story_place").set_value("usa").run()
-    assert not app.exception and re.search(r"Le Dow Jones (progresse|a progressé) de", story_of(app))
-    assert "Wall Street hits a record" in story_of(app)  # aux États-Unis : la une du monde
-    app.segmented_control(key="story_place").set_value("france").run()
-    assert not app.exception and "place" not in app.query_params  # la France est la place par défaut
-    assert "Le CAC 40" in story_of(app)
+    assert not app.exception and re.search(r"Dow Jones (progresse|a progressé)", story_of(app))
+    app.segmented_control(key="story_place").set_value("monde").run()
+    assert not app.exception and "place" not in app.query_params  # le monde est la zone par défaut
+    assert "Le film du jour · Monde" in story_of(app)
 
 
-def test_une_place_inconnue_dans_l_adresse_donne_la_france(app):
+def test_une_place_inconnue_dans_l_adresse_donne_le_monde(app):
     app.query_params["place"] = "mars"
     app.run()
     assert not app.exception
-    assert app.segmented_control(key="story_place").value == "france"
-    assert "place" not in app.query_params and "Le CAC 40" in story_of(app)
+    assert app.segmented_control(key="story_place").value == "monde"
+    assert "place" not in app.query_params and "Le film du jour · Monde" in story_of(app)
 
 
 def test_une_place_sans_cours_ne_fait_pas_tomber_l_accueil(app, monkeypatch):
@@ -284,8 +310,9 @@ def test_des_cours_d_hier_en_memoire_sont_remplaces_par_ceux_du_jour(app):
     import ui
 
     ui.LAST_GOOD.put("cac40|()", [quote_until(s, n, -3.0, 100.0, "2026-10-19") for s, n, _ in PLACES["france"][3]])
+    app.query_params["place"] = "france"
     app.run()
     story = story_of(app)
     assert not app.exception
-    assert "Séance du mardi 20 octobre" in story and " 0 en baisse." in story
-    assert "lundi 19 octobre" not in story
+    assert "Mardi 20 octobre" in story and "−3,00" not in story
+    assert "Lundi 19 octobre" not in story

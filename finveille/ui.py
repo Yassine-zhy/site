@@ -736,6 +736,22 @@ def load_place(key: str):
     return _resilient("place", _place, key, empty=(None, []))
 
 
+@st.cache_data(ttl=600, max_entries=2, show_spinner=False)
+@_network
+def _world():
+    return _not_empty(fetch_quotes([(symbol, name, country, "%") for symbol, name, country in market.WORLD]))
+
+
+def load_world() -> list:
+    """Les cours des géants mondiaux (le film du jour de l'accueil), gardés 10 minutes."""
+    return _resilient("world", _world, empty=[])
+
+
+def known_world() -> list:
+    """Les cours des géants mondiaux déjà en mémoire (aucun appel réseau), ou une liste vide."""
+    return LAST_GOOD.get("world|()") or []
+
+
 def known_cac40() -> list:
     """Les cours du CAC 40 déjà en mémoire (aucun appel réseau), ou une liste vide si personne ne les a demandés."""
     return LAST_GOOD.get("cac40|()") or []
