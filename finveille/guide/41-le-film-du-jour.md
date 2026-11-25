@@ -23,7 +23,7 @@ Chaque jour a donc son film : rien n'est enregistré, tout vient des cours de la
 | --- | --- |
 | `theme.film_html` | le HTML : titre, barres des scènes, un bandeau par entreprise, la maquette |
 | `static/fv3d/models.js::skyline` | la rangée d'immeubles ; `pose("n:<nom>")` cadre la caméra, la tour s'allume |
-| `static/fv3d/motion.js::installFilm` | fait défiler les scènes (6 s), pause au bouton, au survol, hors de l'écran |
+| `static/fv3d/motion.js::installFilm` | fait défiler les entreprises (4 s chacune) ; un clic sur une pastille ou un immeuble la montre et arrête le défilement 12 s ; pause au bouton, au survol, hors de l'écran |
 | `static/fv3d/vitrines.js` | donne la scène en cours (`window.__fvFilm`) à la maquette |
 
 La caméra garde toute la rangée dans la carte et se balance doucement ; seule l'entreprise montrée affiche sa variation. Avec les
@@ -34,3 +34,9 @@ mouvements réduits, le film ne défile pas tout seul : on clique sur les barres
 ```bash
 python -m pytest tests/test_story.py
 ```
+
+## Tout se clique
+
+- un **immeuble** ou une **pastille** (nom, courbe d'un mois, variation) : le film montre cette entreprise ;
+- le **bandeau** (rôle, nom, évolution sur un mois, capitalisation, cours) : sa fiche ;
+- à droite, les **titres du moment** (l'article) et **les marchés** (CAC 40, S&P 500, bitcoin, EUR/USD, or : leur fiche).
