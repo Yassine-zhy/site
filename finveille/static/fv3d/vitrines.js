@@ -27,10 +27,7 @@ const finePointer = () => window.matchMedia("(hover: hover) and (pointer: fine)"
 const coarse = () => window.matchMedia("(pointer: coarse)").matches;
 const ease = (k) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
 
-function darkMode() {   // les maquettes sont posées sur l'aplat bleu des en-têtes (guide 42) : toujours leur version claire
-  return false;
-}
-function pageDarkMode() {   // le thème de Streamlit, d'après la couleur du fond
+function darkMode() {   // le thème de Streamlit, d'après la couleur du fond
   const app = document.querySelector(".stApp");
   const m = (app ? getComputedStyle(app).backgroundColor : "").match(/\d+(\.\d+)?/g);
   if (!m) return true;
