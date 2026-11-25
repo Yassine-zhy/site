@@ -286,8 +286,9 @@ def tell(place: str, index, quotes) -> None:
         lead_id, echoes, _ = lead_for(tuple(a.id for a in pool[:150]))
         lead = next((a for a in pool if a.id == lead_id), pool[0])
     with story:
-        headlines = [a for a in pool if a is not lead][:5] if pool else []  # la une ouvre le fil, juste dessous
-        film = theme.film_html(index, quotes, place=place, sort=sort, headlines=headlines)
+        headlines = [a for a in pool if a is not lead][:4] if pool else []  # la une ouvre le fil, juste dessous
+        markets = hero_quotes("^FCHI", "^GSPC", "BTC-USD", "EURUSD=X", "GC=F")
+        film = theme.film_html(index, quotes, place=place, sort=sort, headlines=headlines, markets=markets)
         if film:
             st.html(film)
         elif place == "monde":  # les cours arrivent (load_world, plus bas)
