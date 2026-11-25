@@ -1,7 +1,8 @@
 # Étape 41 — Le film du jour
 
-L'accueil s'ouvre sur un « film » : les entreprises qui comptent aujourd'hui, en immeubles 3D, que la caméra montre
-l'une après l'autre. Le reste du site prend le même style (titres et chiffres en Archivo, cartes nettes, variations
+L'accueil s'ouvre sur deux cartes, sous le bandeau des marchés : à gauche un « film », les entreprises qui comptent
+aujourd'hui en immeubles 3D, que la caméra montre l'une après l'autre ; à droite les cinq titres du moment (la une
+ouvre le fil, juste dessous). Tout tient dans le premier écran : les dépêches arrivent sans long défilement. Le reste du site prend le même style (titres et chiffres en Archivo, cartes nettes, variations
 pleines).
 
 ## Ce que montre le film
@@ -25,7 +26,7 @@ Chaque jour a donc son film : rien n'est enregistré, tout vient des cours de la
 | `static/fv3d/motion.js::installFilm` | fait défiler les scènes (6 s), pause au bouton, au survol, hors de l'écran |
 | `static/fv3d/vitrines.js` | donne la scène en cours (`window.__fvFilm`) à la maquette |
 
-La caméra garde toute la rangée à l'écran (à droite du texte sur grand écran) et se balance doucement. Avec les
+La caméra garde toute la rangée dans la carte et se balance doucement ; seule l'entreprise montrée affiche sa variation. Avec les
 mouvements réduits, le film ne défile pas tout seul : on clique sur les barres.
 
 ## Tester
