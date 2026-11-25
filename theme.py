@@ -1500,6 +1500,66 @@ a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255
 /* L'accueil : l'affiche passe sous la barre du haut, et le bandeau des cours, redondant avec elle, s'efface */
 .stApp:has(.fv-poster) [data-testid="stElementContainer"]:has(.fv-tape) { display: none; }
 .stApp:has(.fv-poster) [data-testid="stMainBlockContainer"] { padding-top: 0 !important; }
+/* ==== Le langage de l'affiche dans tout le site (guide 42) =========================================================
+   Les mêmes choix que l'affiche de l'accueil, sans aplat : le bleu FinVeille franc (plus de violet ni de halo), les
+   titres et les chiffres en Archivo (serré pour les nombres, comme les cours de l'affiche), des cartes nettes avec un
+   filet franc et sans ombre, des pastilles de variation pleines. */
+.stApp, [data-testid="stDialog"] {
+  --fv-brand: light-dark(#1534ff, #6f88ff);
+  --fv-brand-2: var(--fv-brand);
+  --fv-glow: transparent; --fv-glow-2: transparent; --fv-glare: transparent; --fv-hi: transparent;
+  --btn-primary-bg: #1534ff; --btn-primary-glow: none;
+  --accent-bar: var(--fv-brand);
+  --fv-display: "Archivo", "IBM Plex Sans", system-ui, sans-serif;
+  --fv-elev: none; --fv-elev-hover: none; --card-shadow: none; --card-shadow-hover: none;
+  --fv-line: light-dark(#dfe3ee, #1d2335); --fv-line-strong: light-dark(#c3cad9, #2c3550);
+}
+/* Titres : Archivo, gras et serré */
+.fv-hero-title, .fv-story-title, .fv-section h2, .fv-box-title, .fv-about-card h3,
+.stApp h1, .stApp h2, .stApp h3 { font-family: "Archivo", var(--fv-sans) !important; font-weight: 800 !important;
+  font-stretch: 88%; letter-spacing: -.025em; }
+.fv-hero-title { font-size: clamp(2.6rem, 5.4vw, 4.6rem) !important; line-height: .95 !important; font-weight: 900 !important;
+  font-stretch: 92%; letter-spacing: -.04em; max-width: 16ch; }
+.fv-hero-title em { color: var(--fv-brand) !important; -webkit-text-fill-color: var(--fv-brand); background: none !important; }
+.fv-section h2 { font-size: 1.7rem !important; }
+.fv-section h2::before { width: 10px; height: 10px; border-radius: 2px; background: var(--fv-brand); }
+/* Les titres des dépêches, comme la une de l'affiche */
+.fv-headline, .fv-lead .fv-headline { font-family: "Archivo", var(--fv-sans) !important; font-weight: 700 !important;
+  font-stretch: 92%; letter-spacing: -.012em; }
+/* Les chiffres : Archivo serré, comme les cours de l'affiche */
+.fv-kpi-value, .fv-tile-value, .fv-float-value, .fv-tick, .fv-table td { font-family: "Archivo", var(--fv-sans) !important;
+  font-variant-numeric: tabular-nums; }
+.fv-kpi-value, .fv-tile-value, .fv-float-value { font-weight: 800 !important; font-stretch: 75%; letter-spacing: -.01em; }
+.fv-kpi-value { font-size: 2.3rem !important; }
+.fv-tile-value { font-size: 1.9rem !important; }
+.fv-tick { font-stretch: 90%; font-size: .82rem; }
+/* Cartes, tuiles, boîtes : un filet franc, pas d'ombre, pas de liseré dégradé */
+.fv-card, .fv-kpi, .fv-tile, .fv-float, .fv-table-wrap, [class*="st-key-fvpanel_"], [class*="st-key-fvlead_"],
+[class*="st-key-fvbox_"], [class*="st-key-fvchart_"], [class*="st-key-fvtile_"], [class*="st-key-fvcard_"] {
+  box-shadow: none !important; border-width: 1.5px !important; background-image: none !important; }
+.fv-tile::before, .fv-kpi::before, .fv-float::before { height: 4px !important; opacity: 1 !important; background: var(--fv-line-strong) !important; }
+.fv-tile.is-up::before, .fv-float.is-up::before { background: var(--fv-up) !important; }
+.fv-tile.is-down::before, .fv-float.is-down::before { background: var(--fv-down) !important; }
+.fv-kpi::before { background: var(--fv-brand) !important; }
+[class*="st-key-fvlead_"]::after, [class*="st-key-fvtile_"]::after { display: none !important; }
+.fv-card:hover, .fv-tile:hover, [class*="st-key-fvtile_"]:hover, [class*="st-key-fvcard_"]:hover { border-color: var(--fv-brand) !important;
+  transform: none !important; }
+/* Les variations : des pastilles pleines, comme sur l'affiche */
+.fv-pill-up, .fv-pill-down { color: #fff !important; font-weight: 700; }
+.fv-pill-up { background: light-dark(#14a05a, #1f9e57) !important; }
+.fv-pill-down { background: light-dark(#e0303f, #e5484d) !important; }
+.fv-pill-up::before, .fv-pill-down::before { color: #fff; }
+.fv-float.is-up .fv-float-delta, .fv-tile-delta .fv-up { background: light-dark(#14a05a, #1f9e57) !important; color: #fff !important; }
+.fv-float.is-down .fv-float-delta, .fv-tile-delta .fv-down { background: light-dark(#e0303f, #e5484d) !important; color: #fff !important; }
+.fv-float-delta, .fv-tile-delta .fv-up, .fv-tile-delta .fv-down { font-family: "Archivo", var(--fv-sans) !important; font-weight: 700 !important; border-radius: 4px !important; }
+.fv-float { background: var(--fv-surface) !important; backdrop-filter: none !important; }
+.stApp .fv-float-value { font-size: 1.7rem !important; line-height: 1.05 !important; margin-top: .15rem; }
+@media (max-width: 640px) { .stApp .fv-float-value { font-size: 1.3rem !important; } }
+/* Boutons principaux : le bleu plein de l'affiche */
+.stApp [data-testid="stBaseButton-primary"] { background: #1534ff !important; border-color: #1534ff !important; box-shadow: none !important; }
+.stApp [data-testid="stBaseButton-primary"]:hover { background: #0f27c7 !important; }
+/* Le fond : net, sans halo violet */
+.stApp { background: var(--fv-bg) !important; }
 </style>
 
 """
