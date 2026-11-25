@@ -14,7 +14,7 @@ from core.filters import filter_articles
 from core.market import PLACES, align_session, resolve_view
 from theme import esc
 from ui import (LAST_GOOD, NO_STATUS, api_keys, article_card, current_user, favicons, flush_toast, hero_quotes,
-                known_cac40, load_articles, load_place, load_trends, setting, warm_cac40)
+                known_cac40, known_world, load_articles, load_place, load_world, load_trends, setting, warm_cac40)
 
 user = current_user()  # None : visiteur non connecté (il voit le fil, sans favoris ni « lu »)
 PAGE_SIZE = setting(user, "page_size", 20)  # nombre d'articles affichés par « page » (réglable)
@@ -26,15 +26,20 @@ def show_more():
 
 
 def place_from_url(value) -> str:
-    """La place racontée demandée par le paramètre d'adresse `place` ; la France si elle est absente ou inconnue."""
-    place = resolve_view(value, "france")
-    return place if place in PLACES else "france"
+    """La zone du film demandée par le paramètre d'adresse `place` ; le monde si elle est absente ou inconnue."""
+    place = resolve_view(value, "monde")
+    return place if place in theme.FILM_ZONES else "monde"
 
 
 def keep_place() -> None:
-    """Le choix de la place ne se désélectionne pas : un clic sur la place choisie revient à la France."""
+    """Le choix de la zone ne se désélectionne pas : un clic sur la zone choisie revient au monde."""
     if st.session_state.story_place is None:
-        st.session_state.story_place = "france"
+        st.session_state.story_place = "monde"
+
+
+def keep_sort() -> None:
+    if st.session_state.film_sort is None:
+        st.session_state.film_sort = "jour"
 
 
 def search_for(term: str) -> None:
@@ -58,14 +63,20 @@ scene3d.page("feed")
 # le navigateur (motion.js). La place suit l'adresse (`?place=canada`), comme la page Marchés avec `?view=`.
 story = st.empty()  # l'affiche, tout en haut ; le choix de la place juste dessous
 with st.container(horizontal=True, vertical_alignment="center", gap="small", key="fvplace"):
-    st.html('<span class="fv-place-label">La séance :</span>', width="content")
+    st.html('<span class="fv-place-label">Zone :</span>', width="content")
     choice = st.segmented_control(
-        "Place racontée", options=list(PLACES), format_func=lambda key: PLACES[key][0], key="story_place",
-        default=place_from_url(st.query_params.get("place")), label_visibility="collapsed", on_change=keep_place,
+        "Zone du film", options=list(theme.FILM_ZONES), format_func=lambda key: theme.FILM_ZONES[key][0],
+        key="story_place", default=place_from_url(st.query_params.get("place")), label_visibility="collapsed",
+        on_change=keep_place,
     )
-place = choice or "france"  # on ne peut pas désélectionner : la France revient
-if st.query_params.get("place") != (None if place == "france" else place):  # la France est la place par défaut
-    if place == "france":
+    st.html('<span class="fv-place-label">Trier :</span>', width="content")
+    sort = st.segmented_control(
+        "Tri du film", options=list(theme.FILM_SORTS), format_func=lambda key: theme.FILM_SORTS[key],
+        key="film_sort", default="jour", label_visibility="collapsed", on_change=keep_sort,
+    ) or "jour"
+place = choice or "monde"  # on ne peut pas désélectionner : le monde revient
+if st.query_params.get("place") != (None if place == "monde" else place):  # le monde est la zone par défaut
+    if place == "monde":
         del st.query_params["place"]
     else:
         st.query_params["place"] = place
@@ -266,7 +277,8 @@ def tell(place: str, index, quotes) -> None:
     """L'affiche de la place (theme.poster_html), avec la une du moment (la même que dans le fil, calculée une fois pour tous les
     visiteurs). Au Canada, la une est cherchée parmi les dépêches canadiennes, aux États-Unis parmi celles du monde."""
     # L'indice et ses valeurs viennent de deux téléchargements : on les ramène à la même séance
-    index, quotes, _ = align_session(index, list(quotes or []))
+    if place != "monde":  # le monde : chaque entreprise garde sa dernière séance (Tokyo ferme avant New York)
+        index, quotes, _ = align_session(index, list(quotes or []))
     region = {"canada": "ca", "usa": "monde"}.get(place)
     pool = (filter_region(articles, region) if region else articles) or articles
     lead = echoes = None
@@ -274,11 +286,20 @@ def tell(place: str, index, quotes) -> None:
         lead_id, echoes, _ = lead_for(tuple(a.id for a in pool[:150]))
         lead = next((a for a in pool if a.id == lead_id), pool[0])
     with story:
-        others = hero_quotes(*theme.POSTER_OTHERS.get(place, theme.POSTER_OTHERS["france"]))
-        st.html(theme.poster_html(index, quotes, others, lead, echoes or 0, place=place))
+        headlines = [a for a in pool if a is not lead][:5] if pool else []  # la une ouvre le fil, juste dessous
+        film = theme.film_html(index, quotes, place=place, sort=sort, headlines=headlines)
+        if film:
+            st.html(film)
+        elif place == "monde":  # les cours arrivent (load_world, plus bas)
+            st.html('<div class="fv-story-wait" role="status"><p>Chargement des cours des géants mondiaux…</p></div>')
+        else:  # sans les cours des valeurs : l'affiche, qui se contente de l'indice
+            others = hero_quotes(*theme.POSTER_OTHERS.get(place, theme.POSTER_OTHERS["france"]))
+            st.html(theme.poster_html(index, quotes, others, lead, echoes or 0, place=place))
 
 
-if place == "france":
+if place == "monde":
+    tell(place, None, known_world())
+elif place == "france":
     tell(place, next(iter(hero_quotes("^FCHI")), None), known_cac40())
 elif (known := known_place(place)) is not None:
     tell(place, *known)
@@ -296,7 +317,14 @@ def _sessions(quotes) -> list:
     return [(q.symbol, q.last, q.previous, str(q.history.index[-1])) for q in quotes or [] if q is not None]
 
 
-if place == "france":
+if place == "monde":
+    known = known_world()
+    with capacity.QUEUE.released():
+        with st.container(key="fvquiet"):
+            world = load_world()
+    if world and _sessions(world) != _sessions(known):
+        tell(place, None, world)
+elif place == "france":
     known = known_cac40()
     with capacity.QUEUE.released():  # attente réseau : on laisse sa place dans la file
         cac40 = warm_cac40()

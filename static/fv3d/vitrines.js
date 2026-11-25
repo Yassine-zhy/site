@@ -504,7 +504,7 @@ export function installVitrines() {
           if (v.t < 99) { v.t = 99; v.dirty = true; }
           if (!v.dirty && !v.moving) continue;
         }
-        v.moving = v.step(dt, pointer, v.el.closest(".fv-story") ? story : null);
+        v.moving = v.step(dt, pointer, v.el.closest(".fv-story") ? story : v.el.closest(".fv-film") ? window.__fvFilm : null);
         if (v.moving) v.lens.draw();
       }
     }
@@ -517,7 +517,7 @@ export function installVitrines() {
     for (const v of live.values()) {
       if (!inView(v)) continue;
       v.dirty = true;
-      if (v.step(ms / 1000, pointer, v.el.closest(".fv-story") ? story : null)) v.lens.draw();
+      if (v.step(ms / 1000, pointer, v.el.closest(".fv-story") ? story : v.el.closest(".fv-film") ? window.__fvFilm : null)) v.lens.draw();
     }
   };
 }

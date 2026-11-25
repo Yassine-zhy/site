@@ -1456,7 +1456,7 @@ html:not(.fv-story-on) .fv-story-obj { display: none; }
   .fv-obj-tip, .fv-obj-label { transition: none; }
   .fv-flash { animation: none; outline: 2px solid var(--fv-brand); }
 }
-/* ==== L'affiche de l'accueil (guide 42) =============================================================================
+/* ==== L'affiche de l'accueil (guide 41) =============================================================================
    Un aplat bleu sur toute la largeur de l'écran, le nom en Archivo très large qui monte une fois, la séance dessous. */
 @font-face { font-family: "Archivo"; src: url("app/static/fonts/archivo-latin-variable.woff2") format("woff2");
   font-weight: 500 900; font-stretch: 62% 125%; font-display: swap; }
@@ -1500,7 +1500,7 @@ a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255
 /* L'accueil : l'affiche passe sous la barre du haut, et le bandeau des cours, redondant avec elle, s'efface */
 .stApp:has(.fv-poster) [data-testid="stElementContainer"]:has(.fv-tape) { display: none; }
 .stApp:has(.fv-poster) [data-testid="stMainBlockContainer"] { padding-top: 0 !important; }
-/* ==== Le langage de l'affiche dans tout le site (guide 42) =========================================================
+/* ==== Le langage de l'affiche dans tout le site (guide 41) =========================================================
    Les mêmes choix que l'affiche de l'accueil, sans aplat : le bleu FinVeille franc (plus de violet ni de halo), les
    titres et les chiffres en Archivo (serré pour les nombres, comme les cours de l'affiche), des cartes nettes avec un
    filet franc et sans ombre, des pastilles de variation pleines. */
@@ -1560,7 +1560,7 @@ a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255
 .stApp [data-testid="stBaseButton-primary"]:hover { background: #0f27c7 !important; }
 /* Le fond : net, sans halo violet */
 .stApp { background: var(--fv-bg) !important; }
-/* ==== Du mouvement partout (guide 42) : chaque section se révèle au défilement ==================================== */
+/* ==== Du mouvement partout (guide 41) : chaque section se révèle au défilement ==================================== */
 .fv-section h2 { font-size: clamp(1.8rem, 3.2vw, 2.6rem) !important; font-weight: 900 !important; letter-spacing: -.035em; }
 .fv-tile, .fv-float, .fv-kpi, .fv-card, [class*="st-key-fvtile_"], [class*="st-key-fvcard_"] {
   transition: transform .25s cubic-bezier(.2,.8,.2,1), border-color .2s !important; }
@@ -1580,6 +1580,76 @@ a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255
 }
 @keyframes fv-reveal { from { opacity: 0; transform: translateY(36px) scale(.97); } }
 @keyframes fv-reveal-title { from { opacity: 0; transform: translateX(-28px); letter-spacing: .02em; } }
+/* ==== Le haut de l'accueil (guide 41) : le film du jour en carte, les titres du moment à côté ; les dépêches suivent
+   sans long défilement. Pas d'aplat pleine largeur : deux cartes nettes, comme le reste du site. */
+.fv-home { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 1rem; margin: .4rem 0 1.4rem;
+  font-family: "Archivo", var(--fv-sans); }
+.fv-home:not(.has-news) { grid-template-columns: 1fr; }
+.fv-film, .fv-home-news { position: relative; border: 1.5px solid var(--fv-line); border-radius: 18px; background: var(--fv-surface);
+  overflow: hidden; }
+.fv-film { display: flex; flex-direction: column; }
+.fv-film-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.1rem 1.3rem 0; }
+.fv-film-kicker { display: flex; align-items: center; gap: .5rem; margin: 0 0 .35rem; font-size: .72rem; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--fv-muted); }
+.fv-film-rec { width: .55rem; height: .55rem; border-radius: 50%; background: #e5484d; animation: fv-rec 1.6s ease-in-out infinite; }
+@keyframes fv-rec { 50% { opacity: .25; } }
+.fv-film-title { margin: 0 !important; padding: 0 !important; font: 900 1.75rem/1 "Archivo", var(--fv-sans) !important;
+  font-stretch: 92%; letter-spacing: -.035em; color: var(--fv-text); }
+.fv-film-sub { margin: .35rem 0 0; font: 500 .86rem/1.4 var(--fv-sans); color: var(--fv-muted); }
+.fv-film-play { flex: none; width: 2.4rem; height: 2.4rem; border-radius: 50%; border: 1.5px solid var(--fv-line-strong);
+  background: var(--fv-surface); color: var(--fv-text); font-size: .78rem; cursor: pointer; }
+.fv-film-play:hover { border-color: var(--fv-brand); color: var(--fv-brand); }
+.fv-film-bars { display: flex; gap: .35rem; margin: .8rem 1.3rem 0; padding: 0; list-style: none; }
+.fv-film-bars li { flex: 1; margin: 0; padding: 0; }
+.fv-film-bars button { display: block; width: 100%; height: 12px; padding: 4px 0; border: 0; background: none; cursor: pointer; }
+.fv-film-bars button i { position: relative; display: block; height: 4px; border-radius: 2px; overflow: hidden;
+  background: color-mix(in srgb, var(--fv-text) 14%, transparent); }
+.fv-film-bars button i::after { content: ""; position: absolute; inset: 0; background: var(--fv-brand); transform-origin: left;
+  transform: scaleX(var(--fill, 0)); }
+.fv-film-bars li.is-done button i::after { transform: none; }
+.fv-film-obj { position: relative; height: 17.5rem; margin: 0; }
+.fv-film-obj .fv-obj { aspect-ratio: auto; height: 100%; }
+.fv-film .fv-obj-label { font-family: "Archivo", var(--fv-sans); font-weight: 700; font-size: .8rem; padding: .22rem .5rem; }
+.fv-film .fv-obj-label[data-tone=""] { font-size: .7rem; font-weight: 600; padding: .14rem .4rem; }
+.fv-film-cards { position: relative; height: 5.6rem; margin: 0 .7rem .7rem; }
+.fv-film-scene { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  gap: .2rem 1rem; padding: .75rem 1rem; border-radius: 12px; background: color-mix(in srgb, var(--fv-text) 4%, var(--fv-surface));
+  color: var(--fv-text) !important; text-decoration: none !important; opacity: 0; transform: translateY(8px);
+  pointer-events: none; transition: opacity .4s ease, transform .5s cubic-bezier(.2,.8,.2,1); }
+.fv-film-scene.is-active { opacity: 1; transform: none; pointer-events: auto; }
+.fv-film-scene:hover { background: color-mix(in srgb, var(--fv-brand) 8%, var(--fv-surface)); }
+.fv-film-role { grid-column: 1 / -1; margin: 0; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--fv-brand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fv-film-name { margin: 0; font-size: 1.45rem; font-weight: 900; font-stretch: 90%; letter-spacing: -.025em; line-height: 1.05;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fv-film-figs { display: flex; align-items: center; gap: .55rem; margin: 0; }
+.fv-film-figs b { font-size: 1.45rem; font-weight: 800; font-stretch: 78%; font-variant-numeric: tabular-nums; line-height: 1; }
+.fv-film-chg { padding: .16rem .45rem; border-radius: 5px; font-weight: 800; font-size: .86rem; color: #fff; white-space: nowrap; }
+.fv-film-chg.is-up { background: light-dark(#14a05a, #1f9e57); }
+.fv-film-chg.is-down { background: light-dark(#e0303f, #e5484d); }
+.fv-film-go { display: none; }
+.fv-home-news { display: flex; flex-direction: column; padding: 1.1rem 1.2rem 1rem; }
+.fv-home-label { margin: 0 0 .5rem; font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--fv-muted); }
+.fv-home-news ol { flex: 1; margin: 0; padding: 0; list-style: none; counter-reset: fvh; }
+.fv-home-news li { margin: 0; padding: .7rem 0; border-top: 1px solid var(--fv-line); counter-increment: fvh; }
+.fv-home-news li:first-child { border-top: 0; padding-top: .2rem; }
+.fv-home-news a { color: var(--fv-text) !important; text-decoration: none !important; }
+.fv-home-news li a { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); column-gap: .3rem; }
+.fv-home-news li a::before { content: counter(fvh); grid-row: span 2; font-size: 1.35rem; font-weight: 900; color: var(--fv-brand); line-height: 1.1; }
+.fv-home-meta { font: 500 .74rem/1.3 var(--fv-sans); color: var(--fv-muted); }
+.fv-home-head { margin-top: .15rem; font-size: 1rem; font-weight: 700; font-stretch: 94%; line-height: 1.25; letter-spacing: -.01em;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fv-home-news li a:hover .fv-home-head { color: var(--fv-brand); }
+.fv-home-all { margin-top: .4rem; font-size: .84rem; font-weight: 700; color: var(--fv-brand) !important; }
+@media (max-width: 900px) {
+  .fv-home { grid-template-columns: 1fr; }
+  .fv-film-obj { height: 15rem; }
+  .fv-film-title { font-size: 1.5rem !important; }
+  .fv-film-sub { display: none; }
+  .fv-home-news li:nth-child(n+4) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .fv-film-rec { animation: none; } .fv-film-scene { transition: none; } }
+.st-key-fvplace, .st-key-fvplace > div { flex-wrap: wrap !important; row-gap: .5rem; }
 </style>
 
 """
@@ -1843,7 +1913,7 @@ def story_session(index, members, town: str, now: datetime) -> tuple[str, date |
     return ("closed" if local.time() >= exchange[3] else "live"), session
 
 
-# --- L'affiche de l'accueil (guide 42) -------------------------------------------------------------------------------
+# --- L'affiche de l'accueil (guide 41) -------------------------------------------------------------------------------
 # La première chose qu'on voit en arrivant : un grand aplat bleu, le nom du site en lettres géantes qui montent, et
 # dessous la séance en chiffres (l'indice de la place choisie, Wall Street ou Paris, le bitcoin) avec la une du moment.
 # Les nombres roulent jusqu'à leur valeur (motion.js, classe fv-odo) ; le reste ne bouge pas.
@@ -1912,6 +1982,129 @@ def poster_html(index, members=(), others=(), lead=None, echoes: int = 0, now: d
             '<span aria-hidden="true">Veille</span></h1>'
             f'<p class="fv-poster-sum"><b>{esc(when)}</b> {esc(summary)}</p>'
             f'<div class="fv-poster-row">{first}{cells}</div></section>')
+
+
+FILM_ZONES = {"monde": ("Monde", "des géants mondiaux", "du monde"), "france": ("France", "du CAC 40", "du CAC 40"),
+              "canada": ("Canada", "du S&P/TSX 60", "du S&P/TSX 60"), "usa": ("États-Unis", "du Dow Jones", "des États-Unis")}
+FILM_SUBS = {"jour": "{n} entreprises {among} à suivre : les plus grosses, les plus fortes hausses et les plus fortes baisses.",
+             "taille": "Les {n} plus grosses entreprises {among}, et leur séance.",
+             "hausse": "Les {n} plus fortes hausses {among} sur la séance.",
+             "baisse": "Les {n} plus fortes baisses {among} sur la séance."}
+FILM_SORTS = {"jour": "Le mix du jour", "taille": "Les plus grosses", "hausse": "Les hausses", "baisse": "Les baisses"}
+
+
+def film_members(place: str) -> dict[str, tuple[str, str]]:
+    """Les entreprises d'une zone du film : symbole -> (nom, pays ou secteur)."""
+    from core import market
+
+    rows = market.WORLD if place == "monde" else market.PLACES.get(place, market.PLACES["france"])[3]
+    return {symbol: (name, extra) for symbol, name, extra in rows}
+
+
+def film_stars(quotes, place: str = "monde", sort: str = "jour", count: int = 6) -> list[tuple[str, object, str]]:
+    """Les entreprises du film, dans l'ordre des scènes. « jour » : les deux plus grosses, puis les deux plus fortes
+    hausses et les deux plus fortes baisses (sans doublon) ; « taille », « hausse », « baisse » : les six premières de ce
+    classement. Rend [(nom, cours, rôle)]."""
+    import scene3d
+
+    weights, default = scene3d.CITY_WEIGHTS.get(place, scene3d.CITY_WEIGHTS["monde"])
+    members = film_members(place)
+    known = [q for q in quotes or () if q is not None and q.symbol in members]
+    of = FILM_ZONES.get(place, FILM_ZONES["monde"])[2]
+    heavy = sorted(known, key=lambda q: -weights.get(q.symbol, default))
+    ranked = sorted(known, key=lambda q: q.change, reverse=True)
+    where = (lambda q: f" · {members[q.symbol][1]}") if place == "monde" else (lambda q: "")
+    nth = ["La plus grosse", "La 2ᵉ plus grosse", "La 3ᵉ", "La 4ᵉ", "La 5ᵉ", "La 6ᵉ"]
+    if sort == "taille":
+        picks = [(q, f"{nth[i]} capitalisation {of}{where(q)}") for i, q in enumerate(heavy[:count])]
+    elif sort == "hausse":
+        picks = [(q, f"Hausse n° {i + 1} {of}{where(q)}") for i, q in enumerate(ranked[:count])]
+    elif sort == "baisse":
+        picks = [(q, f"Baisse n° {i + 1} {of}{where(q)}") for i, q in enumerate(ranked[::-1][:count])]
+    else:
+        picks = [(q, f"{nth[i]} capitalisation {of}{where(q)}") for i, q in enumerate(heavy[:2])]
+        picks += [(q, f"{'La plus forte' if i == 0 else 'La 2ᵉ plus forte'} hausse {of}{where(q)}")
+                  for i, q in enumerate(ranked[:2]) if q.change > 0]
+        picks += [(q, f"{'La plus forte' if i == 0 else 'La 2ᵉ plus forte'} baisse {of}{where(q)}")
+                  for i, q in enumerate(ranked[::-1][:2]) if q.change < 0]
+    seen, stars = set(), []
+    for quote, role in picks:
+        if quote.symbol not in seen:
+            seen.add(quote.symbol)
+            stars.append((members[quote.symbol][0], quote, role))
+    return stars[:count]
+
+
+def film_html(index, quotes=(), place: str = "monde", sort: str = "jour", now: datetime | None = None,
+              headlines=()) -> str:
+    """Le film du jour en haut de l'accueil (guide 41) : la maquette de la place en grand, des immeubles dont la hauteur
+    suit le poids de l'entreprise et le toit sa séance ; la caméra passe d'elle-même d'une entreprise du jour à l'autre
+    (film_stars), un bandeau dit qui elle est et comment elle a fini (static/fv3d/motion.js, installFilm). Chaque jour
+    a son film : les entreprises et les couleurs viennent de la séance."""
+    import scene3d
+
+    zone, among, _ = FILM_ZONES.get(place, FILM_ZONES["monde"])
+    town = STORY_PLACES.get(place, STORY_PLACES["france"])[2]
+    now = now or datetime.now(timezone.utc)
+    local = now.astimezone(DISPLAY_TZ)
+    state, session = story_session(index, quotes, town, now)
+    day = fr_date(local).rsplit(" ", 1)[0].capitalize() if state != "past" or session is None else \
+        f"{_DAYS[session.weekday()].capitalize()} {fr_day(session)}"
+    stars = film_stars(quotes, place, sort)
+    scenes = []
+    if index is not None:
+        verb = ("progresse" if index.change >= 0.05 else "recule" if index.change <= -0.05 else "est stable") if state == "live" \
+            else ("a progressé" if index.change >= 0.05 else "a reculé" if index.change <= -0.05 else "est resté stable")
+        tone = "up" if index.change >= 0 else "down"
+        scenes.append(("overview", "La séance",
+                       f'<p class="fv-film-role">{esc(town)} · {"en direct" if state == "live" else "à la clôture"}</p>'
+                       f'<p class="fv-film-name">{esc(index.name)} {verb}</p>'
+                       f'<p class="fv-film-figs"><b>{price(index.last)}</b>'
+                       f'<span class="fv-film-chg is-{tone}">{esc(signed(index.change))}</span></p>',
+                       fiche_url(index.symbol)))
+    if index is None and stars:  # pas d'indice (le monde) : la première scène montre toute la rangée
+        ups = sum(1 for _, q, _ in stars if q.change > 0)
+        scenes.append(("overview", "Vue d'ensemble",
+                       f'<p class="fv-film-role">{esc(zone)} · {esc(FILM_SORTS.get(sort, FILM_SORTS["jour"]))}</p>'
+                       f'<p class="fv-film-name">{len(stars)} entreprises à suivre</p>'
+                       f'<p class="fv-film-figs"><span class="fv-film-chg is-up">{ups} en hausse</span>'
+                       f'<span class="fv-film-chg is-down">{len(stars) - ups} en baisse</span></p>', "#fv-fil"))
+    for tower, quote, role in stars:
+        tone = "up" if quote.change >= 0 else "down"
+        scenes.append((f"n:{tower}", tower,
+                       f'<p class="fv-film-role">{esc(role)}</p><p class="fv-film-name">{esc(tower)}</p>'
+                       f'<p class="fv-film-figs"><b>{price(quote.last)}</b>'
+                       f'<span class="fv-film-chg is-{tone}">{esc(signed(quote.change))}</span></p>',
+                       fiche_url(quote.symbol)))
+    if not scenes:
+        return ""
+    weights, default = scene3d.CITY_WEIGHTS.get(place, scene3d.CITY_WEIGHTS["monde"])
+    towers = [{"n": tower, "w": weights.get(quote.symbol, default), "c": round(quote.change, 2)} for tower, quote, _ in stars]
+    model = scene3d.vitrine("skyline", {"towers": towers, "act": scene3d.CITY_ACT},
+                            "Les entreprises du jour en immeubles : la hauteur suit leur taille, le toit est vert si "
+                            "elles montent, rouge si elles baissent.", classes="fv-film-obj")
+    cards = "".join(
+        f'<a class="fv-film-scene{" is-active" if i == 0 else ""}" data-pose="{esc(pose)}" href="{url}" target="_self" '
+        f'aria-hidden="{"false" if i == 0 else "true"}">{body}<span class="fv-film-go">Voir la fiche →</span></a>'
+        for i, (pose, _, body, url) in enumerate(scenes))
+    bars = "".join(f'<li{" class=is-active" if i == 0 else ""}><button type="button" aria-label="{esc(label)}"><i></i></button></li>'
+                   for i, (_, label, _, _) in enumerate(scenes))
+    news = ""
+    if headlines:
+        items = "".join(
+            f'<li><a href="{esc(a.url)}" target="_blank" rel="noopener"><span class="fv-home-meta">'
+            f'{a.published.astimezone(DISPLAY_TZ):%H:%M} · {esc(a.source)}</span><span class="fv-home-head">{esc(a.title)}</span></a></li>'
+            for a in headlines)
+        news = (f'<aside class="fv-home-news" aria-label="Les titres du moment"><p class="fv-home-label">Les titres du moment</p>'
+                f'<ol>{items}</ol><a class="fv-home-all" href="#fv-fil">Toutes les dépêches ↓</a></aside>')
+    film = (f'<div class="fv-film" data-place="{esc(place)}" aria-label="Le film du jour : les entreprises de la séance">'
+            f'<div class="fv-film-head"><div><p class="fv-film-kicker"><span class="fv-film-rec"></span>Le film du jour · '
+            f'{esc(zone)} · {esc(day)}</p><h1 class="fv-film-title">Les entreprises du jour</h1>'
+            f'<p class="fv-film-sub">{esc(FILM_SUBS.get(sort, FILM_SUBS["jour"]).format(n=len(stars), among=among))}</p></div>'
+            f'<button type="button" class="fv-film-play" aria-label="Mettre en pause">❚❚</button></div>'
+            f'<ol class="fv-film-bars" aria-label="Scènes">{bars}</ol>{model}'
+            f'<div class="fv-film-cards" aria-live="polite">{cards}</div></div>')
+    return f'<section class="fv-home{" has-news" if news else ""}">{film}{news}</section><span id="fv-fil"></span>'
 
 
 def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None = None, city: dict | None = None,
