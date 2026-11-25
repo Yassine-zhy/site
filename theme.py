@@ -1580,70 +1580,76 @@ a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255
 }
 @keyframes fv-reveal { from { opacity: 0; transform: translateY(36px) scale(.97); } }
 @keyframes fv-reveal-title { from { opacity: 0; transform: translateX(-28px); letter-spacing: .02em; } }
-/* ==== Le film du jour (guide 41) : la maquette en grand, sans aplat ; la caméra va d'entreprise en entreprise ===== */
-.fv-film { --col: max(1rem, calc(50vw - 545px)); position: relative; width: 100vw; height: min(90vh, 56rem); min-height: 34rem;
-  margin: -45px calc(50% - 50vw) 0; overflow: hidden; font-family: "Archivo", var(--fv-sans); }
-.fv-film-obj { position: absolute; inset: 0; }
-.fv-film-obj .fv-obj { aspect-ratio: auto; height: 100%; }
-.fv-film-top { position: absolute; z-index: 3; top: 7.4rem; left: var(--col); max-width: min(40rem, calc(100vw - 2rem)); pointer-events: none; }
-.fv-film-kicker { display: flex; align-items: center; gap: .55rem; margin: 0 0 .7rem; font-size: .82rem; font-weight: 700;
-  letter-spacing: .08em; text-transform: uppercase; color: var(--fv-muted); }
-.fv-film-rec { width: .62rem; height: .62rem; border-radius: 50%; background: #e5484d; animation: fv-rec 1.6s ease-in-out infinite; }
+/* ==== Le haut de l'accueil (guide 41) : le film du jour en carte, les titres du moment à côté ; les dépêches suivent
+   sans long défilement. Pas d'aplat pleine largeur : deux cartes nettes, comme le reste du site. */
+.fv-home { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 1rem; margin: .4rem 0 1.4rem;
+  font-family: "Archivo", var(--fv-sans); }
+.fv-home:not(.has-news) { grid-template-columns: 1fr; }
+.fv-film, .fv-home-news { position: relative; border: 1.5px solid var(--fv-line); border-radius: 18px; background: var(--fv-surface);
+  overflow: hidden; }
+.fv-film { display: flex; flex-direction: column; }
+.fv-film-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.1rem 1.3rem 0; }
+.fv-film-kicker { display: flex; align-items: center; gap: .5rem; margin: 0 0 .35rem; font-size: .72rem; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--fv-muted); }
+.fv-film-rec { width: .55rem; height: .55rem; border-radius: 50%; background: #e5484d; animation: fv-rec 1.6s ease-in-out infinite; }
 @keyframes fv-rec { 50% { opacity: .25; } }
-.fv-film-title { margin: 0 !important; padding: 0 !important; font: 900 clamp(2.1rem, 4.4vw, 4rem)/.95 "Archivo", var(--fv-sans) !important;
-  font-stretch: 92%; letter-spacing: -.04em; color: var(--fv-text); }
-.fv-film-sub { margin: .9rem 0 0; max-width: 24rem; font: 500 1.02rem/1.5 var(--fv-sans); color: var(--fv-muted); }
-.fv-film-bars { position: absolute; z-index: 3; top: 5.4rem; left: var(--col); right: var(--col); display: flex; gap: .4rem;
-  margin: 0; padding: 0; list-style: none; }
+.fv-film-title { margin: 0 !important; padding: 0 !important; font: 900 1.75rem/1 "Archivo", var(--fv-sans) !important;
+  font-stretch: 92%; letter-spacing: -.035em; color: var(--fv-text); }
+.fv-film-sub { margin: .35rem 0 0; font: 500 .86rem/1.4 var(--fv-sans); color: var(--fv-muted); }
+.fv-film-play { flex: none; width: 2.4rem; height: 2.4rem; border-radius: 50%; border: 1.5px solid var(--fv-line-strong);
+  background: var(--fv-surface); color: var(--fv-text); font-size: .78rem; cursor: pointer; }
+.fv-film-play:hover { border-color: var(--fv-brand); color: var(--fv-brand); }
+.fv-film-bars { display: flex; gap: .35rem; margin: .8rem 1.3rem 0; padding: 0; list-style: none; }
 .fv-film-bars li { flex: 1; margin: 0; padding: 0; }
-.fv-film-bars button { display: block; width: 100%; height: 14px; padding: 5px 0; border: 0; background: none; cursor: pointer; }
+.fv-film-bars button { display: block; width: 100%; height: 12px; padding: 4px 0; border: 0; background: none; cursor: pointer; }
 .fv-film-bars button i { position: relative; display: block; height: 4px; border-radius: 2px; overflow: hidden;
-  background: color-mix(in srgb, var(--fv-text) 16%, transparent); }
+  background: color-mix(in srgb, var(--fv-text) 14%, transparent); }
 .fv-film-bars button i::after { content: ""; position: absolute; inset: 0; background: var(--fv-brand); transform-origin: left;
   transform: scaleX(var(--fill, 0)); }
 .fv-film-bars li.is-done button i::after { transform: none; }
-.fv-film-cards { position: absolute; z-index: 3; left: var(--col); bottom: 2.4rem; width: min(26rem, calc(100vw - 2rem)); height: 15rem; }
-.fv-film-scene { position: absolute; left: 0; right: 0; bottom: 0; display: block; padding: 1.15rem 1.3rem 1rem; border-radius: 16px;
-  border: 1.5px solid var(--fv-line-strong); background: color-mix(in srgb, var(--fv-surface) 86%, transparent);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: var(--fv-text) !important; text-decoration: none !important;
-  opacity: 0; transform: translateY(18px); pointer-events: none; transition: opacity .45s ease, transform .6s cubic-bezier(.2,.8,.2,1); }
+.fv-film-obj { position: relative; height: 17.5rem; margin: 0; }
+.fv-film-obj .fv-obj { aspect-ratio: auto; height: 100%; }
+.fv-film .fv-obj-label { font-family: "Archivo", var(--fv-sans); font-weight: 700; font-size: .8rem; padding: .22rem .5rem; }
+.fv-film .fv-obj-label[data-tone=""] { font-size: .7rem; font-weight: 600; padding: .14rem .4rem; }
+.fv-film-cards { position: relative; height: 5.6rem; margin: 0 .7rem .7rem; }
+.fv-film-scene { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  gap: .2rem 1rem; padding: .75rem 1rem; border-radius: 12px; background: color-mix(in srgb, var(--fv-text) 4%, var(--fv-surface));
+  color: var(--fv-text) !important; text-decoration: none !important; opacity: 0; transform: translateY(8px);
+  pointer-events: none; transition: opacity .4s ease, transform .5s cubic-bezier(.2,.8,.2,1); }
 .fv-film-scene.is-active { opacity: 1; transform: none; pointer-events: auto; }
-.fv-film-scene:hover { border-color: var(--fv-brand); }
-.fv-film-role { margin: 0; font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--fv-brand); }
-.fv-film-name { margin: .25rem 0 0; font-size: clamp(1.6rem, 2.6vw, 2.2rem); font-weight: 900; font-stretch: 90%;
-  letter-spacing: -.03em; line-height: 1; }
-.fv-film-figs { display: flex; align-items: center; gap: .7rem; margin: .55rem 0 0; }
-.fv-film-figs b { font-size: 2.3rem; font-weight: 800; font-stretch: 75%; font-variant-numeric: tabular-nums; line-height: 1; }
-.fv-film-chg { padding: .2rem .55rem; border-radius: 5px; font-weight: 800; font-size: 1rem; color: #fff; }
+.fv-film-scene:hover { background: color-mix(in srgb, var(--fv-brand) 8%, var(--fv-surface)); }
+.fv-film-role { grid-column: 1 / -1; margin: 0; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--fv-brand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fv-film-name { margin: 0; font-size: 1.45rem; font-weight: 900; font-stretch: 90%; letter-spacing: -.025em; line-height: 1.05;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fv-film-figs { display: flex; align-items: center; gap: .55rem; margin: 0; }
+.fv-film-figs b { font-size: 1.45rem; font-weight: 800; font-stretch: 78%; font-variant-numeric: tabular-nums; line-height: 1; }
+.fv-film-chg { padding: .16rem .45rem; border-radius: 5px; font-weight: 800; font-size: .86rem; color: #fff; white-space: nowrap; }
 .fv-film-chg.is-up { background: light-dark(#14a05a, #1f9e57); }
 .fv-film-chg.is-down { background: light-dark(#e0303f, #e5484d); }
-.fv-film-go { display: block; margin-top: .6rem; font-size: .84rem; font-weight: 700; color: var(--fv-muted); }
-.fv-film-scene:hover .fv-film-go { color: var(--fv-brand); }
-.fv-film-play { position: absolute; z-index: 3; right: var(--col); bottom: 2.4rem; width: 3rem; height: 3rem; border-radius: 50%;
-  border: 1.5px solid var(--fv-line-strong); background: color-mix(in srgb, var(--fv-surface) 86%, transparent); color: var(--fv-text);
-  font-size: .9rem; cursor: pointer; backdrop-filter: blur(10px); }
-.fv-film-play:hover { border-color: var(--fv-brand); color: var(--fv-brand); }
-.fv-film-down { position: absolute; z-index: 3; right: calc(var(--col) + 3.8rem); bottom: 3.15rem; font-size: .86rem; font-weight: 700;
-  color: var(--fv-muted) !important; text-decoration: none !important; }
-.fv-film-down:hover { color: var(--fv-brand) !important; }
-.fv-film .fv-obj-label { font-family: "Archivo", var(--fv-sans); font-weight: 800; font-size: .95rem; padding: .3rem .6rem; }
-.stApp:has(.fv-film) [data-testid="stElementContainer"]:has(.fv-tape) { display: none; }
-.stApp:has(.fv-film) [data-testid="stMainBlockContainer"] { padding-top: 0 !important; }
-.st-key-fvplace, .st-key-fvplace > div { flex-wrap: wrap !important; row-gap: .5rem; }
-@media (max-width: 760px) {
-  .fv-film { height: 86vh; min-height: 36rem; }
-  .fv-film-top { top: 6.6rem; }
-  .fv-film-bars { top: 5rem; }
-  .fv-film-title { font-size: 2.1rem !important; }
+.fv-film-go { display: none; }
+.fv-home-news { display: flex; flex-direction: column; padding: 1.1rem 1.2rem 1rem; }
+.fv-home-label { margin: 0 0 .5rem; font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--fv-muted); }
+.fv-home-news ol { flex: 1; margin: 0; padding: 0; list-style: none; counter-reset: fvh; }
+.fv-home-news li { margin: 0; padding: .7rem 0; border-top: 1px solid var(--fv-line); counter-increment: fvh; }
+.fv-home-news li:first-child { border-top: 0; padding-top: .2rem; }
+.fv-home-news a { color: var(--fv-text) !important; text-decoration: none !important; }
+.fv-home-news li a { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); column-gap: .3rem; }
+.fv-home-news li a::before { content: counter(fvh); grid-row: span 2; font-size: 1.35rem; font-weight: 900; color: var(--fv-brand); line-height: 1.1; }
+.fv-home-meta { font: 500 .74rem/1.3 var(--fv-sans); color: var(--fv-muted); }
+.fv-home-head { margin-top: .15rem; font-size: 1rem; font-weight: 700; font-stretch: 94%; line-height: 1.25; letter-spacing: -.01em;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fv-home-news li a:hover .fv-home-head { color: var(--fv-brand); }
+.fv-home-all { margin-top: .4rem; font-size: .84rem; font-weight: 700; color: var(--fv-brand) !important; }
+@media (max-width: 900px) {
+  .fv-home { grid-template-columns: 1fr; }
+  .fv-film-obj { height: 15rem; }
+  .fv-film-title { font-size: 1.5rem !important; }
   .fv-film-sub { display: none; }
-  .fv-film-kicker { font-size: .7rem; letter-spacing: .05em; }
-  .fv-film .fv-obj-label { font-size: .8rem; }
-  .fv-film-cards { bottom: 1.2rem; height: 13rem; width: calc(100vw - 2rem); }
-  .fv-film-figs b { font-size: 1.9rem; }
-  .fv-film-play { bottom: auto; top: 7rem; width: 2.5rem; height: 2.5rem; }
-  .fv-film-down { display: none; }
+  .fv-home-news li:nth-child(n+4) { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .fv-film-rec { animation: none; } .fv-film-scene { transition: none; } }
+.st-key-fvplace, .st-key-fvplace > div { flex-wrap: wrap !important; row-gap: .5rem; }
 </style>
 
 """
@@ -2029,7 +2035,8 @@ def film_stars(quotes, place: str = "monde", sort: str = "jour", count: int = 6)
     return stars[:count]
 
 
-def film_html(index, quotes=(), place: str = "monde", sort: str = "jour", now: datetime | None = None) -> str:
+def film_html(index, quotes=(), place: str = "monde", sort: str = "jour", now: datetime | None = None,
+              headlines=()) -> str:
     """Le film du jour en haut de l'accueil (guide 41) : la maquette de la place en grand, des immeubles dont la hauteur
     suit le poids de l'entreprise et le toit sa séance ; la caméra passe d'elle-même d'une entreprise du jour à l'autre
     (film_stars), un bandeau dit qui elle est et comment elle a fini (static/fv3d/motion.js, installFilm). Chaque jour
@@ -2082,14 +2089,22 @@ def film_html(index, quotes=(), place: str = "monde", sort: str = "jour", now: d
         for i, (pose, _, body, url) in enumerate(scenes))
     bars = "".join(f'<li{" class=is-active" if i == 0 else ""}><button type="button" aria-label="{esc(label)}"><i></i></button></li>'
                    for i, (_, label, _, _) in enumerate(scenes))
-    return (f'<section class="fv-film" data-place="{esc(place)}" aria-label="Le film du jour : les entreprises de la séance">'
-            f'{model}<div class="fv-film-top"><p class="fv-film-kicker"><span class="fv-film-rec"></span>Le film du jour · {esc(zone)} · '
-            f'{esc(day)}</p><h1 class="fv-film-title">Les entreprises<br>du jour</h1>'
+    news = ""
+    if headlines:
+        items = "".join(
+            f'<li><a href="{esc(a.url)}" target="_blank" rel="noopener"><span class="fv-home-meta">'
+            f'{a.published.astimezone(DISPLAY_TZ):%H:%M} · {esc(a.source)}</span><span class="fv-home-head">{esc(a.title)}</span></a></li>'
+            for a in headlines)
+        news = (f'<aside class="fv-home-news" aria-label="Les titres du moment"><p class="fv-home-label">Les titres du moment</p>'
+                f'<ol>{items}</ol><a class="fv-home-all" href="#fv-fil">Toutes les dépêches ↓</a></aside>')
+    film = (f'<div class="fv-film" data-place="{esc(place)}" aria-label="Le film du jour : les entreprises de la séance">'
+            f'<div class="fv-film-head"><div><p class="fv-film-kicker"><span class="fv-film-rec"></span>Le film du jour · '
+            f'{esc(zone)} · {esc(day)}</p><h1 class="fv-film-title">Les entreprises du jour</h1>'
             f'<p class="fv-film-sub">{esc(FILM_SUBS.get(sort, FILM_SUBS["jour"]).format(n=len(stars), among=among))}</p></div>'
-            f'<ol class="fv-film-bars" aria-label="Scènes">{bars}</ol>'
-            f'<button type="button" class="fv-film-play" aria-label="Mettre en pause">❚❚</button>'
-            f'<div class="fv-film-cards" aria-live="polite">{cards}</div>'
-            f'<a class="fv-film-down" href="#fv-fil">Les dépêches ↓</a></section><span id="fv-fil"></span>')
+            f'<button type="button" class="fv-film-play" aria-label="Mettre en pause">❚❚</button></div>'
+            f'<ol class="fv-film-bars" aria-label="Scènes">{bars}</ol>{model}'
+            f'<div class="fv-film-cards" aria-live="polite">{cards}</div></div>')
+    return f'<section class="fv-home{" has-news" if news else ""}">{film}{news}</section><span id="fv-fil"></span>'
 
 
 def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None = None, city: dict | None = None,

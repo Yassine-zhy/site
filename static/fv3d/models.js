@@ -231,16 +231,17 @@ function skyline(data, pal, scene) {
   const current = () => chapter.startsWith("n:") ? towers.find((x) => x.n === chapter.slice(2)) || null : null;
   // Toute la rangée reste à l'écran : sur grand écran, dans les 60 % de droite (le texte est à gauche) ; la caméra
   // se rapproche un peu de l'entreprise montrée et se balance doucement, comme un travelling
+  // Toute la rangée tient dans la carte ; la caméra se rapproche un peu de l'entreprise montrée et se balance doucement
   const shot = (focusX, close) => {
-    const wide = innerWidth > 760, fov = (view.fov * Math.PI) / 180;
-    const asp = Math.max(0.45, innerWidth / Math.max(320, Math.min(innerHeight * (wide ? 0.9 : 0.86), 896)));
-    const span = wide ? W / 0.46 : Math.min(W / 0.92, 9.5);
-    const d = (span / (2 * Math.tan(fov / 2) * asp)) * (close ? 0.86 : 1);
-    const seen = 2 * d * Math.tan(fov / 2) * asp;
-    const lx = (wide ? focusX * 0.35 : focusX) - (wide ? seen * 0.23 : 0);
-    const a = (still() ? 0 : Math.sin(performance.now() / 1000 * 0.22) * 0.08) + 0.22;
-    const y = wide ? 2.4 : 2.9;
-    return { pos: [lx + Math.sin(a) * d, y + d * 0.2, Math.cos(a) * d], look: [lx, y, 0] };
+    const box = document.querySelector(".fv-film-obj")?.getBoundingClientRect();
+    const asp = box && box.height > 0 ? Math.max(0.6, box.width / box.height) : 2;
+    const fov = (view.fov * Math.PI) / 180, span = (W + 1.2) / 0.94;
+    const top = Math.max(...towers.map((t) => t.h), 2) + 1.9;   // la plus haute tour et son étiquette
+    const fit = Math.max(span / (2 * Math.tan(fov / 2) * Math.min(asp, 3)), top / (2 * Math.tan(fov / 2)) * 1.12);
+    const d = fit * (close ? 0.94 : 1);
+    const a = (still() ? 0 : Math.sin(performance.now() / 1000 * 0.22) * 0.07) + 0.18;
+    const lx = focusX * (close ? 0.12 : 0), y = top * 0.5;
+    return { pos: [lx + Math.sin(a) * d, y + d * 0.12, Math.cos(a) * d], look: [lx, y - 0.2, 0] };
   };
   return {
     root, view, intro: 0.2 + n * 0.12 + 1.2,
@@ -271,7 +272,7 @@ function skyline(data, pal, scene) {
     labels() {
       const lit = current(), narrow = innerWidth <= 760;
       return towers.filter((t) => !narrow || !lit || t === lit).map((t) => ({
-        id: t.n, text: `${t.n}${t.c != null ? `  ${signed(t.c)}` : ""}`, tone: (t.c ?? 0) >= 0 ? "up" : "down",
+        id: t.n, text: t === lit && t.c != null ? `${t.n}  ${signed(t.c)}` : t.n, tone: t === lit ? ((t.c ?? 0) >= 0 ? "up" : "down") : "",
         pos: new THREE.Vector3(t.x, t.h + 0.45 + (t === lit ? 0.15 : 0), 0), opacity: !lit || t === lit ? 1 : 0.5 }));
     },
   };
