@@ -1456,7 +1456,87 @@ html:not(.fv-story-on) .fv-story-obj { display: none; }
   .fv-obj-tip, .fv-obj-label { transition: none; }
   .fv-flash { animation: none; outline: 2px solid var(--fv-brand); }
 }
+/* ==== L'affiche de l'accueil (guide 42) =============================================================================
+   Un aplat bleu sur toute la largeur de l'écran, le nom en Archivo très large qui monte une fois, la séance dessous. */
+@font-face { font-family: "Archivo"; src: url("app/static/fonts/archivo-latin-variable.woff2") format("woff2");
+  font-weight: 500 900; font-stretch: 62% 125%; font-display: swap; }
+.fv-poster { --poster: #1534ff; position: relative; width: 100vw; margin: .8rem calc(50% - 50vw) 1.6rem;
+  padding: 1.2rem 0 2.4rem; background: var(--poster); color: #fff; overflow: hidden; font-family: "Archivo", var(--fv-sans); }
+[data-testid="stMain"] { overflow-x: clip; }   /* l'affiche déborde exprès du conteneur : pas de défilement latéral */
+.fv-poster-mast { margin: 0; padding: 0 2vw; font-family: "Archivo", sans-serif !important; font-weight: 900 !important;
+  font-stretch: 125%; font-size: 19.2vw !important; line-height: .8 !important; letter-spacing: -.06em; color: #fff !important;
+  white-space: nowrap; overflow: hidden; }
+.fv-poster-mast span { display: inline-block; transform: translateY(105%); animation: fv-poster-up .9s cubic-bezier(.2, .9, .1, 1) .05s forwards; }
+.fv-poster-mast span + span { animation-delay: .13s; }
+@keyframes fv-poster-up { to { transform: none; } }
+.fv-poster-sum { margin: 1.4rem 2vw 0 !important; padding: 0 0 1rem; border-bottom: 2px solid rgb(255 255 255 / .35);
+  font-size: clamp(1rem, 1.35vw, 1.3rem) !important; font-weight: 500; color: #fff !important; }
+.fv-poster-sum b { font-weight: 700; margin-right: .4rem; }
+.fv-poster-row { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; margin: 0 2vw; }
+.fv-poster-cell { display: block; padding: 1.3rem 1.4rem 1.2rem; border-right: 2px solid rgb(255 255 255 / .22);
+  color: #fff !important; text-decoration: none !important; transition: background .2s; }
+.fv-poster-cell:last-child { border-right: 0; }
+a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255 255 / .08); }
+.fv-poster-label { display: block; font-size: .92rem; font-weight: 500; font-stretch: 85%; opacity: .85; }
+.fv-poster-value { display: block; margin-top: .3rem; font-size: clamp(2.6rem, 5.4vw, 5.6rem); line-height: 1;
+  font-weight: 800; font-stretch: 72%; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.fv-poster-chg { display: inline-block; margin-top: .55rem; padding: .15rem .6rem; border-radius: 6px; font-weight: 700;
+  font-size: 1.15rem; background: #fff; color: var(--poster); }
+.fv-poster-chg.is-down { background: #ff3b4e; color: #fff; }
+.fv-poster-spark { display: block; width: 100%; height: 56px; margin-top: .9rem; }
+.fv-poster-cell.is-lead strong { display: block; margin-top: .5rem; font-size: clamp(1.25rem, 1.9vw, 1.9rem); line-height: 1.18;
+  font-weight: 650; letter-spacing: -.01em; }
+.fv-poster-cell.is-lead em { display: block; margin-top: .8rem; font-style: normal; font-size: .95rem; opacity: .85; }
+@media (max-width: 900px) {
+  .fv-poster-mast { font-size: 17.6vw !important; padding: 0 3vw; }
+  .fv-poster-row { grid-template-columns: 1fr 1fr; }
+  .fv-poster-cell { border-right: 0; border-bottom: 2px solid rgb(255 255 255 / .22); padding: 1rem .9rem; }
+  .fv-poster-cell.is-lead { grid-column: 1 / -1; }
+  .fv-poster-value { font-size: 2.4rem; }
+}
+@media (prefers-reduced-motion: reduce) { .fv-poster-mast span { animation: none; transform: none; } }
+/* ==== L'identité de l'affiche, sur tout le site (guide 42) ===========================================================
+   Le langage de l'affiche de l'accueil partout : un fond net (blanc, ou encre bleu nuit), le bleu FinVeille franc, sans
+   violet ni halo, les titres en Archivo, une barre du haut pleine largeur. */
+.stApp, [data-testid="stDialog"] {
+  --fv-bg: light-dark(#ffffff, #080a14);
+  --fv-brand: light-dark(#1534ff, #6b84ff);
+  --fv-brand-2: var(--fv-brand);
+  --fv-glow: transparent; --fv-glow-2: transparent;
+  --btn-primary-bg: #1534ff; --btn-primary-glow: none;
+  --fv-display: "Archivo", "IBM Plex Sans", system-ui, sans-serif;
+}
+.stApp { background: var(--fv-bg); }
+.fv-hero-title, .fv-story-title, .fv-section h2, .fv-box-title { font-weight: 800 !important; font-stretch: 90%;
+  letter-spacing: -.03em; }
+@media (min-width: 900px) {
+  header[data-testid="stHeader"] { top: 0; left: 0; right: 0; width: auto; border: 0; border-bottom: 1px solid var(--fv-line);
+    border-radius: 0; background: var(--fv-surface); box-shadow: none; backdrop-filter: none; }
+  .st-key-fvaccount { top: .62rem; right: 3.3rem; }
+}
+/* L'accueil : l'affiche commence sous la barre du haut ; le bandeau des cours, redondant avec elle, s'efface */
+.stApp:has(.fv-poster) [data-testid="stElementContainer"]:has(.fv-tape) { display: none; }
+.stApp:has(.fv-poster) [data-testid="stMainBlockContainer"] { padding-top: 0 !important; }
+.fv-poster { margin-top: 0 !important; padding-top: 5.2rem !important; }
+/* Les autres pages : leur en-tête est un aplat bleu sur toute la largeur, qui remonte jusqu'à la barre du haut et
+   porte le bandeau des cours (box-shadow + clip-path : le bleu déborde du conteneur sans élément de plus). */
+.stApp:has(.fv-hero) [data-testid="stMainBlockContainer"] { padding-top: 0 !important; }
+.fv-hero { --band: #1534ff; isolation: isolate; color: #fff; padding-bottom: 2.6rem; margin-bottom: 1.4rem;
+  background: var(--band); box-shadow: 0 0 0 100vmax var(--band); clip-path: inset(-30rem -100vmax 0 -100vmax); }
+.fv-hero .fv-hero-title, .fv-hero .fv-hero-title em { color: #fff !important; -webkit-text-fill-color: #fff; background: none !important; }
+.fv-hero .fv-hero-dek, .fv-hero .fv-3d-caption, .fv-hero figcaption { color: rgb(255 255 255 / .86) !important; }
+.fv-hero .fv-crumbs a, .fv-hero a:not(.fv-float) { color: #fff; }
+.stApp:has(.fv-hero) [data-testid="stElementContainer"]:has(.fv-tape) { position: relative; z-index: 2;
+  padding-top: 4.6rem; }
+.stApp:has(.fv-hero) .fv-tape { margin: 0 0 .4rem; background: transparent; border-color: rgb(255 255 255 / .28); box-shadow: none; }
+.stApp:has(.fv-hero) .fv-tape-label { background: rgb(255 255 255 / .12); color: #fff; border-color: rgb(255 255 255 / .28); }
+.stApp:has(.fv-hero) .fv-tick { border-color: rgb(255 255 255 / .2); color: #fff; }
+.stApp:has(.fv-hero) .fv-tick b { color: #fff; }
+.stApp:has(.fv-hero) .fv-tick .fv-up { color: #9dffcb; }
+.stApp:has(.fv-hero) .fv-tick .fv-down { color: #ffc2c8; }
+.stApp:has(.fv-hero) .fv-tape-window { mask-image: none; }
 </style>
+
 """
 
 
@@ -1716,6 +1796,77 @@ def story_session(index, members, town: str, now: datetime) -> tuple[str, date |
     if session < local.date():
         return "past", session
     return ("closed" if local.time() >= exchange[3] else "live"), session
+
+
+# --- L'affiche de l'accueil (guide 42) -------------------------------------------------------------------------------
+# La première chose qu'on voit en arrivant : un grand aplat bleu, le nom du site en lettres géantes qui montent, et
+# dessous la séance en chiffres (l'indice de la place choisie, Wall Street ou Paris, le bitcoin) avec la une du moment.
+# Les nombres roulent jusqu'à leur valeur (motion.js, classe fv-odo) ; le reste ne bouge pas.
+POSTER_OTHERS = {"france": ("^GSPC", "BTC-USD"), "canada": ("^GSPC", "BTC-USD"), "usa": ("^FCHI", "BTC-USD")}
+
+
+def poster_spark(values: list[float]) -> str:
+    """La courbe d'un mois, en blanc sur le bleu de l'affiche (une image : st.html refuse le SVG intégré)."""
+    values = [float(v) for v in values][-23:]
+    if len(values) < 2:
+        return ""
+    low, high = min(values), max(values)
+    span = (high - low) or 1
+    w, h = 200, 56
+    points = " ".join(f"{i * w / (len(values) - 1):.1f},{h - 6 - (v - low) / span * (h - 12):.1f}"
+                      for i, v in enumerate(values))
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" preserveAspectRatio="none">'
+           f'<polyline points="{points}" fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" '
+           'stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>')
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+
+
+def poster_html(index, members=(), others=(), lead=None, echoes: int = 0, now: datetime | None = None,
+                place: str = "france") -> str:
+    """L'affiche de l'accueil : `index` (l'indice de la place), `members` (ses valeurs, pour compter les hausses),
+    `others` (deux autres cours mis en avant), `lead` (la une du moment) et `echoes` (le nombre d'autres sources)."""
+    name, _, town, _, _ = STORY_PLACES.get(place, STORY_PLACES["france"])
+    moment = now or datetime.now(timezone.utc)
+    local = moment.astimezone(DISPLAY_TZ)
+    day = fr_date(local).rsplit(" ", 1)[0].capitalize()
+    state, session = story_session(index, members, town, moment)
+    live = state == "live"
+    when = (f"{day}, {local:%H} h {local:%M}" if live else f"{day}, à la clôture" if state == "closed"
+            else f"Séance du {_DAYS[session.weekday()]} {fr_day(session)}")
+    if index is not None:
+        move = index.change
+        verbs = ("progresse de", "recule de", "est stable, à") if live else ("a progressé de", "a reculé de",
+                                                                              "est resté stable, à")
+        verb = verbs[0 if move >= 0.05 else 1 if move <= -0.05 else 2]
+        summary = f"{name} {verb} {fr_number(abs(move) if abs(move) >= 0.05 else move)} %."
+    else:
+        summary = "Les marchés, en direct."
+    if members:
+        rising = sum(1 for quote in members if quote.change > 0)
+        summary += f" {_plural(rising, 'valeur')} en hausse, {len(members) - rising} en baisse."
+
+    def cell(quote) -> str:
+        trend = "up" if quote.change >= 0.005 else "down" if quote.change <= -0.005 else "flat"
+        spark = poster_spark(list(quote.history))
+        image = f'<img class="fv-poster-spark" src="{spark}" alt="">' if spark else ""
+        label = "Le S&P/TSX 60" if FUND_SYMBOLS.get(quote.symbol) else quote.name
+        return (f'<a class="fv-poster-cell" href="{fiche_url(quote.symbol)}" target="_self">'
+                f'<span class="fv-poster-label">{esc(label)}</span>'
+                f'<span class="fv-poster-value fv-odo">{price(quote.last)}</span>'
+                f'<span class="fv-poster-chg is-{trend}">{signed(quote.change, quote.unit)}</span>{image}</a>')
+
+    if lead is not None:
+        more = f"<em>Reprise par {_plural(echoes, 'autre source')}.</em>" if echoes else ""
+        first = (f'<a class="fv-poster-cell is-lead" href="#fv-fil" target="_self"><span class="fv-poster-label">'
+                 f'Ce qui fait l\'actualité</span><strong>{esc(lead.title)}</strong>{more}</a>')
+    else:
+        first = '<div class="fv-poster-cell is-lead"><strong>Toute la finance qui compte, en un seul site.</strong></div>'
+    cells = "".join(cell(quote) for quote in [index, *others] if quote is not None)
+    return (f'<section class="fv-poster" data-place="{esc(place)}" aria-label="La séance en bref">'
+            '<h1 class="fv-poster-mast" aria-label="FinVeille"><span aria-hidden="true">Fin</span>'
+            '<span aria-hidden="true">Veille</span></h1>'
+            f'<p class="fv-poster-sum"><b>{esc(when)}</b> {esc(summary)}</p>'
+            f'<div class="fv-poster-row">{first}{cells}</div></section>')
 
 
 def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None = None, city: dict | None = None,
