@@ -1674,6 +1674,34 @@ a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255
 }
 @media (prefers-reduced-motion: reduce) { .fv-film-scene { transition: none; } }
 .st-key-fvplace, .st-key-fvplace > div { flex-wrap: wrap !important; row-gap: .5rem; }
+/* ==== La lumière du pointeur et l'entrée de l'accueil (guide 41) ==================================================== */
+.fv-tile, .fv-float, .fv-kpi, .fv-card, .fv-film, .fv-home-news, .fv-film-strip button, .fv-table-wrap,
+[class*="st-key-fvcard_"], [class*="st-key-fvtile_"], [class*="st-key-fvbox_"], [class*="st-key-fvpanel_"], [class*="st-key-fvlead_"] {
+  isolation: isolate; }
+.fv-lit { background-image: radial-gradient(520px circle at var(--fv-mx, 50%) var(--fv-my, 50%),
+  color-mix(in srgb, var(--fv-brand) 13%, transparent), transparent 60%) !important; }
+.fv-lit:is(.fv-tile, .fv-float, .fv-film-strip button) { transform: perspective(700px) rotateX(var(--fv-rx, 0)) rotateY(var(--fv-ry, 0)) translateY(-3px) !important;
+  transition: transform .12s ease-out, border-color .2s !important; }
+.fv-film-strip button:active, .stApp button:active, .fv-film-go:active, .fv-film-index:active { transform: scale(.97) !important; }
+@keyframes fv-home-in { from { opacity: 0; transform: translateY(18px) scale(.985); } }
+@keyframes fv-sheen { from { transform: translateX(-120%) skewX(-18deg); } to { transform: translateX(260%) skewX(-18deg); } }
+@media (prefers-reduced-motion: no-preference) {
+  .fv-home > .fv-film { animation: fv-home-in .8s cubic-bezier(.2,.8,.2,1) both; }
+  .fv-home > .fv-home-news { animation: fv-home-in .8s .18s cubic-bezier(.2,.8,.2,1) both; }
+  .fv-film::after { content: ""; position: absolute; z-index: 5; top: 0; bottom: 0; left: 0; width: 38%; pointer-events: none;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 16%, transparent), transparent);
+    animation: fv-sheen 1.6s .9s cubic-bezier(.4,0,.2,1) both; }
+  .fv-home-news li, .fv-home-mkts a { animation: fv-home-in .6s cubic-bezier(.2,.8,.2,1) both; }
+  .fv-home-news li:nth-child(1) { animation-delay: .35s; } .fv-home-news li:nth-child(2) { animation-delay: .43s; }
+  .fv-home-news li:nth-child(3) { animation-delay: .51s; } .fv-home-news li:nth-child(4) { animation-delay: .59s; }
+  .fv-home-mkts a:nth-child(1) { animation-delay: .7s; } .fv-home-mkts a:nth-child(2) { animation-delay: .76s; }
+  .fv-home-mkts a:nth-child(3) { animation-delay: .82s; } .fv-home-mkts a:nth-child(4) { animation-delay: .88s; }
+  .fv-home-mkts a:nth-child(5) { animation-delay: .94s; }
+  .fv-film-strip li { animation: fv-home-in .55s cubic-bezier(.2,.8,.2,1) both; }
+  .fv-film-strip li:nth-child(1) { animation-delay: .9s; } .fv-film-strip li:nth-child(2) { animation-delay: .96s; }
+  .fv-film-strip li:nth-child(3) { animation-delay: 1.02s; } .fv-film-strip li:nth-child(4) { animation-delay: 1.08s; }
+  .fv-film-strip li:nth-child(5) { animation-delay: 1.14s; } .fv-film-strip li:nth-child(6) { animation-delay: 1.2s; }
+}
 </style>
 
 """
@@ -2104,7 +2132,7 @@ def film_html(index, quotes=(), place: str = "monde", sort: str = "jour", now: d
     towers = [{"n": tower, "w": weights.get(quote.symbol, default), "c": round(quote.change, 2)} for tower, quote, _ in stars]
     members, chosen = film_members(place), {quote.symbol for _, quote, _ in stars}
     rest = sorted((q for q in quotes or () if q is not None and q.symbol in members and q.symbol not in chosen),
-                  key=lambda q: -weights.get(q.symbol, default))[:22]
+                  key=lambda q: -weights.get(q.symbol, default))[:2 * len(stars)]
     crowd = [{"n": members[q.symbol][0], "w": weights.get(q.symbol, default), "c": round(q.change, 2)} for q in rest]
     act = {"type": "film", "keyed": True, "hint": "Cliquer : la montrer", "hintAll": "Cliquer sur un immeuble"}
     model = scene3d.vitrine("skyline", {"towers": towers, "crowd": crowd, "act": act},
