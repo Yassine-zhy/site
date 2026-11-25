@@ -17,6 +17,9 @@ pleines).
 
 Chaque jour a donc son film : rien n'est enregistré, tout vient des cours de la séance (gardés 10 minutes).
 
+Autour d'elles, un quartier : deux rangs d'autres grandes valeurs de la zone (toit vert ou rouge selon leur séance,
+leur nom au survol), des rues gravées où circulent des phares, et une ligne d'horizon au fond.
+
 ## Comment il marche
 
 | Morceau | Rôle |
