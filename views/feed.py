@@ -56,6 +56,7 @@ scene3d.page("feed")
 # --- Le récit de la séance (guide 32) : l'indice de la place choisie (le CAC 40 par défaut), sa plus forte hausse, sa
 # plus forte baisse, l'histoire du jour. Rempli plus bas, une fois la une connue ; les horloges des places tournent dans
 # le navigateur (motion.js). La place suit l'adresse (`?place=canada`), comme la page Marchés avec `?view=`.
+story = st.empty()  # l'affiche, tout en haut ; le choix de la place juste dessous
 with st.container(horizontal=True, vertical_alignment="center", gap="small", key="fvplace"):
     st.html('<span class="fv-place-label">La séance :</span>', width="content")
     choice = st.segmented_control(
@@ -68,7 +69,6 @@ if st.query_params.get("place") != (None if place == "france" else place):  # la
         del st.query_params["place"]
     else:
         st.query_params["place"] = place
-story = st.empty()
 
 # --- Barre d'outils : recherche, filtres, actualisation -----------------------------------------
 with st.container(horizontal=True, vertical_alignment="center", gap="small", key="fvtoolbar"):
@@ -263,7 +263,7 @@ def known_place(key: str):
 
 
 def tell(place: str, index, quotes) -> None:
-    """Le récit de la place, avec la une du moment (la même que dans le fil, calculée une fois pour tous les
+    """L'affiche de la place (theme.poster_html), avec la une du moment (la même que dans le fil, calculée une fois pour tous les
     visiteurs). Au Canada, la une est cherchée parmi les dépêches canadiennes, aux États-Unis parmi celles du monde."""
     # L'indice et ses valeurs viennent de deux téléchargements : on les ramène à la même séance
     index, quotes, _ = align_session(index, list(quotes or []))
@@ -274,7 +274,8 @@ def tell(place: str, index, quotes) -> None:
         lead_id, echoes, _ = lead_for(tuple(a.id for a in pool[:150]))
         lead = next((a for a in pool if a.id == lead_id), pool[0])
     with story:
-        st.html(theme.story_html(index, quotes, lead, echoes or 0, city=scene3d.city_data(quotes, place), place=place))
+        others = hero_quotes(*theme.POSTER_OTHERS.get(place, theme.POSTER_OTHERS["france"]))
+        st.html(theme.poster_html(index, quotes, others, lead, echoes or 0, place=place))
 
 
 if place == "france":

@@ -231,7 +231,7 @@ concernée : l'éditeur y répond dès que possible.
 
 ## Crédits
 
-- Polices IBM Plex, Newsreader et Schibsted Grotesk, sous licence SIL Open Font License, servies par le site
+- Polices IBM Plex, Newsreader, Schibsted Grotesk et Archivo, sous licence SIL Open Font License, servies par le site
   lui-même.
 - Three.js, sous licence MIT.
 - GSAP, sous la licence gratuite « Standard No Charge » de GreenSock (Webflow).
