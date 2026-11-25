@@ -2102,8 +2102,12 @@ def film_html(index, quotes=(), place: str = "monde", sort: str = "jour", now: d
             f'aria-label="{esc(tower)}, {esc(signed(quote.change))}"><span class="fv-chip-name">{esc(tower)}</span>'
             f'<img src="{spark}" alt=""><span class="fv-chip-chg is-{tone}">{esc(signed(quote.change))}</span></button></li>')
     towers = [{"n": tower, "w": weights.get(quote.symbol, default), "c": round(quote.change, 2)} for tower, quote, _ in stars]
+    members, chosen = film_members(place), {quote.symbol for _, quote, _ in stars}
+    rest = sorted((q for q in quotes or () if q is not None and q.symbol in members and q.symbol not in chosen),
+                  key=lambda q: -weights.get(q.symbol, default))[:22]
+    crowd = [{"n": members[q.symbol][0], "w": weights.get(q.symbol, default), "c": round(q.change, 2)} for q in rest]
     act = {"type": "film", "keyed": True, "hint": "Cliquer : la montrer", "hintAll": "Cliquer sur un immeuble"}
-    model = scene3d.vitrine("skyline", {"towers": towers, "act": act},
+    model = scene3d.vitrine("skyline", {"towers": towers, "crowd": crowd, "act": act},
                             "Les entreprises du jour en immeubles : la hauteur suit leur taille, le toit est vert si "
                             "elles montent, rouge si elles baissent.", classes="fv-film-obj")
     badge = "En direct" if state == "live" else "Clôture"
