@@ -184,7 +184,7 @@ def app(db, monkeypatch):
 
 
 def story_of(app) -> str:
-    return " ".join(element.value for element in app.get("html") if "fv-story" in element.value)
+    return " ".join(element.value for element in app.get("html") if "fv-story" in element.value or "fv-poster" in element.value)
 
 
 def test_l_accueil_s_ouvre_sur_la_france(app):
@@ -201,7 +201,7 @@ def test_l_adresse_ouvre_l_accueil_sur_le_canada(app):
     assert not app.exception
     assert app.segmented_control(key="story_place").value == "canada"
     story = story_of(app)
-    assert re.search(r"Le S&amp;P/TSX (progresse|a progressé) de", story) and 'data-place="canada"' in story
+    assert re.search(r"Le S&amp;P/TSX (progresse|a progressé) de", story.replace("&amp;", "&").replace("&", "&amp;")) and 'data-place="canada"' in story
     assert "Bank of Canada holds its rate" in story  # la une est cherchée parmi les dépêches canadiennes
     assert "Wall Street hits a record" not in story
     assert app.asked == ["canada"]

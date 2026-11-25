@@ -1456,7 +1456,132 @@ html:not(.fv-story-on) .fv-story-obj { display: none; }
   .fv-obj-tip, .fv-obj-label { transition: none; }
   .fv-flash { animation: none; outline: 2px solid var(--fv-brand); }
 }
+/* ==== L'affiche de l'accueil (guide 42) =============================================================================
+   Un aplat bleu sur toute la largeur de l'écran, le nom en Archivo très large qui monte une fois, la séance dessous. */
+@font-face { font-family: "Archivo"; src: url("app/static/fonts/archivo-latin-variable.woff2") format("woff2");
+  font-weight: 500 900; font-stretch: 62% 125%; font-display: swap; }
+.fv-poster { --poster: #1534ff; position: relative; width: 100vw; margin: -45px calc(50% - 50vw) -2rem;   /* jusqu'en haut de l'écran, sous la barre flottante */
+  padding: 5.6rem 0 9rem; color: #fff; overflow: hidden; font-family: "Archivo", var(--fv-sans);
+  /* le bleu se fond dans la page sur ses derniers 9 rem : pas de bord net, en clair comme en sombre */
+  background: linear-gradient(180deg, var(--poster) 0, var(--poster) calc(100% - 11rem), var(--fv-bg) 100%); }
+[data-testid="stMain"] { overflow-x: clip; }   /* l'affiche déborde exprès du conteneur : pas de défilement latéral */
+.fv-poster-mast { margin: 0; padding: 0 2vw; font-family: "Archivo", sans-serif !important; font-weight: 900 !important;
+  font-stretch: 125%; font-size: 19.2vw !important; line-height: .8 !important; letter-spacing: -.06em; color: #fff !important;
+  white-space: nowrap; overflow: hidden; }
+.fv-poster-mast span { display: inline-block; transform: translateY(105%); animation: fv-poster-up .9s cubic-bezier(.2, .9, .1, 1) .05s forwards; }
+.fv-poster-mast span + span { animation-delay: .13s; }
+@keyframes fv-poster-up { to { transform: none; } }
+.fv-poster-sum { margin: 1.4rem 2vw 0 !important; padding: 0 0 1rem; border-bottom: 2px solid rgb(255 255 255 / .35);
+  font-size: clamp(1rem, 1.35vw, 1.3rem) !important; font-weight: 500; color: #fff !important; }
+.fv-poster-sum b { font-weight: 700; margin-right: .4rem; }
+.fv-poster-row { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; margin: 0 2vw; }
+.fv-poster-cell { display: block; padding: 1.3rem 1.4rem 1.2rem; border-right: 2px solid rgb(255 255 255 / .22);
+  color: #fff !important; text-decoration: none !important; transition: background .2s; }
+.fv-poster-cell:last-child { border-right: 0; }
+a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255 255 / .08); }
+.fv-poster-label { display: block; font-size: .92rem; font-weight: 500; font-stretch: 85%; opacity: .85; }
+.fv-poster-value { display: block; margin-top: .3rem; font-size: clamp(2.6rem, 5.4vw, 5.6rem); line-height: 1;
+  font-weight: 800; font-stretch: 72%; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.fv-poster-chg { display: inline-block; margin-top: .55rem; padding: .15rem .6rem; border-radius: 6px; font-weight: 700;
+  font-size: 1.15rem; background: #fff; color: var(--poster); }
+.fv-poster-chg.is-down { background: #ff3b4e; color: #fff; }
+.fv-poster-spark { display: block; width: 100%; height: 56px; margin-top: .9rem; }
+.fv-poster-cell.is-lead strong { display: block; margin-top: .5rem; font-size: clamp(1.25rem, 1.9vw, 1.9rem); line-height: 1.18;
+  font-weight: 650; letter-spacing: -.01em; }
+.fv-poster-cell.is-lead em { display: block; margin-top: .8rem; font-style: normal; font-size: .95rem; opacity: .85; }
+@media (max-width: 900px) {
+  .fv-poster-mast { font-size: 17.6vw !important; padding: 0 3vw; }
+  .fv-poster-row { grid-template-columns: 1fr 1fr; }
+  .fv-poster-cell { border-right: 0; border-bottom: 2px solid rgb(255 255 255 / .22); padding: 1rem .9rem; }
+  .fv-poster-cell.is-lead { grid-column: 1 / -1; }
+  .fv-poster-value { font-size: 2.4rem; }
+}
+@media (prefers-reduced-motion: reduce) { .fv-poster-mast span { animation: none; transform: none; } }
+/* L'accueil : l'affiche passe sous la barre du haut, et le bandeau des cours, redondant avec elle, s'efface */
+.stApp:has(.fv-poster) [data-testid="stElementContainer"]:has(.fv-tape) { display: none; }
+.stApp:has(.fv-poster) [data-testid="stMainBlockContainer"] { padding-top: 0 !important; }
+/* ==== Le langage de l'affiche dans tout le site (guide 42) =========================================================
+   Les mêmes choix que l'affiche de l'accueil, sans aplat : le bleu FinVeille franc (plus de violet ni de halo), les
+   titres et les chiffres en Archivo (serré pour les nombres, comme les cours de l'affiche), des cartes nettes avec un
+   filet franc et sans ombre, des pastilles de variation pleines. */
+.stApp, [data-testid="stDialog"] {
+  --fv-brand: light-dark(#1534ff, #6f88ff);
+  --fv-brand-2: var(--fv-brand);
+  --fv-glow: transparent; --fv-glow-2: transparent; --fv-glare: transparent; --fv-hi: transparent;
+  --btn-primary-bg: #1534ff; --btn-primary-glow: none;
+  --accent-bar: var(--fv-brand);
+  --fv-display: "Archivo", "IBM Plex Sans", system-ui, sans-serif;
+  --fv-elev: none; --fv-elev-hover: none; --card-shadow: none; --card-shadow-hover: none;
+  --fv-line: light-dark(#dfe3ee, #1d2335); --fv-line-strong: light-dark(#c3cad9, #2c3550);
+}
+/* Titres : Archivo, gras et serré */
+.fv-hero-title, .fv-story-title, .fv-section h2, .fv-box-title, .fv-about-card h3,
+.stApp h1, .stApp h2, .stApp h3 { font-family: "Archivo", var(--fv-sans) !important; font-weight: 800 !important;
+  font-stretch: 88%; letter-spacing: -.025em; }
+.fv-hero-title { font-size: clamp(2.6rem, 5.4vw, 4.6rem) !important; line-height: .95 !important; font-weight: 900 !important;
+  font-stretch: 92%; letter-spacing: -.04em; max-width: 16ch; }
+.fv-hero-title em { color: var(--fv-brand) !important; -webkit-text-fill-color: var(--fv-brand); background: none !important; }
+.fv-section h2 { font-size: 1.7rem !important; }
+.fv-section h2::before { width: 10px; height: 10px; border-radius: 2px; background: var(--fv-brand); }
+/* Les titres des dépêches, comme la une de l'affiche */
+.fv-headline, .fv-lead .fv-headline { font-family: "Archivo", var(--fv-sans) !important; font-weight: 700 !important;
+  font-stretch: 92%; letter-spacing: -.012em; }
+/* Les chiffres : Archivo serré, comme les cours de l'affiche */
+.fv-kpi-value, .fv-tile-value, .fv-float-value, .fv-tick, .fv-table td { font-family: "Archivo", var(--fv-sans) !important;
+  font-variant-numeric: tabular-nums; }
+.fv-kpi-value, .fv-tile-value, .fv-float-value { font-weight: 800 !important; font-stretch: 75%; letter-spacing: -.01em; }
+.fv-kpi-value { font-size: 2.3rem !important; }
+.fv-tile-value { font-size: 1.9rem !important; }
+.fv-tick { font-stretch: 90%; font-size: .82rem; }
+/* Cartes, tuiles, boîtes : un filet franc, pas d'ombre, pas de liseré dégradé */
+.fv-card, .fv-kpi, .fv-tile, .fv-float, .fv-table-wrap, [class*="st-key-fvpanel_"], [class*="st-key-fvlead_"],
+[class*="st-key-fvbox_"], [class*="st-key-fvchart_"], [class*="st-key-fvtile_"], [class*="st-key-fvcard_"] {
+  box-shadow: none !important; border-width: 1.5px !important; background-image: none !important; }
+.fv-tile::before, .fv-kpi::before, .fv-float::before { height: 4px !important; opacity: 1 !important; background: var(--fv-line-strong) !important; }
+.fv-tile.is-up::before, .fv-float.is-up::before { background: var(--fv-up) !important; }
+.fv-tile.is-down::before, .fv-float.is-down::before { background: var(--fv-down) !important; }
+.fv-kpi::before { background: var(--fv-brand) !important; }
+[class*="st-key-fvlead_"]::after, [class*="st-key-fvtile_"]::after { display: none !important; }
+.fv-card:hover, .fv-tile:hover, [class*="st-key-fvtile_"]:hover, [class*="st-key-fvcard_"]:hover { border-color: var(--fv-brand) !important;
+  transform: none !important; }
+/* Les variations : des pastilles pleines, comme sur l'affiche */
+.fv-pill-up, .fv-pill-down { color: #fff !important; font-weight: 700; }
+.fv-pill-up { background: light-dark(#14a05a, #1f9e57) !important; }
+.fv-pill-down { background: light-dark(#e0303f, #e5484d) !important; }
+.fv-pill-up::before, .fv-pill-down::before { color: #fff; }
+.fv-float.is-up .fv-float-delta, .fv-tile-delta .fv-up { background: light-dark(#14a05a, #1f9e57) !important; color: #fff !important; }
+.fv-float.is-down .fv-float-delta, .fv-tile-delta .fv-down { background: light-dark(#e0303f, #e5484d) !important; color: #fff !important; }
+.fv-float-delta, .fv-tile-delta .fv-up, .fv-tile-delta .fv-down { font-family: "Archivo", var(--fv-sans) !important; font-weight: 700 !important; border-radius: 4px !important; }
+.fv-float { background: var(--fv-surface) !important; backdrop-filter: none !important; }
+.stApp .fv-float-value { font-size: 1.7rem !important; line-height: 1.05 !important; margin-top: .15rem; }
+@media (max-width: 640px) { .stApp .fv-float-value { font-size: 1.3rem !important; } }
+/* Boutons principaux : le bleu plein de l'affiche */
+.stApp [data-testid="stBaseButton-primary"] { background: #1534ff !important; border-color: #1534ff !important; box-shadow: none !important; }
+.stApp [data-testid="stBaseButton-primary"]:hover { background: #0f27c7 !important; }
+/* Le fond : net, sans halo violet */
+.stApp { background: var(--fv-bg) !important; }
+/* ==== Du mouvement partout (guide 42) : chaque section se révèle au défilement ==================================== */
+.fv-section h2 { font-size: clamp(1.8rem, 3.2vw, 2.6rem) !important; font-weight: 900 !important; letter-spacing: -.035em; }
+.fv-tile, .fv-float, .fv-kpi, .fv-card, [class*="st-key-fvtile_"], [class*="st-key-fvcard_"] {
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), border-color .2s !important; }
+.fv-tile:hover, .fv-float:hover, .fv-card:hover, [class*="st-key-fvtile_"]:hover, [class*="st-key-fvcard_"]:hover {
+  transform: translateY(-4px) !important; border-color: var(--fv-brand) !important;
+  box-shadow: 0 0 0 1.5px var(--fv-brand), 0 18px 40px -22px color-mix(in srgb, var(--fv-brand) 55%, transparent) !important; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .fv-section h2, .fv-tile, .fv-kpi, .fv-card, .fv-table-wrap, [class*="st-key-fvbox_"], [class*="st-key-fvchart_"],
+    [class*="st-key-fvcard_"], [class*="st-key-fvpanel_"] {
+      animation: fv-reveal linear both; animation-timeline: view(); animation-range: entry 0% entry 55%; }
+    .fv-section h2 { animation-name: fv-reveal-title; }
+    .fv-tile:nth-child(2), .fv-card:nth-child(2) { animation-range: entry 6% entry 62%; }
+    .fv-tile:nth-child(3), .fv-card:nth-child(3) { animation-range: entry 12% entry 68%; }
+    .fv-tile:nth-child(4), .fv-card:nth-child(4) { animation-range: entry 18% entry 74%; }
+  }
+}
+@keyframes fv-reveal { from { opacity: 0; transform: translateY(36px) scale(.97); } }
+@keyframes fv-reveal-title { from { opacity: 0; transform: translateX(-28px); letter-spacing: .02em; } }
 </style>
+
 """
 
 
@@ -1716,6 +1841,77 @@ def story_session(index, members, town: str, now: datetime) -> tuple[str, date |
     if session < local.date():
         return "past", session
     return ("closed" if local.time() >= exchange[3] else "live"), session
+
+
+# --- L'affiche de l'accueil (guide 42) -------------------------------------------------------------------------------
+# La première chose qu'on voit en arrivant : un grand aplat bleu, le nom du site en lettres géantes qui montent, et
+# dessous la séance en chiffres (l'indice de la place choisie, Wall Street ou Paris, le bitcoin) avec la une du moment.
+# Les nombres roulent jusqu'à leur valeur (motion.js, classe fv-odo) ; le reste ne bouge pas.
+POSTER_OTHERS = {"france": ("^GSPC", "BTC-USD"), "canada": ("^GSPC", "BTC-USD"), "usa": ("^FCHI", "BTC-USD")}
+
+
+def poster_spark(values: list[float]) -> str:
+    """La courbe d'un mois, en blanc sur le bleu de l'affiche (une image : st.html refuse le SVG intégré)."""
+    values = [float(v) for v in values][-23:]
+    if len(values) < 2:
+        return ""
+    low, high = min(values), max(values)
+    span = (high - low) or 1
+    w, h = 200, 56
+    points = " ".join(f"{i * w / (len(values) - 1):.1f},{h - 6 - (v - low) / span * (h - 12):.1f}"
+                      for i, v in enumerate(values))
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" preserveAspectRatio="none">'
+           f'<polyline points="{points}" fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" '
+           'stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>')
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+
+
+def poster_html(index, members=(), others=(), lead=None, echoes: int = 0, now: datetime | None = None,
+                place: str = "france") -> str:
+    """L'affiche de l'accueil : `index` (l'indice de la place), `members` (ses valeurs, pour compter les hausses),
+    `others` (deux autres cours mis en avant), `lead` (la une du moment) et `echoes` (le nombre d'autres sources)."""
+    name, _, town, _, _ = STORY_PLACES.get(place, STORY_PLACES["france"])
+    moment = now or datetime.now(timezone.utc)
+    local = moment.astimezone(DISPLAY_TZ)
+    day = fr_date(local).rsplit(" ", 1)[0].capitalize()
+    state, session = story_session(index, members, town, moment)
+    live = state == "live"
+    when = (f"{day}, {local:%H} h {local:%M}" if live else f"{day}, à la clôture" if state == "closed"
+            else f"Séance du {_DAYS[session.weekday()]} {fr_day(session)}")
+    if index is not None:
+        move = index.change
+        verbs = ("progresse de", "recule de", "est stable, à") if live else ("a progressé de", "a reculé de",
+                                                                              "est resté stable, à")
+        verb = verbs[0 if move >= 0.05 else 1 if move <= -0.05 else 2]
+        summary = f"{name} {verb} {fr_number(abs(move) if abs(move) >= 0.05 else move)} %."
+    else:
+        summary = "Les marchés, en direct."
+    if members:
+        rising = sum(1 for quote in members if quote.change > 0)
+        summary += f" {_plural(rising, 'valeur')} en hausse, {len(members) - rising} en baisse."
+
+    def cell(quote) -> str:
+        trend = "up" if quote.change >= 0.005 else "down" if quote.change <= -0.005 else "flat"
+        spark = poster_spark(list(quote.history))
+        image = f'<img class="fv-poster-spark" src="{spark}" alt="">' if spark else ""
+        label = "Le S&P/TSX 60" if FUND_SYMBOLS.get(quote.symbol) else quote.name
+        return (f'<a class="fv-poster-cell" href="{fiche_url(quote.symbol)}" target="_self">'
+                f'<span class="fv-poster-label">{esc(label)}</span>'
+                f'<span class="fv-poster-value fv-odo">{price(quote.last)}</span>'
+                f'<span class="fv-poster-chg is-{trend}">{signed(quote.change, quote.unit)}</span>{image}</a>')
+
+    if lead is not None:
+        more = f"<em>Reprise par {_plural(echoes, 'autre source')}.</em>" if echoes else ""
+        first = (f'<a class="fv-poster-cell is-lead" href="#fv-fil" target="_self"><span class="fv-poster-label">'
+                 f'Ce qui fait l\'actualité</span><strong>{esc(lead.title)}</strong>{more}</a>')
+    else:
+        first = '<div class="fv-poster-cell is-lead"><strong>Toute la finance qui compte, en un seul site.</strong></div>'
+    cells = "".join(cell(quote) for quote in [index, *others] if quote is not None)
+    return (f'<section class="fv-poster" data-place="{esc(place)}" aria-label="La séance en bref">'
+            '<h1 class="fv-poster-mast" aria-label="FinVeille"><span aria-hidden="true">Fin</span>'
+            '<span aria-hidden="true">Veille</span></h1>'
+            f'<p class="fv-poster-sum"><b>{esc(when)}</b> {esc(summary)}</p>'
+            f'<div class="fv-poster-row">{first}{cells}</div></section>')
 
 
 def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None = None, city: dict | None = None,
