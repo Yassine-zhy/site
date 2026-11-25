@@ -1562,10 +1562,6 @@ a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255
 .stApp { background: var(--fv-bg) !important; }
 /* ==== Du mouvement partout (guide 42) : chaque section se révèle au défilement ==================================== */
 .fv-section h2 { font-size: clamp(1.8rem, 3.2vw, 2.6rem) !important; font-weight: 900 !important; letter-spacing: -.035em; }
-.fv-hero-title em { position: relative; }
-.fv-hero-title em::after { content: ""; position: absolute; left: 0; right: 0; bottom: .02em; height: .09em; border-radius: 2px;
-  background: var(--fv-brand); transform-origin: left; animation: fv-underline 1s .5s cubic-bezier(.2,.8,.2,1) both; }
-@keyframes fv-underline { from { transform: scaleX(0); } }
 .fv-tile, .fv-float, .fv-kpi, .fv-card, [class*="st-key-fvtile_"], [class*="st-key-fvcard_"] {
   transition: transform .25s cubic-bezier(.2,.8,.2,1), border-color .2s !important; }
 .fv-tile:hover, .fv-float:hover, .fv-card:hover, [class*="st-key-fvtile_"]:hover, [class*="st-key-fvcard_"]:hover {
