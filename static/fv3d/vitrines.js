@@ -401,6 +401,10 @@ function perform(act, key, el) {
     field.dispatchEvent(new Event("input", { bubbles: true }));
     field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, bubbles: true }));
   };
+  if (act.type === "film") {   // le film du jour : l'immeuble cliqué devient la scène (motion.js, installFilm)
+    if (key) el.dispatchEvent(new CustomEvent("fv-film-pick", { bubbles: true, detail: key }));
+    return;
+  }
   if (act.type === "search" && key) {
     const field = [...document.querySelectorAll('[data-testid="stTextInput"] input')]
       .find((input) => (input.placeholder || "").startsWith(act.input || ""));

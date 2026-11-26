@@ -1591,45 +1591,65 @@ a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255
 .fv-film-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.1rem 1.3rem 0; }
 .fv-film-kicker { display: flex; align-items: center; gap: .5rem; margin: 0 0 .35rem; font-size: .72rem; font-weight: 700;
   letter-spacing: .07em; text-transform: uppercase; color: var(--fv-muted); }
-.fv-film-rec { width: .55rem; height: .55rem; border-radius: 50%; background: #e5484d; animation: fv-rec 1.6s ease-in-out infinite; }
-@keyframes fv-rec { 50% { opacity: .25; } }
+.fv-film-state { padding: .12rem .45rem; border-radius: 4px; font-size: .66rem; letter-spacing: .06em; color: #fff; background: #6b7488; }
+.fv-film-state.is-live { background: #e5484d; }
 .fv-film-title { margin: 0 !important; padding: 0 !important; font: 900 1.75rem/1 "Archivo", var(--fv-sans) !important;
   font-stretch: 92%; letter-spacing: -.035em; color: var(--fv-text); }
 .fv-film-sub { margin: .35rem 0 0; font: 500 .86rem/1.4 var(--fv-sans); color: var(--fv-muted); }
+.fv-film-tools { display: flex; align-items: center; gap: .6rem; flex: none; }
+.fv-film-index { display: inline-flex; align-items: baseline; gap: .4rem; padding: .4rem .7rem; border: 1.5px solid var(--fv-line);
+  border-radius: 999px; font-size: .8rem; font-weight: 600; color: var(--fv-text) !important; text-decoration: none !important; white-space: nowrap; }
+.fv-film-index b { font-weight: 800; font-stretch: 80%; }
+.fv-film-index:hover { border-color: var(--fv-brand); }
 .fv-film-play { flex: none; width: 2.4rem; height: 2.4rem; border-radius: 50%; border: 1.5px solid var(--fv-line-strong);
   background: var(--fv-surface); color: var(--fv-text); font-size: .78rem; cursor: pointer; }
 .fv-film-play:hover { border-color: var(--fv-brand); color: var(--fv-brand); }
-.fv-film-bars { display: flex; gap: .35rem; margin: .8rem 1.3rem 0; padding: 0; list-style: none; }
-.fv-film-bars li { flex: 1; margin: 0; padding: 0; }
-.fv-film-bars button { display: block; width: 100%; height: 12px; padding: 4px 0; border: 0; background: none; cursor: pointer; }
-.fv-film-bars button i { position: relative; display: block; height: 4px; border-radius: 2px; overflow: hidden;
-  background: color-mix(in srgb, var(--fv-text) 14%, transparent); }
-.fv-film-bars button i::after { content: ""; position: absolute; inset: 0; background: var(--fv-brand); transform-origin: left;
-  transform: scaleX(var(--fill, 0)); }
-.fv-film-bars li.is-done button i::after { transform: none; }
-.fv-film-obj { position: relative; height: 17.5rem; margin: 0; }
-.fv-film-obj .fv-obj { aspect-ratio: auto; height: 100%; }
+.fv-film-obj { position: relative; flex: 1 1 auto; min-height: 15.5rem; margin: .2rem 0 0; cursor: pointer; }
+.fv-film-obj .fv-obj { position: absolute; inset: 0; aspect-ratio: auto; height: auto; }
 .fv-film .fv-obj-label { font-family: "Archivo", var(--fv-sans); font-weight: 700; font-size: .8rem; padding: .22rem .5rem; }
 .fv-film .fv-obj-label[data-tone=""] { font-size: .7rem; font-weight: 600; padding: .14rem .4rem; }
-.fv-film-cards { position: relative; height: 5.6rem; margin: 0 .7rem .7rem; }
-.fv-film-scene { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
-  gap: .2rem 1rem; padding: .75rem 1rem; border-radius: 12px; background: color-mix(in srgb, var(--fv-text) 4%, var(--fv-surface));
-  color: var(--fv-text) !important; text-decoration: none !important; opacity: 0; transform: translateY(8px);
-  pointer-events: none; transition: opacity .4s ease, transform .5s cubic-bezier(.2,.8,.2,1); }
+.fv-film-cards { position: relative; height: 5.4rem; margin: 0 .8rem; }
+.fv-film-scene { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center;
+  gap: 1rem; padding: .7rem 1rem; border-radius: 12px; border: 1.5px solid var(--fv-line);
+  background: color-mix(in srgb, var(--fv-text) 3%, var(--fv-surface)); color: var(--fv-text) !important; text-decoration: none !important;
+  opacity: 0; transform: translateY(6px); pointer-events: none; transition: opacity .35s ease, transform .45s cubic-bezier(.2,.8,.2,1), border-color .2s; }
 .fv-film-scene.is-active { opacity: 1; transform: none; pointer-events: auto; }
-.fv-film-scene:hover { background: color-mix(in srgb, var(--fv-brand) 8%, var(--fv-surface)); }
-.fv-film-role { grid-column: 1 / -1; margin: 0; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--fv-brand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fv-film-name { margin: 0; font-size: 1.45rem; font-weight: 900; font-stretch: 90%; letter-spacing: -.025em; line-height: 1.05;
+.fv-film-scene:hover { border-color: var(--fv-brand); }
+.fv-film-who { display: flex; flex-direction: column; min-width: 0; }
+.fv-film-role { font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--fv-brand);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fv-film-figs { display: flex; align-items: center; gap: .55rem; margin: 0; }
-.fv-film-figs b { font-size: 1.45rem; font-weight: 800; font-stretch: 78%; font-variant-numeric: tabular-nums; line-height: 1; }
-.fv-film-chg { padding: .16rem .45rem; border-radius: 5px; font-weight: 800; font-size: .86rem; color: #fff; white-space: nowrap; }
+.fv-film-name { margin-top: .1rem; font-size: 1.4rem; font-weight: 900; font-stretch: 90%; letter-spacing: -.025em; line-height: 1.05;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fv-film-facts { margin-top: .2rem; font: 500 .76rem/1.3 var(--fv-sans); color: var(--fv-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fv-film-figs { display: flex; flex-direction: column; align-items: flex-end; gap: .3rem; }
+.fv-film-figs b { font-size: 1.5rem; font-weight: 800; font-stretch: 78%; font-variant-numeric: tabular-nums; line-height: 1; }
+.fv-film-chg { padding: .14rem .42rem; border-radius: 5px; font-weight: 800; font-size: .8rem; color: #fff; white-space: nowrap;
+  font-variant-numeric: tabular-nums; }
 .fv-film-chg.is-up { background: light-dark(#14a05a, #1f9e57); }
 .fv-film-chg.is-down { background: light-dark(#e0303f, #e5484d); }
-.fv-film-go { display: none; }
+.fv-film-go { padding: .5rem .75rem; border-radius: 8px; background: var(--fv-brand); color: #fff; font-size: .8rem; font-weight: 700; white-space: nowrap; }
+.fv-film-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .4rem; margin: .6rem .8rem .8rem; padding: 0; list-style: none; }
+.fv-film-strip li { margin: 0; padding: 0; min-width: 0; }
+.fv-film-strip button { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: .15rem; width: 100%; padding: .45rem .5rem .55rem;
+  border: 1.5px solid var(--fv-line); border-radius: 10px; background: var(--fv-surface); color: var(--fv-text); text-align: left;
+  cursor: pointer; overflow: hidden; font-family: "Archivo", var(--fv-sans); transition: border-color .2s, background .2s; }
+.fv-film-strip button:hover { border-color: var(--fv-line-strong); }
+.fv-film-strip button.is-active { border-color: var(--fv-brand); background: color-mix(in srgb, var(--fv-brand) 7%, var(--fv-surface)); }
+.fv-film-strip button::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--fv-brand);
+  transform-origin: left; transform: scaleX(var(--fill, 0)); }
+.fv-chip-name { font-size: .78rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fv-film-strip img { width: 100%; height: 22px; }
+.fv-chip-chg { font-size: .74rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fv-chip-chg.is-up { color: var(--fv-up); }
+.fv-chip-chg.is-down { color: var(--fv-down); }
+.fv-home-mkts { display: grid; gap: 0; margin-bottom: .3rem; }
+.fv-home-mkts a { display: grid; grid-template-columns: minmax(0, 1fr) auto 4.6rem; align-items: center; gap: .6rem; padding: .45rem 0;
+  border-top: 1px solid var(--fv-line); font-size: .86rem; font-weight: 600; }
+.fv-home-mkts a:hover span:first-child { color: var(--fv-brand); }
+.fv-home-mkts b { font-weight: 800; font-stretch: 80%; font-variant-numeric: tabular-nums; }
+.fv-home-mkts .fv-film-chg { justify-self: end; }
 .fv-home-news { display: flex; flex-direction: column; padding: 1.1rem 1.2rem 1rem; }
-.fv-home-label { margin: 0 0 .5rem; font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--fv-muted); }
+.fv-home-label { margin: .2rem 0 .4rem; font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--fv-muted); }
 .fv-home-news ol { flex: 1; margin: 0; padding: 0; list-style: none; counter-reset: fvh; }
 .fv-home-news li { margin: 0; padding: .7rem 0; border-top: 1px solid var(--fv-line); counter-increment: fvh; }
 .fv-home-news li:first-child { border-top: 0; padding-top: .2rem; }
@@ -1643,13 +1663,45 @@ a.fv-poster-cell:hover, a.fv-poster-cell:focus-visible { background: rgb(255 255
 .fv-home-all { margin-top: .4rem; font-size: .84rem; font-weight: 700; color: var(--fv-brand) !important; }
 @media (max-width: 900px) {
   .fv-home { grid-template-columns: 1fr; }
-  .fv-film-obj { height: 15rem; }
+  .fv-film-obj { min-height: 15rem; }
   .fv-film-title { font-size: 1.5rem !important; }
   .fv-film-sub { display: none; }
   .fv-home-news li:nth-child(n+4) { display: none; }
+  .fv-film-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .fv-film-go { display: none; }
+  .fv-film-index { display: none; }
+  .fv-film-scene { grid-template-columns: minmax(0, 1fr) auto; }
 }
-@media (prefers-reduced-motion: reduce) { .fv-film-rec { animation: none; } .fv-film-scene { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .fv-film-scene { transition: none; } }
 .st-key-fvplace, .st-key-fvplace > div { flex-wrap: wrap !important; row-gap: .5rem; }
+/* ==== La lumière du pointeur et l'entrée de l'accueil (guide 41) ==================================================== */
+.fv-tile, .fv-float, .fv-kpi, .fv-card, .fv-film, .fv-home-news, .fv-film-strip button, .fv-table-wrap,
+[class*="st-key-fvcard_"], [class*="st-key-fvtile_"], [class*="st-key-fvbox_"], [class*="st-key-fvpanel_"], [class*="st-key-fvlead_"] {
+  isolation: isolate; }
+.fv-lit { background-image: radial-gradient(520px circle at var(--fv-mx, 50%) var(--fv-my, 50%),
+  color-mix(in srgb, var(--fv-brand) 13%, transparent), transparent 60%) !important; }
+.fv-lit:is(.fv-tile, .fv-float, .fv-film-strip button) { transform: perspective(700px) rotateX(var(--fv-rx, 0)) rotateY(var(--fv-ry, 0)) translateY(-3px) !important;
+  transition: transform .12s ease-out, border-color .2s !important; }
+.fv-film-strip button:active, .stApp button:active, .fv-film-go:active, .fv-film-index:active { transform: scale(.97) !important; }
+@keyframes fv-home-in { from { opacity: 0; transform: translateY(18px) scale(.985); } }
+@keyframes fv-sheen { from { transform: translateX(-120%) skewX(-18deg); } to { transform: translateX(260%) skewX(-18deg); } }
+@media (prefers-reduced-motion: no-preference) {
+  .fv-home > .fv-film { animation: fv-home-in .8s cubic-bezier(.2,.8,.2,1) both; }
+  .fv-home > .fv-home-news { animation: fv-home-in .8s .18s cubic-bezier(.2,.8,.2,1) both; }
+  .fv-film::after { content: ""; position: absolute; z-index: 5; top: 0; bottom: 0; left: 0; width: 38%; pointer-events: none;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff 16%, transparent), transparent);
+    animation: fv-sheen 1.6s .9s cubic-bezier(.4,0,.2,1) both; }
+  .fv-home-news li, .fv-home-mkts a { animation: fv-home-in .6s cubic-bezier(.2,.8,.2,1) both; }
+  .fv-home-news li:nth-child(1) { animation-delay: .35s; } .fv-home-news li:nth-child(2) { animation-delay: .43s; }
+  .fv-home-news li:nth-child(3) { animation-delay: .51s; } .fv-home-news li:nth-child(4) { animation-delay: .59s; }
+  .fv-home-mkts a:nth-child(1) { animation-delay: .7s; } .fv-home-mkts a:nth-child(2) { animation-delay: .76s; }
+  .fv-home-mkts a:nth-child(3) { animation-delay: .82s; } .fv-home-mkts a:nth-child(4) { animation-delay: .88s; }
+  .fv-home-mkts a:nth-child(5) { animation-delay: .94s; }
+  .fv-film-strip li { animation: fv-home-in .55s cubic-bezier(.2,.8,.2,1) both; }
+  .fv-film-strip li:nth-child(1) { animation-delay: .9s; } .fv-film-strip li:nth-child(2) { animation-delay: .96s; }
+  .fv-film-strip li:nth-child(3) { animation-delay: 1.02s; } .fv-film-strip li:nth-child(4) { animation-delay: 1.08s; }
+  .fv-film-strip li:nth-child(5) { animation-delay: 1.14s; } .fv-film-strip li:nth-child(6) { animation-delay: 1.2s; }
+}
 </style>
 
 """
@@ -2036,11 +2088,11 @@ def film_stars(quotes, place: str = "monde", sort: str = "jour", count: int = 6)
 
 
 def film_html(index, quotes=(), place: str = "monde", sort: str = "jour", now: datetime | None = None,
-              headlines=()) -> str:
-    """Le film du jour en haut de l'accueil (guide 41) : la maquette de la place en grand, des immeubles dont la hauteur
-    suit le poids de l'entreprise et le toit sa séance ; la caméra passe d'elle-même d'une entreprise du jour à l'autre
-    (film_stars), un bandeau dit qui elle est et comment elle a fini (static/fv3d/motion.js, installFilm). Chaque jour
-    a son film : les entreprises et les couleurs viennent de la séance."""
+              headlines=(), markets=()) -> str:
+    """Le haut de l'accueil (guide 41). À gauche, le film du jour : les entreprises du jour en immeubles (hauteur : la
+    taille de l'entreprise, toit : sa séance) ; la caméra passe de l'une à l'autre (4 s chacune), un bandeau dit qui
+    elle est. Tout se clique : un immeuble ou une pastille montre l'entreprise, le bandeau ouvre sa fiche
+    (static/fv3d/motion.js, installFilm). À droite : les titres du moment et les grands marchés."""
     import scene3d
 
     zone, among, _ = FILM_ZONES.get(place, FILM_ZONES["monde"])
@@ -2051,60 +2103,68 @@ def film_html(index, quotes=(), place: str = "monde", sort: str = "jour", now: d
     day = fr_date(local).rsplit(" ", 1)[0].capitalize() if state != "past" or session is None else \
         f"{_DAYS[session.weekday()].capitalize()} {fr_day(session)}"
     stars = film_stars(quotes, place, sort)
-    scenes = []
-    if index is not None:
-        verb = ("progresse" if index.change >= 0.05 else "recule" if index.change <= -0.05 else "est stable") if state == "live" \
-            else ("a progressé" if index.change >= 0.05 else "a reculé" if index.change <= -0.05 else "est resté stable")
-        tone = "up" if index.change >= 0 else "down"
-        scenes.append(("overview", "La séance",
-                       f'<p class="fv-film-role">{esc(town)} · {"en direct" if state == "live" else "à la clôture"}</p>'
-                       f'<p class="fv-film-name">{esc(index.name)} {verb}</p>'
-                       f'<p class="fv-film-figs"><b>{price(index.last)}</b>'
-                       f'<span class="fv-film-chg is-{tone}">{esc(signed(index.change))}</span></p>',
-                       fiche_url(index.symbol)))
-    if index is None and stars:  # pas d'indice (le monde) : la première scène montre toute la rangée
-        ups = sum(1 for _, q, _ in stars if q.change > 0)
-        scenes.append(("overview", "Vue d'ensemble",
-                       f'<p class="fv-film-role">{esc(zone)} · {esc(FILM_SORTS.get(sort, FILM_SORTS["jour"]))}</p>'
-                       f'<p class="fv-film-name">{len(stars)} entreprises à suivre</p>'
-                       f'<p class="fv-film-figs"><span class="fv-film-chg is-up">{ups} en hausse</span>'
-                       f'<span class="fv-film-chg is-down">{len(stars) - ups} en baisse</span></p>', "#fv-fil"))
-    for tower, quote, role in stars:
-        tone = "up" if quote.change >= 0 else "down"
-        scenes.append((f"n:{tower}", tower,
-                       f'<p class="fv-film-role">{esc(role)}</p><p class="fv-film-name">{esc(tower)}</p>'
-                       f'<p class="fv-film-figs"><b>{price(quote.last)}</b>'
-                       f'<span class="fv-film-chg is-{tone}">{esc(signed(quote.change))}</span></p>',
-                       fiche_url(quote.symbol)))
-    if not scenes:
+    if not stars:
         return ""
     weights, default = scene3d.CITY_WEIGHTS.get(place, scene3d.CITY_WEIGHTS["monde"])
+    in_dollars = place in ("monde", "usa")  # ces poids sont des capitalisations en milliards de dollars
+
+    def month(quote) -> float:
+        return quote.change_over(21) if len(quote.history) > 21 else 0.0
+
+    cards, chips = [], []
+    for i, (tower, quote, role) in enumerate(stars):
+        tone = "up" if quote.change >= 0 else "down"
+        facts = [f'1 mois : {change(month(quote), quote.unit)}']
+        if in_dollars and quote.symbol in weights:
+            facts.append(f"capitalisation ≈ {fr_number(weights[quote.symbol], 0)} Md$")
+        cards.append(
+            f'<a class="fv-film-scene{" is-active" if i == 0 else ""}" data-pose="n:{esc(tower)}" href="{fiche_url(quote.symbol)}" '
+            f'target="_self" aria-hidden="{"false" if i == 0 else "true"}"><span class="fv-film-who">'
+            f'<span class="fv-film-role">{esc(role)}</span><span class="fv-film-name">{esc(tower)}</span>'
+            f'<span class="fv-film-facts">{" · ".join(facts)}</span></span><span class="fv-film-figs"><b>{price(quote.last)}</b>'
+            f'<span class="fv-film-chg is-{tone}">{esc(signed(quote.change))}</span></span>'
+            f'<span class="fv-film-go">Fiche →</span></a>')
+        spark = sparkline_uri(quote.history.tail(22).tolist(), direction(month(quote)), 64, 22)
+        chips.append(
+            f'<li><button type="button" data-scene="{i}"{" class=is-active" if i == 0 else ""} '
+            f'aria-label="{esc(tower)}, {esc(signed(quote.change))}"><span class="fv-chip-name">{esc(tower)}</span>'
+            f'<img src="{spark}" alt=""><span class="fv-chip-chg is-{tone}">{esc(signed(quote.change))}</span></button></li>')
     towers = [{"n": tower, "w": weights.get(quote.symbol, default), "c": round(quote.change, 2)} for tower, quote, _ in stars]
-    model = scene3d.vitrine("skyline", {"towers": towers, "act": scene3d.CITY_ACT},
+    members, chosen = film_members(place), {quote.symbol for _, quote, _ in stars}
+    rest = sorted((q for q in quotes or () if q is not None and q.symbol in members and q.symbol not in chosen),
+                  key=lambda q: -weights.get(q.symbol, default))[:2 * len(stars)]
+    crowd = [{"n": members[q.symbol][0], "w": weights.get(q.symbol, default), "c": round(q.change, 2)} for q in rest]
+    act = {"type": "film", "keyed": True, "hint": "Cliquer : la montrer", "hintAll": "Cliquer sur un immeuble"}
+    model = scene3d.vitrine("skyline", {"towers": towers, "crowd": crowd, "act": act},
                             "Les entreprises du jour en immeubles : la hauteur suit leur taille, le toit est vert si "
                             "elles montent, rouge si elles baissent.", classes="fv-film-obj")
-    cards = "".join(
-        f'<a class="fv-film-scene{" is-active" if i == 0 else ""}" data-pose="{esc(pose)}" href="{url}" target="_self" '
-        f'aria-hidden="{"false" if i == 0 else "true"}">{body}<span class="fv-film-go">Voir la fiche →</span></a>'
-        for i, (pose, _, body, url) in enumerate(scenes))
-    bars = "".join(f'<li{" class=is-active" if i == 0 else ""}><button type="button" aria-label="{esc(label)}"><i></i></button></li>'
-                   for i, (_, label, _, _) in enumerate(scenes))
-    news = ""
-    if headlines:
+    badge = "En direct" if state == "live" else "Clôture"
+    index_pill = ""
+    if index is not None:
+        index_pill = (f'<a class="fv-film-index" href="{fiche_url(index.symbol)}" target="_self">{esc(index.name)} '
+                      f'<b>{price(index.last)}</b> {change(index.change, index.unit)}</a>')
+    film = (f'<div class="fv-film" data-place="{esc(place)}" aria-label="Le film du jour : les entreprises de la séance">'
+            f'<div class="fv-film-head"><div><p class="fv-film-kicker"><span class="fv-film-state is-{state}">{badge}</span>'
+            f'Le film du jour · {esc(zone)} · {esc(day)}</p><h1 class="fv-film-title">Les entreprises du jour</h1>'
+            f'<p class="fv-film-sub">{esc(FILM_SUBS.get(sort, FILM_SUBS["jour"]).format(n=len(stars), among=among))}</p></div>'
+            f'<div class="fv-film-tools">{index_pill}<button type="button" class="fv-film-play" aria-label="Mettre en pause">❚❚</button></div></div>'
+            f'{model}<div class="fv-film-cards" aria-live="polite">{"".join(cards)}</div>'
+            f'<ol class="fv-film-strip" aria-label="Choisir une entreprise">{"".join(chips)}</ol></div>')
+    side = ""
+    if headlines or markets:
         items = "".join(
             f'<li><a href="{esc(a.url)}" target="_blank" rel="noopener"><span class="fv-home-meta">'
             f'{a.published.astimezone(DISPLAY_TZ):%H:%M} · {esc(a.source)}</span><span class="fv-home-head">{esc(a.title)}</span></a></li>'
             for a in headlines)
-        news = (f'<aside class="fv-home-news" aria-label="Les titres du moment"><p class="fv-home-label">Les titres du moment</p>'
-                f'<ol>{items}</ol><a class="fv-home-all" href="#fv-fil">Toutes les dépêches ↓</a></aside>')
-    film = (f'<div class="fv-film" data-place="{esc(place)}" aria-label="Le film du jour : les entreprises de la séance">'
-            f'<div class="fv-film-head"><div><p class="fv-film-kicker"><span class="fv-film-rec"></span>Le film du jour · '
-            f'{esc(zone)} · {esc(day)}</p><h1 class="fv-film-title">Les entreprises du jour</h1>'
-            f'<p class="fv-film-sub">{esc(FILM_SUBS.get(sort, FILM_SUBS["jour"]).format(n=len(stars), among=among))}</p></div>'
-            f'<button type="button" class="fv-film-play" aria-label="Mettre en pause">❚❚</button></div>'
-            f'<ol class="fv-film-bars" aria-label="Scènes">{bars}</ol>{model}'
-            f'<div class="fv-film-cards" aria-live="polite">{cards}</div></div>')
-    return f'<section class="fv-home{" has-news" if news else ""}">{film}{news}</section><span id="fv-fil"></span>'
+        rows = "".join(
+            f'<a href="{fiche_url(q.symbol)}" target="_self"><span>{esc(q.name)}</span><b>{price(q.last)}</b>'
+            f'<span class="fv-film-chg is-{"up" if q.change >= 0 else "down"}">{esc(signed(q.change, q.unit))}</span></a>'
+            for q in markets)
+        side = (f'<aside class="fv-home-news" aria-label="Les titres du moment et les marchés">'
+                + (f'<p class="fv-home-label">Les titres du moment</p><ol>{items}</ol>' if items else "")
+                + (f'<p class="fv-home-label">Les marchés</p><div class="fv-home-mkts">{rows}</div>' if rows else "")
+                + '<a class="fv-home-all" href="#fv-fil">Toutes les dépêches ↓</a></aside>')
+    return f'<section class="fv-home{" has-news" if side else ""}">{film}{side}</section><span id="fv-fil"></span>'
 
 
 def story_html(index, cac40=(), lead=None, echoes: int = 0, now: datetime | None = None, city: dict | None = None,

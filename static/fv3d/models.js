@@ -197,19 +197,43 @@ function city(data, pal, scene) {
 // Les seules entreprises du jour, en rang et bien espacées, comme une ligne d'horizon : la hauteur suit la taille de
 // l'entreprise, le toit sa séance, son nom flotte au-dessus. La caméra glisse de l'une à l'autre (« n:<nom> »), celle
 // qu'on montre s'allume, les autres s'effacent un peu ; « film » montre toute la rangée.
+// Le verre des immeubles du film. En thème clair, des tours blanches disparaissaient sur la page blanche : elles sont
+// bleu nuit, fenêtres chaudes allumées, comme une maquette sombre posée sur la page (les tours du fond, un ton plus clair)
+function skyGlass(pal, back = false) {
+  if (pal.dark) return skin(pal);
+  const m = new THREE.MeshStandardMaterial({ color: back ? 0x56668f : 0x1f2d58, metalness: 0.45, roughness: 0.28,
+    emissive: 0xffe2a8, emissiveMap: facadeTexture(), emissiveIntensity: 0, transparent: true });
+  m.userData.role = "glass";
+  m.userData.lit = back ? 0.9 : 1.15;
+  return m;
+}
+
 function skyline(data, pal, scene) {
   lights(scene, pal, { reach: 9, map: 2048, sun: [-6, 12, 8], shadow: !isPhone() });
   const root = new THREE.Group(), rnd = random(7), given = (data.towers || []).slice(0, 8);
   const n = Math.max(1, given.length), step = 2.6, fw = 1.15;
-  const W = n * step + 1.4, D = 3.6;
-  root.add(plinth(pal, W, D));
-  const slab = new THREE.Mesh(new RoundedBoxGeometry(W, 0.16, D, 3, 0.06).translate(0, -0.08, 0), mat(pal.plinth));
+  const W = n * step + 1.4;
+  // le quartier : le rang des entreprises du jour devant, deux rangs d'autres valeurs de la zone derrière, des rues
+  // entre les rangs ; le sol est plus large que le rang (cz : son centre, en profondeur)
+  const GW = W + 0.6, GD = 5.9, cz = -0.95, ROADS = [1.5, -1.25];
+  const ground = new THREE.Group();
+  ground.position.z = cz;
+  ground.add(plinth(pal, GW, GD));
+  const slab = new THREE.Mesh(new RoundedBoxGeometry(GW, 0.16, GD, 3, 0.06).translate(0, -0.08, 0), mat(pal.plinth));
   slab.receiveShadow = true;
-  root.add(slab);
-  const wmax = Math.max(...given.map((t) => t.w || 1), 1);
+  const cross = [...Array(n - 1).keys()].map((k) => (k + 1 - n / 2) * step);
+  const plan = new THREE.Mesh(new THREE.PlaneGeometry(GW, GD).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({
+    map: streetPlan(pal, GW, GD, cross, ROADS.map((z) => z - cz)), transparent: true, depthWrite: false,
+    blending: pal.dark ? THREE.AdditiveBlending : THREE.NormalBlending, opacity: pal.dark ? 1 : 0.55 }));
+  plan.position.y = 0.004;
+  plan.userData.noEdges = true;
+  plan.raycast = () => {};
+  ground.add(slab, plan);
+  root.add(ground);
+  const wmax = Math.max(...given.map((t) => t.w || 1), ...(data.crowd || []).map((t) => t.w || 1), 1);
   const towers = given.map((t, k) => {
     const h = 1.6 + 4.4 * Math.sqrt((t.w || 1) / wmax), x = (k - (n - 1) / 2) * step;
-    const g = new THREE.Group(), body = new THREE.Group(), facade = skin(pal);
+    const g = new THREE.Group(), body = new THREE.Group(), facade = skyGlass(pal);
     const podium = new THREE.Mesh(new RoundedBoxGeometry(fw + 0.24, 0.3, fw + 0.24, 2, 0.04).translate(0, 0.15, 0), mat(pal.relief));
     const shaft = new THREE.Mesh(facadeBox(fw, h - 0.3, fw, 0.17, rnd()), facade);
     shaft.position.y = 0.3;
@@ -225,6 +249,53 @@ function skyline(data, pal, scene) {
     root.add(g);
     return { ...t, h: h + 0.12, x, g, body, facade, delay: 0.2 + k * 0.12 };
   });
+  // les autres valeurs de la zone, sur un rang derrière, deux de part et d'autre de chaque entreprise du jour : plus
+  // basses et plus discrètes, leur toit dit aussi la séance (survol : leur nom)
+  const crowdData = (data.crowd || []).slice(0, n * 2);
+  const crowd = crowdData.map((t, k) => {
+    const col = k % n, side = k < n ? -1 : 1, cw = 0.72;
+    const x = (col - (n - 1) / 2) * step + side * 0.62, z = -2.55 - (k < n ? 0 : 0.35);
+    const h = 0.7 + 2.4 * Math.sqrt((t.w || 1) / wmax);
+    const g = new THREE.Group(), body = new THREE.Group(), facade = skyGlass(pal, true);
+    facade.userData.lit *= pal.dark ? 0.45 : 0.6;
+    const shaft = new THREE.Mesh(facadeBox(cw, h, cw, 0.15, rnd()), facade);
+    const roof = new THREE.Mesh(new RoundedBoxGeometry(cw + 0.04, 0.07, cw + 0.04, 2, 0.02).translate(0, 0.035, 0),
+      mat(changeColor(pal, t.c)));
+    roof.position.y = h;
+    body.add(shaft, roof);
+    body.traverse((m) => { if (m.isMesh) { m.castShadow = !isPhone(); m.receiveShadow = true; } });
+    body.scale.y = 0.001;
+    g.add(body);
+    g.position.set(x, 0, z);
+    tag(g, given.length + k);
+    root.add(g);
+    return { ...t, h, x, z, g, body, facade, delay: 0.55 + k * 0.03 };
+  });
+  // les voitures : des phares (blancs) et des feux (rouges) qui suivent les rues, dans les deux sens
+  const CARS = isPhone() ? 12 : 22, carGeo = new THREE.BoxGeometry(0.2, 0.05, 0.07);
+  const heads = new THREE.InstancedMesh(carGeo, new THREE.MeshBasicMaterial({ color: pal.dark ? 0xfff1d0 : 0xf4b740 }), CARS);
+  const tails = new THREE.InstancedMesh(carGeo, new THREE.MeshBasicMaterial({ color: pal.dark ? 0xff5a5a : 0xe0303f }), CARS);
+  heads.userData.noEdges = tails.userData.noEdges = true;
+  heads.raycast = tails.raycast = () => {};
+  const cars = [...Array(CARS).keys()].map((i) => ({ road: ROADS[i % ROADS.length], dir: i % 2 ? 1 : -1, lane: (i % 2 ? 0.14 : -0.14),
+    u: rnd(), speed: 0.035 + rnd() * 0.03 }));
+  root.add(heads, tails);
+  const dummy = new THREE.Object3D();
+  const moveCars = (dt) => {
+    for (let i = 0; i < CARS; i++) {
+      const c = cars[i];
+      c.u = (c.u + c.speed * dt * c.dir + 1) % 1;
+      dummy.position.set(-GW / 2 + 0.3 + c.u * (GW - 0.6), 0.04, c.road + c.lane);
+      dummy.updateMatrix();
+      (c.dir > 0 ? heads : tails).setMatrixAt(i, dummy.matrix);
+      dummy.position.y = -5;   // l'autre couleur est cachée sous le sol
+      dummy.updateMatrix();
+      (c.dir > 0 ? tails : heads).setMatrixAt(i, dummy.matrix);
+    }
+    heads.instanceMatrix.needsUpdate = tails.instanceMatrix.needsUpdate = true;
+  };
+  moveCars(0);
+  const everyone = [...towers, ...crowd];
   let chapter = "film", hover = null;
   const view = { pos: [4, 6, 19], look: [0, 2, 0], fov: 28, aspect: 1.6 };
   const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -241,7 +312,7 @@ function skyline(data, pal, scene) {
     const d = fit * (close ? 0.94 : 1);
     const a = (still() ? 0 : Math.sin(performance.now() / 1000 * 0.22) * 0.07) + 0.18;
     const lx = focusX * (close ? 0.12 : 0), y = top * 0.5;
-    return { pos: [lx + Math.sin(a) * d, y + d * 0.12, Math.cos(a) * d], look: [lx, y - 0.2, 0] };
+    return { pos: [lx + Math.sin(a) * d, y + d * 0.2, Math.cos(a) * d + 0.3], look: [lx, y - 0.45, -0.7] };
   };
   return {
     root, view, intro: 0.2 + n * 0.12 + 1.2,
@@ -253,22 +324,31 @@ function skyline(data, pal, scene) {
     update(t, dt) {
       let moving = false;
       const lit = current(), k = 1 - Math.exp(-dt * 4);
+      if (!still()) { moveCars(dt); moving = true; }
+      for (const c of crowd) {
+        const s = Math.max(0.001, overshoot(t, c.delay, 0.7));
+        if (c.body.scale.y !== s) { c.body.scale.y = s; moving = true; }
+        const m = c.facade, goal = m.userData.lit * phase(t, c.delay + 0.5, 0.5) * (c === hover ? 2 : 1);
+        if (Math.abs(m.emissiveIntensity - goal) > 0.003) { m.emissiveIntensity += (goal - m.emissiveIntensity) * (t < 99 ? 1 : k); moving = true; }
+        const fade = lit ? (pal.dark ? 0.55 : 0.7) : 0.9;
+        if (Math.abs(m.opacity - fade) > 0.004) { m.opacity += (fade - m.opacity) * k; moving = true; }
+      }
       for (const tw of towers) {
         const s = Math.max(0.001, overshoot(t, tw.delay, 0.8));
         if (tw.body.scale.y !== s) { tw.body.scale.y = s; moving = true; }
         const m = tw.facade, base = m.userData.lit * phase(t, tw.delay + 0.6, 0.5);
         const goal = lit && tw !== lit ? base * 0.3 : base * (tw === lit || tw === hover ? 1.7 : 1);
         if (Math.abs(m.emissiveIntensity - goal) > 0.003) { m.emissiveIntensity += (goal - m.emissiveIntensity) * (t < 99 ? 1 : k); moving = true; }
-        const fade = lit && tw !== lit ? (pal.dark ? 0.45 : 0.6) : 1;
+        const fade = lit && tw !== lit ? (pal.dark ? 0.45 : 0.72) : 1;
         if (Math.abs(m.opacity - fade) > 0.004) { m.opacity += (fade - m.opacity) * k; moving = true; }
         const lift = tw === lit ? 0.15 : 0;
         if (Math.abs(tw.g.position.y - lift) > 0.002) { tw.g.position.y += (lift - tw.g.position.y) * k; moving = true; }
       }
       return moving;
     },
-    pick: (ray) => pickFrom(ray, towers.map((t) => t.g), (id) => `${towers[id].n}${towers[id].c != null ? `, ${signed(towers[id].c)}` : ""}`,
-      (id) => towers[id].n),
-    setHover(id) { hover = id == null ? null : towers[id]; },
+    pick: (ray) => pickFrom(ray, everyone.map((t) => t.g), (id) => `${everyone[id].n}${everyone[id].c != null ? `, ${signed(everyone[id].c)}` : ""}`,
+      (id) => everyone[id].n),
+    setHover(id) { hover = id == null ? null : everyone[id]; },
     labels() {
       const lit = current(), narrow = innerWidth <= 760;
       return towers.filter((t) => !narrow || !lit || t === lit).map((t) => ({
